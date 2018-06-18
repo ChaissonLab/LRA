@@ -3,6 +3,22 @@
 #include "TupleOps.h"
 #include "Options.h"
 
+class SortByPos {
+ public:
+	int operator() (const GenomeTuple &a, const GenomeTuple &b) {
+		return (a.pos < b.pos);
+	}
+};
+
+void PrintIndex(vector<GenomeTuple> &minimizers, int k) {
+	sort(minimizers.begin(), minimizers.end(), SortByPos());
+	for(int i = 0; i < minimizers.size();i++) {
+		string s;
+		TupleToString(minimizers[i].tuple, k, s);
+		cout << i << "\t" << minimizers[i].pos << "\t" << s << endl;
+	}	
+}
+
 void StoreIndex(string &genome, 
 								vector<GenomeTuple> &minimizers, 
 								Options &opts) {	
@@ -11,6 +27,7 @@ void StoreIndex(string &genome,
 
 	kseq_t *ks = kseq_init(f);
 	int offset=0;
+
 	while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
 		cerr << "Storing for "<< ks->name.s << endl;
 		StoreMinimizers(ks, opts.k, opts.w, minimizers);

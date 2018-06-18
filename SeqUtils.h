@@ -13,5 +13,7 @@ void InitSeqMap() {
 	seqMap[int('T')] = 3;
 }
 
+const char *binMap = "ACGT";
+
 
 #endif

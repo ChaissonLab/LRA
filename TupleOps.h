@@ -3,6 +3,15 @@
 
 typedef uint64_t Tuple;
 Tuple mask=0;
+
+void TupleToString(Tuple t, int k, string &s) {
+	s="";
+	for (int i = 0; i < k; i++) {
+		s = s + binMap[(t & 3)];
+		t >>=2;
+	}
+}
+
 class GenomeTuple {
 public:
 	Tuple tuple;
@@ -17,7 +26,9 @@ public:
 	friend int operator!=(GenomeTuple &a, GenomeTuple &b) {
 		return a.tuple != b.tuple;
 	}
-
+	void ToString(int k, string &s) {
+		TupleToString(tuple, k, s);
+	}
 };
 
 int InitMask(int k) {
@@ -32,13 +43,13 @@ template<typename tup> void StoreTuple(char *seq, int pos, int k, tup &tuple) {
 	tuple = 0;
 	for (int p=pos; p <= pos+k-1; p++) {
 		tuple <<=2;
-		tuple+=seqMap[seq[p]];
+		tuple+=(uint64_t)seqMap[seq[p]];
 	}
 }
 
 template<typename tup> void ShiftOne(char *seq, int pos, tup &tuple) {
-	tuple = (tuple << 2) & mask;
-	tuple += seqMap[seq[pos]];	
+	tuple = (tuple << 2) & (uint64_t) mask;
+	tuple += (uint64_t)seqMap[seq[pos]];	
 }
 
 template<typename tup> void ShiftOneRC(char *seq, int pos, int k, tup &tuple) {

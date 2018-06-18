@@ -54,6 +54,7 @@ template <typename TupPos> void StoreMinimizers(kseq_t *seq, int k, int w, vecto
 		return;
 	}
 	int p = 0;
+	InitMask(k);
 	StoreTuple(seq->seq.s, p, k, cur);
 	TupleRC(cur, curRC, k);
 
@@ -101,16 +102,17 @@ template <typename TupPos> void StoreMinimizers(kseq_t *seq, int k, int w, vecto
 
 		ShiftOne(seq->seq.s, p+k-1, cur);
 		ShiftOneRC(seq->seq.s, p+k-1, k, curRC);
-		/*
+
 		Tuple test, testrc;
 		StoreTuple(seq->seq.s, p, k, test);
 		TupleRC(test, testrc, k);
 
 		assert(test == cur);
 		assert(testrc == curRC);
-		*/
+
 		curMinimizer.tuple = min(cur, curRC);
 		curMinimizer.pos   = p;
+
 		curTuples[p%w] = curMinimizer;
 		if (p - w >= activeMinimizer.pos) {
 			activeMinimizer = curTuples[0];

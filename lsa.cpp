@@ -23,7 +23,7 @@ using namespace std;
 #include "Sorting.h"
 #include <algorithm>
 #include "Options.h"
-
+#include "Clustering.h"
 bool Is(const char* a, const char* b) {
 	return strcmp(a,b) == 0;
 }
@@ -36,24 +36,36 @@ void RunMap(int argc, char* argv[], Options &opts ) {
 	// open query file for reading; you may use your favorite FASTA/Q parser
 	int argi = 0;
 	string genome = "", reads = "";
-	opts.maxFreq = 200;
 	string indexFile="";
 	int w=10;
 	bool storeAll = false;
+	bool cartesianSort =false;
 	for (argi = 0; argi < argc; ) {
 		if (Is(argv[argi], "-i")) {
 			++argi;
 			indexFile=argv[argi];
 		}		
-		if (Is(argv[argi], "-a")) {
+		else if (Is(argv[argi], "-a")) {
 			++argi;
 			storeAll=true;
 		}		
-		if (Is(argv[argi], "-w")) {
+		else if (Is(argv[argi], "-w")) {
 			++argi;
 			opts.w=atoi(argv[argi]);
 		}		
-		if (Is(argv[argi], "-k")) {
+		else if (Is(argv[argi], "-c")) {
+			++argi;
+			cartesianSort= true;
+		}		
+		else if (Is(argv[argi], "-m")) {
+			++argi;
+			opts.minClusterSize= atoi(argv[argi]);
+		}		
+		else if (Is(argv[argi], "-f")) {
+			++argi;
+			opts.maxFreq = atoi(argv[argi]);
+		}		
+		else if (Is(argv[argi], "-k")) {
 			++argi;
 			opts.k=atoi(argv[argi]);
 		}		
@@ -95,31 +107,60 @@ void RunMap(int argc, char* argv[], Options &opts ) {
 		}
 		else {
 			StoreMinimizers(ks, opts.k, opts.w, readmm);
-		  sort(readmm.begin(), readmm.end());
 		}
-		CompareLists(readmm, genomemm, matches);
-		DiagonalSort(matches);
-		for (int m=0; m < matches.size(); m++) {
-			/*
-			cout << matches[m].first.pos << "\t" << matches[m].second.pos << "\t" << matches[m].first.tuple;
-			if (m > 0) {
-				cout << "\t" << matches[m].first.pos - matches[m].second.pos - (matches[m-1].first.pos - matches[m-1].second.pos);
+		sort(readmm.begin(), readmm.end());
+		CompareLists(readmm, genomemm, matches, opts);
+		if (cartesianSort) {
+			CartesianTargetSort(matches);
+		}
+		else {
+			DiagonalSort(matches);
+
+			CleanOffDiagonal(matches, opts);
+			vector< vector<pair<GenomeTuple, GenomeTuple> > > clusters;
+			OffDiagonalClusters(matches, clusters, opts);
+
+			for (int c =0; c < clusters.size(); c++) {
+				if (clusters[c].size() == 0) {
+					continue;
+				}
+				int l=clusters[c].size()-1;
+				
+				cout << ks->name.s << "\t" << ks->seq.l << "\t" << c << "\t" << clusters[c].size() << endl;
+				/*
+					
+				for (int m=0; m < clusters[c].size(); m++) {
+					string s;			
+					
+					clusters[c][m].first.ToString(opts.k,s);
+					cout << clusters[c][m].first.pos << "\t" << clusters[c][m].second.pos << "\t" << clusters[c][m].first.tuple << "\t" << s;
+					if (m > 0) {
+						cout << "\t" << clusters[c][m].first.pos - clusters[c][m].second.pos - (clusters[c][m-1].first.pos - clusters[c][m-1].second.pos);
+					}
+					cout << endl;
+				}
+				cout << ks->name.s << "\t" << ks->seq.l << "\t" << clusters[c].size() << endl;
+				*/
 			}
-			cout << endl;
-			*/
 		}
-		cout << ks->name.s << "\t" << ks->seq.l << "\t" << matches.size() << endl;
 	}
 }
 
+void HelpStore() {
+	cout << "Usage: lsa index file.fa [options]" << endl
+			 << "   -w (int) Minimizer window size (10)." << endl
+			 << "   -f (int) Maximum minimizer frequency (200)." << endl
+			 << "   -i (string) Index file for alternative store." << endl
+			 << "   -k (int) Word size" << endl;
+}
 
 
 void RunStore(int argc, char* argv[], vector<GenomeTuple> &minimizers, Options &opts) {
 	// open query file for reading; you may use your favorite FASTA/Q parser
 	int argi = 0;
 	string genome;
-	int maxFreq = 200;
 	string indexFile="";
+	bool printIndex = false;
 	opts.w=10;
 	for (argi = 0; argi < argc; ) {
 		if (Is(argv[argi], "-w")) {
@@ -134,20 +175,36 @@ void RunStore(int argc, char* argv[], vector<GenomeTuple> &minimizers, Options &
 			++argi;
 			indexFile=argv[argi];
 		}
+		else if (Is(argv[argi], "-p")) {
+			++argi;
+			printIndex = true;
+		}
 		else if (Is(argv[argi], "-k")) {
 			++argi;
 			opts.k=atoi(argv[argi]);
 			InitMask(opts.k);
 		}		
+		else if (strlen(argv[argi]) > 0 && argv[argi][0] == '-') {
+			HelpStore();
+			cout << "Invalid option " << argv[argi] << endl;
+			exit(1);
+		}
 		else {
 			genome = argv[argi];
-			cerr << genome << endl;
+			cerr << "genome " << genome << endl;
 		}
 		++argi;
 	}
-	
+	if (genome == "") {
+		HelpStore();
+		exit(1);
+	}
 	if (indexFile == "") {
 		indexFile = genome + ".mmi";
+	}
+	if (printIndex and ReadIndex(indexFile, minimizers, opts)) {
+		PrintIndex(minimizers, opts.k);
+		exit(0);
 	}
 	StoreIndex(genome, minimizers, opts);
 	WriteIndex(indexFile, minimizers, opts);
