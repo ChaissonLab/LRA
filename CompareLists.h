@@ -14,11 +14,11 @@ template<typename tup> void CompareLists(vector<tup> &query,
 	//
 
 	vector<tup> isect;
-
+	/*
   std::set_intersection(query.begin(), query.end(),
 	target.begin(), target.end(), back_inserter(isect));
 		cout << "Matched " << isect.size() << " slowly." << endl;
-
+	*/
 	int nMatch=0;
 	while (qs < query.size() && ts < te ) {
 		slb = lower_bound(target.begin()+ts, target.end(), query[qs]);

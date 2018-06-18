@@ -95,15 +95,18 @@ void RunMap(int argc, char* argv[], Options &opts ) {
 		}
 		else {
 			StoreMinimizers(ks, opts.k, opts.w, readmm);
+		  sort(readmm.begin(), readmm.end());
 		}
 		CompareLists(readmm, genomemm, matches);
 		DiagonalSort(matches);
 		for (int m=0; m < matches.size(); m++) {
+			/*
 			cout << matches[m].first.pos << "\t" << matches[m].second.pos << "\t" << matches[m].first.tuple;
 			if (m > 0) {
 				cout << "\t" << matches[m].first.pos - matches[m].second.pos - (matches[m-1].first.pos - matches[m-1].second.pos);
 			}
 			cout << endl;
+			*/
 		}
 		cout << ks->name.s << "\t" << ks->seq.l << "\t" << matches.size() << endl;
 	}

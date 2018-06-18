@@ -49,7 +49,7 @@ int ReadIndex(string fn, vector<GenomeTuple> &index, Options &opts) {
 	if (fin.good() == false or fin.eof()) {
 		return 0;
 	}
-	int len;
+	int64_t len;
 	fin.read((char*) &len, sizeof(int64_t));	
 	fin.read((char*) &opts.k, sizeof(int));
 	InitMask(opts.k);
