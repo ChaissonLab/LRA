@@ -7,16 +7,21 @@ class GenomeTuple {
 public:
 	Tuple tuple;
 	int pos;
-	friend int operator <(GenomeTuple &a, GenomeTuple &b) {
-		return a.tuple < b.tuple;
+	bool operator<(const GenomeTuple &b) {
+		return tuple < b.tuple;
 	}
+
 	friend int operator >(GenomeTuple &a, GenomeTuple &b) {
 		return a.tuple > b.tuple;
+	}
+	friend int operator!=(GenomeTuple &a, GenomeTuple &b) {
+		return a.tuple != b.tuple;
 	}
 
 };
 
 int InitMask(int k) {
+	mask=0;
 	for (int i = 0; i < k; i++) {
 		mask<<=2;
 		mask+=3;
@@ -41,14 +46,6 @@ template<typename tup> void ShiftOneRC(char *seq, int pos, int k, tup &tuple) {
 	tuple += (~(seqMap[seq[pos]]) & (uint64_t)3) << (2*((tup)k-1));
 }
 
-
-
-class GenomeTupleComp {
-public:
-	bool operator() (const GenomeTuple &a, const GenomeTuple &b) {
-		return a.tuple > b.tuple;
-	}
-};
 
 template <typename tup> void TupleRC(tup a, tup &b, int k) {
 	int i;

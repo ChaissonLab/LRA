@@ -4,9 +4,12 @@
 #include "SeqUtils.h"
 #include "htslib/kseq.h"
 KSEQ_INIT(gzFile, gzread)
+
+
+
 template <typename TupPos> void SimpleMinimizers(kseq_t *seq, int k, int w, vector<TupPos> &minimizers) {
 
-	minimizers.clear();
+
 	Tuple cur, curRC, minTuple, can;
 	int minPos;
 	if (seq->seq.l < k) {
@@ -44,7 +47,7 @@ template <typename TupPos> void StoreMinimizers(kseq_t *seq, int k, int w, vecto
 	//
 	// Initialize first.
 	//
-	minimizers.clear();
+
 	Tuple cur, curRC, minTuple, can;
 	int minPos;
 	if (seq->seq.l < k) {
@@ -73,13 +76,13 @@ template <typename TupPos> void StoreMinimizers(kseq_t *seq, int k, int w, vecto
 	for (p = 1; p< w && p < seq->seq.l -k+1 ; p++) {
 		ShiftOne(seq->seq.s, p+k-1, cur);
 		ShiftOneRC(seq->seq.s, p+k-1, k, curRC);
-
+		/*
 		Tuple test, testrc;
 		StoreTuple(seq->seq.s, p, k, test);
 		TupleRC(test, testrc, k);
 		assert(test == cur);
 		assert(testrc == curRC);
-
+		*/
 		curMinimizer.pos   = p;
 		curMinimizer.tuple = min(cur, curRC);
 		
@@ -98,12 +101,14 @@ template <typename TupPos> void StoreMinimizers(kseq_t *seq, int k, int w, vecto
 
 		ShiftOne(seq->seq.s, p+k-1, cur);
 		ShiftOneRC(seq->seq.s, p+k-1, k, curRC);
+		/*
 		Tuple test, testrc;
 		StoreTuple(seq->seq.s, p, k, test);
 		TupleRC(test, testrc, k);
+
 		assert(test == cur);
 		assert(testrc == curRC);
-
+		*/
 		curMinimizer.tuple = min(cur, curRC);
 		curMinimizer.pos   = p;
 		curTuples[p%w] = curMinimizer;
@@ -128,8 +133,45 @@ template <typename TupPos> void StoreMinimizers(kseq_t *seq, int k, int w, vecto
 			cerr << p +1 << endl;
 		}
 	}
-	cout << "for " << seq->name.s << "\t" << seq->seq.l << "\t" << nMinimizers << endl;
 }
+
+template <typename TupPos> void StoreAll(kseq_t *seq, int k, vector<TupPos> &tuples) {
+	//
+	// Initialize first.
+	//
+
+	Tuple cur, curRC, minTuple, can;
+	int minPos;
+	if (seq->seq.l < k) {
+		return;
+	}
+	int p = 0;
+	StoreTuple(seq->seq.s, p, k, cur);
+	TupleRC(cur, curRC, k);
+
+	//
+	// Initialize the first minimzer.
+	//
+	can = min(cur, curRC);
+	GenomeTuple gt;
+	gt.tuple = can;
+	gt.pos = 0;
+
+	tuples.push_back(gt);
+
+	for (p = 1; p < seq->seq.l - k + 1; p++) {
+		ShiftOne(seq->seq.s, p+k-1, cur);
+		ShiftOneRC(seq->seq.s, p+k-1, k, curRC);
+		can=min(cur,curRC);
+		//	priority_queue<GenomeTuple, vector<GenomeTuple>, GenomeTupleComp > pQueue;
+		gt.tuple = can;
+		gt.pos = p;
+
+		tuples.push_back(gt);
+	}
+}	
+
+
 
 #endif
 
