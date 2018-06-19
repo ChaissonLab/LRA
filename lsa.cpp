@@ -24,14 +24,15 @@ using namespace std;
 #include <algorithm>
 #include "Options.h"
 #include "Clustering.h"
+
 bool Is(const char* a, const char* b) {
 	return strcmp(a,b) == 0;
 }
 
-
 void HelpMap() {
 	cout << "Usage: lsc map genome.fa reads.fa" << endl;
 }
+
 void RunMap(int argc, char* argv[], Options &opts ) {
 	// open query file for reading; you may use your favorite FASTA/Q parser
 	int argi = 0;
@@ -88,10 +89,10 @@ void RunMap(int argc, char* argv[], Options &opts ) {
 	if (indexFile == "") {
 		indexFile = genome + ".mmi";
 	}
-
+	Header header;
 	vector<GenomeTuple> genomemm;
-	if (ReadIndex(indexFile, genomemm, opts) == 0) {
-		StoreIndex(genome, genomemm, opts);
+	if (ReadIndex(indexFile, genomemm, header, opts) == 0) {
+		StoreIndex(genome, genomemm, header, opts);
 	}
 	
 	gzFile f = gzopen(reads.c_str(), "r");
@@ -106,7 +107,7 @@ void RunMap(int argc, char* argv[], Options &opts ) {
 			StoreAll(ks, opts.k, readmm);
 		}
 		else {
-			StoreMinimizers(ks, opts.k, opts.w, readmm);
+			StoreMinimizers<GenomeTuple, Tuple>(ks->seq.s, ks->seq.l, opts.k, opts.w, readmm);
 		}
 		sort(readmm.begin(), readmm.end());
 		CompareLists(readmm, genomemm, matches, opts);
@@ -153,9 +154,39 @@ void HelpStore() {
 			 << "   -i (string) Index file for alternative store." << endl
 			 << "   -k (int) Word size" << endl;
 }
+void HelpStoreLocal() {
+	cout << "Usage lsa local file.fa";
+}
+
+void RunStoreLocal(int argc, char* argv[], GenomeLocalIndex &glIndex, Options &opts) {
+	int argi = 0;
+	string genome;
+	string indexFile="";
+	bool printIndex = false;
+	opts.w=10;
+	for (argi = 0; argi < argc; ) {
+		if (strlen(argv[argi]) > 0 and argv[argi][0] == '-') {
+			HelpStoreLocal();
+			cout << "Invalid option " << argv[argi] << endl;
+			exit(1);
+		}
+		else {
+			genome = argv[argi];
+			cerr << "genome " << genome << endl;
+		}
+		++argi;
+	}
+	if (genome == "") {
+		HelpStore();
+		exit(1);
+	}
 
 
-void RunStore(int argc, char* argv[], vector<GenomeTuple> &minimizers, Options &opts) {
+	StoreLocalIndex(genome, glIndex, opts);
+	glIndex.Write(genome + ".gli");
+}
+
+void RunStore(int argc, char* argv[], vector<GenomeTuple> &minimizers, Header &header, Options &opts) {
 	// open query file for reading; you may use your favorite FASTA/Q parser
 	int argi = 0;
 	string genome;
@@ -182,7 +213,6 @@ void RunStore(int argc, char* argv[], vector<GenomeTuple> &minimizers, Options &
 		else if (Is(argv[argi], "-k")) {
 			++argi;
 			opts.k=atoi(argv[argi]);
-			InitMask(opts.k);
 		}		
 		else if (strlen(argv[argi]) > 0 && argv[argi][0] == '-') {
 			HelpStore();
@@ -202,12 +232,14 @@ void RunStore(int argc, char* argv[], vector<GenomeTuple> &minimizers, Options &
 	if (indexFile == "") {
 		indexFile = genome + ".mmi";
 	}
-	if (printIndex and ReadIndex(indexFile, minimizers, opts)) {
+
+	if (printIndex and ReadIndex(indexFile, minimizers, header, opts)) {
 		PrintIndex(minimizers, opts.k);
 		exit(0);
 	}
-	StoreIndex(genome, minimizers, opts);
-	WriteIndex(indexFile, minimizers, opts);
+
+	StoreIndex(genome, minimizers, header, opts);
+	WriteIndex(indexFile, minimizers, header, opts);
 }
 
 
@@ -218,6 +250,7 @@ void Usage() {
 	cout << "Usage:   lsa <command> [options]"<< endl << endl;
 	cout << "Command: index   - Build a mm index on sequences." << endl;
 	cout << "         map     - Map reads using the index" << endl;
+	cout << "         local   - Build local index" << endl;
 }
 int main(int argc, char *argv[]) {
 
@@ -228,14 +261,15 @@ int main(int argc, char *argv[]) {
 	InitSeqMap();
 	Options opts;
 	opts.k=21;
-	InitMask(opts.k);
 
   int argi;
 	vector<GenomeTuple>  minimizers;
+	GenomeLocalIndex glIndex;
+	Header header;
 	for (argi = 1; argi < argc; ){
 		if (Is(argv[argi], "index")) {
 			argc -=2;
-      RunStore(argc,  &argv[2], minimizers, opts);		
+      RunStore(argc,  &argv[2], minimizers, header, opts);		
 			exit(0);
 		}
 		else if (Is(argv[argi], "map")) {
@@ -243,6 +277,12 @@ int main(int argc, char *argv[]) {
 			RunMap(argc, &argv[2], opts);
 			exit(0);
 		}
+		else if (Is(argv[argi], "local")) {
+			argc -=2;
+			RunStoreLocal(argc, &argv[2], glIndex, opts);
+			exit(0);
+		}
+
 		else {
 			Usage();
 			exit(1);

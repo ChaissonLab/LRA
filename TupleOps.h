@@ -2,9 +2,13 @@
 #define TUPLE_OPS_H_
 
 typedef uint64_t Tuple;
+typedef uint16_t SmallTuple;
+typedef uint16_t SmallPos;
+
 Tuple mask=0;
 
-void TupleToString(Tuple t, int k, string &s) {
+template<typename Tup>
+void TupleToString(Tup t, int k, string &s) {
 	s="";
 	for (int i = 0; i < k; i++) {
 		s = s + binMap[(t & 3)];
@@ -12,56 +16,80 @@ void TupleToString(Tuple t, int k, string &s) {
 	}
 }
 
+
+class LocalTuple {
+ public:
+	SmallTuple t;
+	SmallPos   pos;
+
+	bool operator<(const LocalTuple &b) {
+		return t < b.t;
+	}
+
+	friend int operator >(LocalTuple &a, LocalTuple &b) {
+		return a.t > b.t;
+	}
+	friend int operator!=(LocalTuple &a, LocalTuple &b) {
+		return a.t != b.t;
+	}
+	void ToString(int k, string &s) {
+		TupleToString(t, k, s);
+	}
+
+};
+
+
 class GenomeTuple {
 public:
-	Tuple tuple;
+	Tuple t;
 	int pos;
 	bool operator<(const GenomeTuple &b) {
-		return tuple < b.tuple;
+		return t < b.t;
 	}
 
 	friend int operator >(GenomeTuple &a, GenomeTuple &b) {
-		return a.tuple > b.tuple;
+		return a.t > b.t;
 	}
 	friend int operator!=(GenomeTuple &a, GenomeTuple &b) {
-		return a.tuple != b.tuple;
+		return a.t != b.t;
 	}
 	void ToString(int k, string &s) {
-		TupleToString(tuple, k, s);
+		TupleToString(t, k, s);
 	}
 };
 
-int InitMask(int k) {
-	mask=0;
+template< typename Tup>
+int InitMask(Tup &m, int k) {
+	m=0;
 	for (int i = 0; i < k; i++) {
-		mask<<=2;
-		mask+=3;
+		m<<=2;
+		m+=3;
 	}
 }
 
-template<typename tup> void StoreTuple(char *seq, int pos, int k, tup &tuple) {
-	tuple = 0;
+template<typename tup> void StoreTuple(char *seq, int pos, int k, tup &t) {
+	t = 0;
 	for (int p=pos; p <= pos+k-1; p++) {
-		tuple <<=2;
-		tuple+=(uint64_t)seqMap[seq[p]];
+		t <<=2;
+		t+=(tup)seqMap[seq[p]];
 	}
 }
 
-template<typename tup> void ShiftOne(char *seq, int pos, tup &tuple) {
-	tuple = (tuple << 2) & (uint64_t) mask;
-	tuple += (uint64_t)seqMap[seq[pos]];	
+template<typename tup> void ShiftOne(char *seq, int pos, tup mask, tup &t) {
+	t = (t << 2) & (tup) mask;
+	t += (tup)seqMap[seq[pos]];	
 }
 
-template<typename tup> void ShiftOneRC(char *seq, int pos, int k, tup &tuple) {
-	tuple >>= 2;
-	tuple += (~(seqMap[seq[pos]]) & (uint64_t)3) << (2*((tup)k-1));
+template<typename tup> void ShiftOneRC(char *seq, int pos, int k, tup &t) {
+	t >>= 2;
+	t += (~(seqMap[seq[pos]]) & (tup)3) << (2*((tup)k-1));
 }
 
 
 template <typename tup> void TupleRC(tup a, tup &b, int k) {
 	int i;
-	unsigned int nucMask=3;
-	unsigned int least;
+	tup nucMask=3;
+	tup least;
 	b=0;
 	for (i=0; i <k; i++) {
 		least = ~ (a & nucMask) & nucMask;

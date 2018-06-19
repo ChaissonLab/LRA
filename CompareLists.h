@@ -16,19 +16,20 @@ template<typename tup> void CompareLists(vector<tup> &query,
 	//
 
 	vector<tup> isect;
-	/*
+#ifdef _TESTING_
+	cout << "comparing " << query.size() << " and " << target.size() << " lists" << endl;
   std::set_intersection(query.begin(), query.end(),
 	target.begin(), target.end(), back_inserter(isect));
 		cout << "Matched " << isect.size() << " slowly." << endl;
-	*/
+#endif
 	int nMatch=0;
 	while (qs < query.size() && ts < te ) {
 		slb = lower_bound(target.begin()+ts, target.end(), query[qs]);
 		ts=slb-target.begin();
-		if (slb->tuple == query[qs].tuple) {
+		if (slb->t == query[qs].t) {
 			int ts0 = ts;
 			while (ts < target.size() && 
-						 query[qs].tuple == target[ts].tuple) {
+						 query[qs].t == target[ts].t) {
 				ts++;
 			}
 
