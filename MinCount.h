@@ -7,47 +7,12 @@ KSEQ_INIT(gzFile, gzread)
 
 
 
-template <typename TupPos> void SimpleMinimizers(kseq_t *seq, int k, int w, vector<TupPos> &minimizers) {
-
-
-	Tuple cur, curRC, minTuple, can;
-	int minPos;
-	if (seq->seq.l < k) {
-		return;
-	}
-	int p = 0;
-	int curMinimizer = -1;
-
-	for (p = 0; p < seq->seq.l - w - k + 1; p++) {
-
-		int i;
-		minTuple = mask;
-		int minPos = 0;
-		for (i = p; i < p+w; i++) {
-			StoreTuple(seq->seq.s, i, k, cur);
-			TupleRC(cur, curRC, k);
-			can = min(cur, curRC);
-			if (can < minTuple) {
-				minPos = i;
-				minTuple = can;
-			}
-		}
-		if (minPos != curMinimizer) {
-			assert(minPos > curMinimizer);
-			GenomeTuple tup;
-			tup.t=minTuple;
-			tup.pos = minPos;
-			minimizers.push_back(tup);
-			curMinimizer = minPos;
-		}
-	}
-}
 
 template <typename TupPos, typename Tup> void StoreMinimizers(char *seq, 
 																															int seqLen,
 																															int k, 
 																															int w,
-																															vector<TupPos> &minimizers) {
+																															vector<TupPos> &minimizers, bool canonical=true) {
 	//
 	// Initialize first.
 	//
@@ -55,11 +20,11 @@ template <typename TupPos, typename Tup> void StoreMinimizers(char *seq,
 	if (seqLen < k) {
 		return;
 	}
-	Tup cur, curRC, minTuple, can;
-	int minPos;
+	TupPos cur, curRC, minTuple, can;
+	GenomePos minPos;
 
-	int p = 0;
-	Tup m;
+	GenomePos p = 0;
+	TupPos m;
 	InitMask(m, k);
 	StoreTuple(seq, p, k, cur);
 	TupleRC(cur, curRC, k);
@@ -67,10 +32,13 @@ template <typename TupPos, typename Tup> void StoreMinimizers(char *seq,
 	//
 	// Initialize the first minimzer.
 	//
-	can = min(cur, curRC);
+	if (canonical) {
+		can.t = min(cur.t, curRC.t);
+	}
+	else { can.t = cur.t; }
 	minPos = 0;
 	TupPos activeMinimizer, curMinimizer;
-	activeMinimizer.t = can;
+	activeMinimizer.t = can.t;
 	activeMinimizer.pos = 0;
 	//	priority_queue<GenomeTuple, vector<GenomeTuple>, GenomeTupleComp > pQueue;
 	vector<TupPos> curTuples(w);
@@ -91,7 +59,13 @@ template <typename TupPos, typename Tup> void StoreMinimizers(char *seq,
 		assert(testrc == curRC);
 		*/
 		curMinimizer.pos   = p;
-		curMinimizer.t = min(cur, curRC);
+		if (canonical) {
+			curMinimizer.t = min(cur.t, curRC.t);
+		}
+		else {
+			curMinimizer.t = cur.t;
+		}
+
 		
 		if (curMinimizer.t < activeMinimizer.t) {
 			activeMinimizer.t = curMinimizer.t;
@@ -101,7 +75,7 @@ template <typename TupPos, typename Tup> void StoreMinimizers(char *seq,
 	}
 	minimizers.push_back(activeMinimizer);
 	// Now scan the chromosome
-	minTuple=mask;
+	minTuple.t=m.t;
 	for (p=w; p < seqLen-k+1; p++) {
 		
 		// Check if past current active minimzier
@@ -109,17 +83,20 @@ template <typename TupPos, typename Tup> void StoreMinimizers(char *seq,
 		ShiftOne(seq, p+k-1, m, cur);
 		ShiftOneRC(seq, p+k-1, k, curRC);
 #ifdef _TESTING_
-		Tuple test, testrc;
+		TupPos test, testrc;
 		StoreTuple(seq, p, k, test);
 		TupleRC(test, testrc, k);
 
-		assert(test == cur);
-		assert(testrc == curRC);
+		assert(test.t == cur.t);
+		assert(testrc.t == curRC.t);
 #endif
-
-		curMinimizer.t = min(cur, curRC);
+		if (canonical) {
+			curMinimizer.t = min(cur.t, curRC.t);
+		}
+		else {
+			curMinimizer.t = cur.t;
+		}
 		curMinimizer.pos   = p;
-
 		curTuples[p%w] = curMinimizer;
 		if (p - w >= activeMinimizer.pos) {
 			activeMinimizer = curTuples[0];
@@ -143,45 +120,6 @@ template <typename TupPos, typename Tup> void StoreMinimizers(char *seq,
 		}
 	}
 }
-
-template <typename TupPos> void StoreAll(kseq_t *seq, int k, vector<TupPos> &tuples) {
-	//
-	// Initialize first.
-	//
-
-	Tuple cur, curRC, minTuple, can;
-	int minPos;
-	if (seq->seq.l < k) {
-		return;
-	}
-	int p = 0;
-	StoreTuple(seq->seq.s, p, k, cur);
-	TupleRC(cur, curRC, k);
-
-	//
-	// Initialize the first minimzer.
-	//
-	can = min(cur, curRC);
-	GenomeTuple gt;
-	gt.t = can;
-	gt.pos = 0;
-
-	tuples.push_back(gt);
-	Tuple m;
-	InitMask(m,  k);
-	for (p = 1; p < seq->seq.l - k + 1; p++) {
-		ShiftOne(seq->seq.s, p+k-1, m, cur);
-		ShiftOneRC(seq->seq.s, p+k-1, k, curRC);
-		can=min(cur,curRC);
-		//	priority_queue<GenomeTuple, vector<GenomeTuple>, GenomeTupleComp > pQueue;
-		gt.t = can;
-		gt.pos = p;
-
-		tuples.push_back(gt);
-	}
-}	
-
-
 
 #endif
 

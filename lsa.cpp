@@ -33,14 +33,57 @@ void HelpMap() {
 	cout << "Usage: lsc map genome.fa reads.fa" << endl;
 }
 
+void SwapStrand(kseq_t* read, Options &opts, vector<pair<GenomeTuple, GenomeTuple> > &matches, int start, int end) {
+	for (int m=start; m < end; m++) {
+		matches[m].first.pos = read->seq.l - (matches[m].first.pos + opts.k - 1);
+	}
+}
+
+
+
+int SetStrand(kseq_t *read, Genome &genome, Options &opts, vector<pair<GenomeTuple, GenomeTuple> > &matches, int start, int end) {
+	int nSame=0;
+	int nDifferent=0;
+	for (int m=start; m< end; m++) {
+		int chromIndex = genome.header.Find(matches[m].second.pos);
+		char *chrom=genome.seqs[chromIndex];
+		int chromPos = matches[m].second.pos - genome.header.pos[chromIndex];
+		GenomeTuple readTup, genomeTup;
+		StoreTuple(read->seq.s, matches[m].first.pos, opts.k, readTup);
+		StoreTuple(chrom, chromPos, opts.k, genomeTup);
+		if (readTup.t == genomeTup.t) {
+			nSame++;
+		}
+		else {
+			nDifferent++;
+		}
+	}
+	if (nSame > nDifferent) {
+		return 0;
+	}
+	else {
+		return 1;
+	}
+}
+
+void SetClusterStrand(kseq_t* read, Genome &genome, Options &opts, 
+											vector<pair<GenomeTuple, GenomeTuple> > &matches, 			
+											vector<Cluster> &clusters) {
+	for (int c = 0; c < clusters.size(); c++) {
+		clusters[c].strand = SetStrand(read, genome, opts, matches, clusters[c].start, clusters[c].end);
+		if (clusters[c].strand == 1) {
+			SwapStrand(read, opts, matches, clusters[c].start, clusters[c].end);
+		}
+	}
+}
+
 void RunMap(int argc, char* argv[], Options &opts ) {
 	// open query file for reading; you may use your favorite FASTA/Q parser
 	int argi = 0;
-	string genome = "", reads = "";
+	string genomeFile = "", reads = "";
 	string indexFile="";
 	int w=10;
 	bool storeAll = false;
-	bool cartesianSort =false;
 	for (argi = 0; argi < argc; ) {
 		if (Is(argv[argi], "-i")) {
 			++argi;
@@ -53,10 +96,6 @@ void RunMap(int argc, char* argv[], Options &opts ) {
 		else if (Is(argv[argi], "-w")) {
 			++argi;
 			opts.w=atoi(argv[argi]);
-		}		
-		else if (Is(argv[argi], "-c")) {
-			++argi;
-			cartesianSort= true;
 		}		
 		else if (Is(argv[argi], "-m")) {
 			++argi;
@@ -72,8 +111,8 @@ void RunMap(int argc, char* argv[], Options &opts ) {
 		}		
 		
 		else {
-			if (genome == "") {
-				genome = argv[argi];
+			if (genomeFile == "") {
+				genomeFile = argv[argi];
 			}
 			else if (reads == "") {
 				reads = argv[argi];
@@ -82,18 +121,31 @@ void RunMap(int argc, char* argv[], Options &opts ) {
 		++argi;
 	}
 
-	if (genome == "" || reads == "") {
+	if (genomeFile == "" || reads == "") {
 		HelpMap();
 		exit(1);
 	}
 	if (indexFile == "") {
-		indexFile = genome + ".mmi";
+		indexFile = genomeFile + ".mmi";
 	}
 	Header header;
 	vector<GenomeTuple> genomemm;
+	LocalIndex glIndex;
 	if (ReadIndex(indexFile, genomemm, header, opts) == 0) {
-		StoreIndex(genome, genomemm, header, opts);
+		StoreIndex(genomeFile, genomemm, header, opts);
 	}
+	if (glIndex.Read(genomeFile+".gli") == 0) {
+		glIndex.IndexFile(genomeFile);
+	}
+	GenomePos mm=0;
+	for(GenomePos mi =0; mi < genomemm.size(); mi++) {
+		if (genomemm[mi].pos > mm) {
+			mm = genomemm[mi].pos;
+		}
+	}
+	Genome genome;
+	genome.Read(genomeFile);
+
 	
 	gzFile f = gzopen(reads.c_str(), "r");
 	kseq_t *ks = kseq_init(f);
@@ -104,46 +156,207 @@ void RunMap(int argc, char* argv[], Options &opts ) {
 		readmm.clear();
 		matches.clear();
 		if (storeAll) {
-			StoreAll(ks, opts.k, readmm);
+			Options allOpts = opts;
+			allOpts.w=1;
+			StoreMinimizers<GenomeTuple, Tuple>(ks->seq.s, ks->seq.l,
+																					allOpts.k, allOpts.w, readmm);			
 		}
 		else {
 			StoreMinimizers<GenomeTuple, Tuple>(ks->seq.s, ks->seq.l, opts.k, opts.w, readmm);
 		}
 		sort(readmm.begin(), readmm.end());
 		CompareLists(readmm, genomemm, matches, opts);
-		if (cartesianSort) {
-			CartesianTargetSort(matches);
-		}
-		else {
-			DiagonalSort(matches);
 
-			CleanOffDiagonal(matches, opts);
-			vector< vector<pair<GenomeTuple, GenomeTuple> > > clusters;
-			OffDiagonalClusters(matches, clusters, opts);
+		DiagonalSort<GenomeTuple>(matches);
 
-			for (int c =0; c < clusters.size(); c++) {
-				if (clusters[c].size() == 0) {
-					continue;
-				}
-				int l=clusters[c].size()-1;
-				
-				cout << ks->name.s << "\t" << ks->seq.l << "\t" << c << "\t" << clusters[c].size() << endl;
-				/*
-					
-				for (int m=0; m < clusters[c].size(); m++) {
-					string s;			
-					
-					clusters[c][m].first.ToString(opts.k,s);
-					cout << clusters[c][m].first.pos << "\t" << clusters[c][m].second.pos << "\t" << clusters[c][m].first.tuple << "\t" << s;
-					if (m > 0) {
-						cout << "\t" << clusters[c][m].first.pos - clusters[c][m].second.pos - (clusters[c][m-1].first.pos - clusters[c][m-1].second.pos);
-					}
-					cout << endl;
-				}
-				cout << ks->name.s << "\t" << ks->seq.l << "\t" << clusters[c].size() << endl;
-				*/
+		CleanOffDiagonal(matches, opts);
+		vector<Cluster> clusters;
+		PrintDiagonal(matches);
+		StoreDiagonalClusters(matches, clusters, opts);
+		
+		//
+		// Add pointers to seq that make code more readable.
+		//
+		char *readRC;
+		char *read=ks->seq.s;
+		int readLen = ks->seq.l;
+		CreateRC(read, readLen, readRC);
+
+		SetClusterStrand(ks, genome, opts,
+										 matches, clusters);
+
+		LocalIndex forwardIndex;
+		LocalIndex reverseIndex;
+		forwardIndex.IndexSeq(read, readLen);
+		reverseIndex.IndexSeq(readRC, readLen);
+
+		for (int c = 0; c < clusters.size(); c++) {
+
+			if (clusters[c].start == clusters[c].end) {
+				continue;
 			}
+			
+			int cs = clusters[c].start;
+			int ce = clusters[c].end;
+
+			int chromIndex = genome.header.Find(matches[cs].second.pos);
+			GenomePos chromOffset = genome.header.pos[chromIndex];
+			cout << c << "\t" << ce - cs <<"\t" << genome.header.names[chromIndex] 
+					 << "\t" << matches[cs].second.pos - chromOffset 
+					 << "\t" << matches[ce].second.pos - chromOffset 
+					 << "\t" << chromIndex 
+					 << "\t" << matches[cs].second.pos << endl;
+			vector<pair<GenomeTuple, GenomeTuple> > tmpm;
+			vector<pair<GenomeTuple, GenomeTuple> > localMatches;
+			for (int m = cs; m < ce; m++) { tmpm.push_back(matches[m]);}
+				
+			PrintPairs(tmpm, opts.k, c);
+
+			//
+			// Get the boundaries of the cluster in both sequences.
+			//
+			CartesianTargetSort<GenomeTuple>(matches.begin()+cs, matches.begin()+ce);
+			
+			//
+			// Get shorthand access to alignment boundaries.
+			//
+
+		  GenomePos qs, qe, ts, te;
+			qs = matches[cs].first.pos;
+			ts = matches[cs].second.pos;
+
+			qe = matches[ce-1].first.pos + opts.k;
+			te = matches[ce-1].second.pos + opts.k;
+
+			int ls, le;
+			GenomePos chromStartOffset = header.GetOffset(ts);
+			GenomePos chromEndOffset = header.GetNextOffset(te);
+			// Search region starts in window, or beginning of chromosome
+			GenomePos wts, wte;
+			if ( chromStartOffset + opts.window > ts ) {wts = chromStartOffset;	}
+			else {wts = ts - opts.window; }
+				
+			if (te + opts.window > chromEndOffset) {wte = chromEndOffset-1;	}
+			else { wte = te + opts.window;	}
+			
+			ls = glIndex.LookupIndex(wts);
+			le = glIndex.LookupIndex(wte);
+				
+
+			LocalIndex *readIndex;
+
+			if (clusters[c].strand == 0) {
+				readIndex = &forwardIndex;
+			}
+			else {
+				readIndex = &reverseIndex;
+			}
+			int lmIndex=0;
+			for (int lsi=ls; lsi <= le; lsi++) {
+				//
+				// Find the coordinates in the cluster that start in this local index.
+				//
+				GenomePos genomeIndexStart = glIndex.offsets[lsi];
+				GenomePos genomeIndexEnd   = glIndex.offsets[lsi+1]-1;
+				int matchStart = CartesianTargetLowerBound<GenomeTuple>(matches.begin()+cs, 
+																																matches.begin()+ce,
+																																genomeIndexStart);
+
+				int matchEnd   = CartesianTargetUpperBound<GenomeTuple>(matches.begin()+cs, 
+																																matches.begin()+ce, 
+																																genomeIndexEnd);
+
+				GenomePos readStart = matches[matchStart+cs].first.pos;
+				if (lsi == ls) {
+					if (readStart < opts.window) {
+						readStart = 0;
+					}
+					else {
+						readStart -= opts.window;
+					}
+				}
+				GenomePos readEnd;
+				if (matchEnd > matchStart) {readEnd = matches[matchEnd-1+cs].first.pos;	}
+				else { readEnd = matches[matchStart+cs].first.pos + opts.k;}
+				//
+				// Expand boundaries of read to match.
+				if (lsi == le) {
+					if (readEnd + opts.window > ks->seq.l) { readEnd = ks->seq.l; }
+					else { readEnd += opts.window;	}
+				}			
+				
+				//
+				// Find the boundaries of where in the query the matches should be added.
+				//
+				GenomePos minQuery=-1;
+				GenomePos maxQuery=0;
+				
+				for (int m=cs; m < ce; m++) {
+					if (minQuery == -1) {
+						if ( lsi == ls ){
+							minQuery = readStart;
+						}
+						else {
+							minQuery = matches[cs].first.pos;
+						}
+					}
+					else {
+						minQuery = min(minQuery, matches[m].first.pos);
+					}
+
+					if (maxQuery == 0) {
+						if (lsi == le) {
+							maxQuery = readEnd-1;
+						}
+						else {
+							maxQuery=max(maxQuery, matches[m].first.pos);
+						}
+					}
+				}
+				
+				int queryIndexStart = readIndex->LookupIndex(minQuery);
+				int queryIndexEnd   = readIndex->LookupIndex(maxQuery);
+				Options smallOpts = opts;
+				smallOpts.maxFreq=3;
+				smallOpts.maxDiag=25;
+
+				for (int qi = queryIndexStart; qi <= queryIndexEnd; qi++) {
+					vector<pair<LocalTuple, LocalTuple> > smallMatches;
+
+					GenomePos qStartBoundary=readIndex->boundaries[qi];
+					GenomePos qEndBoundary=readIndex->boundaries[qi+1];
+					
+
+					CompareLists<LocalTuple>(readIndex->minimizers.begin() + qStartBoundary,
+																	 readIndex->minimizers.begin() + qEndBoundary,
+																	 glIndex.minimizers.begin()+glIndex.boundaries[lsi], 
+																	 glIndex.minimizers.begin()+glIndex.boundaries[lsi+1], smallMatches, smallOpts);
+
+					DiagonalSort<LocalTuple>(smallMatches);
+					CleanOffDiagonal(smallMatches, smallOpts);
+
+					localMatches.resize(localMatches.size()+smallMatches.size());
+#ifdef _TESTING_
+					CartesianSort<LocalTuple>(smallMatches);
+#endif
+					for(int i=0; i < smallMatches.size(); i++) {
+						localMatches[lmIndex+i].first.pos  = smallMatches[i].first.pos+readStart;
+						localMatches[lmIndex+i].second.pos = smallMatches[i].second.pos+genomeIndexStart;
+						localMatches[lmIndex+i].first.t = localMatches[lmIndex+i].second.t = smallMatches[i].second.t;
+					}
+					lmIndex+=smallMatches.size();
+				}
+
+#ifdef _TESTING_				
+				PrintPairs(localMatches, glIndex.k);
+#endif
+			}
+			cout << ks->name.s << "\t" << ks->seq.l << "\t" << c << "\t" << clusters[c].size() << "\t" << localMatches.size() << endl;
 		}
+		//
+		// Done with one read. Clean memory.
+		//
+		delete[] readRC;
 	}
 }
 
@@ -152,13 +365,15 @@ void HelpStore() {
 			 << "   -w (int) Minimizer window size (10)." << endl
 			 << "   -f (int) Maximum minimizer frequency (200)." << endl
 			 << "   -i (string) Index file for alternative store." << endl
-			 << "   -k (int) Word size" << endl;
+			 << "   -k (int) Word size" << endl
+			 << "   -h Print help." << endl;
+	
 }
 void HelpStoreLocal() {
 	cout << "Usage lsa local file.fa";
 }
 
-void RunStoreLocal(int argc, char* argv[], GenomeLocalIndex &glIndex, Options &opts) {
+void RunStoreLocal(int argc, char* argv[], LocalIndex &glIndex, Options &opts) {
 	int argi = 0;
 	string genome;
 	string indexFile="";
@@ -182,7 +397,7 @@ void RunStoreLocal(int argc, char* argv[], GenomeLocalIndex &glIndex, Options &o
 	}
 
 
-	StoreLocalIndex(genome, glIndex, opts);
+	glIndex.IndexFile(genome);
 	glIndex.Write(genome + ".gli");
 }
 
@@ -214,6 +429,12 @@ void RunStore(int argc, char* argv[], vector<GenomeTuple> &minimizers, Header &h
 			++argi;
 			opts.k=atoi(argv[argi]);
 		}		
+		else if (Is(argv[argi], "-h")) {
+			++argi;
+			HelpStore();
+			exit(0);
+		}		
+
 		else if (strlen(argv[argi]) > 0 && argv[argi][0] == '-') {
 			HelpStore();
 			cout << "Invalid option " << argv[argi] << endl;
@@ -252,19 +473,19 @@ void Usage() {
 	cout << "         map     - Map reads using the index" << endl;
 	cout << "         local   - Build local index" << endl;
 }
-int main(int argc, char *argv[]) {
 
+int main(int argc, char *argv[]) {
 	if (argc < 2) {
 		Usage();
 		return 1;
 	}
-	InitSeqMap();
+
 	Options opts;
 	opts.k=21;
 
   int argi;
 	vector<GenomeTuple>  minimizers;
-	GenomeLocalIndex glIndex;
+	LocalIndex lIndex;
 	Header header;
 	for (argi = 1; argi < argc; ){
 		if (Is(argv[argi], "index")) {
@@ -279,7 +500,7 @@ int main(int argc, char *argv[]) {
 		}
 		else if (Is(argv[argi], "local")) {
 			argc -=2;
-			RunStoreLocal(argc, &argv[2], glIndex, opts);
+			RunStoreLocal(argc, &argv[2], lIndex, opts);
 			exit(0);
 		}
 

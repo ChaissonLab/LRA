@@ -3,8 +3,8 @@
 #include "Options.h"
 
 template<typename Tup>
-int DiagonalDifference(Tup &a, Tup &b) {
-		int aDiag = a.first.pos - a.second.pos, 
+int64_t DiagonalDifference(Tup &a, Tup &b) {
+		int64_t aDiag = a.first.pos - a.second.pos, 
 			bDiag= b.first.pos - b.second.pos;
 		return aDiag - bDiag;
 }
@@ -36,34 +36,55 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts) {
 			keep[last] = false;
 		}
 	}
-	int c = 0;
+	int c   = 0;
+	int pre = matches.size();
 	for (int i=0; i < matches.size(); i++) {
 		if (keep[i]) {
 			matches[c] = matches[i]; c++;
 		}
 	}
-
 	matches.resize(c);
 }
 
+
+class Cluster {
+ public:
+	int start;
+	int end;
+	int strand;
+	char *seq;
+ Cluster(int s, int e) : start(s), end(e), strand(0) {}
+	int size() {
+		return end - start;
+	}
+};
+
 template<typename Tup>
-void OffDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector< vector<pair<Tup, Tup> > > &clusters, Options &opts) {
+void PrintDiagonal(vector<pair<Tup, Tup> > &matches) {
+	for (int m=1; m < matches.size(); m++) {
+		int64_t d=DiagonalDifference(matches[m], matches[m-1]);
+		cout << matches[m-1].first.pos << "\t" << matches[m].first.pos << "\t" << matches[m-1].second.pos << "\t" << matches[m].second.pos << "\t" << d << endl;
+	}
+}
+		
+
+template<typename Tup>
+void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &clusters, Options &opts) {
 	int i;
 	int cs = 0, ce =0;
 	cs = 0;
+	int64_t dd,absdd;
+
 	while (cs < matches.size()) {
 		ce = cs+1;
 		while (ce < matches.size() and 
 					 abs(DiagonalDifference(matches[ce], matches[ce-1])) < opts.maxDiag) {
 			ce++;
-		}
-			
+			dd=DiagonalDifference(matches[ce], matches[ce-1]);
+			absdd=abs(DiagonalDifference(matches[ce], matches[ce-1]));			
+		}			
 		if (ce - cs >= opts.minClusterSize) {
-			clusters.push_back(vector<pair<Tup, Tup> >());
-			int l=clusters.size()-1;
-			for (int ci = cs; ci < ce; ci++ ){
-				clusters[l].push_back(matches[ci]);
-			}
+			clusters.push_back(Cluster(cs,ce));
 		}
 		cs=ce;
 	}

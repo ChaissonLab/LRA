@@ -1,6 +1,7 @@
 #ifndef TUPLE_OPS_H_
 #define TUPLE_OPS_H_
 
+typedef uint32_t GenomePos;
 typedef uint64_t Tuple;
 typedef uint16_t SmallTuple;
 typedef uint16_t SmallPos;
@@ -16,11 +17,11 @@ void TupleToString(Tup t, int k, string &s) {
 	}
 }
 
-
+#define LOCAL_POS_BITS 12
 class LocalTuple {
  public:
-	SmallTuple t;
-	SmallPos   pos;
+  uint32_t t:32-LOCAL_POS_BITS;
+  uint32_t pos: LOCAL_POS_BITS;
 
 	bool operator<(const LocalTuple &b) {
 		return t < b.t;
@@ -42,7 +43,7 @@ class LocalTuple {
 class GenomeTuple {
 public:
 	Tuple t;
-	int pos;
+	GenomePos pos;
 	bool operator<(const GenomeTuple &b) {
 		return t < b.t;
 	}
@@ -60,43 +61,46 @@ public:
 
 template< typename Tup>
 int InitMask(Tup &m, int k) {
-	m=0;
+	m.t=0;
 	for (int i = 0; i < k; i++) {
-		m<<=2;
-		m+=3;
+		m.t<<=2;
+		m.t+=3;
 	}
 }
 
 template<typename tup> void StoreTuple(char *seq, int pos, int k, tup &t) {
-	t = 0;
+	t.t=0;
 	for (int p=pos; p <= pos+k-1; p++) {
-		t <<=2;
-		t+=(tup)seqMap[seq[p]];
+		t.t <<=2;
+		t.t+=seqMap[seq[p]];
 	}
+
 }
 
 template<typename tup> void ShiftOne(char *seq, int pos, tup mask, tup &t) {
-	t = (t << 2) & (tup) mask;
-	t += (tup)seqMap[seq[pos]];	
+	t.t= (t.t << 2) & (Tuple) mask.t;
+	t.t += (Tuple)seqMap[seq[pos]];	
 }
 
 template<typename tup> void ShiftOneRC(char *seq, int pos, int k, tup &t) {
-	t >>= 2;
-	t += (~(seqMap[seq[pos]]) & (tup)3) << (2*((tup)k-1));
+	t.t >>= 2;
+	t.t += (~(seqMap[seq[pos]]) & (Tuple)3) << (2*((Tuple)k-1));
 }
 
 
 template <typename tup> void TupleRC(tup a, tup &b, int k) {
 	int i;
-	tup nucMask=3;
+	tup nucMask;
+	nucMask.t=3;
 	tup least;
-	b=0;
+	b.t=0;
 	for (i=0; i <k; i++) {
-		least = ~ (a & nucMask) & nucMask;
-		a >>=2;
-		b <<=2;
-		b += least;
+		least.t = ~ (a.t & nucMask.t) & nucMask.t;
+		a.t >>=2;
+		b.t <<=2;
+		b.t += least.t;
 	}
+
 }
 
 

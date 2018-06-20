@@ -7,10 +7,12 @@ public:
 	int maxFreq;
 	int maxDiag;
 	int minClusterSize;
+	int window;
 	Options() {
 		k=15; w=10; maxFreq=200;
-		maxDiag=10000;
+		maxDiag=2000;
 		minClusterSize =5;
+		window=1000;
 	}
 };
 #endif

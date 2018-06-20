@@ -2,119 +2,42 @@
 #define MMINDEX_H_
 #include "TupleOps.h"
 #include "Options.h"
+#include "Genome.h"
+#include "Sorting.h"
 
 
-
-class Header {
- public:
-	vector<string> names;
-	vector<uint64_t> pos;
-	
-	int Find(uint64_t query) { 
-		vector<uint64_t>::iterator it = lower_bound(pos.begin(), pos.end(), query);
-		return it - pos.begin();
-	}
-
-	void Add(const char* name, uint64_t p) {
-		names.push_back(string(name));
-		pos.push_back(p);
-	}
-		
-	void Write(ofstream &out) {
-		int idxLen = names.size();
-		out.write((char*) &idxLen, sizeof(int));
-		for(int i=0; i < names.size();i++) {
-			int nameLen=names[i].size();
-			out.write((char*) &nameLen, sizeof(int));
-			out.write((char*) names[i].c_str(), names[i].size());
-		}
-		out.write((char*) &pos[0], sizeof(int64_t)*pos.size());
-	}
-
-	void Read(ifstream &in) {
-		int idxLen;
-		in.read((char*) &idxLen, sizeof(int));
-		names.resize(idxLen);
-		pos.resize(idxLen);		
-		for(int i=0; i < names.size(); i++) {			
-			int nameLen;
-			in.read((char*) &nameLen, sizeof(int));
-			char *name = new char[nameLen+1];
-			name[nameLen] = '\0';
-			in.read((char*) name, nameLen);
-			names[i] = name;
-		}
-		in.read((char*) &pos[0],sizeof(int64_t)*pos.size());
-	}
-};
-
+template<typename Tup>
 class SortByPos {
  public:
-	int operator() (const GenomeTuple &a, const GenomeTuple &b) {
+	int operator() (const Tup &a, const Tup &b) {
 		return (a.pos < b.pos);
 	}
 };
 
-void PrintIndex(vector<GenomeTuple> &minimizers, int k) {
-	sort(minimizers.begin(), minimizers.end(), SortByPos());
+template<typename Tup>
+void PrintPairs(vector<pair<Tup, Tup> > &mins, int k, int cluster=-1) {
+	CartesianTargetSort<Tup>(mins);
+	for(int i = 0; i < mins.size();i++) {
+		string s;
+		TupleToString(mins[i].first.t, k, s);
+#ifdef _TESTING_
+		if (cluster != -1) {
+			cout << "clust\t" << cluster << "\t";
+		}
+		cout << i << "\t" << mins[i].first.pos << "\t" << mins[i].second.pos << "\t" << s << endl;
+#endif
+	}	
+}
+	
+template<typename Tup>
+void PrintIndex(vector<Tup> &minimizers, int k) {
+	sort(minimizers.begin(), minimizers.end(), SortByPos<Tup>());
 	for(int i = 0; i < minimizers.size();i++) {
 		string s;
 		TupleToString(minimizers[i].t, k, s);
 		cout << i << "\t" << minimizers[i].pos << "\t" << s << endl;
 	}	
 }
-
-
-class GenomeLocalIndex {
- public:
-	static int localIndexSize;
-	int k;
-	int w;
-	vector<LocalTuple>  minimizers;
-	vector<uint64_t>    offsets;
-	vector<uint64_t>    boundaries;
-	GenomeLocalIndex() { k = 8; w=4;}
-	void Write(string filename) {
-		ofstream fout(filename.c_str(), ios::out|ios::binary);
-		fout.write((char*)&k, sizeof(int));
-		fout.write((char*)&w, sizeof(int));
-		int nRegions=offsets.size();
-		fout.write((char*)&nRegions, sizeof(int));
-		fout.write((char*)&offsets[0], sizeof(uint64_t)*offsets.size());
-		fout.write((char*)&boundaries[0], sizeof(uint64_t)*boundaries.size());
-		uint64_t nMin = minimizers.size();
-		fout.write((char*)&minimizers[0], sizeof(LocalTuple)*minimizers.size());
-	}
-
-	void Read(string &filename) {
-		ifstream fin(filename.c_str(), ios::out|ios::binary);
-		fin.read((char*)&k, sizeof(int));
-		fin.read((char*)&w, sizeof(int));
-		int nRegions;
-		fin.read((char*)&nRegions, sizeof(int));
-		offsets.resize(nRegions);		
-		fin.read((char*)&offsets[0], sizeof(uint64_t)*nRegions);
-		boundaries.resize(nRegions);
-		fin.read((char*)&boundaries[0], sizeof(uint64_t)*nRegions);
-		uint64_t nMin;
-		fin.read((char*) &nMin, sizeof(uint64_t));
-		minimizers.resize(nMin);
-		fin.read((char*)&minimizers[0], sizeof(LocalTuple)*nMin);
-	}
-	
-	int LookupBin(uint64_t query) {
-		if (offsets.size() == 0) {
-			return 0;
-		}
-		assert(query < offsets[offsets.size()-1]);
-		vector<uint64_t>::iterator it;
-		it = lower_bound(offsets.begin(), offsets.end(), query);
-		int index = it - offsets.begin();
-		return index;
-	}
-	int MinimizerBounds(uint64_t query, 
-	
-};
 
 template<typename Tup>
 void RemoveFrequent(vector<Tup> &minimizers, int maxFreq) {
@@ -133,56 +56,148 @@ void RemoveFrequent(vector<Tup> &minimizers, int maxFreq) {
 		n=ne;
 	}
 	minimizers.resize(c);
-
 }
 
-int GenomeLocalIndex::localIndexSize=0xFFFF;
+class LocalIndex {
+ public:
+	int localIndexSize;
+	int k;
+	int w;
+	int maxFreq;
+	vector<LocalTuple>  minimizers;
+	vector<uint64_t>    offsets;
+	vector<uint64_t>    boundaries;
+	uint64_t offset;
+	
+	LocalIndex() { 
+		k = 10;
+		w=5; 
+		offset=0;
+		maxFreq=5;
+		boundaries.push_back(0);
+		offsets.push_back(0);
+		localIndexSize = 1 << (LOCAL_POS_BITS-1);
+	}
+	
 
-void StoreLocalIndex(string &genome, 
-										 GenomeLocalIndex &glIndex,
-										 Options &opts) {	
-	gzFile f = gzopen(genome.c_str(), "r");
+	void Write(string filename) {
+		ofstream fout(filename.c_str(), ios::out|ios::binary);
+		fout.write((char*)&k, sizeof(int));
+		fout.write((char*)&w, sizeof(int));
+		int nRegions=offsets.size();
+		fout.write((char*)&nRegions, sizeof(int));
+		fout.write((char*)&offsets[0], sizeof(uint64_t)*offsets.size());
+		fout.write((char*)&boundaries[0], sizeof(uint64_t)*boundaries.size());
+		uint64_t nMin = minimizers.size();
+		fout.write((char*)&nMin, sizeof(uint64_t));
+		fout.write((char*)&minimizers[0], sizeof(LocalTuple)*minimizers.size());
+		fout.close();
+	}
 
-	kseq_t *ks = kseq_init(f);
-	int offset=0;
-	uint64_t globalOffset=0;
-	Options localOptions;
-	int gi=0;	
-	glIndex.boundaries.push_back(0);
-	glIndex.offsets.push_back(0);
-	while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
-		cerr << "Storing for "<< ks->name.s << endl;
+	int Read(string filename) {
+		ifstream fin(filename.c_str(), ios::in|ios::binary);
+		if (fin.good() == false or fin.eof() == true) {
+			return 0;
+		}
+		fin.read((char*)&k, sizeof(int));
+		fin.read((char*)&w, sizeof(int));
+		int nRegions;
+		fin.read((char*)&nRegions, sizeof(int));
+		offsets.resize(nRegions);		
+		fin.read((char*)&offsets[0], sizeof(uint64_t)*nRegions);
+		boundaries.resize(nRegions);
+		fin.read((char*)&boundaries[0], sizeof(uint64_t)*nRegions);
+		uint64_t nMin;
+		fin.read((char*) &nMin, sizeof(uint64_t));
+		minimizers.resize(nMin);
+		fin.read((char*)&minimizers[0], sizeof(LocalTuple)*nMin);
+		fin.close();
+		return 1;
+	}
+	
+	int LookupIndex(uint64_t query) {
+		if (offsets.size() == 0) {
+			return 0;
+		}
+		assert(query < offsets[offsets.size()-1]);
+		vector<uint64_t>::iterator it;
+		it = lower_bound(offsets.begin(), offsets.end(), query);
+		while(it != offsets.end() and *it == query) { ++it;}
+		int index = it - offsets.begin();
+		assert(index > 0);
+		return index-1;
+	}
 
-		int nIndex = ks->seq.l / GenomeLocalIndex::localIndexSize;
-		if (ks->seq.l % GenomeLocalIndex::localIndexSize != 0) {
+	int MinimizerBounds(uint64_t query, uint64_t &lb, uint64_t &ub) {
+		assert(query < minimizers.size());
+		int index = this->LookupIndex(query);
+		assert(index < boundaries.size());
+		lb = boundaries[index];
+		ub = boundaries[index+1];
+	}
+
+	void IndexSeq(char* seq, int seqLen) {
+		int gi = 0;
+		int nIndex = seqLen / localIndexSize;
+
+		if (seqLen % localIndexSize != 0) {
 			nIndex +=1;
 		}
-		int curPos=0;
+		GenomePos seqPos=0;
 
-		vector<LocalTuple> minimizers;
-		int netSize=0;
+		vector<LocalTuple> locMinimizers;
+		GenomePos netSize=0;
 		
 		for (int i = 0; i < nIndex; i++) {	
-			minimizers.clear();
-			StoreMinimizers<LocalTuple, SmallTuple>(&ks->seq.s[curPos], 
-																							min((int) ks->seq.l, 
-																									(int) curPos+GenomeLocalIndex::localIndexSize) - curPos,
-																							glIndex.k, glIndex.w, minimizers );
-			std::sort(minimizers.begin(), minimizers.end());
-			RemoveFrequent(minimizers, 5);
-			glIndex.offsets.push_back(globalOffset+curPos);
-			curPos+=GenomeLocalIndex::localIndexSize;
+			locMinimizers.clear();
+			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], 
+																							min((GenomePos) seqLen, 
+																									(GenomePos) seqPos+localIndexSize) - seqPos,
+																							k, w, locMinimizers, false );
+			//
+			// Sort minimzers by tuple value.
+			//
+			sort(locMinimizers.begin(), locMinimizers.end());
+			//
+			// Remove frequenct tuples
+			//
+			RemoveFrequent(locMinimizers, maxFreq);
+
+			//
+			// Update local sequence pos (index in chrom).
+			//
+			seqPos+=(GenomePos)min((int)localIndexSize, (int) (seqLen - seqPos));
+
+			//
+			// Add boundaries representing the end of the current interval.
+			//
+			offsets.push_back(offset+seqPos);
+
+			//
+			// Add minimizers and store where they end.
+			//
+			minimizers.insert(minimizers.end(), locMinimizers.begin(), locMinimizers.end());
+			boundaries.push_back(minimizers.size());
 			netSize+=minimizers.size();
-			glIndex.minimizers.insert(glIndex.minimizers.end(), minimizers.begin(), minimizers.end());
-			glIndex.boundaries.push_back(glIndex.minimizers.size());
-			if (gi % 100 == 0) {
-				cerr << "Storing " << ks->name.s << "\t" << gi << "\t" << curPos << "\t" << minimizers.size() << "\t" << sizeof(LocalTuple) * netSize << endl;
-			}
-			gi++;
 		}
-		globalOffset+=ks->seq.l;		
+		//
+		// Update offset for recently added sequence
+		//
+		offset+=seqLen;
+		cout << "offset " << offset << endl;
 	}
-}
+
+	void IndexFile(string &genome) {	
+		gzFile f = gzopen(genome.c_str(), "r");
+		kseq_t *ks = kseq_init(f);
+		while (kseq_read(ks) >= 0) { 
+			cerr << "Storing for "<< ks->name.s << endl;
+			IndexSeq(ks->seq.s, ks->seq.l);
+		}
+	}
+
+};
+
 
 
 void StoreIndex(string &genome, 
@@ -193,23 +208,25 @@ void StoreIndex(string &genome,
 	gzFile f = gzopen(genome.c_str(), "r");
 
 	kseq_t *ks = kseq_init(f);
-	int offset=0;
+	GenomePos offset=0;
 
 	while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
 		cerr << "Storing for "<< ks->name.s << endl;
+		int prevMinCount = minimizers.size();
 		StoreMinimizers<GenomeTuple, Tuple>(ks->seq.s, ks->seq.l, opts.k, opts.w, minimizers);
 		
-		for (int i=offset; i< minimizers.size(); i++) {
+		for (GenomePos i=prevMinCount; i< minimizers.size(); i++) {
 			minimizers[i].pos+=offset;
 		}
-		header.Add(ks->name.s, offset);
 		offset+= ks->seq.l;	
+		header.Add(ks->name.s, offset);
 	}
 	kseq_destroy(ks);
 	gzclose(f);
 	cerr << "Sorting " << minimizers.size() << " minimizers" << endl;
 	std::sort(minimizers.begin(), minimizers.end());
 	RemoveFrequent(minimizers, opts.maxFreq);
+
 	//
 	// Remove too frequent minimizers;
 	//
