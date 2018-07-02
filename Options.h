@@ -8,11 +8,21 @@ public:
 	int maxDiag;
 	int minClusterSize;
 	int window;
+	bool mergeGapped;
+	int minDiagCluster;
+	int minRefinedClusterSize;
+	bool viewPairwise;
 	Options() {
-		k=15; w=10; maxFreq=200;
-		maxDiag=2000;
+		k=15;
+		w=10; 
+		maxFreq=200;
+		maxDiag=3000;
+		minDiagCluster=2;
 		minClusterSize =5;
+		minRefinedClusterSize = 30;
 		window=1000;
+		mergeGapped=true;
+		viewPairwise=false;
 	}
 };
 #endif

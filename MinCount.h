@@ -9,7 +9,7 @@ KSEQ_INIT(gzFile, gzread)
 
 
 template <typename TupPos, typename Tup> void StoreMinimizers(char *seq, 
-																															int seqLen,
+																															GenomePos seqLen,
 																															int k, 
 																															int w,
 																															vector<TupPos> &minimizers, bool canonical=true) {

@@ -2,6 +2,7 @@
 #define SORTING_H_
 
 #include <algorithm>
+#include "Types.h"
 
 template<typename Tup> 
 class DiagonalSortOp {
@@ -28,6 +29,35 @@ void DiagonalSort(typename vector<pair<Tup, Tup> >::iterator  begin,
 template<typename Tup>
 void DiagonalSort(vector<pair<Tup, Tup> > &vals) {
 	DiagonalSort<Tup>(vals.begin(), vals.end());
+}
+
+template<typename Tup> 
+class AntiDiagonalSortOp {
+ public:
+ AntiDiagonalSortOp(GenomePos l) : length(l) {}
+		
+	GenomePos length;
+	int operator()(const pair<Tup, Tup> &a, const pair<Tup, Tup> &b) {
+		int aDiag = a.first.pos - (length-a.second.pos), 
+			bDiag= b.first.pos - (length-b.second.pos);
+
+		if (aDiag != bDiag) {
+			return aDiag < bDiag;
+		}
+		else {
+			return a.first.pos < b.first.pos; 
+		}
+	}
+};
+
+template<typename Tup>
+void AntiDiagonalSort(typename vector<pair<Tup, Tup> >::iterator  begin,
+											typename vector<pair<Tup, Tup> >::iterator  end, GenomePos genomeLength) {
+	sort(begin, end, AntiDiagonalSortOp<Tup>(genomeLength));
+}
+template<typename Tup>
+void AntiDiagonalSort(vector<pair<Tup, Tup> > &vals, GenomePos length) {
+	AntiDiagonalSort<Tup>(vals.begin(), vals.end(), length);
 }
 
 

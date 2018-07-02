@@ -11,36 +11,98 @@ template<typename tup> void CompareLists(typename vector<tup>::iterator qBegin,
 																				 vector<pair<tup, tup> > &result, 
 																				 Options &opts) {
 	int qs = 0;
+	int qe = qEnd-qBegin - 1;
 	int ts = 0, te = tEnd - tBegin;
 	typename vector<tup>::iterator slb;
-
+	if (qBegin == qEnd or tBegin == tEnd) {
+		result.clear();
+		return;
+	}
+	
 #ifdef _TESTING_
 	vector<tup> isect;
 	cout << "comparing " << qEnd-qBegin << " and " << te-ts << " lists" << endl;
   std::set_intersection(qBegin, qEnd,
 												tBegin, tEnd, back_inserter(isect));
-		cout << "Matched " << isect.size() << " slowly." << endl;
+	cout << "Matched " << isect.size() << " slowly." << endl;
 #endif
 	int nMatch=0;
-	typename vector<tup>::iterator qi;
-	
-	for (qi = qBegin; qi != qEnd; ++qi) {
-		slb = lower_bound(tBegin+ts, tEnd, *qi);
-		ts=slb-tBegin;
-		if (slb->t == qi->t) {
-			typename vector<tup>::iterator slb0 = slb;
-			while (slb != tEnd && 
-						 qi->t == slb->t) {
-				slb++;
+	int iter=0;
+	do {
+		tup startGap, endGap;
+		++iter;
+		while (qs <= qe and qBegin[qs].t < tBegin[ts].t) {
+			qs++;
+		}
+		startGap.t = qBegin[qs].t - tBegin[ts].t;
+		if (qs == qe) {
+			endGap = startGap;
+		}
+		else {
+			// Move past any entries guaranteed to not be in target
+			while (qe > qs and te > ts and qBegin[qe].t > tBegin[te-1].t) {
+				qe--;
 			}
-
-			if (slb - slb0 < opts.maxFreq) {
-				for(slb0; slb0 != slb; ++slb0) {
-					result.push_back(pair<tup,tup>(*qi, *slb0));
+			endGap.t = tBegin[te-1].t - qBegin[qe].t;
+		}
+		if (startGap > endGap) {
+			//
+			// Find entry in t that could match qs
+			//
+			typename vector<tup>::iterator lb;
+			lb = lower_bound(tBegin+ts, tBegin+te, qBegin[qs]);
+			ts=lb-tBegin;
+			if (tBegin[ts].t == qBegin[qs].t) {
+				GenomePos tsStart=ts;
+				GenomePos tsi=ts;
+				while (tsi != te && 
+							 qBegin[qs].t == tBegin[tsi].t) {
+					tsi++;
+				}
+				GenomePos qsStart=qs;
+				while (qs < qe and qBegin[qs+1].t == qBegin[qs].t) { qs++; }
+				
+				if (tsi - tsStart < opts.maxFreq) {
+					for(GenomePos ti=tsStart; ti != tsi; ti++) {
+						for (GenomePos qi=qsStart; qi <= qs; qi++) {
+							result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+						}
+					}
 				}
 			}
 		}
-	}	
+		else {
+			//
+			// End gap is greater than start gap, search from the other direction
+			//
+			typename vector<tup>::iterator ub;
+			assert(te > ts);
+			if (tBegin+ te != tEnd and tBegin[te-1].t == qBegin[qe].t) {
+				// pass
+			} 
+			else {
+				ub = upper_bound(tBegin+ts, tBegin+te, qBegin[qe]);
+				// *ub is > qBegin[qe]
+				te = ub - tBegin;
+			}
+			GenomePos teStart=te, tei=te;
+			while (tei > ts and tBegin[te-1].t == qBegin[qe].t) {
+				te--;
+			}
+			if (te < teStart) {
+				GenomePos qeStart=qe;
+				while (qe > qs and qBegin[qe].t == qBegin[qe-1].t) { qe--;}
+
+				if (teStart - te < opts.maxFreq) {
+					for (GenomePos ti=te; ti < teStart; ti++) {
+						for (GenomePos qi=qe; qi <= qeStart; qi++) {
+							result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+						}
+					}
+				}
+			}
+		}
+	} while (qs < qe and ts < te);
 }
 
 template<typename tup> void CompareLists(vector<tup> &query, 

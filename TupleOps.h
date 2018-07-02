@@ -1,10 +1,9 @@
 #ifndef TUPLE_OPS_H_
 #define TUPLE_OPS_H_
-
-typedef uint32_t GenomePos;
-typedef uint64_t Tuple;
-typedef uint16_t SmallTuple;
-typedef uint16_t SmallPos;
+#include <string>
+#include "SeqUtils.h"
+#include "Types.h"
+using namespace std;
 
 Tuple mask=0;
 
@@ -23,8 +22,11 @@ class LocalTuple {
   uint32_t t:32-LOCAL_POS_BITS;
   uint32_t pos: LOCAL_POS_BITS;
 
-	bool operator<(const LocalTuple &b) {
+	bool operator<(const LocalTuple &b) const {
 		return t < b.t;
+	}
+	bool operator>(const LocalTuple &b) {
+		return t > b.t;
 	}
 
 	friend int operator >(LocalTuple &a, LocalTuple &b) {
@@ -39,12 +41,31 @@ class LocalTuple {
 
 };
 
+template<typename Tup> 
+int DiagOffset(Tup &a, Tup &b) {
+	unsigned long ad = a.first.pos - a.second.pos;
+	unsigned long bd = b.first.pos - b.second.pos;
+	int res = ad-bd;
+	return res;
+}
+
+template<typename Tup> 
+int DiagGap(Tup &a, Tup &b) {
+	int firstGap  = b.first.pos - a.first.pos;
+	int secondGap = b.second.pos - a.second.pos;
+	int res= max(firstGap, secondGap) - min(firstGap, secondGap);
+	return res;
+}
+
+
 
 class GenomeTuple {
 public:
 	Tuple t;
 	GenomePos pos;
-	bool operator<(const GenomeTuple &b) {
+	GenomeTuple() {} 
+ GenomeTuple(Tuple _t, GenomePos _p): t(_t), pos(_p) {}
+	bool operator<(const GenomeTuple &b) const {
 		return t < b.t;
 	}
 
@@ -58,6 +79,9 @@ public:
 		TupleToString(t, k, s);
 	}
 };
+
+
+
 
 template< typename Tup>
 int InitMask(Tup &m, int k) {
@@ -101,6 +125,28 @@ template <typename tup> void TupleRC(tup a, tup &b, int k) {
 		b.t += least.t;
 	}
 
+}
+
+typedef pair<GenomeTuple, GenomeTuple> GenomePair;
+typedef vector<GenomePair > GenomePairs;
+typedef pair<LocalTuple, LocalTuple> LocalPair;
+typedef vector<LocalPair > LocalPairs;
+
+template<typename List>
+void AppendValues(GenomePairs &dest,
+									typename List::iterator sourceStart,
+									typename List::iterator sourceEnd,
+									GenomePos queryOffset,
+									GenomePos targetOffset) {
+	int i=dest.size();
+	dest.resize(dest.size() + sourceEnd-sourceStart);
+	typename List::iterator sourceIt=sourceStart;
+	for (; i < dest.size(); i++, ++sourceIt) {
+		dest[i].first.pos = sourceIt->first.pos+ queryOffset;
+		dest[i].second.pos = sourceIt->second.pos + targetOffset;
+		dest[i].first.t = sourceIt->first.t;
+		dest[i].second.t = sourceIt->second.t;
+	}
 }
 
 

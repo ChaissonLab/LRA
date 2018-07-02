@@ -58,6 +58,20 @@ void RemoveFrequent(vector<Tup> &minimizers, int maxFreq) {
 	minimizers.resize(c);
 }
 
+template<typename Tup>
+void CompressFrequent(vector<Tup> &minimizers) {
+	int c=0,n=0;
+	int before=minimizers.size();
+	while(n < minimizers.size()) {		
+		while (n < minimizers.size() && 
+					 minimizers[n].t == minimizers[c].t) { n++;}
+		
+		minimizers[c] = minimizers[n-1];
+		c++;
+	}
+	minimizers.resize(c);
+}
+
 class LocalIndex {
  public:
 	int localIndexSize;
@@ -65,8 +79,8 @@ class LocalIndex {
 	int w;
 	int maxFreq;
 	vector<LocalTuple>  minimizers;
-	vector<uint64_t>    offsets;
-	vector<uint64_t>    boundaries;
+	vector<uint64_t>    seqOffsets;
+	vector<uint64_t>    tupleBoundaries;
 	uint64_t offset;
 	
 	LocalIndex() { 
@@ -74,20 +88,29 @@ class LocalIndex {
 		w=5; 
 		offset=0;
 		maxFreq=5;
-		boundaries.push_back(0);
-		offsets.push_back(0);
+		tupleBoundaries.push_back(0);
+		seqOffsets.push_back(0);
 		localIndexSize = 1 << (LOCAL_POS_BITS-1);
 	}
 	
+	LocalIndex( LocalIndex &init) { 
+		k=init.k;
+		w=init.w;
+		offset=0;
+		maxFreq=init.maxFreq;
+		localIndexSize = 1 << (LOCAL_POS_BITS-1);
+		tupleBoundaries.push_back(0);
+		seqOffsets.push_back(0);
+	}		
 
 	void Write(string filename) {
 		ofstream fout(filename.c_str(), ios::out|ios::binary);
 		fout.write((char*)&k, sizeof(int));
 		fout.write((char*)&w, sizeof(int));
-		int nRegions=offsets.size();
+		int nRegions=seqOffsets.size();
 		fout.write((char*)&nRegions, sizeof(int));
-		fout.write((char*)&offsets[0], sizeof(uint64_t)*offsets.size());
-		fout.write((char*)&boundaries[0], sizeof(uint64_t)*boundaries.size());
+		fout.write((char*)&seqOffsets[0], sizeof(uint64_t)*seqOffsets.size());
+		fout.write((char*)&tupleBoundaries[0], sizeof(uint64_t)*tupleBoundaries.size());
 		uint64_t nMin = minimizers.size();
 		fout.write((char*)&nMin, sizeof(uint64_t));
 		fout.write((char*)&minimizers[0], sizeof(LocalTuple)*minimizers.size());
@@ -103,10 +126,10 @@ class LocalIndex {
 		fin.read((char*)&w, sizeof(int));
 		int nRegions;
 		fin.read((char*)&nRegions, sizeof(int));
-		offsets.resize(nRegions);		
-		fin.read((char*)&offsets[0], sizeof(uint64_t)*nRegions);
-		boundaries.resize(nRegions);
-		fin.read((char*)&boundaries[0], sizeof(uint64_t)*nRegions);
+		seqOffsets.resize(nRegions);		
+		fin.read((char*)&seqOffsets[0], sizeof(uint64_t)*nRegions);
+		tupleBoundaries.resize(nRegions);
+		fin.read((char*)&tupleBoundaries[0], sizeof(uint64_t)*nRegions);
 		uint64_t nMin;
 		fin.read((char*) &nMin, sizeof(uint64_t));
 		minimizers.resize(nMin);
@@ -115,25 +138,29 @@ class LocalIndex {
 		return 1;
 	}
 	
-	int LookupIndex(uint64_t query) {
-		if (offsets.size() == 0) {
+	int LookupIndex(uint64_t querySeqPos) {
+		if (seqOffsets.size() == 0) {
 			return 0;
 		}
-		assert(query < offsets[offsets.size()-1]);
+		assert(querySeqPos <= seqOffsets[seqOffsets.size()-1]);
 		vector<uint64_t>::iterator it;
-		it = lower_bound(offsets.begin(), offsets.end(), query);
-		while(it != offsets.end() and *it == query) { ++it;}
-		int index = it - offsets.begin();
-		assert(index > 0);
-		return index-1;
+		it = lower_bound(seqOffsets.begin(), seqOffsets.end(), querySeqPos);
+		//		while(it != seqOffsets.end() and *it == querySeqPos) { ++it;}
+		int index = it - seqOffsets.begin();
+		if (*it != querySeqPos) {
+			return index - 1;
+		}
+		else {
+			return index;
+		}
 	}
 
-	int MinimizerBounds(uint64_t query, uint64_t &lb, uint64_t &ub) {
-		assert(query < minimizers.size());
-		int index = this->LookupIndex(query);
-		assert(index < boundaries.size());
-		lb = boundaries[index];
-		ub = boundaries[index+1];
+	int MinimizerBounds(uint64_t querySeqPos, uint64_t &lb, uint64_t &ub) {
+		assert(querySeqPos < minimizers.size());
+		int index = this->LookupIndex(querySeqPos);
+		assert(index < tupleBoundaries.size());
+		lb = tupleBoundaries[index];
+		ub = tupleBoundaries[index+1];
 	}
 
 	void IndexSeq(char* seq, int seqLen) {
@@ -171,20 +198,19 @@ class LocalIndex {
 			//
 			// Add boundaries representing the end of the current interval.
 			//
-			offsets.push_back(offset+seqPos);
+			seqOffsets.push_back(offset+seqPos);
 
 			//
 			// Add minimizers and store where they end.
 			//
 			minimizers.insert(minimizers.end(), locMinimizers.begin(), locMinimizers.end());
-			boundaries.push_back(minimizers.size());
+			tupleBoundaries.push_back(minimizers.size());
 			netSize+=minimizers.size();
 		}
 		//
 		// Update offset for recently added sequence
 		//
 		offset+=seqLen;
-		cout << "offset " << offset << endl;
 	}
 
 	void IndexFile(string &genome) {	
@@ -211,8 +237,8 @@ void StoreIndex(string &genome,
 	GenomePos offset=0;
 
 	while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
-		cerr << "Storing for "<< ks->name.s << endl;
 		int prevMinCount = minimizers.size();
+		cerr << "Storing for "<< ks->name.s << " " << prevMinCount << " " << offset << endl;
 		StoreMinimizers<GenomeTuple, Tuple>(ks->seq.s, ks->seq.l, opts.k, opts.w, minimizers);
 		
 		for (GenomePos i=prevMinCount; i< minimizers.size(); i++) {
