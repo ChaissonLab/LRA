@@ -12,9 +12,14 @@ public:
 	int minDiagCluster;
 	int minRefinedClusterSize;
 	bool viewPairwise;
+	bool hardClip;
+	char printFormat;
+	int bestn;
+	bool storeAll;
 	Options() {
 		k=15;
 		w=10; 
+		bestn=1;
 		maxFreq=200;
 		maxDiag=3000;
 		minDiagCluster=2;
@@ -23,6 +28,9 @@ public:
 		window=1000;
 		mergeGapped=true;
 		viewPairwise=false;
+		hardClip=false;
+		printFormat='b';
+		storeAll=false;
 	}
 };
 #endif

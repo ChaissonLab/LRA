@@ -62,6 +62,11 @@ class Header {
 		}
 		in.read((char*) &pos[0],sizeof(int64_t)*pos.size());
 	}
+	void WriteSAMHeader(ostream &out) {
+		for (int i=0; i < names.size(); i++) {
+			out << "@SQ\tSN:"<<names[i]<<"\tLN:"<<pos[i+1]-pos[i]<<endl;
+		}
+	}
 };
 
 class Genome {

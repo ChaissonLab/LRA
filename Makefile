@@ -1,8 +1,23 @@
 all:	lsa testsdp
 PROF=/home/cmb-16/mjc/shared/lib/
-CCOPTS=-O3 -std=c++14 
+CCOPTS=-g -std=c++14 
 #-D _TESTING_ -lprofiler 
 #  -L$(PROF) 
+
+HEADERS=MinCount.h \
+  CompareLists.h \
+  TupleOps.h \
+  Sorting.h \
+  MMIndex.h \
+  Options.h\
+  Clustering.h \
+  Genome.h \
+  SparseDynamicProgramming.h \
+  Alignment.h \
+  GlobalChain.h \
+  Read.h \
+  MapRead.h \
+  Input.h
 
 
 htslib/lib/libhts.a:
@@ -11,7 +26,7 @@ htslib/lib/libhts.a:
 lsa: lsa.o
 	g++ -static $(CCOPTS) $^  -L htslib/lib -lhts -lz -o $@
 
-lsa.o: lsa.cpp MinCount.h CompareLists.h TupleOps.h Sorting.h MMIndex.h Options.h Clustering.h Genome.h SparseDynamicProgramming.h Alignment.h GlobalChain.h
+lsa.o: lsa.cpp $(HEADERS)
 	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  lsa.cpp 
 
 testsdp: TestSDP.o
