@@ -658,12 +658,7 @@ void MapRead(Read &read,
 		diagOpts.maxDiag=5;
 		diagOpts.minClusterSize=1;
 		StoreDiagonalClustersLite(tupChain, chainClust, diagOpts, refinedClusters[r].strand);
-		//			sort(smallClusters.begin(), smallClusters.end());
-		/*
-			if (seqan::length(chain)> 0) {
-			cout << "Removing paired indels for refined cluster " << r << " " << beginPositionV(chain[0]) << " " << beginPositionH(chain[0]) << endl;
-			}
-		*/
+
 		RemovePairedIndels(tupChain, chainClust, smallOpts);
 			
 		seqan::clear(chain);

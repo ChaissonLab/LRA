@@ -49,9 +49,9 @@ void HelpMap() {
 			 << "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
 			 << "   -m  m(int)  Do not align clusters with fewer than m refined"<< endl
 			 << "               matches (40). Typically m > 3*M" << endl
-			 << "   -a          Query all positions in a read, not just minimizers. " << endl
-			 << "               This is ~20% slower, with an increase in specificity " << endl
-			 << "               to be determined." << endl;
+			 << "   -a  (flag)  Query all positions in a read, not just minimizers. " << endl
+			 << "               This is 10-20% slower, with an increase in specificity. " << endl
+			 << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl;
 }
 		
 class MapInfo {
