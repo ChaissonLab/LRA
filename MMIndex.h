@@ -230,7 +230,12 @@ void StoreIndex(string &genome,
 								vector<GenomeTuple> &minimizers, 
 								Header &header,
 								Options &opts) {	
-
+	
+	ifstream testGenome(genome.c_str());
+	if (testGenome.good() == false or testGenome.eof()) {
+		cerr << "Cannot open target " << genome << endl;
+		exit(1);
+	}
 	gzFile f = gzopen(genome.c_str(), "r");
 
 	kseq_t *ks = kseq_init(f);
