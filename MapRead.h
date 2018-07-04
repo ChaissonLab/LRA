@@ -828,11 +828,13 @@ void MapRead(Read &read,
 
 				if (m > 0) {
 					Alignment aln;
-					RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextRefinedReadStart,
-													 genome.seqs[chromIndex], curRefinedGenomeEnd, nextRefinedGenomeStart,
-													 scoreMat, pathMat, aln);
-					alignment->blocks.insert(alignment->blocks.end(), aln.blocks.begin(), aln.blocks.end());
-					aln.blocks.clear();
+					if (opts.doBandedAlignment) {
+						RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextRefinedReadStart,
+														 genome.seqs[chromIndex], curRefinedGenomeEnd, nextRefinedGenomeStart,
+														 scoreMat, pathMat, aln);
+						alignment->blocks.insert(alignment->blocks.end(), aln.blocks.begin(), aln.blocks.end());
+						aln.blocks.clear();
+					}
 				}
 
 				curRefinedReadEnd   = seqan::endPositionV(refinedChains[c][cs]);
@@ -848,12 +850,14 @@ void MapRead(Read &read,
 											curRefinedGenomeEnd, nextGenomeStart, match, readGap, genomeGap);
 				
 			if (match > 0) {
-				Alignment aln;
-				RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextReadStart,
-												 genome.seqs[chromIndex], curRefinedGenomeEnd, nextGenomeStart,
-												 scoreMat, pathMat, aln);
-				alignment->blocks.insert(alignment->blocks.end(), aln.blocks.begin(), aln.blocks.end());
-				aln.blocks.clear();					
+				if (opts.doBandedAlignment) {
+					Alignment aln;
+					RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextReadStart,
+													 genome.seqs[chromIndex], curRefinedGenomeEnd, nextGenomeStart,
+													 scoreMat, pathMat, aln);
+					alignment->blocks.insert(alignment->blocks.end(), aln.blocks.begin(), aln.blocks.end());
+					aln.blocks.clear();			
+				}		
 			}
 		}
 		//			rdc.close();

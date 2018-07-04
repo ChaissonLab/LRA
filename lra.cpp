@@ -130,6 +130,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.nproc=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}		
+		else if (ArgIs(argv[argi], "-b")) {
+			opts.doBandedAlignment=false;
+		}		
 
 		else if (ArgIs(argv[argi], "-o")) {
 			opts.outfile = argv[++argi];
@@ -391,7 +394,7 @@ void RunStoreIndex(int argc, const char* argv[]) {
 
 void Usage() {
 	cout << "Program: lsa (long sequence alignment)" << endl;
-	cout << "Version: beta" << endl;
+	cout << "Version: " << version << endl;
 	cout << "Contact: Mark Chaisson (mchaisso@usc.edu)" << endl << endl;
 	cout << "Usage:   lsa <command> [options]"<< endl << endl;
 	cout << "Command: index   - Build global and local indexes on a genome." << endl;

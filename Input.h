@@ -78,6 +78,9 @@ class Input {
 			bam1_t *b = bam_init1();
 
 			res= sam_read1(htsfp, samHeader, b);
+			if (res < 0) {
+				return false;
+			}
 			
 #define bam_get_seq(b)   ((b)->data + ((b)->core.n_cigar<<2) + (b)->core.l_qname)
 			read.length = b->core.l_qseq;			

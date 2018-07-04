@@ -22,6 +22,7 @@ public:
 	int nproc;
 	string outfile;
 	int maxCandidates;
+	bool doBandedAlignment;
 	Options() {
 		globalK=15;
 		globalW=10; 
@@ -43,6 +44,7 @@ public:
 		nproc=1;
 		outfile="";
 		maxCandidates=3;
+		doBandedAlignment=true;
 	}
 };
 #endif
