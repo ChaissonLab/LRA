@@ -69,6 +69,21 @@ class ClusterCoordinates {
 		tEnd=0;
 	}
 
+	bool Overlaps(const ClusterCoordinates &b, float frac) const {
+		int ovp=0;
+		if (b.qStart >= qStart and b.qStart < qEnd) {
+			ovp=min(qEnd, b.qEnd)-b.qStart;
+		}
+		else if (b.qEnd > qStart and b.qEnd < qEnd) {
+			ovp=b.qEnd-max(qStart, b.qStart);
+		}
+		else if (b.qStart <= qStart and b.qEnd > qEnd) {
+			ovp=qEnd-qStart;
+		}
+		float denom=qEnd-qStart;
+		if (ovp/denom > frac) { return true; }
+		else { return false; }
+	}
 
  ClusterCoordinates(int s,int e) : start(s), end(e) {
 		qStart=qEnd=tStart=tEnd=strand=0;

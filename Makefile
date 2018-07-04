@@ -1,4 +1,4 @@
-all:	lsa testsdp
+all:	lra 
 PROF=/home/cmb-16/mjc/shared/lib/
 CCOPTS=-O3 -std=c++14 
 #-D _TESTING_ -lprofiler 
@@ -23,17 +23,12 @@ HEADERS=MinCount.h \
 htslib/lib/libhts.a:
 	cd htslib && autoheader && autoconf && ./configure --prefix=$(PWD)/htslib/ && make -j 4
 
-lsa: lsa.o
+lra: lra.o
 	g++ -static $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
-lsa.o: lsa.cpp $(HEADERS)
-	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  lsa.cpp 
+lra.o: lra.cpp $(HEADERS)
+	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  lra.cpp 
 
-testsdp: TestSDP.o
-	g++ $(CCOPTS) $^ -o $@
-
-TestSDP.o: TestSDP.cpp SparseDynamicProgramming.h
-	g++ $(CCOPTS) -c TestSDP.cpp
 
 clean:
 	rm -f lsa test *.o

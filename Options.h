@@ -21,6 +21,7 @@ public:
 	bool storeAll;
 	int nproc;
 	string outfile;
+	int maxCandidates;
 	Options() {
 		globalK=15;
 		globalW=10; 
@@ -41,6 +42,7 @@ public:
 		storeAll=false;
 		nproc=1;
 		outfile="";
+		maxCandidates=4;
 	}
 };
 #endif

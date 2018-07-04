@@ -49,7 +49,7 @@ class Input {
 			//
 			htsfp = hts_open(filename.c_str(),"r");
 			const htsFormat *fmt = hts_get_format(htsfp);
-			if (fmt == NULL or fmt->format != sam or fmt->format != bam) {
+			if (fmt == NULL or (fmt->format != sam and fmt->format != bam)) {
 				cout << "Cannot determine format of input reads." << endl;
 				exit(1);
 			}
@@ -82,9 +82,10 @@ class Input {
 #define bam_get_seq(b)   ((b)->data + ((b)->core.n_cigar<<2) + (b)->core.l_qname)
 			read.length = b->core.l_qseq;			
 			read.seq = new char[read.length];
-
+			read.name = string(bam_get_qname(b));
+			uint8_t *q = bam_get_seq(b);
 			for (int i=0; i < read.length; i++) {
-				read.seq[i]=bam_seqi(bam_get_seq(b), i);
+				read.seq[i]=seq_nt16_str[bam_seqi(q,i)];
 			}
 			read.qual = NULL;
 
