@@ -32,8 +32,8 @@ public:
 		localMaxFreq=30;
 		maxDiag=3000;
 		minDiagCluster=2;
-		minClusterSize =5;
-		minRefinedClusterSize = 30;
+		minClusterSize =20;
+		minRefinedClusterSize = 40;
 		window=1000;
 		mergeGapped=true;
 		viewPairwise=false;
@@ -42,7 +42,7 @@ public:
 		storeAll=false;
 		nproc=1;
 		outfile="";
-		maxCandidates=4;
+		maxCandidates=3;
 	}
 };
 #endif

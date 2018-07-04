@@ -31,6 +31,6 @@ lra.o: lra.cpp $(HEADERS)
 
 
 clean:
-	rm -f lsa test *.o
+	rm -f lra lra.o
 
 

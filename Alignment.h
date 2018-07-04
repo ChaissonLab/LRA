@@ -362,15 +362,7 @@ class Alignment {
 			samStrm << tEnd - tStart << "\t";
 			if (opts.hardClip) {
 				string subStr;
-				if (strand == 0) {
-					subStr=string(forward, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);
-				}
-				else {
-					int start = readLen - (blocks[last-1].qPos + blocks[last-1].length);
-					int end   = readLen - blocks[0].qPos;
-					subStr=string(forward, start, end);
-				}
-
+				subStr=string(read, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);
 				samStrm << subStr;
 			}
 			else {
