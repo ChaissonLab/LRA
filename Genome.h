@@ -84,6 +84,12 @@ class Genome {
 
 	Header header;
 	void Read(string &genome) {
+		ifstream testGenome(genome.c_str());
+		if (testGenome.good() == false or testGenome.eof()) {
+			cerr << "Cannot open target " << genome << endl;
+			exit(1);
+		}
+
 		gzFile f = gzopen(genome.c_str(), "r");
 		kseq_t *ks = kseq_init(f);
 		uint64_t offset=0;
