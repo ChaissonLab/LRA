@@ -19,12 +19,12 @@ HEADERS=MinCount.h \
 
 
 htslib/lib/libhts.a:
-	cd htslib && autoheader && autoconf && ./configure --prefix=$(PWD)/htslib/ && make -j 4
+	cd htslib && autoheader && autoconf && ./configure --disable-lzma --disable-bz2 --prefix=$(PWD)/htslib/ && make -j 4 && make install
 
 lra: lra.o
 	g++ -static $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
-lra.o: lra.cpp $(HEADERS)
+lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a
 	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  lra.cpp 
 
 
