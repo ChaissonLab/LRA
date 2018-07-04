@@ -12,9 +12,7 @@ HEADERS=MinCount.h \
   Options.h\
   Clustering.h \
   Genome.h \
-  SparseDynamicProgramming.h \
   Alignment.h \
-  GlobalChain.h \
   Read.h \
   MapRead.h \
   Input.h
