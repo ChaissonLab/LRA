@@ -217,16 +217,16 @@ void StoreDiagonalClustersLite(vector<pair<Tup, Tup> > &matches, vector<Cluster 
 	while (cs < matches.size()) {
 		ce = cs+1;
 		GenomePos qStart=matches[cs].first.pos, 
-			qEnd=matches[cs].first.pos+opts.k, 			
+			qEnd=matches[cs].first.pos+opts.globalK, 			
 			tStart=matches[cs].second.pos, 
-			tEnd=matches[cs].second.pos+opts.k;
+			tEnd=matches[cs].second.pos+opts.globalK;
 		while (ce < matches.size() and 
 					 abs(DiagonalDifference(matches[ce], matches[ce-1])) < opts.maxDiag) {
 
 			qStart = min(qStart, matches[ce].first.pos);
-			qEnd   = max(qEnd, matches[ce].first.pos+opts.k);
+			qEnd   = max(qEnd, matches[ce].first.pos+opts.globalK);
 			tStart = min(tStart, matches[ce].second.pos);
-			tEnd   = max(tEnd, matches[ce].second.pos+opts.k);
+			tEnd   = max(tEnd, matches[ce].second.pos+opts.globalK);
 			ce++;
 		}			
 		if (ce - cs >= opts.minClusterSize) {

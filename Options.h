@@ -2,9 +2,12 @@
 #define OPTIONS_H_
 class Options {
 public:
-	int k;
-	int w;
-	int maxFreq;
+	int globalK;
+	int localK;
+	int globalW;
+	int localW;
+	int globalMaxFreq;
+	int localMaxFreq;
 	int maxDiag;
 	int minClusterSize;
 	int window;
@@ -16,11 +19,16 @@ public:
 	char printFormat;
 	int bestn;
 	bool storeAll;
+	int nproc;
+	string outfile;
 	Options() {
-		k=15;
-		w=10; 
+		globalK=15;
+		globalW=10; 
+		localK=7;
+		localW=5;
 		bestn=1;
-		maxFreq=200;
+		globalMaxFreq=200;
+		localMaxFreq=30;
 		maxDiag=3000;
 		minDiagCluster=2;
 		minClusterSize =5;
@@ -31,6 +39,8 @@ public:
 		hardClip=false;
 		printFormat='b';
 		storeAll=false;
+		nproc=1;
+		outfile="";
 	}
 };
 #endif

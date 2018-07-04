@@ -239,7 +239,7 @@ void StoreIndex(string &genome,
 	while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
 		int prevMinCount = minimizers.size();
 		cerr << "Storing for "<< ks->name.s << " " << prevMinCount << " " << offset << endl;
-		StoreMinimizers<GenomeTuple, Tuple>(ks->seq.s, ks->seq.l, opts.k, opts.w, minimizers);
+		StoreMinimizers<GenomeTuple, Tuple>(ks->seq.s, ks->seq.l, opts.globalK, opts.globalW, minimizers);
 		
 		for (GenomePos i=prevMinCount; i< minimizers.size(); i++) {
 			minimizers[i].pos+=offset;
@@ -251,7 +251,7 @@ void StoreIndex(string &genome,
 	gzclose(f);
 	cerr << "Sorting " << minimizers.size() << " minimizers" << endl;
 	std::sort(minimizers.begin(), minimizers.end());
-	RemoveFrequent(minimizers, opts.maxFreq);
+	RemoveFrequent(minimizers, opts.globalMaxFreq);
 
 	//
 	// Remove too frequent minimizers;
@@ -267,7 +267,7 @@ int ReadIndex(string fn, vector<GenomeTuple> &index, Header &h, Options &opts) {
 	}
 	int64_t len;
 	fin.read((char*) &len, sizeof(int64_t));	
-	fin.read((char*) &opts.k, sizeof(int));
+	fin.read((char*) &opts.globalK, sizeof(int));
 	h.Read(fin);
 	index.resize(len);
 	fin.read((char*) &index[0], sizeof(GenomeTuple)*len);
@@ -278,7 +278,7 @@ void WriteIndex(string fn, vector<GenomeTuple> &index, Header &h, Options &opts)
 	ofstream fout(fn.c_str(), ios::out|ios::binary);
 	int64_t minLength = index.size();
 	fout.write((char*) &minLength, sizeof(int64_t));
-	fout.write((char*) &opts.k, sizeof(int));
+	fout.write((char*) &opts.globalK, sizeof(int));
 	h.Write(fout);
 	fout.write((char*) &index[0], sizeof(GenomeTuple)* index.size());
 	fout.close();

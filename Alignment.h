@@ -17,6 +17,7 @@ class Alignment {
  public:
 	unsigned char mapqv;
 	unsigned int flag;
+	int chromIndex;
 	string chrom;
 	string name;
 	string queryString, alignString, refString;
@@ -53,7 +54,7 @@ class Alignment {
 	}
  Alignment(char *_read, char *_forward, 
 					 int _rl, string _rn, int _str, 
-					 char *_genome, string &_chrom) : Alignment() { 
+					 char *_genome, string &_chrom, int _ci) : Alignment() { 
 		read=_read; 
 		forward=_forward;
 		readLen = _rl; 
@@ -61,6 +62,7 @@ class Alignment {
 		strand= _str;
 		genome=_genome;
 		chrom=_chrom;
+		chromIndex=_ci;
 	}
 
 	int GetQStart() const {
@@ -224,25 +226,26 @@ class Alignment {
 		nm=nmm=nins=ndel=0;
 		while (i < query.size()) {
 			p=i;
-			while (seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
+			while (i < query.size() and seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
+			
 			if (i > p) {
 				cigarstrm << i-p << '=';
 				nm+=i-p;
 				continue;
 			}
-			while (seqMap[query[i]] != seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
+			while (i < query.size() and seqMap[query[i]] != seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'X';
 				nmm+=i-p;
 				continue;
 			}
-			while (query[i] == '-' and target[i] != '-') {	i++;}
+			while (i < query.size() and query[i] == '-' and target[i] != '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'D';
 				ndel+=i-p;
 				continue;
 			}
-			while (query[i] != '-' and target[i] == '-') {	i++;}
+			while (i < query.size() and query[i] != '-' and target[i] == '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'I';
 				nins+=i-p;

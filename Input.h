@@ -4,14 +4,31 @@
 #include <iostream>
 #include <stdlib.h>
 
+#include <pthread.h>
+#include <semaphore.h>
+
 class Input {
  public:
 	int inputType;
 	istream *strmPtr;
 	ifstream strm;
 	gzFile fastaFile;
+	htsFile *htsfp;
 	kseq_t *ks;
+	bam_hdr_t *samHeader;			
+	sem_t *semaphore;
+
+
 	bool Initialize(string &filename) {
+		//
+		// Check to see if the input is fasta
+		//
+	
+
+		semaphore = sem_open("/reader",     O_CREAT, 0644, 1);
+		sem_init(semaphore, 0, 1);
+
+		istream *strmPtr;
 		if (filename == "-") {
 			strmPtr = &std::cin;
 		}
@@ -19,59 +36,67 @@ class Input {
 			strm.open(filename.c_str());
 			strmPtr = &strm;
 		}
-		if (SetInputType(strmPtr) == false) {
-			cout << "ERROR. Could not determine type of input." << endl;
-			exit(1);
-		}
-		if (inputType == 0) {
-			//
-			// Initialize for fasta
-			//
+
+		if (strmPtr->peek() != EOF && strmPtr->peek() == '>') {
+			inputType=0;
 			fastaFile = gzopen(filename.c_str(), "r");
 			ks = kseq_init(fastaFile);
+			return true;
 		}
-		else if (inputType == 1) {
+		else {
 			//
-			// Initialize for sam
+			// possibly sam 
 			//
-			cerr << "SAM input not finished." << endl;
-			exit(1);
+			htsfp = hts_open(filename.c_str(),"r");
+			const htsFormat *fmt = hts_get_format(htsfp);
+			if (fmt == NULL or fmt->format != sam or fmt->format != bam) {
+				cout << "Cannot determine format of input reads." << endl;
+				exit(1);
+			}
+
+      samHeader = sam_hdr_read(htsfp);
+			inputType=1;
 		}
 	}
 
 	bool GetNext(Read &read) {
+		sem_wait(semaphore);
+		bool readOne=false;
 		if (inputType == 0) {
 			if (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
-				read.seq=ks->seq.s;
+				read.seq = new char[ks->seq.l];
 				read.length=ks->seq.l;
+				memcpy(read.seq, ks->seq.s,read.length);
 				read.name=string(ks->name.s);
 				read.qual = ks->qual.s;
 				read.passthrough=NULL;
-				return true;
-			}
-			else {
-				return false;
+				readOne=true;
 			}
 		}
-	}
-	
-	bool SetInputType(istream *strmPtr) {
-		if (strmPtr->peek() != EOF && strmPtr->peek() == '>') {
-			inputType=0;
-			return true;
-		}
-		else if (strmPtr->peek()!= EOF && strmPtr->peek() == '@') {
-			inputType=1;
-			return true;
-		}
-		else {
-			return false;
-		}
-	}
-		
+		else if (inputType == 1) {
+			int res;
+			bam1_t *b = bam_init1();
+
+			res= sam_read1(htsfp, samHeader, b);
 			
+#define bam_get_seq(b)   ((b)->data + ((b)->core.n_cigar<<2) + (b)->core.l_qname)
+			read.length = b->core.l_qseq;			
+			read.seq = new char[read.length];
 
+			for (int i=0; i < read.length; i++) {
+				read.seq[i]=bam_seqi(bam_get_seq(b), i);
+			}
+			read.qual = NULL;
 
+			// 
+			// Eventually this will store the passthrough data
+			//
+			bam_destroy1(b);
+			readOne=true;
+		}
+		sem_post(semaphore);
+		return readOne;
+	}
 
 };
 
