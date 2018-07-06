@@ -71,6 +71,7 @@ class ClusterCoordinates {
 
 	bool Overlaps(const ClusterCoordinates &b, float frac) const {
 		int ovp=0;
+
 		if (b.qStart >= qStart and b.qStart < qEnd) {
 			ovp=min(qEnd, b.qEnd)-b.qStart;
 		}
@@ -80,8 +81,9 @@ class ClusterCoordinates {
 		else if (b.qStart <= qStart and b.qEnd > qEnd) {
 			ovp=qEnd-qStart;
 		}
-		float denom=qEnd-qStart;
-		if (ovp/denom > frac) { return true; }
+		float denomA=qEnd-qStart;
+		float denomB=b.qEnd- b.qStart;
+		if ( max(ovp/denomA, ovp/denomB)  > frac) { return true; }
 		else { return false; }
 	}
 

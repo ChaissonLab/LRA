@@ -34,6 +34,8 @@ void SwapStrand(Read &read, Options &opts, GenomePairs &matches) {
 	}
 }
 
+
+
 template <typename T>
 void StoreSubset(vector<T> &a, vector<int> &idx) {
 	int c, i;
@@ -67,7 +69,7 @@ public:
 	Seed(int i, int j, int k, int l, int idx) : seqan::Seed<Simple,TConfig>(i,j,k,l), index(idx) {}
 };
 
-void RemoveOVerlappingClusters(vector<Cluster> &clusters, Options &opts) {
+void RemoveOverlappingClusters(vector<Cluster> &clusters, Options &opts) {
 	int a=0;
 	int ovp=a;
 	if (clusters.size() == 0) {
@@ -89,12 +91,14 @@ void RemoveOVerlappingClusters(vector<Cluster> &clusters, Options &opts) {
 		}
 		a=ovp;
 	}
-	for (int i=0,c=0; i < clusters.size(); i++) {
+	int c=0;
+	for (int i=0; i < clusters.size(); i++) {
 		if (clusters[i].matches.size() > 0) {
 			clusters[c] = clusters[i];
 			c++;
 		}
 	}
+	clusters.resize(c);
 }
 
 void SimpleMapQV(vector<Alignment*> &alignments) {
@@ -379,7 +383,7 @@ void MapRead(Read &read,
 
 	sort(clusters.begin(), clusters.end(), OrderClusterBySize());
 
-  RemoveOVerlappingClusters(clusters, opts);
+
 	
 	//
 	// Add pointers to seq that make code more readable.
@@ -390,7 +394,7 @@ void MapRead(Read &read,
 	char *strands[2] = { read.seq, readRC };
 
 	clusters.insert(clusters.end(), revClusters.begin(), revClusters.end());
-
+  RemoveOverlappingClusters(clusters, opts);
 	//
 	// Build local index for refining alignments.
 	//
@@ -404,7 +408,7 @@ void MapRead(Read &read,
 	Options smallOpts = opts;
 	smallOpts.globalK=glIndex.k;
 	smallOpts.globalW=glIndex.w;
-	smallOpts.globalMaxFreq=100;
+	smallOpts.globalMaxFreq=6;
 	smallOpts.maxDiag=25;
 	smallOpts.minDiagCluster=3;
 
@@ -412,6 +416,8 @@ void MapRead(Read &read,
 	tinyOpts.globalMaxFreq=3;
 	tinyOpts.maxDiag=5;
 	tinyOpts.minDiagCluster=2;
+	tinyOpts.globalK=smallOpts.globalK-3;
+
 
 	//
 	// Merge overlapping clusters
@@ -628,6 +634,13 @@ void MapRead(Read &read,
 		if (refinedClusters[r].matches.size() == 0) {
 			continue;
 		}
+		int k=glIndex.k;
+		if (refinedClusters[r].matches.size() > read.length or 
+				opts.refineLevel & REF_LOC == 0) {
+			refinedClusters[r].matches= clusters[r].matches;
+			k=opts.globalK;
+			continue;
+		}
 
 			
 		// Build SeedSet.
@@ -637,13 +650,16 @@ void MapRead(Read &read,
 			seqan::addSeed(seedSet, 
 										 seqan::Seed<seqan::Simple>(refinedClusters[r].matches[m].second.pos, 
 																								refinedClusters[r].matches[m].first.pos, 
-																								glIndex.k),
+																								k),
 										 seqan::Single());
 		}
 
 		// Perform sparse chaining, uses time O(n log n).
+
 		seqan::String<seqan::Seed<seqan::Simple> > chain;
-		seqan::chainSeedsGlobally(chain, seedSet, seqan::SparseChaining());
+		if (seqan::length(seedSet) > 0) {
+			seqan::chainSeedsGlobally(chain, seedSet, seqan::SparseChaining());
+		}
 			
 		vector<GenomePair> tupChain;
 		int qPrev=0, tPrev=0;
@@ -651,6 +667,10 @@ void MapRead(Read &read,
 
 			tupChain.push_back(GenomePair(GenomeTuple(0, beginPositionV(chain[ch])),
 																		GenomeTuple(0, beginPositionH(chain[ch]))));
+		}
+		if (tupChain.size() == 0) {
+			refinedClusters[r].matches.clear();
+			continue;
 		}
 		vector<Cluster> chainClust;
 		Options diagOpts;
@@ -662,13 +682,14 @@ void MapRead(Read &read,
 		RemovePairedIndels(tupChain, chainClust, smallOpts);
 			
 		seqan::clear(chain);
-			
+		
 		for (int m=0; m< tupChain.size(); m++) {
 			seqan::append(chain, 
 										seqan::Seed<seqan::Simple>(tupChain[m].second.pos,
 																							 tupChain[m].first.pos, glIndex.k));
 		}
-			
+		
+		
 		GenomePos chainGenomeStart = seqan::beginPositionH(chain[0]);
 		GenomePos chainGenomeEnd   = seqan::endPositionH(chain[seqan::length(chain)-1]);
 
@@ -697,7 +718,7 @@ void MapRead(Read &read,
 
 		vector<int> scoreMat;
 		vector<Arrow> pathMat;
-		int gapK=gapOpts.globalK-2;
+
 		int chainLength = seqan::length(chain);
 		for (int c = 0; chainLength > 0 and c < seqan::length(chain)-1; c++) {
 			GenomePos curGenomeEnd = seqan::endPositionH(chain[c]);
@@ -718,7 +739,7 @@ void MapRead(Read &read,
 
 			if (nextReadStart > curReadEnd and nextGenomeStart > curGenomeEnd) {
 
-				if ((subreadLength > 30 or subgenomeLength > 30) and subreadLength < 4000 and subgenomeLength < 4000) {
+				if ((subreadLength > 30 or subgenomeLength > 30) and subreadLength < 4000 and subgenomeLength < 4000 and opts.refineLevel & REF_DYN ) {
 
 					gapGenomeTup.clear();
 					gapReadTup.clear();
@@ -727,12 +748,14 @@ void MapRead(Read &read,
 					//
 					// Find matches between read and reference in the coordinate space of read and chromosome
 					//
+					assert(curGenomeEnd < genome.lengths[chromIndex]);
+					assert(curGenomeEnd + subgenomeLength < genome.lengths[chromIndex]);
 					StoreMinimizers<GenomeTuple, Tuple>( genome.seqs[chromIndex] + curGenomeEnd,
-																							 subgenomeLength, gapK, 1, gapGenomeTup, false);
+																							 subgenomeLength, tinyOpts.globalK, 1, gapGenomeTup, false);
 
 					sort(gapGenomeTup.begin(), gapGenomeTup.end());
 					StoreMinimizers<GenomeTuple, Tuple>( strands[refinedClusters[r].strand] + curReadEnd,
-																							 subreadLength, gapK, 1, gapReadTup, false);
+																							 subreadLength, tinyOpts.globalK, 1, gapReadTup, false);
 					sort(gapReadTup.begin(), gapReadTup.end());
 					CompareLists(gapReadTup.begin(),
 											 gapReadTup.end(),
@@ -761,7 +784,7 @@ void MapRead(Read &read,
 					for (int m=0; m< gapPairs.size(); m++) {
 						seqan::addSeed(gapSeedSet, 
 													 seqan::Seed<seqan::Simple>(gapPairs[m].second.pos, 
-																											gapPairs[m].first.pos, gapK),
+																											gapPairs[m].first.pos, tinyOpts.globalK),
 													 seqan::Single());
 					}
 					seqan::String<seqan::Seed<seqan::Simple> > gapChain;
@@ -823,7 +846,7 @@ void MapRead(Read &read,
 
 				if (m > 0) {
 					Alignment aln;
-					if (opts.doBandedAlignment) {
+					if (opts.refineLevel & REF_DP) {
 						RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextRefinedReadStart,
 														 genome.seqs[chromIndex], curRefinedGenomeEnd, nextRefinedGenomeStart,
 														 scoreMat, pathMat, aln);
@@ -845,8 +868,12 @@ void MapRead(Read &read,
 											curRefinedGenomeEnd, nextGenomeStart, match, readGap, genomeGap);
 				
 			if (match > 0) {
-				if (opts.doBandedAlignment) {
+				if (opts.refineLevel & REF_DP) {
 					Alignment aln;
+					assert(curRefinedReadEnd < read.length);
+					assert(nextReadStart <read.length);
+					assert(curRefinedGenomeEnd < genome.lengths[chromIndex]);
+					assert(nextGenomeStart < genome.lengths[chromIndex]);
 					RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextReadStart,
 													 genome.seqs[chromIndex], curRefinedGenomeEnd, nextGenomeStart,
 													 scoreMat, pathMat, aln);

@@ -40,9 +40,9 @@ const char* GetArgv(const char* argv[], int argc, int argi) {
 
 
 void HelpMap() {
-	cout << "Usage: lra align genome.fa reads [options]" << endl << endl;
+	cout << "Usage: lra align genome.fa reads [reads2 ...] [options]" << endl << endl;
 	cout << "   The genome should be indexed using the 'lsc index' program." << endl
-			 << "   'reads' may be either fasta, sam, or bam." << endl << endl;
+			 << "   'reads' may be either fasta, sam, or bam, and multiple input files may be given." << endl << endl;
 	cout << "Options:" << endl
 			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam 'p' pair ." << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
@@ -89,7 +89,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	string genomeFile = "", reads = "";
 	string indexFile="";
 	int w=10;
-
+	vector<string> allreads;
 
 	for (argi = 0; argi < argc; ) {
 		if (ArgIs(argv[argi], "-a")) {
@@ -130,8 +130,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.nproc=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}		
-		else if (ArgIs(argv[argi], "-b")) {
-			opts.doBandedAlignment=false;
+		else if (ArgIs(argv[argi], "-r")) {
+			opts.refineLevel=atoi(GetArgv(argv, argc, argi));			
+			++argi;
 		}		
 
 		else if (ArgIs(argv[argi], "-o")) {
@@ -141,14 +142,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			if (genomeFile == "") {
 				genomeFile = argv[argi];
 			}
-			else if (reads == "") {
-				reads = argv[argi];
+			else {
+				allreads.push_back(string(argv[argi]));
 			}
 		}
 		++argi;
 	}
 
-	if (genomeFile == "" || reads == "") {
+	if (genomeFile == "" || allreads.size() == 0) {
 		HelpMap();
 		exit(1);
 	}
@@ -176,7 +177,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	genome.Read(genomeFile);
 
 	Input reader;
-	reader.Initialize(reads);
+	reader.Initialize(allreads);
 	int offset=0;
 	Read read;
 	ostream *outPtr;
@@ -214,7 +215,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		mapInfo.out = outPtr;
 
 		mapInfo.semaphore = sem_open("/writer",     O_CREAT, 0644, 1);
-
+		sem_init(mapInfo.semaphore, 0, 1);
+		
 
 		for (int procIndex = 0; procIndex < opts.nproc; procIndex++ ){ 
 			pthread_create(&threads[procIndex], &threadAttr[procIndex], (void* (*)(void*))MapReads, &mapInfo);

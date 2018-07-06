@@ -1,5 +1,10 @@
 #ifndef OPTIONS_H_
 #define OPTIONS_H_
+
+const unsigned int REF_LOC=1;
+const unsigned int REF_DYN=2;
+const unsigned int REF_DP=4;
+
 class Options {
 public:
 	int globalK;
@@ -22,6 +27,7 @@ public:
 	int nproc;
 	string outfile;
 	int maxCandidates;
+	int refineLevel;
 	bool doBandedAlignment;
 	Options() {
 		globalK=15;
@@ -29,7 +35,7 @@ public:
 		localK=7;
 		localW=5;
 		bestn=1;
-		globalMaxFreq=200;
+		globalMaxFreq=20;
 		localMaxFreq=30;
 		maxDiag=3000;
 		minDiagCluster=2;
@@ -45,6 +51,7 @@ public:
 		outfile="";
 		maxCandidates=3;
 		doBandedAlignment=true;
+		refineLevel= REF_LOC | REF_DYN | REF_DP;
 	}
 };
 #endif
