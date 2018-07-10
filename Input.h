@@ -6,6 +6,7 @@
 
 #include <pthread.h>
 #include <semaphore.h>
+#include <time.h>
 
 class Input {
  public:
@@ -21,12 +22,17 @@ class Input {
 	int curFile;
 	int basesRead;
 	long totalRead;
+	bool done;
+	clock_t timestamp;
+
 	vector<string> allReads;
 	Input() {
 		doInit = true;
 		curFile = 0;
 		basesRead = 0;
 		totalRead = 0;
+		done=false;
+		ks=NULL;
 	}
 	bool StreamIsFasta(istream &s) {
 		if (s.eof() or s.good() == false) {
@@ -71,6 +77,10 @@ class Input {
 		if (StreamIsFasta(*strmPtr) or StreamIsFastq(*strmPtr) ) {
 
 			inputType=0;
+			if (ks != NULL) {
+				kseq_destroy(ks);
+				gzclose(fastaFile);
+			}
 			fastaFile = gzopen(filename.c_str(), "r");
 			ks = kseq_init(fastaFile);
 			return true;
@@ -108,73 +118,83 @@ class Input {
 		if (Initialize(allReads[curFile]) == false) {
 			return 0;
 		}
+		timestamp = clock();
 		doInit = false;
 	}
 
 	bool GetNext(Read &read, bool top=true) {
+		read.Clear();
 		if (top == true) {
 			sem_wait(semaphore);
 		}
-
 		if (doInit) {
+			assert(top == false);
+			doInit = false;
+
 			if (curFile >= allReads.size() or 
-					Initialize(allReads[curFile]) == false) {
-				if (top) {
-					doInit = false;
-					sem_post(semaphore);
-				}
-				return 0;
+					 Initialize(allReads[curFile]) == false) {
+				//
+				// Do not continue to read.
+				done=true;
+				return false;
 			}
 			doInit = false;
 		}
 
 		bool readOne=false;
-		if (inputType == 0) {
-			if (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
-				read.seq = new char[ks->seq.l];
-				read.length=ks->seq.l;
-				memcpy(read.seq, ks->seq.s,read.length);
-				read.name=string(ks->name.s);
-				read.qual = ks->qual.s;
-				read.passthrough=NULL;
-				readOne=true;
-
-			}
-		}
-		else if (inputType == 1) {
-			int res;
-			bam1_t *b = bam_init1();
-
-			res= sam_read1(htsfp, samHeader, b);
-			if (res > 0) {
-				
-				read.length = b->core.l_qseq;			
-				read.seq = new char[read.length];
-				read.name = string(bam_get_qname(b));
-				uint8_t *q = bam_get_seq(b);
-				for (int i=0; i < read.length; i++) {
-					read.seq[i]=seq_nt16_str[bam_seqi(q,i)];
+		if (done == false) {
+			if (inputType == 0) {
+				if (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
+					read.seq = new char[ks->seq.l];
+					read.length=ks->seq.l;
+					memcpy(read.seq, ks->seq.s,read.length);
+					read.name=string(ks->name.s);
+					if (ks->qual.s != NULL) {
+						read.qual = new char[ks->seq.l];
+						memcpy(read.qual, ks->qual.s, ks->seq.l);
+					}
+					
+					read.passthrough=NULL;
+					readOne=true;
 				}
-				read.qual = NULL;
-				
-				// 
-				// Eventually this will store the passthrough data
-				//
-				bam_destroy1(b);
-				readOne=true;
 			}
-		}
+			else if (inputType == 1) {
+				int res;
+				bam1_t *b = bam_init1();
 
-		if (readOne == false) {
-			++curFile;
-			doInit=true;
-			readOne=GetNext(read, false);
-		}
-		basesRead += read.length;
-		totalRead += read.length;
-		if (basesRead > 10000000) {
-			cerr << "lra processed " << totalRead << endl;
-			basesRead = 0;
+				res= sam_read1(htsfp, samHeader, b);
+				if (res > 0) {
+				
+					read.length = b->core.l_qseq;			
+					read.seq = new char[read.length];
+					read.name = string(bam_get_qname(b));
+					uint8_t *q = bam_get_seq(b);
+					for (int i=0; i < read.length; i++) {
+						read.seq[i]=seq_nt16_str[bam_seqi(q,i)];
+					}
+					read.qual = NULL;
+				
+					// 
+					// Eventually this will store the passthrough data
+					//
+					bam_destroy1(b);
+					readOne=true;
+				}
+			}
+
+			if (readOne == false) {
+				++curFile;
+				doInit=true;
+				readOne=GetNext(read, false);
+			}
+			basesRead += read.length;
+			totalRead += read.length;
+			if (basesRead > 100000000) {
+				clock_t cur = clock();		
+				cerr << "lra processed " << totalRead << " bases (" << std::setprecision(4) <<  ((float)(cur - timestamp))/CLOCKS_PER_SEC  << "s)." << endl;
+				timestamp=cur;
+				basesRead = 0;
+			}
 		}
 		sem_post(semaphore);
 		return readOne;

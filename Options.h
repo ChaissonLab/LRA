@@ -29,8 +29,9 @@ public:
 	int maxCandidates;
 	int refineLevel;
 	bool doBandedAlignment;
+	int maxGap;
 	Options() {
-		globalK=15;
+		globalK=17;
 		globalW=10; 
 		localK=7;
 		localW=5;
@@ -52,6 +53,7 @@ public:
 		maxCandidates=3;
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
+		maxGap=10000;
 	}
 };
 #endif

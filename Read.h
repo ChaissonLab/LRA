@@ -8,6 +8,22 @@ class Read {
 	int  length;
 	char *passthrough;
 	string name;
+	void Clear() {
+		if (seq != NULL) {
+			delete[] seq;
+			seq=NULL;
+		}
+		if (qual != NULL) {
+			delete[] qual;
+			qual=NULL;
+		}
+		if (passthrough != NULL) {
+			delete[] passthrough;
+			passthrough=NULL;
+		}
+		length=0;
+		name="";
+	}
 	Read() {
 		seq=NULL;
 		length=0;

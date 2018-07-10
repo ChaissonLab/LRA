@@ -200,11 +200,12 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		genome.header.WriteSAMHeader(*outPtr);
 	}
 
-	pthread_attr_t *threadAttr = new pthread_attr_t[opts.nproc];
-	for (int procIndex = 0; procIndex < opts.nproc; procIndex++ ){
-		pthread_attr_init(&threadAttr[procIndex]);
-	}
 	if (opts.nproc > 1) {
+		pthread_attr_t *threadAttr = new pthread_attr_t[opts.nproc];
+		for (int procIndex = 0; procIndex < opts.nproc; procIndex++ ){
+			pthread_attr_init(&threadAttr[procIndex]);
+		}
+
 		pthread_t *threads = new pthread_t[opts.nproc];
 		MapInfo mapInfo;
 		mapInfo.genome = &genome;
@@ -400,9 +401,9 @@ void Usage() {
 	cout << "Contact: Mark Chaisson (mchaisso@usc.edu)" << endl << endl;
 	cout << "Usage:   lsa <command> [options]"<< endl << endl;
 	cout << "Command: index   - Build global and local indexes on a genome." << endl;
-	cout << "         align   - Map reads using the index" << endl;
+	cout << "         align   - Map reads using the index." << endl;
 	cout << "         global  - Build a global index." << endl;
-	cout << "         local   - Build local index" << endl;
+	cout << "         local   - Build local index." << endl;
 }
 
 int main(int argc, const char *argv[]) {

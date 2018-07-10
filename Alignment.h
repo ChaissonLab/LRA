@@ -2,13 +2,16 @@
 #define ALIGNMENT_TYPE_H_
 
 #include <vector>
-using namespace std;
+
 
 #include "AlignmentBlock.h"
 #include "Path.h"
 #include "SeqUtils.h"
 #include "Options.h"
+#include <assert.h>
 #include <sstream>
+#include <algorithm>
+using namespace std;
 const unsigned int READ_UNMAPPED=0x4;
 const unsigned int READ_REVERSE=0x10;
 const unsigned int READ_SECONDARY=0x100;
@@ -28,11 +31,16 @@ class Alignment {
 	char *read;
 	char *forward;
 	int readLen;
+	GenomePos genomeLen;
 	string readName;
 	char *genome;
 	int strand;
-
+	void Clear() {
+		queryString=alignString=refString="";
+		blocks.clear();
+	}
 	GenomePos qStart, qEnd, tStart, tEnd;
+
 	void SetSecondary() {
 		flag = flag | READ_SECONDARY;
 	}
@@ -54,13 +62,14 @@ class Alignment {
 	}
  Alignment(char *_read, char *_forward, 
 					 int _rl, string _rn, int _str, 
-					 char *_genome, string &_chrom, int _ci) : Alignment() { 
+					 char *_genome, GenomePos _gl, string &_chrom, int _ci) : Alignment() { 
 		read=_read; 
 		forward=_forward;
 		readLen = _rl; 
 		readName= _rn;
 		strand= _str;
 		genome=_genome;
+		genomeLen = _gl;
 		chrom=_chrom;
 		chromIndex=_ci;
 	}
@@ -153,9 +162,8 @@ class Alignment {
 
 		for (int b = 0; b < blocks.size() ; b++) {
 
-			
-
 			for (int bl = 0; bl < blocks[b].length; bl++ ) {
+				assert(t < genomeLen);
 				queryStr.push_back(query[q]);
 				textStr.push_back(text[t]);
 				if (seqMap[query[q]] != 
@@ -192,11 +200,13 @@ class Alignment {
 				queryGapLen -= commonGapLen;
 
 				for (g = 0; g < queryGapLen; g++, q++ ){
+					assert(t < genomeLen);
 					textStr.push_back(gapChar);
 					alignStr.push_back(gapSeparationChar);
 					queryStr.push_back(query[q]);
 				}
 				for (g = 0; g < textGapLen; g++, t++ ){
+					assert(t < genomeLen);
 					textStr.push_back(text[t]);
 					alignStr.push_back(gapSeparationChar);
 					queryStr.push_back(gapChar);
@@ -204,6 +214,7 @@ class Alignment {
 				}
 
 				for (g = 0; g < commonGapLen; g++ ) {
+					assert(t < genomeLen);
 					textStr.push_back(text[t]);
 					if (seqMap[query[q]] != 
 							seqMap[text[t]])
@@ -307,12 +318,12 @@ class Alignment {
 			string qsub = queryString.substr(i,end-i);
 			out.width(10);
 			out << q + GetQStart() << " q: " << qsub << endl;
-			q+= qsub.size() - count(qsub.begin(),qsub.end(),'-');
+			q+= qsub.size() - std::count(qsub.begin(),qsub.end(),'-');
 			out << "              " << alignString.substr(i,end-i) << endl;
 			string tsub = refString.substr(i,end-i);
 			out.width(10);
 			out << t + GetTStart() << " t: " << tsub << endl;
-			t+= tsub.size() - count(tsub.begin(), tsub.end(),'-');
+			t+= tsub.size() - std::count(tsub.begin(), tsub.end(),'-');
 			cout <<endl;
 			i=end;
 		}

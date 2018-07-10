@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <fstream>
-
+#include "Types.h"
 
 using namespace std;
 class Block {
