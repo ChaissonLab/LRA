@@ -1,6 +1,13 @@
 all:	lra
 PROF=/home/cmb-16/mjc/shared/lib/
-CCOPTS=-O3 -std=c++14
+CCOPTS_BASE=-std=c++14 -O3
+ifneq ($(DEBUG), "")
+CCOPTS=$(CCOPTS_BASE) $(DEBUG)
+else
+CCOPTS=-O3 $(CCOPTS_BASE)
+endif
+
+
 #-D _TESTING_ -lprofiler 
 #  -L$(PROF) 
 

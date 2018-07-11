@@ -23,6 +23,7 @@ class Input {
 	int basesRead;
 	long totalRead;
 	bool done;
+	int nReads;
 	clock_t timestamp;
 
 	vector<string> allReads;
@@ -33,6 +34,7 @@ class Input {
 		totalRead = 0;
 		done=false;
 		ks=NULL;
+		htsfp=NULL;
 	}
 	bool StreamIsFasta(istream &s) {
 		if (s.eof() or s.good() == false) {
@@ -65,7 +67,10 @@ class Input {
 		return false;
 	}
 	bool Initialize(string &filename) {
+		nReads=0;
 		istream *strmPtr;
+		cerr << "opening "<< filename << endl;
+		doInit = false;
 		if (filename == "-") {
 			strmPtr = &std::cin;
 		}
@@ -89,6 +94,13 @@ class Input {
 			//
 			// possibly sam 
 			//
+
+			if (htsfp != NULL) {
+				hts_close(htsfp);
+				bam_hdr_destroy(samHeader);
+
+			}	
+			cerr << "opening " << filename << endl;
 			htsfp = hts_open(filename.c_str(),"r");
 			const htsFormat *fmt = hts_get_format(htsfp);
 			if (fmt == NULL or (fmt->format != sam and fmt->format != bam)) {
@@ -103,6 +115,7 @@ class Input {
 		return false;
 	}
 
+	
 	bool Initialize(vector<string> &_allReads) {
 		//
 		// Check to see if the input is fasta
@@ -124,9 +137,11 @@ class Input {
 
 	bool GetNext(Read &read, bool top=true) {
 		read.Clear();
+		++nReads;
 		if (top == true) {
 			sem_wait(semaphore);
 		}
+
 		if (doInit) {
 			assert(top == false);
 			doInit = false;
@@ -161,7 +176,6 @@ class Input {
 			else if (inputType == 1) {
 				int res;
 				bam1_t *b = bam_init1();
-
 				res= sam_read1(htsfp, samHeader, b);
 				if (res > 0) {
 				
@@ -169,9 +183,7 @@ class Input {
 					read.seq = new char[read.length];
 					read.name = string(bam_get_qname(b));
 					uint8_t *q = bam_get_seq(b);
-					for (int i=0; i < read.length; i++) {
-						read.seq[i]=seq_nt16_str[bam_seqi(q,i)];
-					}
+					for (int i=0; i < read.length; i++) {read.seq[i]=seq_nt16_str[bam_seqi(q,i)];	}
 					read.qual = NULL;
 				
 					// 
@@ -182,7 +194,7 @@ class Input {
 				}
 			}
 
-			if (readOne == false) {
+			if (readOne == false and top == true ) {
 				++curFile;
 				doInit=true;
 				readOne=GetNext(read, false);
@@ -196,7 +208,10 @@ class Input {
 				basesRead = 0;
 			}
 		}
-		sem_post(semaphore);
+
+		if (top == true) {
+			sem_post(semaphore);
+		}
 		return readOne;
 	}
 

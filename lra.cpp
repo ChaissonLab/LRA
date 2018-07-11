@@ -70,7 +70,7 @@ void MapReads(MapInfo *mapInfo) {
 	Read read;
 	
 	while (mapInfo->reader->GetNext(read)) {
-		MapRead(read, 
+		MapRead(read,
 						*mapInfo->genome, 
 						*mapInfo->genomemm, 
 						*mapInfo->glIndex, 
