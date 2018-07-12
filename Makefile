@@ -1,10 +1,16 @@
 all:	lra
 PROF=/home/cmb-16/mjc/shared/lib/
-CCOPTS_BASE=-std=c++14 -O3
+CCOPTS_BASE=-std=c++14 
+DEBUG?=""
 ifneq ($(DEBUG), "")
 CCOPTS=$(CCOPTS_BASE) $(DEBUG)
 else
 CCOPTS=-O3 $(CCOPTS_BASE)
+endif
+STATIC=-static
+ifeq ($(OPT), "1")
+CCOPTS=-g $(CCOPTS_BASE) -lprofiler
+STATIC=
 endif
 
 
@@ -35,7 +41,7 @@ tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 # -D _MAT_PRINT_
 
 lra: lra.o
-	g++ -static $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
+	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
 lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a
 	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  lra.cpp 

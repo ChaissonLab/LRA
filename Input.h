@@ -100,7 +100,6 @@ class Input {
 				bam_hdr_destroy(samHeader);
 
 			}	
-			cerr << "opening " << filename << endl;
 			htsfp = hts_open(filename.c_str(),"r");
 			const htsFormat *fmt = hts_get_format(htsfp);
 			if (fmt == NULL or (fmt->format != sam and fmt->format != bam)) {

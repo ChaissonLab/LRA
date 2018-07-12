@@ -11,8 +11,8 @@ int64_t DiagonalDifference(Tup &a, Tup &b) {
 }
 template<typename Tup>
 int64_t GapDifference(Tup &a, Tup &b) {
-	int64_t aDiff = abs((int)(b.first.pos - a.first.pos));
-	int64_t bDiff = abs((int) (b.second.pos - a.second.pos));
+	int64_t aDiff = abs((int)b.first.pos - (int)a.first.pos);
+	int64_t bDiff = abs((int)b.second.pos - (int)a.second.pos);
 	return max(aDiff, bDiff);
 }
 
@@ -81,6 +81,11 @@ class ClusterCoordinates {
 		qEnd=0;
 		tStart=-1;
 		tEnd=0;
+		seq=NULL;
+		chromIndex=0;
+		start=0;
+		end=0;
+		strand=-1;
 	}
 
 	bool Overlaps(const ClusterCoordinates &b, float frac) const {
@@ -103,12 +108,16 @@ class ClusterCoordinates {
 
  ClusterCoordinates(int s,int e) : start(s), end(e) {
 		qStart=qEnd=tStart=tEnd=strand=0;
+		seq=NULL;
+		chromIndex=0;
 	}
   ClusterCoordinates(int s, int e, 
 					GenomePos qs, GenomePos qe,
 					GenomePos ts, GenomePos te, 
-					int st) : start(s), end(e), strand(st), qStart(qs), qEnd(qe), tStart(ts), tEnd(te) {}
-
+					int st) : start(s), end(e), strand(st), qStart(qs), qEnd(qe), tStart(ts), tEnd(te) {
+		chromIndex=-1;
+		seq=NULL;
+	}
 };
 
 class Cluster : public ClusterCoordinates {
@@ -157,8 +166,11 @@ class Cluster : public ClusterCoordinates {
 		return end - start;
 	}
 
-	int operator<(const Cluster &rhs) {
-		if (tStart != rhs.tStart) {
+	int operator<(const Cluster &rhs) const {
+		if (strand != rhs.strand) {
+			return strand != rhs.strand;
+		}
+		else if (tStart != rhs.tStart) {
 			return tStart < rhs.tStart;
 		}
 		else {
@@ -186,19 +198,34 @@ class OrderClusterBySize {
 
 class ClusterOrder {
  public:
-	vector<Cluster> &clusters;
+	vector<Cluster> *clusters;
 	vector<int> index;
 	
-  ClusterOrder(vector<Cluster> &c) : clusters(c) {
-		index.resize(clusters.size());
+  ClusterOrder(vector<Cluster> *c) : clusters(c) {
+		index.resize(clusters->size());
 		for (int i=0;i<index.size();i++) { index[i]=i;}
+		Sort();
 	}
-	int operator()(const int i, const int j) { return clusters[i] < clusters[j]; }
+		
+	int operator()(const int i, const int j) {
+			assert((*clusters)[i].strand == 0 or (*clusters)[i].strand == 1);
+			assert((*clusters)[j].strand == 0 or (*clusters)[j].strand == 1);
+
+		if ((*clusters)[i].strand != (*clusters)[j].strand) {
+			return (*clusters)[i].strand < (*clusters)[j].strand;
+		}
+		else if ((*clusters)[i].tStart != (*clusters)[j].tStart) {
+			return (*clusters)[i].tStart < (*clusters)[j].tStart;
+		}
+		else {
+			return (*clusters)[i].qStart < (*clusters)[j].qStart;
+		}
+	}
 	void Sort() {
 		sort(index.begin(), index.end(), *this);
 	}
 	Cluster & operator[](int i) {
-		return clusters[index[i]];
+		return (*clusters)[index[i]];
 	}
 	int size() {
 		return index.size();
@@ -227,15 +254,19 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &c
 			qEnd=matches[cs].first.pos+opts.globalK, 
 			tStart=matches[cs].second.pos, 
 			tEnd=matches[cs].second.pos+opts.globalK;
-		
+		int diff=0;
 		while (ce < matches.size() and 
-					 abs(DiagonalDifference(matches[ce], matches[ce-1])) < opts.maxDiag and 
+					 abs(DiagonalDifference(matches[ce], matches[ce-1])) < opts.maxDiag  and 
 					 (opts.maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < opts.maxGap) ) {
 			qStart = min(qStart, matches[ce].first.pos);
 			qEnd   = max(qEnd, matches[ce].first.pos);
 			tStart = min(tStart, matches[ce].second.pos);
 			tEnd   = max(tEnd, matches[ce].second.pos);
 			ce++;
+			if (ce < matches.size()) {
+				diff = GapDifference(matches[ce], matches[ce-1]);
+			}
+
 		}			
 		if (ce - cs >= opts.minClusterSize) {
 			if (lite == false ) {

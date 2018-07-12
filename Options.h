@@ -30,6 +30,8 @@ public:
 	int refineLevel;
 	bool doBandedAlignment;
 	int maxGap;
+
+	
 	Options() {
 		globalK=17;
 		globalW=10; 
@@ -43,7 +45,7 @@ public:
 		minClusterSize =20;
 		minRefinedClusterSize = 40;
 		window=1000;
-		mergeGapped=true;
+		mergeGapped=false;
 		viewPairwise=false;
 		hardClip=false;
 		printFormat='b';

@@ -21,7 +21,10 @@ class LocalTuple {
  public:
   uint32_t t:32-LOCAL_POS_BITS;
   uint32_t pos: LOCAL_POS_BITS;
-
+	LocalTuple() {
+		t=0;
+		pos=0;
+	}
 	bool operator<(const LocalTuple &b) const {
 		return t < b.t;
 	}
@@ -63,7 +66,7 @@ class GenomeTuple {
 public:
 	Tuple t;
 	GenomePos pos;
-	GenomeTuple() {} 
+	GenomeTuple() {t=0;pos=0;} 
  GenomeTuple(Tuple _t, GenomePos _p): t(_t), pos(_p) {}
 	bool operator<(const GenomeTuple &b) const {
 		return t < b.t;

@@ -75,7 +75,7 @@ void MapReads(MapInfo *mapInfo) {
 						*mapInfo->genomemm, 
 						*mapInfo->glIndex, 
 						*mapInfo->opts, 
-						*mapInfo->out,
+						mapInfo->out,
 						mapInfo->semaphore);
 	}
 	pthread_exit(NULL); 
@@ -134,7 +134,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.refineLevel=atoi(GetArgv(argv, argc, argi));			
 			++argi;
 		}		
-
 		else if (ArgIs(argv[argi], "-o")) {
 			opts.outfile = argv[++argi];
 		}
@@ -182,7 +181,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	Read read;
 	ostream *outPtr;
 	ofstream outfile;
-	if (opts.outfile == "") {
+	if (opts.outfile == "" or opts.outfile=="-") {
 		outPtr = &cout;
 	}
 	else {
@@ -196,7 +195,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		for (int i=0; i < argc; i++) {
 			cl << " " << argv[i];
 		}
-		cout << "@PG\tID:lra\tPN:lra\tVN:"<<version<<"\tCL:"<<cl.str() << endl;
+		*outPtr << "@PG\tID:lra\tPN:lra\tVN:"<<version<<"\tCL:"<<cl.str() << endl;
 		genome.header.WriteSAMHeader(*outPtr);
 	}
 
@@ -230,7 +229,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	}
 	else {
 		while (reader.GetNext(read)) {
-			MapRead(read, genome, genomemm, glIndex, opts, *outPtr);
+			MapRead(read, genome, genomemm, glIndex, opts, outPtr);
 		}
 	}
 }

@@ -355,7 +355,7 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 				sPath[SuffToIndex(i, j, qLow, tLow, k, R)] = gapLeftAr;
 			}		
 
-			for (i = qLow, j=1; i < qEnd; i++, j++) {
+			for (i = qLow, j=1; i < qLow+diag; i++, j++) {
 				sScore[SuffToIndex(i, j, qLow, tLow, k, R)] = lowerDiagonalMax[j];
 				sPath[SuffToIndex(i, j, qLow, tLow, k, R)] = gapLeftAr;
 			}		
@@ -410,10 +410,12 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 				long insClose=INT_MIN;
 				if (qLen >= tLen) {
 					assert(tStart == 0);
+					assert(j < lowerDiagonalMax.size());
 					delClose=lowerDiagonalMax[j];
 				}
 				if (tLen > qLen) {
 					assert(qStart == 0);
+					assert(i<upperDiagonalMax.size());
 					insClose=upperDiagonalMax[i];
 				}
 				assert(SuffToIndex(i,j-1,qLow, tLow, k,R) < sScore.size());

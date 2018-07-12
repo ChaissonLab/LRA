@@ -298,7 +298,7 @@ void UpdateBoundaries(T &matches,
 void RemoveEmptyClusters(vector<Cluster> &clusters, int minSize=1) {
 	int cCur=0;
 	for(int c=0; c<clusters.size(); c++) {
-		if (clusters[c].start == clusters[c].end or clusters[c].matches.size() < minSize ) {
+		if (clusters[c].tEnd== 0 or clusters[c].matches.size() < minSize ) {
 			continue;
 		}
 		else {
@@ -308,6 +308,63 @@ void RemoveEmptyClusters(vector<Cluster> &clusters, int minSize=1) {
 	}
 	if (cCur < clusters.size() ) {
 		clusters.resize(cCur);
+	}
+}
+
+void MergeAdjacentClusters(ClusterOrder &order, Genome &genome, Options &opts) {
+	int c=0;
+	int cn=0;
+	c=0;
+	while(c< order.size()) {
+		cn=c+1;
+		int curEndChrom = genome.header.Find(order[c].tEnd);
+		while (cn < order.size()) {
+			int nextStartChrom = genome.header.Find(order[cn].tStart);
+			int gap;
+			gap = abs((int)((int)(order[cn].tStart - order[cn].qStart) - (int)(order[c].tEnd-order[c].qEnd)));
+
+			if (nextStartChrom == curEndChrom and
+					gap < opts.maxGap and
+					order[c].strand == order[cn].strand ) {
+				order[c].matches.insert(order[c].matches.end(), 
+																order[cn].matches.begin(),
+																order[cn].matches.end());
+				order[c].qEnd = order[cn].qEnd;
+				order[c].tEnd = order[cn].tEnd;
+				order[cn].tEnd=0;
+				cn++;
+			}
+			else {
+
+				int cn2=cn;
+				int MAX_AHEAD=10;
+				while (cn2 < order.size() and 
+							 cn2-cn < MAX_AHEAD and 
+							 nextStartChrom == curEndChrom and 
+							 order[c].strand == order[cn2].strand ) {
+					gap = abs((int)((int)(order[cn2].tStart - order[cn2].qStart) - (int)(order[c].tEnd-order[c].qEnd)));
+					nextStartChrom = genome.header.Find(order[cn2].tStart);
+					if (gap < opts.maxGap) {
+						break;
+					}
+					cn2++;
+				}
+				if (cn2 < order.size() and cn2 - cn < MAX_AHEAD and cn2 > cn and gap < opts.maxGap) {
+					cn=cn2;
+					order[c].matches.insert(order[c].matches.end(), 
+																	order[cn].matches.begin(),
+																	order[cn].matches.end());
+					order[c].qEnd = order[cn].qEnd;
+					order[c].tEnd = order[cn].tEnd;
+					order[cn].tEnd=0;
+					cn++;
+				}
+				else {
+					break;
+				}
+			}
+		}
+		c=cn;
 	}
 }
 
@@ -335,7 +392,7 @@ void MergeOverlappingClusters(ClusterOrder &order) {
 	//
 	// Remove merged clusters.
 	//
-	RemoveEmptyClusters(order.clusters);
+	RemoveEmptyClusters(*order.clusters);
 }
 
 void RefineSubstrings(char *read,   GenomePos readSubStart, GenomePos readSubEnd, 
@@ -357,8 +414,8 @@ void MapRead(Read &read,
 						Genome &genome,
 						vector<GenomeTuple> &genomemm,
 						LocalIndex &glIndex,
-						Options &opts,
-						 ostream &output,
+						 Options &opts,
+						 ostream *output,
 						 sem_t* semaphore=NULL) {
 	vector<GenomeTuple> readmm;
 	vector<pair<GenomeTuple, GenomeTuple> > matches;
@@ -399,15 +456,36 @@ void MapRead(Read &read,
 	char *strands[2] = { read.seq, readRC };
 
 	clusters.insert(clusters.end(), revClusters.begin(), revClusters.end());
-	sort(clusters.begin(), clusters.end(), OrderClusterBySize());
-	/*
-	ofstream clust("clusters.tab");
-	for (int c =0; c < clusters.size(); c++) {
-		for (int m=0; m < clusters[c].matches.size(); m++) {
-			clust << clusters[c].matches[m].first.pos << "\t" << clusters[c].matches[m].second.pos << "\t" << c << endl;
+
+	ClusterOrder clusterOrder(&clusters);
+	MergeAdjacentClusters(clusterOrder, genome, opts);
+	int cl=0;
+	int cn;
+	for(cl=0, cn=0; cn < clusters.size(); cn++) {
+		if (clusters[cn].tEnd > 0) {
+			clusters[cl] = clusters[cn];
+			cl++;
 		}
 	}
+	clusters.resize(cl);
+	
+	ClusterOrder reducedOrder(&clusters);
+	vector<Cluster> reducedClusters;
+	for (int i = 0; i < reducedOrder.size(); i++) {
+		reducedClusters.push_back(reducedOrder[i]);
+	}
+	clusters= reducedClusters;
+	sort(clusters.begin(), clusters.end(), OrderClusterBySize());	
+	/*	ofstream clust("clusters.tab");
+	for (int c =0; c < clusters.size(); c++) {
+		for (int m=0; m < clusters[c].matches.size(); m++) {
+			clust << clusters[c].matches[m].second.pos << "\t" << clusters[c].matches[m].first.pos << "\t" << c << "\t" << clusters[c].strand << endl;
+		}
+	}
+	clust.close();
 	*/
+
+
   RemoveOverlappingClusters(clusters, opts);
 
 	
@@ -441,8 +519,11 @@ void MapRead(Read &read,
 	// Merge overlapping clusters
 	//
 	RemoveEmptyClusters(clusters, opts.minClusterSize);
+	
+
+
 	if (opts.mergeGapped) {
-		ClusterOrder clusterOrder(clusters);
+		ClusterOrder clusterOrder(&clusters);
 		clusterOrder.Sort();
 		MergeOverlappingClusters(clusterOrder);
 	}
@@ -453,7 +534,6 @@ void MapRead(Read &read,
 
 	for (int c = 0; c < clusters.size(); c++) {
 
-		//		cout <<"CLUSTER " << c << endl;
 		if (clusters[c].start == clusters[c].end) {
 			continue;
 		}			
@@ -492,7 +572,7 @@ void MapRead(Read &read,
 		readClusterStart = clusters[c].matches[0].first.pos;
 		genomeClusterStart = clusters[c].matches[0].second.pos + chromOffset;
 
-		int cl = clusters[c].size();
+		int cl = clusters[c].matches.size();
 		readClusterEnd = clusters[c].matches[cl-1].first.pos + opts.globalK;
 		genomeClusterEnd = clusters[c].matches[cl-1].second.pos + opts.globalK + chromOffset;
 
@@ -584,7 +664,7 @@ void MapRead(Read &read,
 			//
 			// Find the boundaries where in the query the matches should be added.
 			//
-				
+
 			int queryIndexStart = readIndex->LookupIndex(readStart);
 			int queryIndexEnd   = 
 				readIndex->LookupIndex(min(readEnd, 
@@ -598,7 +678,7 @@ void MapRead(Read &read,
 				GenomePos qEndBoundary   = readIndex->tupleBoundaries[qi+1];
 				GenomePos readSegmentStart= readIndex->seqOffsets[qi];
 				GenomePos readSegmentEnd  = readIndex->seqOffsets[qi+1];
-	
+
 				CompareLists<LocalTuple>(readIndex->minimizers.begin() + 
 																 qStartBoundary,
 
@@ -710,7 +790,6 @@ void MapRead(Read &read,
 		}
 		int prevq=0;
 		int prevt=0;
-		sort(chainClust.begin(), chainClust.end());
 		
 		//		cout << "Chain is on " << chainClust.size() << " diagonals " << endl;
 		/*
@@ -774,8 +853,19 @@ void MapRead(Read &read,
 
 			if (nextReadStart > curReadEnd and nextGenomeStart > curGenomeEnd) {
 
-				if ((subreadLength > 30 or subgenomeLength > 30) and subreadLength < 4000 and subgenomeLength < 4000 and opts.refineLevel & REF_DYN ) {
+				if (subreadLength > 50 and 
+						subgenomeLength > 50 and opts.refineLevel & REF_DYN ) {
 
+					GenomePos maxLen = max(subreadLength, subgenomeLength);
+					if (maxLen < 500) {
+						tinyOpts.globalK=5;
+					}
+					else if (maxLen < 2000) {
+						tinyOpts.globalK=5;
+					}
+					else {
+						tinyOpts.globalK=9;
+					}
 					gapGenomeTup.clear();
 					gapReadTup.clear();
 					gapPairs.clear();
@@ -807,7 +897,7 @@ void MapRead(Read &read,
 					int diagDiff = abs((int) tinyDiagStart - (int) tinyDiagEnd);
 
 					CleanOffDiagonal(gapPairs, tinyOpts, 0, diagDiff);
-					CartesianTargetSort<GenomeTuple>(gapPairs);
+					//					CartesianTargetSort<GenomeTuple>(gapPairs);
 
 					for(int rm=0; rm < gapPairs.size(); rm++) {
 						gapPairs[rm].first.pos  += curReadEnd;
@@ -899,9 +989,7 @@ void MapRead(Read &read,
 
 				if (m > 0) {
 					Alignment aln;
-					if (opts.refineLevel & REF_DP) {
-						//						refc << curRefinedReadEnd << "\t" << nextRefinedReadStart << "\t" << curRefinedGenomeEnd << "\t" << nextRefinedGenomeStart << endl;
-						
+					if (opts.refineLevel & REF_DP) {						
 						RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextRefinedReadStart,
 														 genome.seqs[chromIndex], curRefinedGenomeEnd, nextRefinedGenomeStart,
 														 scoreMat, pathMat, aln);
@@ -961,13 +1049,13 @@ void MapRead(Read &read,
 	}
 	for (int a=0; a < min(opts.bestn, (int) alignments.size()); a++ ){
 		if (opts.printFormat == 'b') {
-			alignments[a]->PrintBed(cout);
+			alignments[a]->PrintBed(*output);
 		}
 		else if (opts.printFormat == 's') {
-			alignments[a]->PrintSAM(cout, opts);
+			alignments[a]->PrintSAM(*output, opts);
 		}
 		else if (opts.printFormat == 'p') {
-			alignments[a]->PrintPairwise(cout);
+			alignments[a]->PrintPairwise(*output);
 		}
 	}
 	if (semaphore != NULL ) {
