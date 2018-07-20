@@ -29,7 +29,6 @@ HEADERS=MinCount.h \
   Read.h \
   MapRead.h \
   Input.h \
-  SimpleGlobalChain.h \
   AffineOneGapAlign.h
 
 
