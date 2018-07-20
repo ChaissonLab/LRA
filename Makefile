@@ -1,4 +1,4 @@
-all:	lra
+all:	lra qti
 PROF=/home/cmb-16/mjc/shared/lib/
 CCOPTS_BASE=-std=c++14 
 DEBUG?=""
@@ -43,8 +43,14 @@ tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 lra: lra.o
 	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
+qti: QueryTime.o
+	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
+
 lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a
 	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  lra.cpp 
+
+QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
+	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  QueryTime.cpp
 
 
 clean:

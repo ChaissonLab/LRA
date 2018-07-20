@@ -3,7 +3,6 @@
 #include "TupleOps.h"
 #include "SeqUtils.h"
 #include "htslib/kseq.h"
-KSEQ_INIT(gzFile, gzread)
 
 
 

@@ -14,6 +14,7 @@ using namespace std;
 #include <vector>
 #include "htslib/kseq.h"
 #include "htslib/sam.h"
+#include "Input.h"
 #include <algorithm>
 #include "SeqUtils.h"
 #include "TupleOps.h"
@@ -22,8 +23,9 @@ using namespace std;
 #include "Options.h"
 #include "Alignment.h"
 #include "MapRead.h"
-#include "Input.h"
 #include <math.h>
+
+
 
 const char* version="0.1-alpha";
 
@@ -163,6 +165,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	if (ReadIndex(indexFile, genomemm, header, opts) == 0) {
 		StoreIndex(genomeFile, genomemm, header, opts);
 	}
+	cerr << "genomesize " << genomemm.size() << endl;
 	if (glIndex.Read(genomeFile+".gli") == 0) {
 		glIndex.IndexFile(genomeFile);
 	}

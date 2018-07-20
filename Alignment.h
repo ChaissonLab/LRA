@@ -24,6 +24,7 @@ class Alignment {
 	string chrom;
 	string name;
 	string queryString, alignString, refString;
+	int nblocks;
 	int nm, nmm, nins, ndel;
 	int preClip, sufClip;
 	string cigar;
@@ -55,6 +56,7 @@ class Alignment {
 		flag=0;
 		mapqv=0;
 		nm=nmm=nins=ndel=0;
+		nblocks=0;
 		preClip=0; sufClip=0;
 		prepared=false;
 		read=NULL;
@@ -335,7 +337,7 @@ class Alignment {
 				 << tEnd << "\t"
 				 << (int) mapqv << "\t" 
 				 << readName << "\t" << readLen << "\t"
-				 << nm << "\t" << endl;
+				 << nm << "\t" << nblocks << endl;
 	}
 
 	void PrintSAM(ostream &out, Options &opts, char *passthrough=NULL) {

@@ -15,7 +15,6 @@
 #include "Clustering.h"
 #include "seqan/seeds.h"
 #include "seqan/align.h"
-#include "SimpleGlobalChain.h"
 #include "AffineOneGapAlign.h"
 
 // Print results to stdout.
@@ -1036,6 +1035,7 @@ void MapRead(Read &read,
 		for(int b=0; b< alignment->blocks.size(); b++) {
 			nm+= alignment->blocks[b].length;
 		}
+		alignment->nblocks=seqan::length(chain);
 	}
 	for (int a=0; a < alignments.size(); a++) {
 		alignments[a]->CalculateStatistics();

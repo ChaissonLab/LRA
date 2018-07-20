@@ -7,6 +7,12 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include <time.h>
+#include "Read.h"
+#include <fcntl.h>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+KSEQ_INIT(gzFile, gzread)
 
 class Input {
  public:
@@ -124,7 +130,7 @@ class Input {
 			exit(0);
 		}
 
-		semaphore = sem_open("/reader",     O_CREAT, 0644, 1);
+		semaphore = sem_open("/reader", O_CREAT, 0644, 1);
 		sem_init(semaphore, 0, 1);
 
 		if (Initialize(allReads[curFile]) == false) {
@@ -218,3 +224,4 @@ class Input {
 
 
 #endif
+
