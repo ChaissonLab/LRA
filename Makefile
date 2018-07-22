@@ -7,7 +7,7 @@ CCOPTS=$(CCOPTS_BASE) $(DEBUG)
 else
 CCOPTS=-O3 $(CCOPTS_BASE)
 endif
-STATIC=-static
+#STATIC=-static
 ifeq ($(OPT), "1")
 CCOPTS=-g $(CCOPTS_BASE) -lprofiler
 STATIC=
@@ -33,14 +33,14 @@ HEADERS=MinCount.h \
 
 
 htslib/lib/libhts.a:
-	cd htslib && autoheader && autoconf && ./configure --disable-lzma --disable-bz2 --prefix=$(PWD)/htslib/ && make -j 4 && make install
+	cd htslib && autoheader && autoconf && ./configure --disable-s3 --disable-lzma --disable-bz2 --prefix=$(PWD)/htslib/ && make -j 4 && make install
 
 tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 	g++ -g TestAffineOneGapAlign.cpp -o tag 
 # -D _MAT_PRINT_
 
 lra: lra.o
-	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
+	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -lcurl -o $@
 
 qti: QueryTime.o
 	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
