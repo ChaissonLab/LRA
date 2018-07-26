@@ -42,7 +42,7 @@ void HelpAlchemy2() {
 			 << "   -m (string) Output model." << endl
 			 << "   -g (int)    Maximum gap to model. This is intended to skip adding SVs to the model (30)" << endl
 			 << "   -s (int)    Minimum number of output values to sample" << endl
-			 << " Simulating reads: " << endl
+			 << " Simulating reads: (default without a bam file)" << endl
 			 << "   -m (string) Input model." << endl		
 			 << "   -g (string) Input genome"  << endl
 			 << "   -o (string) Output reads." << endl
