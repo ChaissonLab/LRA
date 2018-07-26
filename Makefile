@@ -7,7 +7,7 @@ CCOPTS=$(CCOPTS_BASE) $(DEBUG)
 else
 CCOPTS=-O3 $(CCOPTS_BASE)
 endif
-#STATIC=-static
+STATIC=-static
 ifeq ($(OPT), "1")
 CCOPTS=-g $(CCOPTS_BASE) -lprofiler
 STATIC=

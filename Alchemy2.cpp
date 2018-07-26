@@ -30,9 +30,10 @@ long ParseNumber(string n) {
 
 using namespace std;
 void HelpAlchemy2() {
-	cout << "alchmey2, a model based read simulator. Each model is a histogram of" << endl
-			 << "output values for a k-mer context.  The output is sampled according " << endl
-			 << "to the histogram." << endl;
+	cout << "alchmey2: A model based read simulator. Models are built from a bam file and " << endl
+			 << "          are aligner and genome dependent. Each model is a histogram of sequencer  " << endl
+			 << "          values from a k-mer context. Simulated output is sampled according " << endl
+			 << "          to the histogram." << endl;
 	cout << "Usage: alchemy2 [options]" << endl
 			 << " Storing a model: " << endl
 			 << "   -b (string) Aligned reads bam file." << endl
@@ -52,7 +53,11 @@ void HelpAlchemy2() {
 			 << "   -E (string) Use emprical read length distribution (false=log-normal)." << endl
 			 << "   -B (int)    Number of bases to simulated. Ignores -r" << endl
 			 << "   -u (int)    Override model mean read length" << endl
-			 << "   -V (int)    Override model read length variance" << endl;
+			 << "   -V (int)    Override model read length variance" << endl << endl;
+	cout << " Examples: " << endl
+			 << "   alchemy2  -b reads.bam -g hg38.fa -s 1000 -k 5 -L 50000 -m hg38.alc" << endl
+			 << "   alchemy2  -g hg38.fa  -m hg38.alc -B 20G  -o genome-wide.fasta" << endl
+			 << "   alchemy2  -g hg38.fa  -m hg38.alc -B 300M -R regions.bed  -o regions.fasta" << endl;
 }
 
 
