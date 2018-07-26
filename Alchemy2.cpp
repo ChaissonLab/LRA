@@ -30,7 +30,7 @@ long ParseNumber(string n) {
 
 using namespace std;
 void HelpAlchemy2() {
-	cout << "alchmey2: A model based read simulator. Models are built from a bam file and " << endl
+	cout << "alchemy2: A model based read simulator. Models are built from a bam file and " << endl
 			 << "          are aligner and genome dependent. Each model is a histogram of sequencer  " << endl
 			 << "          values from a k-mer context. Simulated output is sampled according " << endl
 			 << "          to the histogram." << endl;
