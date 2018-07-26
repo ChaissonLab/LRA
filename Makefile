@@ -1,4 +1,4 @@
-all:	lra qti
+all:	lra alchemy2
 PROF=/home/cmb-16/mjc/shared/lib/
 CCOPTS_BASE=-std=c++14 
 DEBUG?=""
@@ -42,11 +42,17 @@ tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 lra: lra.o
 	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
+alchemy2: Alchemy2.o
+	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
+
 qti: QueryTime.o
 	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
 lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a
 	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  lra.cpp 
+
+Alchemy2.o: Alchemy2.cpp  htslib/lib/libhts.a
+	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  Alchemy2.cpp
 
 QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
 	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  QueryTime.cpp

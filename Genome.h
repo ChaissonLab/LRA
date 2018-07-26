@@ -1,6 +1,13 @@
 #ifndef GENOME_H_
 #define GENOME_H_
 #include "htslib/kseq.h"
+#include <map>
+#include <vector>
+#include <assert.h>
+#include <iostream>
+#include <fstream>
+#include "Types.h"
+using namespace std;
 
 class Header {
  public:
@@ -73,6 +80,7 @@ class Genome {
  public:
 	vector<char*> seqs;
 	vector<int>   lengths;
+	map<string, int> nameMap;
 	uint64_t GetSize() {
 		if (header.pos.size() == 0) {
 			return 0;
@@ -93,7 +101,7 @@ class Genome {
 		gzFile f = gzopen(genome.c_str(), "r");
 		kseq_t *ks = kseq_init(f);
 		uint64_t offset=0;
-		
+		int i=0;
 		while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
 			char *seq = new char[ks->seq.l];
 			memcpy(seq, ks->seq.s, ks->seq.l);
@@ -101,6 +109,8 @@ class Genome {
 			lengths.push_back(ks->seq.l);
 			offset+=ks->seq.l;
 			header.Add(ks->name.s, offset);
+			nameMap[ks->name.s] = i;
+			i++;
 		}
 		kseq_destroy(ks);
 	}
@@ -108,6 +118,14 @@ class Genome {
 		for (int i = 0; i < seqs.size(); i++) {
 			delete[] seqs[i];
 			seqs[i] = NULL;
+		}
+	}
+	int GetIndex(string chrom) {
+		if (nameMap.find(chrom) == nameMap.end()){
+			return -1;
+		}
+		else {
+			return nameMap[chrom];
 		}
 	}
 	char *OffsetToChrom(GenomePos offset) {
