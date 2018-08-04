@@ -40,7 +40,7 @@ tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 # -D _MAT_PRINT_
 
 lra: lra.o
-	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -lcurl -o $@
+	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
 alchemy2: Alchemy2.o
 	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
