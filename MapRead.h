@@ -742,19 +742,24 @@ void MapRead(Read &read,
 
 		
 			
-		// Build SeedSet.
+		// Build SeedSet from refined (small) matches.
 		seqan::SeedSet<seqan::Seed<seqan::Simple>, seqan::Unordered> seedSet;
 
 		for (int m=0; m< refinedClusters[r].matches.size(); m++) {
 			seqan::addSeed(seedSet, 
-										 seqan::Seed<seqan::Simple>(refinedClusters[r].matches[m].second.pos, 
-																								refinedClusters[r].matches[m].first.pos, 
-																								k),
-										 seqan::Single());
+				       seqan::Seed<seqan::Simple>(refinedClusters[r].matches[m].second.pos, 
+								  refinedClusters[r].matches[m].first.pos, 
+								  k),
+				       seqan::Single());
 		}
 
 		// Perform sparse chaining, uses time O(n log n).
+		//
+		// Merge anchors that are not overlapping
 
+		//
+		// The input is a set of seqan::Seed<seqan::Simple> > seeds
+		//
 		seqan::String<seqan::Seed<seqan::Simple> > chain;
 		if (seqan::length(seedSet) > 0) {
 			seqan::chainSeedsGlobally(chain, seedSet, seqan::SparseChaining());
