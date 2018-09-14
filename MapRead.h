@@ -11,6 +11,8 @@
 #include <algorithm>
 
 #include <sstream>
+#include "IndexedSeed.h"
+#include "MergeSplit.h"
 
 #include "Clustering.h"
 #include "seqan/seeds.h"
@@ -57,18 +59,6 @@ void SetMatchAndGaps(GenomePos qs, GenomePos qe, GenomePos ts, GenomePos te, int
 	tg=te-ts-m;
 }
 
-struct IndexedSeed_;
-typedef seqan::Tag<IndexedSeed_> IndexedSeed;;
-
-template<typename TConfig>
-class seqan::Seed<IndexedSeed, TConfig> : public seqan::Seed<Simple, TConfig>{
-public:
-	int index;
-	Seed(int i, int j, int k, int l) : seqan::Seed<Simple,TConfig>(i,j,k,l){index=-1;}
-	Seed(int i, int j, int k) : seqan::Seed<Simple,TConfig>(i,j,k){index=-1;}
-	Seed() : seqan::Seed<Simple,TConfig>(){index=-1;}	
-	Seed(int i, int j, int k, int l, int idx) : seqan::Seed<Simple,TConfig>(i,j,k,l), index(idx) {}
-};
 
 void RemoveOverlappingClusters(vector<Cluster> &clusters, Options &opts) {
 	int a=0;
@@ -740,17 +730,54 @@ void MapRead(Read &read,
 			continue;
 		}
 
+		//
+		// At this point in the code, refinedClusters[r].matches is a list
+		// of k-mer matches between the read and the genome. 
 		
+		//
+		// This is where the code should go for merging colinear matches
+
 			
 		// Build SeedSet from refined (small) matches.
-		seqan::SeedSet<seqan::Seed<seqan::Simple>, seqan::Unordered> seedSet;
+		seqan::SeedSet<IndSeed, seqan::Unordered> seedSet;
+		//
+		// Jingwen: Instead of copying directly from refinedClusters[r].matches into the seed set, you can use your code to:
+		//  1. Merge adjacent anchors (using "merge" from MergeSplit.h)
+		//  2. Split overlapping anchors.
+		// 
+		// The container of matches is 
+		//	vector<Cluster> refinedClusters(clusters.size());
+		// Each of these has a vector 'matches', refinedClusters[r].matches
+		// 'matches' is defined as 	GenomePairs matches;
+		// GenomePairs is a list of GenomePair:
+		// typedef vector<GenomePair > GenomePairs;
+		// a GenomePair is a pair of indexes into a genome or a read (both called genomes)
+		// it is defined as:
+		// typedef pair<GenomeTuple, GenomeTuple> GenomePair;
+		// You access the first using 'first', as in:
+		// GenomePair p;
+		// p.first.pos = 1000;
+		// p.second.pos=2000;
+		//   Each GenomeTuple contains a 'pos' , or the position of a k-mer in a genome (or read), and a tuple, which is just a k-mer. 
+		//  When there is a GenomePair, the two tuples are the same!
+		//
 
-		for (int m=0; m< refinedClusters[r].matches.size(); m++) {
-			seqan::addSeed(seedSet, 
-				       seqan::Seed<seqan::Simple>(refinedClusters[r].matches[m].second.pos, 
-								  refinedClusters[r].matches[m].first.pos, 
-								  k),
-				       seqan::Single());
+		// The k-mer that is used in the refined matches is store in 
+		// smallOpts.globalK
+
+		if (opts.mergeClusters) {
+			// add merge split code here
+			// The result should be to store the merged clusters in seedSet
+
+		}
+		else {
+			for (int m=0; m< refinedClusters[r].matches.size(); m++) {
+				seqan::addSeed(seedSet, 
+											 seqan::Seed<seqan::Simple>(refinedClusters[r].matches[m].second.pos, 
+																									refinedClusters[r].matches[m].first.pos, 
+																									k),
+											 seqan::Single());
+			}
 		}
 
 		// Perform sparse chaining, uses time O(n log n).

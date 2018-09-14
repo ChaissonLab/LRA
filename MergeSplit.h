@@ -1,4 +1,6 @@
 // generating k-mers of fixed length + merging k-mers into longer fragments + preparing for spase dp
+#ifndef MERGE_SPLIT_H_
+#define MERGE_SPLIT_H_
 
 #include <iostream> //std::cout 
 #include <fstream>   
@@ -11,64 +13,49 @@
 #include <set>
 #include "seqan/seeds.h"
 #include "seqan/align.h"
-
+#include "IndexedSeed.h"
 
 using namespace std;
-using namespace seqan;
 
 
-typedef seqan::Seed<Simple> TSeed;
-
-struct IndexedSeed_;
-typedef seqan::Tag<IndexedSeed_> IndexedSeed;
-
-template<typename TConfig>
-class seqan::Seed<IndexedSeed, TConfig> : public seqan::Seed<Simple, TConfig>{
-public:
-	int index;
-	Seed(int i, int j, int k, int l) : seqan::Seed<Simple,TConfig>(i,j,k,l){index=-1;}
-	Seed(int i, int j, int k) : seqan::Seed<Simple,TConfig>(i,j,k){index=-1;}
-	Seed() : seqan::Seed<Simple,TConfig>(){index=-1;}	
-	Seed(int i, int j, int k, int l, int idx) : seqan::Seed<Simple,TConfig>(i,j,k,l), index(idx) {}
-};
-
-
+typedef seqan::Seed<seqan::Simple> TSeed;
 typedef seqan::Seed<IndexedSeed> IndSeed;
 
 typedef SeedSet<IndSeed> IndSeedSet;
 
+
 template <typename TConfig>
-typename Position<Seed<IndexedSeed, TConfig> >::Type
-beginPositionH(Seed<IndexedSeed, TConfig> const & seed)
+typename seqan::Position<seqan::Seed<IndexedSeed, TConfig> >::Type
+	beginPositionH(seqan::Seed<IndexedSeed, TConfig> const & seed)
 {
     return seed._beginPositionH;
 }
 
 
 template <typename TConfig>
-typename Position<Seed<IndexedSeed, TConfig> >::Type
-beginPositionV(Seed<IndexedSeed, TConfig> const & seed)
+typename seqan::Position<seqan::Seed<IndexedSeed, TConfig> >::Type
+beginPositionV(seqan::Seed<IndexedSeed, TConfig> const & seed)
 {
     return seed._beginPositionV;
 }
 
 
 template <typename TConfig>
-typename Position<Seed<IndexedSeed, TConfig> >::Type
-endPositionH(Seed<IndexedSeed, TConfig> const & seed)
+typename seqan::Position<seqan::Seed<IndexedSeed, TConfig> >::Type
+endPositionH(seqan::Seed<IndexedSeed, TConfig> const & seed)
 {
     return seed._endPositionH;
 }
 
 
 template <typename TConfig>
-typename Position<Seed<IndexedSeed, TConfig> >::Type
-endPositionV(Seed<IndexedSeed, TConfig> const & seed)
+typename seqan::Position<seqan::Seed<IndexedSeed, TConfig> >::Type
+endPositionV(seqan::Seed<IndexedSeed, TConfig> const & seed)
 {
     return seed._endPositionV;
 }
 
-
+// Debugging code
 template <typename TStream, typename TConfig>
 inline TStream &
 operator<<(TStream & stream, Seed<IndexedSeed, TConfig> const & seed)
@@ -82,19 +69,6 @@ operator<<(TStream & stream, Seed<IndexedSeed, TConfig> const & seed)
 }
 
 
-// read fasta file 
-static void
-read_fasta_file_single_sequence(const string &filename, string &T) {
-
-	ifstream in(filename.c_str());
-	string line;
-	in >> line;
-    while (in >> line)
-    	T += line;
-}
-
-
-// generate k-mers and add them into seedSet
 void
 find_match (const string &read, const string &genome, const unsigned int &k, vector<TSeed> &seedVector) { 
 	unsigned t = 0; // record the number of matches
@@ -137,9 +111,7 @@ merge (vector<TSeed> &seedVector, vector<vector<TSeed*>> &v, const unsigned int 
 	 		// situation 2: different diagonal, but the difference between different diagonals is within threshold 0.25*k. 
 	 		// and the distance between reads and genomes are within threshold h. (avoid merging two unrelated seeds
 	 		//while (!situation 1) && (!situation 2); ++ii
-			
-			//
-			// v[ii].end()-1 -> tup.first.pos - tup.second.pos (diagonal)
+
 	 		while (ii <= v.size() - 1 && ((beginDiagonal(**(v[ii].end() - 1)) != beginDiagonal(*it) || labs(beginPositionH(*it) - endPositionH(**(v[ii].end() - 1))) > h) &&
 	 		 (labs(beginDiagonal(**(v[ii].end() - 1)) - beginDiagonal(*it)) > 0.25*k || beginPositionH(*it) - endPositionH(**(v[ii].end() - 1)) > h ||
 	 		 	beginPositionV(*it) - endPositionV(**(v[ii].end() - 1)) > h) )) {
@@ -364,47 +336,4 @@ AddInset (vector<vector<IndSeed>> &splitVSeed, IndSeedSet seedSet) {
 }
 
 
-int 
-main (int argc, const char * const argv[]) {
-
-   if (argc != 5) {
-      cerr << "NEEDS INPUTS: " << argv[0] << " <FASTA-FILE1>/read and <FASTA-FILE2>/genome and K-MER LENGTH and MERGING THRESHOLD h and DENSITY THRESHOLD g" << endl;
-      return EXIT_FAILURE;
-    }
-
-
-   const string filename1(argv[1]);  // read
-   const string filename2(argv[2]);  // genome
-
-   const unsigned int k = atoi(argv[3]); // kmer length 
-   const unsigned int h = atoi(argv[4]); //  merge threshold (distance btwn read and gemone) 1000
-   const unsigned int g = atoi(argv[5]); // the density threshold of long seed 100
-
-   std::string read;
-   std::string genome;
-   read_fasta_file_single_sequence(filename1, read);
-   read_fasta_file_single_sequence(filename2, genome);
-
-   vector<TSeed> seedVector;
-   find_match(read, genome, k, seedVector);
-
-   vector<vector<TSeed*>> v;
-   merge(seedVector, v, h, k);
-
-
-   vector<vector<TSeed*>> v_prime; // v_prime[i] means i-th long seed
-   RemoveSomeSeed(v, v_prime, g);
-
-
-   vector<vector<IndSeed>> splitHSeed;
-   SplitH(v_prime, splitHSeed);
-
- 
-   vector<vector<IndSeed>> splitVSeed;
-   SplitV(splitHSeed, splitVSeed); // splitVSeed stores all seeds we want
-
-   IndSeedSet seedSet;
-   AddInset(splitVSeed, seedSet);
-
-  return 0;
-}
+#endif

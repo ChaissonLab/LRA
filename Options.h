@@ -16,6 +16,7 @@ public:
 	int maxDiag;
 	int minClusterSize;
 	int window;
+	bool mergeClusters;
 	bool mergeGapped;
 	int minDiagCluster;
 	int minRefinedClusterSize;
@@ -56,6 +57,7 @@ public:
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
 		maxGap=10000;
+		mergeClusters=false;
 	}
 };
 #endif
