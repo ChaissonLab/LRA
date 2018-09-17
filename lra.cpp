@@ -53,7 +53,7 @@ void HelpMap() {
 			 << "               matches (40). Typically m > 3*M" << endl
 			 << "   -a  (flag)  Query all positions in a read, not just minimizers. " << endl
 			 << "               This is 10-20% slower, with an increase in specificity. " << endl
-			 << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl;
+			 << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl
 			 << "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl;
 }
 		

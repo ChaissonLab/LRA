@@ -737,10 +737,10 @@ void MapRead(Read &read,
 		//
 		// This is where the code should go for merging colinear matches
 
-			
 		// Build SeedSet from refined (small) matches.
 		seqan::SeedSet<IndSeed, seqan::Unordered> seedSet;
-		//
+
+
 		// Jingwen: Instead of copying directly from refinedClusters[r].matches into the seed set, you can use your code to:
 		//  1. Merge adjacent anchors (using "merge" from MergeSplit.h)
 		//  2. Split overlapping anchors.
@@ -766,14 +766,32 @@ void MapRead(Read &read,
 		// smallOpts.globalK
 
 		if (opts.mergeClusters) {
+
 			// add merge split code here
 			// The result should be to store the merged clusters in seedSet
+			CartesianSort<GenomeTuple>(refinedClusters[r].matches);
+
+			vector<vector<GenomePair*>> v;
+			unsigned int h = 500; 
+			merge (refinedClusters[r], v, h, k);
+
+			vector<vector<GenomePair*>> v_prime;
+			unsigned int g = 50;
+			RemoveSomeSeed (v, v_prime, g, k);
+
+			vector<vector<IndSeed>> splitHSeed;
+			SplitH (v_prime, splitHSeed, k);
+
+			vector<vector<IndSeed>> splitVSeed;
+			SplitV (splitHSeed, splitVSeed);
+
+			AddInset (splitVSeed, seedSet);
 
 		}
 		else {
 			for (int m=0; m< refinedClusters[r].matches.size(); m++) {
 				seqan::addSeed(seedSet, 
-											 seqan::Seed<seqan::Simple>(refinedClusters[r].matches[m].second.pos, 
+											 seqan::Seed<IndexedSeed>(refinedClusters[r].matches[m].second.pos, 
 																									refinedClusters[r].matches[m].first.pos, 
 																									k),
 											 seqan::Single());
