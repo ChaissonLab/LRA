@@ -772,21 +772,20 @@ void MapRead(Read &read,
 			CartesianSort<GenomeTuple>(refinedClusters[r].matches);
 
 			vector<vector<GenomePair*>> v;
-			unsigned int h = 500; 
+			int h = 500; 
 			merge (refinedClusters[r], v, h, k);
 
-			vector<vector<GenomePair*>> v_prime;
-			unsigned int g = 50;
-			RemoveSomeSeed (v, v_prime, g, k);
+	//		vector<vector<GenomePair*>> v_prime;
+	//		int g = 10;
+	//		RemoveSomeSeed (v, v_prime, g, k);
 
 			vector<vector<IndSeed>> splitHSeed;
-			SplitH (v_prime, splitHSeed, k);
+			SplitH (v, splitHSeed, k);
 
 			vector<vector<IndSeed>> splitVSeed;
 			SplitV (splitHSeed, splitVSeed);
 
 			AddInset (splitVSeed, seedSet);
-
 		}
 		else {
 			for (int m=0; m< refinedClusters[r].matches.size(); m++) {
@@ -798,6 +797,7 @@ void MapRead(Read &read,
 			}
 		}
 
+
 		// Perform sparse chaining, uses time O(n log n).
 		//
 		// Merge anchors that are not overlapping
@@ -805,6 +805,7 @@ void MapRead(Read &read,
 		//
 		// The input is a set of seqan::Seed<seqan::Simple> > seeds
 		//
+
 		seqan::String<seqan::Seed<seqan::Simple> > chain;
 		if (seqan::length(seedSet) > 0) {
 			seqan::chainSeedsGlobally(chain, seedSet, seqan::SparseChaining());

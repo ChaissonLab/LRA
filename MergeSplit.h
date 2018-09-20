@@ -69,17 +69,18 @@ operator<<(TStream & stream, seqan::Seed<IndexedSeed, TConfig> const & seed)
 }
 
 
-unsigned int 
+int64_t 
 Diagonalnum (GenomePair & t) {
-	return t.first.pos - t.second.pos;
+	return (int64_t)t.first.pos - (int64_t)t.second.pos;
 }
 
 
 // This function merges seeds which satisfying situation 1 & situation 2
 void 
-merge (Cluster &rCr, vector<vector<GenomePair*>> &v, unsigned int h, unsigned int k) { // h is the threshold of the distance btwn read/genome																							
+merge (Cluster &rCr, vector<vector<GenomePair*>> &v, int h, int k) { // h is the threshold of the distance btwn read/genome																							
 
 	for (vector<GenomePair>::iterator it = rCr.matches.begin(); it != rCr.matches.end(); ++it) {
+
 		vector<GenomePair*> r;
 		GenomePair * l;
 
@@ -96,10 +97,11 @@ merge (Cluster &rCr, vector<vector<GenomePair*>> &v, unsigned int h, unsigned in
 	 		// situation 2: (on different diagonal and the difference(diagonal) < 0.25*k) && (difference(read) <= h, differemce(genome) <= h) (avoid merging two unrelated seeds)
 	 		//while (!situation 1) && (!situation 2); ++ii
 
-			while (ii < v.size() - 1 && ((Diagonalnum(*it) != Diagonalnum(**(v[ii].end() - 1)) || (*it).first.pos - (**(v[ii].end() -1)).first.pos - k + 1 > h)
-			&& (labs(Diagonalnum(**(v[ii].end() - 1)) - Diagonalnum(*it)) > 0.25*k || ((*it).first.pos - (**(v[ii].end() -1)).first.pos - k + 1 > h || 
-			(*it).first.pos - (**(v[ii].end() -1)).first.pos - k + 1 <= 0) || ((*it).second.pos - (**(v[ii].end() - 1)).second.pos - k + 1 > h || 
-			(*it).second.pos - (**(v[ii].end() - 1)).second.pos - k + 1 <= 0)))) {
+
+			while (ii <= v.size() - 1 && ((Diagonalnum(*it) != Diagonalnum(**(v[ii].end() - 1)) || (*it).first.pos > h + (**(v[ii].end() -1)).first.pos + k - 1)
+			&& (labs(Diagonalnum(**(v[ii].end() - 1)) - Diagonalnum(*it)) > 0.25*k || ((*it).first.pos > h + (**(v[ii].end() -1)).first.pos + k - 1|| 
+			(**(v[ii].end() -1)).first.pos - k + 1  >= (*it).first.pos) || ((*it).second.pos > h + (**(v[ii].end() - 1)).second.pos + k - 1 || 
+			(**(v[ii].end() - 1)).second.pos - k + 1 >= (*it).second.pos)))) {
 				++ii;
 			}
 
@@ -113,15 +115,27 @@ merge (Cluster &rCr, vector<vector<GenomePair*>> &v, unsigned int h, unsigned in
 			}
 		}
 	}
+
+////////////////Debug Code
+/*
+for (unsigned int i = 0; i < v.size(); ++i){
+	cout << "i: "<< i << endl;
+	for (vector<GenomePair*>::iterator it = v[i].begin(); it != v[i].end(); ++it) {
+		cout << "kmer: " << (**it).first.pos << " " << (**it).second.pos << " "<< (**it).first.pos + k - 1 << " "<< (**it).second.pos + k - 1 << " diagonal: " << (**it).first.pos - (**it).second.pos<< endl;
+	}	
+}
+*/
+
+
 }
 
 
 // This function removes very short seeds (distances on read & genome are less than 100bp) and seeds with very low density(less than parameter g)
 void 
-RemoveSomeSeed (vector<vector<GenomePair*>> &v, vector<vector<GenomePair*>> &v_prime, unsigned int g, unsigned int k){ // g is the threshold of the density
+RemoveSomeSeed (vector<vector<GenomePair*>> &v, vector<vector<GenomePair*>> &v_prime, int g, unsigned int k){ // g is the threshold of the density
 
 	for (unsigned int i = 0; i < v.size(); ++i) {
-		if ((**(v[i].end() - 1)).first.pos + k - 1 - (**v[i].begin()).first.pos <= 100 && (**(v[i].end() - 1)).second.pos + k - 1 - (**v[i].begin()).second.pos <= 100) { // if the seed is too short, delete it
+		if ((**(v[i].end() - 1)).first.pos + k - 1 <= 20 + (**v[i].begin()).first.pos && (**(v[i].end() - 1)).second.pos + k - 1 <= 20 + (**v[i].begin()).second.pos) { // if the seed is too short, delete it
 			// do nothing
 		}
 		else if (v[i].size() < g) { // if the v[i] is less than g density, delete it. 
@@ -132,7 +146,20 @@ RemoveSomeSeed (vector<vector<GenomePair*>> &v, vector<vector<GenomePair*>> &v_p
 		}
 	}
 
+
+////////////////Debug Code
+/*
+for (unsigned int i = 0; i < v_prime.size(); ++i){
+	cout << "i: "<< i << endl;
+	for (vector<GenomePair*>::iterator it = v_prime[i].begin(); it != v_prime[i].end(); ++it) {
+		cout << "kmer: " << (**it).first.pos << " " << (**it).second.pos << " "<< (**it).first.pos + k - 1 << " "<< (**it).second.pos + k - 1 << " diagonal: " << (**it).first.pos - (**it).second.pos<< endl;
+	}	
 }
+*/
+
+}
+
+
 
 
 void 
@@ -143,6 +170,15 @@ SplitH (vector<vector<GenomePair*>> &v_prime, vector<vector<IndSeed>> &splitHSee
 		s.insert((**v_prime[q].begin()).first.pos);
 		s.insert((**(v_prime[q].end() - 1)).first.pos + k - 1);
 	}
+
+// debug code 
+/*
+cout << "set: " << endl;
+for (set<unsigned int>::iterator it = s.begin(); it != s.end(); ++it) {
+	cout << "*it: " << *it << endl;
+}
+*/
+
 
 
 	for (unsigned int q = 0; q < v_prime.size(); ++q) {
@@ -186,10 +222,10 @@ SplitH (vector<vector<GenomePair*>> &v_prime, vector<vector<IndSeed>> &splitHSee
  				if (ty == it) {
  					if ((**ty).first.pos <= *lt) {  
  						if ((**ty).first.pos >= *l) {
- 							h.push_back(IndSeed((**ty).first.pos, (**ty).first.pos + k - 1, *lt, *lt - Diagonalnum(**ty), splitHSeed.size()));
+ 							h.push_back(IndSeed((**ty).first.pos, (**ty).second.pos, *lt, (unsigned int)(*lt - Diagonalnum(**ty)), splitHSeed.size()));
  						}
  						else {
- 							h.push_back(IndSeed(*l, *l -Diagonalnum(**ty), *lt, *lt - Diagonalnum(**ty), splitHSeed.size()));
+ 							h.push_back(IndSeed(*l, (unsigned int)(*l -Diagonalnum(**ty)), *lt, (unsigned int)(*lt - Diagonalnum(**ty)), splitHSeed.size()));
 
  						}
  					 	splitHSeed.push_back(h);
@@ -202,7 +238,7 @@ SplitH (vector<vector<GenomePair*>> &v_prime, vector<vector<IndSeed>> &splitHSee
  						h.push_back(IndSeed((**ty).first.pos, (**ty).second.pos, (**ty).first.pos + k - 1, (**ty).second.pos + k - 1, splitHSeed.size()));
  					}
  					else {
- 						h.push_back(IndSeed(*l, *l -Diagonalnum(**ty), (**ty).first.pos + k - 1, (**ty).second.pos + k - 1, splitHSeed.size()));
+ 						h.push_back(IndSeed(*l, (unsigned int)(*l -Diagonalnum(**ty)), (**ty).first.pos + k - 1, (**ty).second.pos + k - 1, splitHSeed.size()));
  					}
 
  					// insert the middle seeds
@@ -214,7 +250,7 @@ SplitH (vector<vector<GenomePair*>> &v_prime, vector<vector<IndSeed>> &splitHSee
 
  					// insert the last seed
  					if ((**it).first.pos <= *lt) {
- 						h.push_back(IndSeed((**it).first.pos, (**it).first.pos + k - 1, *lt, *lt - Diagonalnum(**it), splitHSeed.size()));
+ 						h.push_back(IndSeed((**it).first.pos, (**it).second.pos, *lt, (unsigned int)(*lt - Diagonalnum(**it)), splitHSeed.size()));
  					}
 
  				 	advance(l, 1);
@@ -225,6 +261,19 @@ SplitH (vector<vector<GenomePair*>> &v_prime, vector<vector<IndSeed>> &splitHSee
  		}
 
  	}
+
+
+////////////////Debug Code
+/*
+cout << "splitHSeed.size(): " << splitHSeed.size() << endl;
+for (unsigned int i = 0; i < splitHSeed.size(); ++i){
+	cout << "i: "<< i << endl;
+	for (vector<IndSeed>::iterator it = splitHSeed[i].begin(); it != splitHSeed[i].end(); ++it) {
+		cout << "longseed: *it" << *it << endl;
+	}	
+}
+*/
+
 }
 
 
@@ -313,14 +362,36 @@ SplitV (vector<vector<IndSeed>> &splitHSeed, vector<vector<IndSeed>> &splitVSeed
  			}
  		}
 	 }
+
+
+////////////////Debug Code
+/*
+cout << "splitVSeed.size(): " << splitVSeed.size() << endl;
+for (unsigned int i = 0; i < splitVSeed.size(); ++i){
+	cout << "i: "<< i << endl;
+	for (vector<IndSeed>::iterator it = splitVSeed[i].begin(); it != splitVSeed[i].end(); ++it) {
+		cout << "longseed: *it" << *it << endl;
+	}	
+}
+*/
+
 }
 
 
 void 
-AddInset (vector<vector<IndSeed>> &splitVSeed, IndSeedSet seedSet) {
+AddInset (vector<vector<IndSeed>> &splitVSeed, IndSeedSet &seedSet) {
 	for (unsigned int i = 0; i != splitVSeed.size(); ++i) {
 		seqan::addSeed(seedSet, IndSeed(beginPositionH(*splitVSeed[i].begin()), beginPositionV(*splitVSeed[i].begin()), endPositionH(*(splitVSeed[i].end() - 1)), endPositionV(*(splitVSeed[i].end() - 1)), i), seqan::Single());
 	}
+
+// Debug Code
+/*
+cout << "length(seedSet): " << length(seedSet) << endl;
+for (seqan::Iterator<seqan::SeedSet<IndSeed, seqan::Unordered>>::Type it = seqan::begin(seedSet, seqan::Standard()); it !=seqan::end(seedSet, seqan::Standard()); ++it){
+cout << *it << endl;
+}
+*/
+
 }
 
 
