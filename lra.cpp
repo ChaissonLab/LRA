@@ -233,7 +233,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		for (int procIndex = 0; procIndex < opts.nproc; procIndex++) {
 			pthread_join(threads[procIndex], NULL);
 		}
-		
+	
+	
 	}
 	else {
 		while (reader.GetNext(read)) {
