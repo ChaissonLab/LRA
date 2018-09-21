@@ -75,9 +75,79 @@ Diagonalnum (GenomePair & t) {
 }
 
 
+
+
+
+// Debug code
+void 
+SaveOriginalSeed (Cluster &rCr, FILE* fh, int k) {
+	if (fh == NULL) {
+		perror("Eorror opening file: ");
+	}
+	else {
+		for (vector<GenomePair>::iterator it = rCr.matches.begin(); it != rCr.matches.end(); ++it) {
+			fprintf(fh, "%u %u %u %u\n", (*it).first.pos, (*it).second.pos, (*it).first.pos + k - 1, (*it).second.pos + k - 1);
+		}
+	}
+}
+
+void 
+SaveLongSeed (vector<vector<GenomePair*>> &v, FILE* fp, int k) {
+	if (fp == NULL) {
+		perror("Error opening file: ");
+	}
+	else {
+		for (unsigned int tt = 0; tt < v.size(); ++tt) {
+			if (! v[tt].empty()) { // v[tt] is not empty
+				fprintf(fp, "%u %u %u %u\n", (**(v[tt].begin())).first.pos, (**(v[tt].begin())).second.pos, (**(v[tt].end() - 1)).first.pos + k - 1, (**(v[tt].end() - 1)).second.pos + k - 1); // (read_start, genome_start,read_end, genome_end)
+			}
+		}
+	}
+}
+
+
+void 
+SaveSplit (vector<vector<IndSeed>> &splitVSeed, FILE* yy) {
+	if (yy == NULL) {
+		perror("Error opening file: ");
+	}
+	else {
+		for (unsigned int tt = 0; tt < splitVSeed.size(); ++tt) {
+			if (! splitVSeed[tt].empty()) { // v[tt] is not empty
+				fprintf(yy, "%lu %lu %lu %lu\n", beginPositionH(*(splitVSeed[tt].begin())), beginPositionV(*(splitVSeed[tt].begin())), endPositionH(*(splitVSeed[tt].end() - 1)), endPositionV(*(splitVSeed[tt].end() - 1))); // (read_start, genome_start,read_end, genome_end)
+			}
+		}
+	}
+}
+
+
+void 
+SaveSparse (seqan::String<seqan::Seed<seqan::Simple> > &chain, FILE* fi) {
+	if (fi == NULL) {
+		perror("Error opening file: ");
+	}
+	else {
+		for (unsigned i = 0; i < length(chain); ++i) {
+			fprintf(fi, "%lu %lu %lu %lu\n", beginPositionH(chain[i]), beginPositionV(chain[i]), endPositionH(chain[i]), endPositionV(chain[i]));
+		}
+	}
+}
+
+
+
 // This function merges seeds which satisfying situation 1 & situation 2
 void 
 merge (Cluster &rCr, vector<vector<GenomePair*>> &v, int h, int k) { // h is the threshold of the distance btwn read/genome																							
+/*
+    // Debug code
+	const string filename1("/home/cmb-16/mjc/jingwenr/lra/lra_test/seeds.txt");  // file to store original_seed
+    const string filename2("/home/cmb-16/mjc/jingwenr/lra/lra_test/merge.txt"); // file to store merge result(after removal)
+ 
+    // save the original seeds
+    FILE *fh = fopen(filename1.c_str(), "w");
+    SaveOriginalSeed (rCr, fh, k);
+    fclose(fh);
+ */  
 
 	for (vector<GenomePair>::iterator it = rCr.matches.begin(); it != rCr.matches.end(); ++it) {
 
@@ -126,7 +196,13 @@ for (unsigned int i = 0; i < v.size(); ++i){
 }
 */
 
-
+///////////////Debug code
+/*
+    // save the merge_result
+    FILE *fp = fopen(filename2.c_str(), "w");
+    SaveLongSeed(v, fp, k);
+    fclose(fp);
+*/
 }
 
 
@@ -277,6 +353,8 @@ for (unsigned int i = 0; i < splitHSeed.size(); ++i){
 }
 
 
+
+
 void
 SplitV (vector<vector<IndSeed>> &splitHSeed, vector<vector<IndSeed>> &splitVSeed) {
 	std::set<unsigned int> s;  //elements in s are arranged in strictly increasing order. and no duplicates
@@ -374,6 +452,15 @@ for (unsigned int i = 0; i < splitVSeed.size(); ++i){
 	}	
 }
 */
+/*
+    // debug code
+    const string filename3("/home/cmb-16/mjc/jingwenr/lra/lra_test/split.txt"); // file to store split result
+    // save the split_result
+    FILE *yy = fopen(filename3.c_str(), "w");
+    SaveSplit (splitVSeed, yy);
+    fclose(yy);
+*/
+
 
 }
 

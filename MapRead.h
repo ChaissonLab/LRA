@@ -810,7 +810,18 @@ void MapRead(Read &read,
 		if (seqan::length(seedSet) > 0) {
 			seqan::chainSeedsGlobally(chain, seedSet, seqan::SparseChaining());
 		}
-			
+		
+		//Debug code
+		/*
+		// Print results to stdout.
+		const string filename4("/home/cmb-16/mjc/jingwenr/lra/lra_test/sparse_result.txt");  // file to store original_seed
+		 // save the original seeds
+    	FILE *fi = fopen(filename4.c_str(), "w");
+   		SaveSparse (chain, fi);
+   		fclose(fi);
+	    */
+
+
 		vector<GenomePair> tupChain;
 		int qPrev=0, tPrev=0;
 		for (int ch=0; ch < seqan::length(chain); ch++) {
