@@ -1,4 +1,4 @@
-all:	lra alchemy2
+all:	lra alchemy2 tag
 PROF=/home/cmb-16/mjc/shared/lib/
 CCOPTS_BASE=-std=c++14 
 DEBUG?=""
@@ -29,18 +29,18 @@ HEADERS=MinCount.h \
   Read.h \
   MapRead.h \
   Input.h \
-  AffineOneGapAlign.h
+  AffineOneGapAlign.h \
+  MergeSplit.h
 
 
 htslib/lib/libhts.a:
 	cd htslib && autoheader && autoconf && ./configure --disable-s3 --disable-lzma --disable-bz2 --prefix=$(PWD)/htslib/ && make -j 4 && make install
 
 tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
-	g++ -g TestAffineOneGapAlign.cpp -o tag 
-# -D _MAT_PRINT_
+	g++ -g TestAffineOneGapAlign.cpp -o tag  -D _MAT_PRINT_
 
 lra: lra.o
-	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
+	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@ 
 
 alchemy2: Alchemy2.o
 	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
@@ -49,7 +49,7 @@ qti: QueryTime.o
 	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
 lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a
-	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  lra.cpp 
+	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  lra.cpp
 
 Alchemy2.o: Alchemy2.cpp  htslib/lib/libhts.a
 	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  Alchemy2.cpp
