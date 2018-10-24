@@ -30,11 +30,8 @@ HEADERS=MinCount.h \
   MapRead.h \
   Input.h \
   AffineOneGapAlign.h \
-<<<<<<< HEAD
-  NaiveDP.h
-=======
+  NaiveDP.h \
   MergeSplit.h
->>>>>>> 5df421ef36b52b71d17225fcdf8a9c67658749d7
 
 
 htslib/lib/libhts.a:
@@ -44,11 +41,7 @@ tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 	g++ -g TestAffineOneGapAlign.cpp -o tag  -D _MAT_PRINT_
 
 lra: lra.o
-<<<<<<< HEAD
 	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lcurl -lpthread -o $@
-=======
-	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@ 
->>>>>>> 5df421ef36b52b71d17225fcdf8a9c67658749d7
 
 alchemy2: Alchemy2.o
 	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
