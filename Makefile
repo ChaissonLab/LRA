@@ -31,7 +31,7 @@ HEADERS=MinCount.h \
   Input.h \
   AffineOneGapAlign.h \
   MergeSplit.h \
-  seqan/include/seqan/seeds/seeds_global_chaining.h
+  seqan/include/seqan/seeds/seeds_global_chaining.h \
   NaiveDP.h \
   MergeSplit.h
 
