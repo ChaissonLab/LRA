@@ -30,6 +30,8 @@ HEADERS=MinCount.h \
   MapRead.h \
   Input.h \
   AffineOneGapAlign.h \
+  MergeSplit.h \
+  seqan/include/seqan/seeds/seeds_global_chaining.h
   NaiveDP.h \
   MergeSplit.h
 
@@ -38,7 +40,8 @@ htslib/lib/libhts.a:
 	cd htslib && autoheader && autoconf && ./configure --disable-s3 --disable-lzma --disable-bz2 --prefix=$(PWD)/htslib/ && make -j 4 && make install
 
 tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
-	g++ -g TestAffineOneGapAlign.cpp -o tag  -D _MAT_PRINT_
+	g++ -g TestAffineOneGapAlign.cpp -o tag 
+# -D _MAT_PRINT_
 
 lra: lra.o
 	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lcurl -lpthread -o $@

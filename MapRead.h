@@ -407,7 +407,9 @@ void MapRead(Read &read,
 						LocalIndex &glIndex,
 						 Options &opts,
 						 ostream *output,
-						 sem_t* semaphore=NULL) {
+						 pthread_mutex_t *semaphore=NULL) {
+						 
+
 	vector<GenomeTuple> readmm;
 	vector<pair<GenomeTuple, GenomeTuple> > matches;
 								
@@ -857,10 +859,20 @@ void MapRead(Read &read,
 		vector<GenomePair> tupChain;
 		int qPrev=0, tPrev=0;
 		int csg = seqan::length(chain);
-		for (int ch=0; ch < seqan::length(chain); ch++) {
-			cout << "chained " << beginPositionV(chain[ch]) << "\t" << beginPositionH(chain[ch]) << endl;
-			tupChain.push_back(GenomePair(GenomeTuple(0, beginPositionV(chain[ch])),
-																		GenomeTuple(0, beginPositionH(chain[ch]))));
+		if (opts.mergeClusters) {
+			//
+			// Add small anchors to tupChain.
+			//
+			/*
+				tupChain.push_back(MatchingPos(GenomeTuple(0, beginPositionV(chain[ch])),
+																			 GenomeTuple(0, beginPositionH(chain[ch])), length_of_split_kmer));
+			*/
+		}
+		else {
+			for (int ch=0; ch < seqan::length(chain); ch++) {
+				tupChain.push_back(GenomePair(GenomeTuple(0, beginPositionV(chain[ch])),
+																			GenomeTuple(0, beginPositionH(chain[ch]))));
+			}
 		}
 		if (tupChain.size() == 0) {
 			refinedClusters[r].matches.clear();
@@ -1078,7 +1090,7 @@ void MapRead(Read &read,
 
 			alignment->blocks.push_back(Block(seqan::beginPositionV(chain[c]),
 																				seqan::beginPositionH(chain[c]), glIndex.k));
-			string curAnchor = string(genome.seqs[chromIndex], seqan::beginPositionV(chain[c]), glIndex.k );
+			//			string curAnchor = string(genome.seqs[chromIndex], seqan::beginPositionV(chain[c]), glIndex.k );
 
 			for (int cs = 0; cs < seqan::length(refinedChains[c]); cs++) {
 				//
@@ -1151,7 +1163,7 @@ void MapRead(Read &read,
 	SimpleMapQV(alignments);
 
 	if (semaphore != NULL) {
-		sem_wait(semaphore);
+		pthread_mutex_lock(semaphore);
 	}
 	for (int a=0; a < min(opts.bestn, (int) alignments.size()); a++ ){
 		if (opts.printFormat == 'b') {
@@ -1165,7 +1177,7 @@ void MapRead(Read &read,
 		}
 	}
 	if (semaphore != NULL ) {
-		sem_post(semaphore);
+		pthread_mutex_init(semaphore, NULL);
 	}
 
 	//
