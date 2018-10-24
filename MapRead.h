@@ -157,7 +157,8 @@ int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd,
 	/*
 	cout << "Aligning " << endl;
 	cout << readSeq << endl;
-	cout << chromSeq << endl;*/
+	cout << chromSeq << endl;
+	*/
 	int score = AffineOneGapAlign(readSeq, chromSeq, 4, -4, -3, 15, aln);
 	/*
 	seqan::resize(seqan::rows(align), 2);
@@ -406,7 +407,9 @@ void MapRead(Read &read,
 						LocalIndex &glIndex,
 						 Options &opts,
 						 ostream *output,
-						 sem_t* semaphore=NULL) {
+						 pthread_mutex_t *semaphore=NULL) {
+						 
+
 	vector<GenomeTuple> readmm;
 	vector<pair<GenomeTuple, GenomeTuple> > matches;
 								
@@ -800,8 +803,8 @@ void MapRead(Read &read,
 			for (int m=0; m< refinedClusters[r].matches.size(); m++) {
 				seqan::addSeed(seedSet, 
 											 seqan::Seed<IndexedSeed>(refinedClusters[r].matches[m].second.pos, 
-																									refinedClusters[r].matches[m].first.pos, 
-																									k),
+																								refinedClusters[r].matches[m].first.pos, 
+																								k),
 											 seqan::Single());
 			}
 		}
@@ -855,10 +858,21 @@ void MapRead(Read &read,
 
 		vector<GenomePair> tupChain;
 		int qPrev=0, tPrev=0;
-		for (int ch=0; ch < seqan::length(chain); ch++) {
-
-			tupChain.push_back(GenomePair(GenomeTuple(0, beginPositionV(chain[ch])),
-																		GenomeTuple(0, beginPositionH(chain[ch]))));
+		int csg = seqan::length(chain);
+		if (opts.mergeClusters) {
+			//
+			// Add small anchors to tupChain.
+			//
+			/*
+				tupChain.push_back(MatchingPos(GenomeTuple(0, beginPositionV(chain[ch])),
+																			 GenomeTuple(0, beginPositionH(chain[ch])), length_of_split_kmer));
+			*/
+		}
+		else {
+			for (int ch=0; ch < seqan::length(chain); ch++) {
+				tupChain.push_back(GenomePair(GenomeTuple(0, beginPositionV(chain[ch])),
+																			GenomeTuple(0, beginPositionH(chain[ch]))));
+			}
 		}
 		if (tupChain.size() == 0) {
 			refinedClusters[r].matches.clear();
@@ -1077,6 +1091,7 @@ void MapRead(Read &read,
 
 			alignment->blocks.push_back(Block(seqan::beginPositionV(chain[c]),
 																				seqan::beginPositionH(chain[c]), glIndex.k));
+			//			string curAnchor = string(genome.seqs[chromIndex], seqan::beginPositionV(chain[c]), glIndex.k );
 
 			for (int cs = 0; cs < seqan::length(refinedChains[c]); cs++) {
 				//
@@ -1084,20 +1099,21 @@ void MapRead(Read &read,
 				nextRefinedReadStart   = seqan::beginPositionV(refinedChains[c][cs]);
 				nextRefinedGenomeStart = seqan::beginPositionH(refinedChains[c][cs]);
 				
-				
 
 				int m, rg, gg;
 				SetMatchAndGaps(curRefinedReadEnd, nextRefinedReadStart,
 												curRefinedGenomeEnd, nextRefinedGenomeStart, m, rg, gg);
 
 				if (m > 0) {
-					Alignment aln;
+					Alignment betweenAnchorAlignment;
 					if (opts.refineLevel & REF_DP) {						
 						RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextRefinedReadStart,
 														 genome.seqs[chromIndex], curRefinedGenomeEnd, nextRefinedGenomeStart,
-														 scoreMat, pathMat, aln);
-						alignment->blocks.insert(alignment->blocks.end(), aln.blocks.begin(), aln.blocks.end());
-						aln.blocks.clear();
+														 scoreMat, pathMat, betweenAnchorAlignment);
+						alignment->blocks.insert(alignment->blocks.end(), 
+																		 betweenAnchorAlignment.blocks.begin(), 
+																		 betweenAnchorAlignment.blocks.end());
+						betweenAnchorAlignment.blocks.clear();
 					}
 				}
 
@@ -1148,7 +1164,7 @@ void MapRead(Read &read,
 	SimpleMapQV(alignments);
 
 	if (semaphore != NULL) {
-		sem_wait(semaphore);
+		pthread_mutex_lock(semaphore);
 	}
 	for (int a=0; a < min(opts.bestn, (int) alignments.size()); a++ ){
 		if (opts.printFormat == 'b') {
@@ -1162,7 +1178,7 @@ void MapRead(Read &read,
 		}
 	}
 	if (semaphore != NULL ) {
-		sem_post(semaphore);
+		pthread_mutex_init(semaphore, NULL);
 	}
 
 	//

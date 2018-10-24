@@ -28,7 +28,7 @@ GapCost (unsigned int i, unsigned int j, unsigned int i_prime, unsigned int j_pr
     int64_t jj_prime = (int64_t) j_prime;
 
 	int64_t t = (jj - ii) - (jj_prime - ii_prime);
-   	double a = floor(8*log(abs(t) + 1));
+   	double a = floor(8*log(abs(t) + 1) + 2);
     int64_t b = (int64_t)a;
     return b;  
 }  
@@ -142,6 +142,7 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
 	for (TIntervalPointsIterator it_k = seqan::begin(intervalPoints); it_k != seqan::end(intervalPoints); ++it_k) {
 		TSeed const & seed_k = seeds[it_k->i3];
 
+
 	
 		if (it_k->i2) { // It's a begin point
 			// Find the seed j so that seed j's Genome.cordinate is less or equal to the beginPositionV of seed_k
@@ -162,6 +163,9 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
 			}
 
 
+
+
+
 			int64_t quality = qualityOfChainEndingIn[it_k->i3]; // quality stores the current maximum
 			for (TIntermediateSolutionsIterator it_j = intermediateSolutions.begin(); it_j != intermediateSolutions.end(); ++it_j) { // it_j->i1 <= beginPositionV(seed_k)
 				//cout << "endPositionH(seeds[it_j->i3]:   " << endPositionH(seeds[it_j->i3]) << " " << endPositionV(seeds[it_j->i3]) << " "
@@ -170,9 +174,6 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
 
 				if (beginPositionV(seed_k) >= it_j->i2 && quality <= qualityOfChainEndingIn[it_k->i3] + it_j->i1 -
 					GapCost(endPositionH(seeds[it_j->i3]), endPositionV(seeds[it_j->i3]), beginPositionH(seed_k), beginPositionV(seed_k))) { // Jingwen: Is it "<=" or "<"
-					
-					//--------------debug
-					//cerr << "Gapcost: " << GapCost(endPositionH(seeds[it_j->i3]), endPositionV(seeds[it_j->i3]), beginPositionH(seed_k), beginPositionV(seed_k)) << endl;
 
 					quality = qualityOfChainEndingIn[it_k->i3] + it_j->i1 -
 					GapCost(endPositionH(seeds[it_j->i3]), endPositionV(seeds[it_j->i3]), beginPositionH(seed_k), beginPositionV(seed_k));

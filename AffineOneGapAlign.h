@@ -24,6 +24,8 @@ int SuffToIndex(int ii, int jj, int is, int js, int k, int band) {
 	int res= j*band+d+k+1;
 	return res;
 }
+
+#define MISSING -3200000
 template<typename T>
 void PrintMat(string &qSeq, string &tSeq, vector<T> &mat, int qLen, int tLen, int k, int R, int w) {
 	vector<int> row(qLen+1);
@@ -153,15 +155,15 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 	for (int s=0; s < tLen; s++) {
 		tInt[s+1] = seqMapN[tSeq[s]];
 	}
-	vector<int> upperDiagonalMax(diag+1, INT_MIN), 
+	vector<int> upperDiagonalMax(diag+1, MISSING), 
 		upperDiagonalIndex(diag+1, 0), 
-		lowerDiagonalMax(diag+1, INT_MIN), 
+		lowerDiagonalMax(diag+1, MISSING), 
 		lowerDiagonalIndex(diag+1, borderAr);
 
 	k = min(diag, k);
 	bool alignTop = true;
 	if (diag + 2*k > max(qLen, tLen)) {
-		k=max(qLen,tLen)-diag+3;
+		k=max(qLen,tLen);
 		alignTop= false;
 	}
 		
@@ -171,9 +173,9 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 	
 	int R=band+2;
 	int matSize = (3+k+diag)*R;
-	vector<long> pScore(matSize, INT_MIN);
+	vector<long> pScore(matSize, MISSING);
 	vector<int>	 pPath(matSize,-1);
-	vector<long> sScore(matSize, INT_MIN); //(qLen+1)*(tLen+1), -1);
+	vector<long> sScore(matSize, MISSING); //(qLen+1)*(tLen+1), -1);
 	vector<int>	 sPath(matSize, -1); //(qLen+1)*(tLen+1),-1);
 	//	vector<long> sScore((max(R,qLen+2))*(tLen+2), -1);
 	//	vector<int>	 sPath((max(R,qLen+2))*(tLen+2),-1);
@@ -182,7 +184,6 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 	// First fill out the prefix matrices
 	//
 	//	sPath[PreToIndex(0,0,k,R)] = doneAr;
-	pPath[PreToIndex(0,0,k,R)] = doneAr;
 	int i,j;
 	//	cout << "Lower bound " << endl;
 	for (i=1; i < k+1; i++) {
@@ -196,6 +197,9 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 		pScore[PreToIndex(0, j, k, R) ] = indel*j;
 		pPath[PreToIndex(0, j, k, R)] = downAr;
 	}
+	pScore[PreToIndex(0,0,k,R)] = 0;
+	pPath[PreToIndex(0,0,k,R)] = doneAr;
+		
 #ifdef _MAT_PRINT_
 	cout <<"k-boundaries " << endl;
 	PrintMat(qSeq, tSeq, pPath, qLen, tLen, k, R,4);
@@ -205,33 +209,51 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 		// Left diagonal is a rail
 		// If not rail, then store colmax
 		//		cout << "lower diagonal " << endl;
-		for (i=0; i <= diag-k; i++) {
+		for (i=0; i <= diag-k-1; i++) {
 			assert(PreToIndex(i,i+k+1,k,R) < pScore.size());
-			pScore[PreToIndex(i,i+k+1,k,R)] = INT_MIN;
+			pScore[PreToIndex(i,i+k+1,k,R)] = MISSING;
 			pPath[PreToIndex(i,i+k+1,k,R)] = borderAr;
+#ifdef _MAT_PRINT_
+			cout << "init upper " << i << endl; 
+			PrintMat(qSeq, tSeq, pPath, qLen, tLen, k, R,4);
+			PrintMat(qSeq, tSeq, pScore, qLen, tLen, k, R,4);
+#endif
+
 		}
-		for (i=0; i < diag+k-1; i++) {
+		for (i=1; i < diag+k-1; i++) {
 			assert(PreToIndex(i+k+1,i,k,R) < pScore.size());
-			pScore[PreToIndex(i+k+1,i,k,R)] = INT_MIN;
+			pScore[PreToIndex(i+k+1,i,k,R)] = MISSING;
 			pPath[PreToIndex(i+k+1,i,k,R)] = borderAr;
+#ifdef _MAT_PRINT_
+			cout << "init upper " << i << endl; 
+			PrintMat(qSeq, tSeq, pPath, qLen, tLen, k, R,4);
+			PrintMat(qSeq, tSeq, pScore, qLen, tLen, k, R,4);
+#endif
+
 		}
 
 		lowerDiagonalMax[0] = 0;
 		lowerDiagonalIndex[0] = 0;
 	}
+#ifdef _MAT_PRINT_
+  cout << "initialized left " << endl;
+	PrintMat(qSeq, tSeq, pPath, qLen, tLen, k, R,4);
+	PrintMat(qSeq, tSeq, pScore, qLen, tLen, k, R,4);
+#endif
 			
 	if (qLen <= tLen) {
 		// Right diagonal is a rail.
 		//		cout << "qlen < tlen " << endl;
 		//		cout << "upper diagonal "<< endl;
-		for (j=0; j < diag; j++) {
+		for (j=0; j < diag-1; j++) {
 			assert(PreToIndex(j+k+1,j,k,R) < pScore.size());
-			pScore[PreToIndex(j+k+1,j,k,R)] = INT_MIN;
+			pScore[PreToIndex(j+k+1,j,k,R)] = MISSING;
 			pPath[PreToIndex(j+k+1,j,k,R)] = borderAr;
+
 		}
-		for (j=0; j < diag+k; j++) {
+		for (j=1; j < diag+k; j++) {
 			assert(PreToIndex(j-k-1,j,k,R) < pScore.size());
-			pScore[PreToIndex(j-k-1,j,k,R)] = INT_MIN;
+			pScore[PreToIndex(j-k-1,j,k,R)] = MISSING;
 			pPath[PreToIndex(j-k-1,j,k,R)] = borderAr;
 		}
 
@@ -250,7 +272,7 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 
 	for (j=1; j < tBoundary; j++ ) { // j = diagonal
 		for (i = max(1,j-k); i < min(qBoundary, j+k+1); i++) {
-			//			cout << "Scoring " << i << "\t" << j << endl;
+
 			assert(PreToIndex(i,j-1,k,R) < pScore.size());
 			assert(PreToIndex(i,j-1,k,R)>=0);
 			long sIns = pScore[PreToIndex(i-1,j,k,R)] + indel;
@@ -262,7 +284,7 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 			else {
 				sMat = pScore[PreToIndex(i-1,j-1,k,R)] + mm;
 			}
-			//			cout << " m:" << sMat << " i:" << sIns << " d:" << sDel << endl;
+
 			long maxScore = max(sIns,max(sDel,sMat));
 			pScore[PreToIndex(i,j,k,R)] = maxScore;
 			if (maxScore == sIns) {
@@ -275,8 +297,14 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 				pPath[PreToIndex(i,j,k,R)] = diagAr;
 			}
 
+#ifdef _MAT_PRINT_
+			cout <<"iter  " << i << " " << j << endl;
+			PrintMat(qSeq, tSeq, pPath, qLen, tLen, k, R,4);
+			PrintMat(qSeq, tSeq, pScore, qLen, tLen, k, R,4);
+#endif
+
 			if (i < qLen - k) {
-				if (pScore[PreToIndex(i,j,k,R)] > lowerDiagonalMax[j]) {
+				if (pScore[PreToIndex(i,j,k,R)] >= lowerDiagonalMax[j]) {
 					lowerDiagonalMax[j] = pScore[PreToIndex(i,j,k,R)];
 					lowerDiagonalIndex[j] = i;
 				}
@@ -361,7 +389,7 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 			}		
 
 			for (j=tStart+1, i=qStart; j < tEnd-k; i++,j++) {
-	      sScore[SuffToIndex(i+k+1, j, qLow, tLow, k, R)] = INT_MIN;
+	      sScore[SuffToIndex(i+k+1, j, qLow, tLow, k, R)] = MISSING;
 				sPath[SuffToIndex(i+k+1, j, qLow, tLow, k, R)] = borderAr;			
 			}
 #ifdef _MAT_PRINT_
@@ -393,7 +421,7 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 			for (j=tStart,i=qStart; j< tEnd-k-1; i++,j++) {
 				//				cout << " x uppergrid upper diag " << i << " " << j -k+1<< endl;
 				assert(SuffToIndex(i,j+k+1,qLow, tLow, k, R) < sScore.size());
-				sScore[SuffToIndex(i,j+k+1,qLow, tLow, k, R)]= INT_MIN;
+				sScore[SuffToIndex(i,j+k+1,qLow, tLow, k, R)]= MISSING;
 				sPath[SuffToIndex(i,j+k+1,qLow, tLow, k, R)] = borderAr;
 			}
 		}
@@ -406,8 +434,8 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 		for (j=tLow+1; j < tEnd; j++) {
 			int doff=diag + 1 - (tEnd - j);
 			for (i=max(qLow+1, qStart + doff  - k); i < min(qEnd, qStart + doff+k +1); i++) {
-				long delClose=INT_MIN;
-				long insClose=INT_MIN;
+				long delClose=MISSING;
+				long insClose=MISSING;
 				if (qLen >= tLen) {
 					assert(tStart == 0);
 					assert(j < lowerDiagonalMax.size());
@@ -508,7 +536,7 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 			lengths.push_back(i-lowerDiagonalIndex[j]);
 			ops.push_back(arrow);
 			i=lowerDiagonalIndex[j];
-			//			cout << "will continue on query " << i << endl;
+			//			cout << "will continue on query " << i << "," << j << endl;
 		}
 	}
 	else {
@@ -523,6 +551,8 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 	while (arrow != borderAr and arrow != doneAr and i >= 0 and j >= 0) {
 		assert(arrow != -1);
 		assert( arrow != gapDownAr and arrow != gapLeftAr);
+		//
+		// start gap.
 		if (lengths.size() == 0 or ops[ops.size()-1] != arrow) {
 			lengths.push_back(1);
 			ops.push_back(arrow);
@@ -559,7 +589,7 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 	for (i=lengths.size(); i > 0; i--) {
 		int op=ops[i-1];
 		int len=lengths[i-1];
-		//		cout << i-1 << " " << op << " " << len << endl;
+
 		if (op == leftAr or op == gapLeftAr) {
 			qPos+= len;
 		}

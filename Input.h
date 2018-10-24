@@ -23,7 +23,7 @@ class Input {
 	htsFile *htsfp;
 	kseq_t *ks;
 	bam_hdr_t *samHeader;			
-	sem_t *semaphore;
+	pthread_mutex_t semaphore;
 	bool doInit;
 	int curFile;
 	int basesRead;
@@ -130,8 +130,9 @@ class Input {
 			exit(0);
 		}
 
-		semaphore = sem_open("/reader", O_CREAT, 0644, 1);
-		sem_init(semaphore, 0, 1);
+
+		pthread_mutex_init(&semaphore, NULL);
+
 
 		if (Initialize(allReads[curFile]) == false) {
 			return 0;
@@ -144,7 +145,7 @@ class Input {
 		read.Clear();
 		++nReads;
 		if (top == true) {
-			sem_wait(semaphore);
+			pthread_mutex_lock(&semaphore);
 		}
 
 		if (doInit) {
@@ -215,7 +216,7 @@ class Input {
 		}
 
 		if (top == true) {
-			sem_post(semaphore);
+			pthread_mutex_unlock(&semaphore);
 		}
 		return readOne;
 	}

@@ -17,10 +17,16 @@ class Header {
 		pos.push_back(0);
 	}
 	int Find(uint64_t query) { 
-		vector<uint64_t>::iterator it = lower_bound(pos.begin(), pos.end(), query);
-		int i = it - pos.begin();
-		assert(i > 0);
-		return i-1;
+		
+		if (pos.size() > 0 and query == pos[0]) {
+			return 0;
+		}
+		else {
+			vector<uint64_t>::iterator it = lower_bound(pos.begin(), pos.end(), query);
+			int i = it - pos.begin();
+			assert(i > 0);
+			return i-1;
+		}
 	}
 	uint64_t GetOffset(uint64_t query) {
 		int i = Find(query);

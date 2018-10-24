@@ -3,4 +3,4 @@
 	url = https://github.com/samtools/htslib.git
 [submodule "seqan"]
 	path = seqan
-	url = https://github.com/seqan/seqan
+	url = https://github.com/smehringer/seqan.git

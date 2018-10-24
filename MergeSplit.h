@@ -18,9 +18,8 @@ using namespace std;
 
 
 typedef seqan::Seed<IndexedSeed> IndSeed;
-
-
 typedef seqan::SeedSet<IndSeed> IndSeedSet;
+typedef seqan::Iterator<IndSeedSet>::Type TIterator;
 
 
 template <typename TConfig>
@@ -120,9 +119,22 @@ SaveSplit (vector<vector<IndSeed>> &splitVSeed, FILE* yy) {
 	}
 }
 
+void
+SaveseedSet (IndSeedSet &seedSet, FILE* fd) {
+	if (fd == NULL) {
+		perror("Error opening file: ");
+	}
+	else {
+		for (TIterator tt = begin(seedSet, seqan::Standard()); tt != end(seedSet, seqan::Standard()); ++tt) {
+		fprintf(fd, "%lu %lu %lu %lu\n", beginPositionH(*tt), beginPositionV(*tt), endPositionH(*tt), endPositionV(*tt)); // (read_start, genome_start,read_end, genome_end)
+		}		
+	}
+}
+
+
 
 void 
-SaveSparse (seqan::String<seqan::Seed<seqan::Simple> > &chain, FILE* fi) {
+SaveSparse (seqan::String<IndSeed> &chain, FILE* fi) {
 	if (fi == NULL) {
 		perror("Error opening file: ");
 	}
@@ -168,10 +180,14 @@ merge (Cluster &rCr, vector<vector<GenomePair*>> &v, int h, int k) { // h is the
 	 		//while (!situation 1) && (!situation 2); ++ii
 
 
-			while (ii <= v.size() - 1 && ((Diagonalnum(*it) != Diagonalnum(**(v[ii].end() - 1)) || (*it).first.pos > h + (**(v[ii].end() -1)).first.pos + k - 1)
-			&& (labs(Diagonalnum(**(v[ii].end() - 1)) - Diagonalnum(*it)) > 0.25*k || ((*it).first.pos > h + (**(v[ii].end() -1)).first.pos + k - 1|| 
-			(**(v[ii].end() -1)).first.pos - k + 1  >= (*it).first.pos) || ((*it).second.pos > h + (**(v[ii].end() - 1)).second.pos + k - 1 || 
-			(**(v[ii].end() - 1)).second.pos - k + 1 >= (*it).second.pos)))) {
+			while (ii <= v.size() - 1 && 
+						 ((Diagonalnum(*it) != Diagonalnum(**(v[ii].end() - 1)) ||
+							 (*it).first.pos > h + (**(v[ii].end() -1)).first.pos + k - 1)
+							&& (labs(Diagonalnum(**(v[ii].end() - 1)) - Diagonalnum(*it)) > 0.25*k || 
+									((*it).first.pos > h + (**(v[ii].end() -1)).first.pos + k - 1|| 
+									 (**(v[ii].end() -1)).first.pos - k + 1  >= (*it).first.pos) || 
+									((*it).second.pos > h + (**(v[ii].end() - 1)).second.pos + k - 1 || 
+									 (**(v[ii].end() - 1)).second.pos - k + 1 >= (*it).second.pos)))) {
 				++ii;
 			}
 
@@ -349,7 +365,6 @@ for (unsigned int i = 0; i < splitHSeed.size(); ++i){
 	}	
 }
 */
-
 }
 
 
@@ -461,24 +476,18 @@ for (unsigned int i = 0; i < splitVSeed.size(); ++i){
     fclose(yy);
 */
 
-
 }
 
 
 void 
 AddInset (vector<vector<IndSeed>> &splitVSeed, IndSeedSet &seedSet) {
 	for (unsigned int i = 0; i != splitVSeed.size(); ++i) {
-		seqan::addSeed(seedSet, IndSeed(beginPositionH(*splitVSeed[i].begin()), beginPositionV(*splitVSeed[i].begin()), endPositionH(*(splitVSeed[i].end() - 1)), endPositionV(*(splitVSeed[i].end() - 1)), i), seqan::Single());
+		seqan::addSeed(seedSet, 
+									 IndSeed(beginPositionV(*splitVSeed[i].begin()), 
+													 beginPositionH(*splitVSeed[i].begin()), 
+													 endPositionV(*(splitVSeed[i].end() - 1)), 
+													 endPositionH(*(splitVSeed[i].end() - 1)), i), seqan::Single());
 	}
-
-// Debug Code
-/*
-cout << "length(seedSet): " << length(seedSet) << endl;
-for (seqan::Iterator<seqan::SeedSet<IndSeed, seqan::Unordered>>::Type it = seqan::begin(seedSet, seqan::Standard()); it !=seqan::end(seedSet, seqan::Standard()); ++it){
-cout << *it << endl;
-}
-*/
-
 }
 
 
