@@ -31,6 +31,7 @@ public:
 	int refineLevel;
 	bool doBandedAlignment;
 	int maxGap;
+	bool NaiveDP;
 
 	
 	Options() {
@@ -58,6 +59,7 @@ public:
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
 		maxGap=10000;
 		mergeClusters=false;
+		NaiveDP = false;
 	}
 };
 #endif

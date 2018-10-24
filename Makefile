@@ -7,7 +7,7 @@ CCOPTS=$(CCOPTS_BASE) $(DEBUG)
 else
 CCOPTS=-O3 $(CCOPTS_BASE)  -DNDEBUG -DSEQAN_ENABLE_TESTING=0 -DSEQAN_ENABLE_DEBUG=0
 endif
-STATIC=-static
+STATIC=
 ifeq ($(OPT), "1")
 CCOPTS=-g $(CCOPTS_BASE) -lprofiler
 STATIC=
@@ -32,6 +32,8 @@ HEADERS=MinCount.h \
   AffineOneGapAlign.h \
   MergeSplit.h \
   seqan/include/seqan/seeds/seeds_global_chaining.h
+  NaiveDP.h \
+  MergeSplit.h
 
 
 htslib/lib/libhts.a:
@@ -42,7 +44,7 @@ tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 # -D _MAT_PRINT_
 
 lra: lra.o
-	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@ 
+	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lcurl -lpthread -o $@
 
 alchemy2: Alchemy2.o
 	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@

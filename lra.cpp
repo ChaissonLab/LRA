@@ -54,7 +54,8 @@ void HelpMap() {
 			 << "   -a  (flag)  Query all positions in a read, not just minimizers. " << endl
 			 << "               This is 10-20% slower, with an increase in specificity. " << endl
 			 << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl
-			 << "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl;
+			 << "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl
+			 << "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl;
 }
 		
 class MapInfo {
@@ -139,6 +140,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "-R")) {
 			opts.mergeClusters=true;
+		}
+		else if (ArgIs(argv[argi], "-N")) {
+			opts.NaiveDP = true;
 		}
 		
 		else if (ArgIs(argv[argi], "-o")) {

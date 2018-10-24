@@ -18,6 +18,7 @@
 #include "seqan/seeds.h"
 #include "seqan/align.h"
 #include "AffineOneGapAlign.h"
+#include "NaiveDP.h"
 
 // Print results to stdout.
 typedef seqan::String<seqan::Dna> TSequence;                 // sequence type
@@ -710,7 +711,7 @@ void MapRead(Read &read,
 
 	RemoveEmptyClusters(refinedClusters);
 
-	for (int r =0; r < refinedClusters.size(); r++) {
+	for (int r = 0; r < refinedClusters.size(); r++) {   
 
 		if (refinedClusters[r].matches.size() < opts.minRefinedClusterSize) {
 			continue;
@@ -742,6 +743,11 @@ void MapRead(Read &read,
 
 		// Build SeedSet from refined (small) matches.
 		seqan::SeedSet<IndSeed, seqan::Unordered> seedSet;
+		vector<vector<IndSeed>> splitVSeed; // In splitVSeed, each IndSeed is an original seed. Seeds of the same column
+											// forms a "long" seed. The long seeds are input to Sparse chainning.
+											// After Sparse chainning, we get the result "chain". seqan::String<IndSeed> chain
+											// We can use "IndSeed" in "chain" to go back to splitVSeed, to get the original seeds
+											// that forms "IndSeed" in "chain"
 
 
 		// Jingwen: Instead of copying directly from refinedClusters[r].matches into the seed set, you can use your code to:
@@ -778,15 +784,18 @@ void MapRead(Read &read,
 			int h = 500; 
 			merge (refinedClusters[r], v, h, k);
 
-	//		vector<vector<GenomePair*>> v_prime;
-	//		int g = 10;
-	//		RemoveSomeSeed (v, v_prime, g, k);
+			// Get rid of "long seed" that (distances on read & genome are less than 100bp) and seeds with very low density(less than parameter g)
+			/*
+			vector<vector<GenomePair*>> v_prime;
+			int g = 10;
+			RemoveSomeSeed (v, v_prime, g, k);
+			*/
 
 			vector<vector<IndSeed>> splitHSeed;
 			SplitH (v, splitHSeed, k);
 
-			vector<vector<IndSeed>> splitVSeed;
 			SplitV (splitHSeed, splitVSeed);
+
 
 			AddInset (splitVSeed, seedSet);
 		}
@@ -800,6 +809,13 @@ void MapRead(Read &read,
 			}
 		}
 
+		/*
+		// Debug code ----------- print out "seedSet"
+		const string filename2("/home/cmb-16/mjc/jingwenr/lra/lra_test/seedSet.txt");  
+    	FILE *fd = fopen(filename2.c_str(), "w");
+		SaveseedSet (seedSet, fd); 
+   		fclose(fd);
+		*/
 
 		// Perform sparse chaining, uses time O(n log n).
 		//
@@ -807,22 +823,39 @@ void MapRead(Read &read,
 
 		//
 		// The input is a set of seqan::Seed<seqan::Simple> > seeds
-		//
+		// 
+   		seqan::String<IndSeed> chain;
 
-		seqan::String<seqan::Seed<seqan::Simple> > chain;
-		if (seqan::length(seedSet) > 0) {
-			seqan::chainSeedsGlobally(chain, seedSet, seqan::SparseChaining());
-		}
-		
-		//Debug code
-		/*
-		// Print results to stdout.
-		const string filename4("/home/cmb-16/mjc/jingwenr/lra/lra_test/sparse_result.txt");  // file to store original_seed
-		 // save the original seeds
-    	FILE *fi = fopen(filename4.c_str(), "w");
-   		SaveSparse (chain, fi);
-   		fclose(fi);
-	    */
+
+   		if (opts.NaiveDP) {
+   			// Perform sparse dp with convex gap cost
+			seqan::clear(chain);
+			NaiveDP (seedSet, chain);
+			//------------------debug 
+			cout << "NaiveDP Chain: " << length(chain) << endl;
+			
+			/*
+			//Debug code ------ print out "chain"
+			const string filename5("/home/cmb-16/mjc/jingwenr/lra/lra_test/NaiveDP_result.txt");  
+    		FILE *fz = fopen(filename5.c_str(), "w");
+   			SaveSparse (chain, fz);
+   			fclose(fz);
+			*/
+   		}
+   		else {
+   			seqan::clear(chain);
+			if (seqan::length(seedSet) > 0) {
+				seqan::chainSeedsGlobally(chain, seedSet, seqan::SparseChaining());
+				//cout << "SparseChaining: " << length(chain)<< endl;
+			}
+			/*
+			//Debug code ------ print out "chain"
+			const string filename4("/home/cmb-16/mjc/jingwenr/lra/lra_test/SeqanChaining_result.txt");  
+    		FILE *fi = fopen(filename4.c_str(), "w");
+   			SaveSparse (chain, fi);
+   			fclose(fi);	
+			*/
+   		}
 
 
 		vector<GenomePair> tupChain;
@@ -858,9 +891,8 @@ void MapRead(Read &read,
 			
 		seqan::clear(chain);
 		for (int m=0; m< tupChain.size(); m++) {
-			seqan::append(chain, 
-										seqan::Seed<seqan::Simple>(tupChain[m].second.pos,
-																							 tupChain[m].first.pos, glIndex.k));
+			IndSeed s(tupChain[m].second.pos, tupChain[m].first.pos, glIndex.k);
+			seqan::append(chain,s);
 
 		}
 		int prevq=0;
@@ -879,6 +911,7 @@ void MapRead(Read &read,
 			prevt = chainClust[cc].tEnd;
 		}
 		*/
+
 		GenomePos chainGenomeStart = seqan::beginPositionH(chain[0]);
 		GenomePos chainGenomeEnd   = seqan::endPositionH(chain[seqan::length(chain)-1]);
 
@@ -908,6 +941,10 @@ void MapRead(Read &read,
 		vector<int> scoreMat;
 		vector<Arrow> pathMat;
 
+
+		//----------------------debug code
+		cout << "1" << endl;
+
 		int chainLength = seqan::length(chain);
 		for (int c = 0; chainLength > 0 and c < seqan::length(chain)-1; c++) {
 			GenomePos curGenomeEnd = seqan::endPositionH(chain[c]);
@@ -928,7 +965,8 @@ void MapRead(Read &read,
 
 			if (nextReadStart > curReadEnd and nextGenomeStart > curGenomeEnd) {
 
-				if (subreadLength > 50 and 
+				if (false and 
+						subreadLength > 50 and 
 						subgenomeLength > 50 and opts.refineLevel & REF_DYN ) {
 
 					GenomePos maxLen = max(subreadLength, subgenomeLength);
@@ -936,7 +974,7 @@ void MapRead(Read &read,
 						tinyOpts.globalK=5;
 					}
 					else if (maxLen < 2000) {
-						tinyOpts.globalK=5;
+						tinyOpts.globalK=7;
 					}
 					else {
 						tinyOpts.globalK=9;
@@ -988,13 +1026,21 @@ void MapRead(Read &read,
 					seqan::SeedSet<seqan::Seed<seqan::Simple>, seqan::Unordered> gapSeedSet;
 					for (int m=0; m< gapPairs.size(); m++) {
 						seqan::addSeed(gapSeedSet, 
-													 seqan::Seed<seqan::Simple>(gapPairs[m].second.pos, 
-																											gapPairs[m].first.pos, tinyOpts.globalK),
-													 seqan::Single());
+										seqan::Seed<seqan::Simple>(gapPairs[m].second.pos, 
+										gapPairs[m].first.pos, tinyOpts.globalK),
+										seqan::Single());
 					}
 					seqan::String<seqan::Seed<seqan::Simple> > gapChain;
 					if (seqan::length(gapSeedSet) > 0) {
-						seqan::chainSeedsGlobally(gapChain, gapSeedSet, seqan::SparseChaining());
+						if (opts.NaiveDP) {
+   							// Perform sparse dp with convex gap cost
+							seqan::clear(gapChain);
+							//NaiveDP< seqan::SeedSet<seqan::Seed<seqan::Simple>, seqan::Unordered>,seqan::Seed<seqan::Simple>(gapSeedSet, gapChain);
+							NaiveDP(gapSeedSet, gapChain);
+						}
+						else {
+							seqan::chainSeedsGlobally(gapChain, gapSeedSet, seqan::SparseChaining());
+						}
 					}
 					int pre=seqan::length(gapChain);
 					RemovePairedIndels(curReadEnd, curGenomeEnd, nextReadStart, nextGenomeStart, gapChain, tinyOpts);
@@ -1003,7 +1049,9 @@ void MapRead(Read &read,
 				}
 			}
 		}
-			
+		//------------------debug code 
+		cout << "2" << endl;
+
 		//
 		// Refine and store the alignment
 		//
@@ -1032,6 +1080,7 @@ void MapRead(Read &read,
 			}
 		}
 		*/	
+
 		for (int c = 0; chainLength> 0 and  c < chainLength-1; c++) {
 				
 			//
@@ -1081,8 +1130,7 @@ void MapRead(Read &read,
 																					curRefinedReadEnd - nextRefinedReadStart));
 			}
 
-			// Add the last gap, or the only one if no refinements happened here.
-							 
+			// Add the last gap, or the only one if no refinements happened here.				 
 			int match, readGap, genomeGap;
 			SetMatchAndGaps(curRefinedReadEnd, nextReadStart,
 											curRefinedGenomeEnd, nextGenomeStart, match, readGap, genomeGap);
