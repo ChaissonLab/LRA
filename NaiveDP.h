@@ -16,53 +16,6 @@ typedef seqan::Seed<IndexedSeed> IndSeed;
 typedef seqan::SeedSet<IndSeed> IndSeedSet;
 */
 
-/*
-// Gap cost function: log slope == 0 when gap is very large 
-int64_t
-GapCost (unsigned int i, unsigned int j, unsigned int i_prime, unsigned int j_prime) { // end_x, end_y, start_x, start_y (x cordinate is read, y cordinate is genome)
-	// some function about j-i - (j_prime - i_prime)
-	int64_t ii = (int64_t) i;
-    int64_t jj = (int64_t) j;
-    int64_t ii_prime = (int64_t) i_prime;
-    int64_t jj_prime = (int64_t) j_prime;
-
-	int64_t t = (jj - ii) - (jj_prime - ii_prime);
-	int64_t b;
-	double a;
-
-
-    float gap_score = 2; // gap openning penalty
-    for (unsigned y = 0; y < floor(t/100); y++) {
-			gap_score = gap_score + max(1.00, (10.00 - 0.2*y)*log(100));       	
-    }
-    int64_t b = (int64_t)gap_score;
-    return b;  
-
-
-	if (t < 500) {
-		double a = floor(20*log(abs(t) + 1) + 2);
-    	b = (int64_t)a;		
-	}
-	else if (t < 1000)
-		double a = floor(20*log(501) + 2 + 15*log(t - 500));
-    	b = (int64_t)a;	
-
-	else if (t < 2000) {
-		double a = floor(20*log(501) + 2 + 15*log(500) + 10*log(t - 1000));
-    	b = (int64_t)a;
-	}
-	else if (t < 3000)
-	{
-		double a = floor(20*log(501) + 2 + 15*log(500) + 10*log(1000) + 5*log(t - 2000));
-		b = (int64_t)a;
-	}
-	else {
-		double a = floor(20*log(501) + 2 + 15*log(500) + 10*log(1000) + 5*log(1000) + log(t - 3000));
-		b = (int64_t)a;		
-	}
-    return b;  
-} 
-*/
 
 
 // Gap cost function: log 
@@ -75,7 +28,7 @@ GapCost (unsigned int i, unsigned int j, unsigned int i_prime, unsigned int j_pr
     int64_t jj_prime = (int64_t) j_prime;
 
 	int64_t t = (jj - ii) - (jj_prime - ii_prime);
-   	double a = floor(8*log(abs(t) + 1));
+   	double a = floor(8*log(abs(t) + 1) + 2);
     int64_t b = (int64_t)a;
     return b;  
 }  
@@ -216,25 +169,15 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
 			}
 
 
-			//-----------------debug
-			unsigned j = 0;
-			cout << "intermediateSolutions.size(): " << intermediateSolutions.size() << endl;
-
 
 			int64_t quality = qualityOfChainEndingIn[it_k->i3]; // quality stores the current maximum
 			for (TIntermediateSolutionsIterator it_j = intermediateSolutions.begin(); it_j != intermediateSolutions.end(); ++it_j) { // it_j->i1 <= beginPositionV(seed_k)
 				//cout << "endPositionH(seeds[it_j->i3]:   " << endPositionH(seeds[it_j->i3]) << " " << endPositionV(seeds[it_j->i3]) << " "
 				//	<< beginPositionH(seed_k) << " " << beginPositionV(seed_k) << endl;
-				
-				// ----------------------debug code
-				++j;
-				//cout << "j: " << j << endl;
+
 
 				if (beginPositionV(seed_k) >= it_j->i2 && quality <= qualityOfChainEndingIn[it_k->i3] + it_j->i1 -
 					GapCost(endPositionH(seeds[it_j->i3]), endPositionV(seeds[it_j->i3]), beginPositionH(seed_k), beginPositionV(seed_k))) { // Jingwen: Is it "<=" or "<"
-					
-					//--------------debug
-					//cerr << "Gapcost: " << GapCost(endPositionH(seeds[it_j->i3]), endPositionV(seeds[it_j->i3]), beginPositionH(seed_k), beginPositionV(seed_k)) << endl;
 
 					quality = qualityOfChainEndingIn[it_k->i3] + it_j->i1 -
 					GapCost(endPositionH(seeds[it_j->i3]), endPositionV(seeds[it_j->i3]), beginPositionH(seed_k), beginPositionV(seed_k));

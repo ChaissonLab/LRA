@@ -829,9 +829,7 @@ void MapRead(Read &read,
    			// Perform sparse dp with convex gap cost
 			seqan::clear(chain);
 			NaiveDP (seedSet, chain);
-			//------------------debug 
-			cout << "NaiveDP Chain: " << length(chain) << endl;
-			
+
 			/*
 			//Debug code ------ print out "chain"
 			const string filename5("/home/cmb-16/mjc/jingwenr/lra/lra_test/NaiveDP_result.txt");  
@@ -928,10 +926,6 @@ void MapRead(Read &read,
 
 		vector<int> scoreMat;
 		vector<Arrow> pathMat;
-
-
-		//----------------------debug code
-		cout << "1" << endl;
 
 		int chainLength = seqan::length(chain);
 		for (int c = 0; chainLength > 0 and c < seqan::length(chain)-1; c++) {
@@ -1037,8 +1031,6 @@ void MapRead(Read &read,
 				}
 			}
 		}
-		//------------------debug code 
-		cout << "2" << endl;
 
 		//
 		// Refine and store the alignment
