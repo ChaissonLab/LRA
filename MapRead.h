@@ -157,7 +157,8 @@ int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd,
 	/*
 	cout << "Aligning " << endl;
 	cout << readSeq << endl;
-	cout << chromSeq << endl;*/
+	cout << chromSeq << endl;
+	*/
 	int score = AffineOneGapAlign(readSeq, chromSeq, 4, -4, -3, 15, aln);
 	/*
 	seqan::resize(seqan::rows(align), 2);
@@ -800,8 +801,8 @@ void MapRead(Read &read,
 			for (int m=0; m< refinedClusters[r].matches.size(); m++) {
 				seqan::addSeed(seedSet, 
 											 seqan::Seed<IndexedSeed>(refinedClusters[r].matches[m].second.pos, 
-																									refinedClusters[r].matches[m].first.pos, 
-																									k),
+																								refinedClusters[r].matches[m].first.pos, 
+																								k),
 											 seqan::Single());
 			}
 		}
@@ -857,8 +858,9 @@ void MapRead(Read &read,
 
 		vector<GenomePair> tupChain;
 		int qPrev=0, tPrev=0;
+		int csg = seqan::length(chain);
 		for (int ch=0; ch < seqan::length(chain); ch++) {
-
+			cout << "chained " << beginPositionV(chain[ch]) << "\t" << beginPositionH(chain[ch]) << endl;
 			tupChain.push_back(GenomePair(GenomeTuple(0, beginPositionV(chain[ch])),
 																		GenomeTuple(0, beginPositionH(chain[ch]))));
 		}
@@ -1084,6 +1086,7 @@ void MapRead(Read &read,
 
 			alignment->blocks.push_back(Block(seqan::beginPositionV(chain[c]),
 																				seqan::beginPositionH(chain[c]), glIndex.k));
+			string curAnchor = string(genome.seqs[chromIndex], seqan::beginPositionV(chain[c]), glIndex.k );
 
 			for (int cs = 0; cs < seqan::length(refinedChains[c]); cs++) {
 				//
@@ -1091,20 +1094,21 @@ void MapRead(Read &read,
 				nextRefinedReadStart   = seqan::beginPositionV(refinedChains[c][cs]);
 				nextRefinedGenomeStart = seqan::beginPositionH(refinedChains[c][cs]);
 				
-				
 
 				int m, rg, gg;
 				SetMatchAndGaps(curRefinedReadEnd, nextRefinedReadStart,
 												curRefinedGenomeEnd, nextRefinedGenomeStart, m, rg, gg);
 
 				if (m > 0) {
-					Alignment aln;
+					Alignment betweenAnchorAlignment;
 					if (opts.refineLevel & REF_DP) {						
 						RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextRefinedReadStart,
 														 genome.seqs[chromIndex], curRefinedGenomeEnd, nextRefinedGenomeStart,
-														 scoreMat, pathMat, aln);
-						alignment->blocks.insert(alignment->blocks.end(), aln.blocks.begin(), aln.blocks.end());
-						aln.blocks.clear();
+														 scoreMat, pathMat, betweenAnchorAlignment);
+						alignment->blocks.insert(alignment->blocks.end(), 
+																		 betweenAnchorAlignment.blocks.begin(), 
+																		 betweenAnchorAlignment.blocks.end());
+						betweenAnchorAlignment.blocks.clear();
 					}
 				}
 

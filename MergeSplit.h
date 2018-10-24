@@ -180,10 +180,14 @@ merge (Cluster &rCr, vector<vector<GenomePair*>> &v, int h, int k) { // h is the
 	 		//while (!situation 1) && (!situation 2); ++ii
 
 
-			while (ii <= v.size() - 1 && ((Diagonalnum(*it) != Diagonalnum(**(v[ii].end() - 1)) || (*it).first.pos > h + (**(v[ii].end() -1)).first.pos + k - 1)
-			&& (labs(Diagonalnum(**(v[ii].end() - 1)) - Diagonalnum(*it)) > 0.25*k || ((*it).first.pos > h + (**(v[ii].end() -1)).first.pos + k - 1|| 
-			(**(v[ii].end() -1)).first.pos - k + 1  >= (*it).first.pos) || ((*it).second.pos > h + (**(v[ii].end() - 1)).second.pos + k - 1 || 
-			(**(v[ii].end() - 1)).second.pos - k + 1 >= (*it).second.pos)))) {
+			while (ii <= v.size() - 1 && 
+						 ((Diagonalnum(*it) != Diagonalnum(**(v[ii].end() - 1)) ||
+							 (*it).first.pos > h + (**(v[ii].end() -1)).first.pos + k - 1)
+							&& (labs(Diagonalnum(**(v[ii].end() - 1)) - Diagonalnum(*it)) > 0.25*k || 
+									((*it).first.pos > h + (**(v[ii].end() -1)).first.pos + k - 1|| 
+									 (**(v[ii].end() -1)).first.pos - k + 1  >= (*it).first.pos) || 
+									((*it).second.pos > h + (**(v[ii].end() - 1)).second.pos + k - 1 || 
+									 (**(v[ii].end() - 1)).second.pos - k + 1 >= (*it).second.pos)))) {
 				++ii;
 			}
 
@@ -478,7 +482,11 @@ for (unsigned int i = 0; i < splitVSeed.size(); ++i){
 void 
 AddInset (vector<vector<IndSeed>> &splitVSeed, IndSeedSet &seedSet) {
 	for (unsigned int i = 0; i != splitVSeed.size(); ++i) {
-		seqan::addSeed(seedSet, IndSeed(beginPositionH(*splitVSeed[i].begin()), beginPositionV(*splitVSeed[i].begin()), endPositionH(*(splitVSeed[i].end() - 1)), endPositionV(*(splitVSeed[i].end() - 1)), i), seqan::Single());
+		seqan::addSeed(seedSet, 
+									 IndSeed(beginPositionV(*splitVSeed[i].begin()), 
+													 beginPositionH(*splitVSeed[i].begin()), 
+													 endPositionV(*(splitVSeed[i].end() - 1)), 
+													 endPositionH(*(splitVSeed[i].end() - 1)), i), seqan::Single());
 	}
 }
 
