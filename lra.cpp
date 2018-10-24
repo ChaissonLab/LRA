@@ -66,7 +66,7 @@ public:
 	Input *reader;
 	Options *opts;
 	ostream *out;
-	sem_t *semaphore;
+	pthread_mutex_t semaphore;
 };
 
 void MapReads(MapInfo *mapInfo) {
@@ -79,7 +79,7 @@ void MapReads(MapInfo *mapInfo) {
 						*mapInfo->glIndex, 
 						*mapInfo->opts, 
 						mapInfo->out,
-						mapInfo->semaphore);
+						&mapInfo->semaphore);
 	}
 	pthread_exit(NULL); 
 }
@@ -221,11 +221,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		mapInfo.reader = &reader;
 		mapInfo.opts= &opts;
 		mapInfo.out = outPtr;
-
-		mapInfo.semaphore = sem_open("/writer",     O_CREAT, 0644, 1);
-		sem_init(mapInfo.semaphore, 0, 1);
+		pthread_mutex_init(&mapInfo.semaphore, NULL);
 		
-
 		for (int procIndex = 0; procIndex < opts.nproc; procIndex++ ){ 
 			pthread_create(&threads[procIndex], &threadAttr[procIndex], (void* (*)(void*))MapReads, &mapInfo);
 		}

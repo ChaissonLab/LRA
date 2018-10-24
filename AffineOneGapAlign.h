@@ -25,7 +25,7 @@ int SuffToIndex(int ii, int jj, int is, int js, int k, int band) {
 	return res;
 }
 
-#define MISSING -32
+#define MISSING -3200000
 template<typename T>
 void PrintMat(string &qSeq, string &tSeq, vector<T> &mat, int qLen, int tLen, int k, int R, int w) {
 	vector<int> row(qLen+1);
@@ -304,7 +304,7 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 #endif
 
 			if (i < qLen - k) {
-				if (pScore[PreToIndex(i,j,k,R)] > lowerDiagonalMax[j]) {
+				if (pScore[PreToIndex(i,j,k,R)] >= lowerDiagonalMax[j]) {
 					lowerDiagonalMax[j] = pScore[PreToIndex(i,j,k,R)];
 					lowerDiagonalIndex[j] = i;
 				}
@@ -536,7 +536,7 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 			lengths.push_back(i-lowerDiagonalIndex[j]);
 			ops.push_back(arrow);
 			i=lowerDiagonalIndex[j];
-			//			cout << "will continue on query " << i << endl;
+			//			cout << "will continue on query " << i << "," << j << endl;
 		}
 	}
 	else {
@@ -551,6 +551,8 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 	while (arrow != borderAr and arrow != doneAr and i >= 0 and j >= 0) {
 		assert(arrow != -1);
 		assert( arrow != gapDownAr and arrow != gapLeftAr);
+		//
+		// start gap.
 		if (lengths.size() == 0 or ops[ops.size()-1] != arrow) {
 			lengths.push_back(1);
 			ops.push_back(arrow);

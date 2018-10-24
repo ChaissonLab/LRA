@@ -125,7 +125,7 @@ class Cluster : public ClusterCoordinates {
 	GenomePairs matches;
 	int coarse;
 	Cluster() {}
- Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=0;}
+  Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=0;}
 
 
   Cluster(int s, int e, 
