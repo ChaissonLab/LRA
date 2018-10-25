@@ -873,7 +873,7 @@ void MapRead(Read &read,
 			NaiveDP (seedSet, chain);
 
 			//------------------debug 
-			cerr << "NaiveDP Chain: " << length(chain) << endl;
+			//			cerr << "NaiveDP Chain: " << length(chain) << endl;
 			/*
 			//Debug code ------ print out "chain"
 			const string filename5("/home/cmb-16/mjc/jingwenr/lra/lra_test/NaiveDP_result.txt");  
@@ -886,7 +886,6 @@ void MapRead(Read &read,
 			seqan::clear(chain);
 			if (seqan::length(seedSet) > 0) {
 				seqan::chainSeedsGlobally(chain, seedSet, seqan::SparseChaining());
-				cerr << "SparseChaining: " << length(chain)<< endl;
 			}
 			/*
 			//Debug code ------ print out "chain"
@@ -1153,7 +1152,6 @@ void MapRead(Read &read,
 			alignment->blocks.push_back(Block(seqan::beginPositionV(chain[c]),
 																				seqan::beginPositionH(chain[c]), glIndex.k));
 			//			string curAnchor = string(genome.seqs[chromIndex], seqan::beginPositionV(chain[c]), glIndex.k );
-			cerr << "Refining " << seqan::length(refinedChains[c]) << " chains " << endl;
 			for (int cs = 0; cs < seqan::length(refinedChains[c]); cs++) {
 				//
 				// Refined anchors are with respect to the chained sequence
