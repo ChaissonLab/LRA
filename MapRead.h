@@ -871,9 +871,9 @@ void MapRead(Read &read,
 			// Perform sparse dp with convex gap cost
 			seqan::clear(chain);
 			NaiveDP (seedSet, chain);
+
 			//------------------debug 
 			cerr << "NaiveDP Chain: " << length(chain) << endl;
-			
 			/*
 			//Debug code ------ print out "chain"
 			const string filename5("/home/cmb-16/mjc/jingwenr/lra/lra_test/NaiveDP_result.txt");  
@@ -993,11 +993,8 @@ void MapRead(Read &read,
 		vector<Arrow> pathMat;
 
 
-		//----------------------debug code
-		cerr << "1" << endl;
-
 		int chainLength = seqan::length(chain);
-		cerr << "refining " << chainLength << " global anchors" << endl;
+
 		for (int c = 0; chainLength > 0 and c < seqan::length(chain)-1; c++) {
 			GenomePos curGenomeEnd = seqan::endPositionH(chain[c]);
 			GenomePos nextGenomeStart = seqan::beginPositionH(chain[c+1]);
@@ -1013,7 +1010,7 @@ void MapRead(Read &read,
 
 			GenomePos subreadLength = nextReadStart-curReadEnd;
 			GenomePos subgenomeLength = nextGenomeStart-curGenomeEnd;
-			cerr << "refining\t" << curGenomeEnd << "\t" << nextGenomeStart << "\t" << nextGenomeStart - curGenomeEnd << endl;
+
 			if (nextReadStart > curReadEnd and nextGenomeStart > curGenomeEnd) {
 
 				if (subreadLength > 50 and 
@@ -1100,9 +1097,9 @@ void MapRead(Read &read,
 				}
 			}
 		}
-
 		//------------------debug code 
-		cerr << "2" << endl;
+		//cerr << "2" << endl;
+
 
 		//
 		// Refine and store the alignment
