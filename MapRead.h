@@ -937,7 +937,6 @@ void MapRead(Read &read,
 		diagOpts = smallOpts;
 		diagOpts.maxDiag=15;
 		diagOpts.minClusterSize=1;
-		//StoreDiagonalClusters(tupChain, chainClust, diagOpts, false, refinedClusters[r].strand);
 
 		RemovePairedIndels(tupChain, chainClust, smallOpts);
 			
