@@ -1,6 +1,6 @@
 #ifndef READ_H_
 #define READ_H_
-
+using namespace std;
 class Read {
  public:
 	char *seq;

@@ -86,21 +86,22 @@ template<typename tup> void CompareLists(typename vector<tup>::iterator qBegin,
 				te = ub - tBegin;
 			}
 			GenomePos teStart=te, tei=te;
-			while (tei > ts and tBegin[te-1].t == qBegin[qe].t) {
-				te--;
+			while (tei > ts and tBegin[tei-1].t == qBegin[qe].t) {
+				tei--;
 			}
-			if (te < teStart) {
+			if (tei < teStart and teStart > 0) {
 				GenomePos qeStart=qe;
 				while (qe > qs and qBegin[qe].t == qBegin[qe-1].t) { qe--;}
 
 				if (teStart - te < opts.globalMaxFreq) {
-					for (GenomePos ti=te; ti < teStart; ti++) {
+					for (GenomePos ti=tei; ti < teStart; ti++) {
 						for (GenomePos qi=qe; qi <= qeStart; qi++) {
 							result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
 						}
 					}
 				}
 			}
+			te=tei;
 		}
 	} while (qs < qe and ts < te);
 }

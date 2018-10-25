@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-using namespace std;
+
+#include <thread>
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -15,14 +16,16 @@ using namespace std;
 #include "htslib/kseq.h"
 #include "htslib/sam.h"
 #include "Input.h"
-#include <algorithm>
-#include "SeqUtils.h"
+#include "MMIndex.h"
 #include "TupleOps.h"
 #include "MinCount.h"
-#include "MMIndex.h"
+#include "MapRead.h"
+using namespace std;
+#include <algorithm>
+#include "SeqUtils.h"
 #include "Options.h"
 #include "Alignment.h"
-#include "MapRead.h"
+
 #include <math.h>
 
 
@@ -147,6 +150,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		
 		else if (ArgIs(argv[argi], "-o")) {
 			opts.outfile = argv[++argi];
+		}
+		else if (ArgIs(argv[argi], "-d")) {
+			opts.dotPlot = true;
 		}
 		else {
 			if (genomeFile == "") {

@@ -1,6 +1,6 @@
 #ifndef INDEXED_SEED_H_
 #define INDEXED_SEED_H_
-
+#include <thread>
 #include "seqan/seeds.h"
 
 struct IndexedSeed_;

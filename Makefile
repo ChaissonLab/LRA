@@ -1,6 +1,6 @@
 all:	lra alchemy2 tag
 PROF=/home/cmb-16/mjc/shared/lib/
-CCOPTS_BASE=-std=c++14 
+CCOPTS_BASE=
 DEBUG?=""
 ifneq ($(DEBUG), "")
 CCOPTS=$(CCOPTS_BASE) $(DEBUG)
@@ -31,35 +31,37 @@ HEADERS=MinCount.h \
   Input.h \
   AffineOneGapAlign.h \
   MergeSplit.h \
-  seqan/include/seqan/seeds/seeds_global_chaining.h
+  seqan/include/seqan/seeds/seeds_global_chaining.h \
   NaiveDP.h \
   MergeSplit.h
 
+CPP=g++ -std=c++14 
 
 htslib/lib/libhts.a:
 	cd htslib && autoheader && autoconf && ./configure --disable-s3 --disable-lzma --disable-bz2 --prefix=$(PWD)/htslib/ && make -j 4 && make install
 
 tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
-	g++ -g TestAffineOneGapAlign.cpp -o tag 
+	$(CPP) -g TestAffineOneGapAlign.cpp -o tag 
 # -D _MAT_PRINT_
 
+
 lra: lra.o
-	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lcurl -lpthread -o $@
+	$(CPP) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
 alchemy2: Alchemy2.o
-	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
+	$(CPP) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
 qti: QueryTime.o
-	g++ $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
+	$(CPP) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
 lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a
-	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  lra.cpp
+	$(CPP) $(CCOPTS) -c  -I htslib/include -I seqan/include  lra.cpp
 
 Alchemy2.o: Alchemy2.cpp  htslib/lib/libhts.a
-	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  Alchemy2.cpp
+	$(CPP) $(CCOPTS) -c  -I htslib/include -I seqan/include  Alchemy2.cpp
 
 QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
-	g++ $(CCOPTS) -c  -I htslib/include -I seqan/include  QueryTime.cpp
+	$(CPP) $(CCOPTS) -c  -I htslib/include -I seqan/include  QueryTime.cpp
 
 
 clean:

@@ -139,6 +139,7 @@ class Input {
 		}
 		timestamp = clock();
 		doInit = false;
+		return true;
 	}
 
 	bool GetNext(Read &read, bool top=true) {

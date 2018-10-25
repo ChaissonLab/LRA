@@ -4,7 +4,7 @@
 #include "Options.h"
 #include "Genome.h"
 #include "Sorting.h"
-
+#include "MinCount.h"
 
 template<typename Tup>
 class SortByPos {

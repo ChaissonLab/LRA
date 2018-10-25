@@ -16,6 +16,7 @@ public:
 	int maxDiag;
 	int minClusterSize;
 	int window;
+	bool dotPlot;
 	bool mergeClusters;
 	bool mergeGapped;
 	int minDiagCluster;
@@ -35,6 +36,7 @@ public:
 
 	
 	Options() {
+		dotPlot=false;
 		globalK=17;
 		globalW=10; 
 		localK=7;

@@ -11,12 +11,16 @@
 #include <algorithm>
 
 #include <sstream>
+#include <thread>
 #include "IndexedSeed.h"
 #include "MergeSplit.h"
 
 #include "Clustering.h"
+#include <thread>
+
 #include "seqan/seeds.h"
 #include "seqan/align.h"
+using namespace std;
 #include "AffineOneGapAlign.h"
 #include "NaiveDP.h"
 
@@ -394,6 +398,7 @@ void RefineSubstrings(char *read,   GenomePos readSubStart, GenomePos readSubEnd
 	aln.blocks.clear();
 	AlignSubstrings( read, readSubStart, readSubEnd, genome, genomeSubStart, genomeSubEnd, scoreMat, pathMat, aln);
 	for (int b = 0; b < aln.blocks.size(); b++) {
+
 		aln.blocks[b].qPos += readSubStart;
 		aln.blocks[b].tPos += genomeSubStart;
 	}
@@ -408,7 +413,12 @@ void MapRead(Read &read,
 						 Options &opts,
 						 ostream *output,
 						 pthread_mutex_t *semaphore=NULL) {
-						 
+
+	string baseName = read.name;
+
+
+	for (int i=0; i < baseName.size(); i++) {	if (baseName[i] == '/') baseName[i] = '_';	}
+
 
 	vector<GenomeTuple> readmm;
 	vector<pair<GenomeTuple, GenomeTuple> > matches;
@@ -549,7 +559,6 @@ void MapRead(Read &read,
 			continue;
 		}
 					
-
 		//
 		// Make the anchors reference this chromosome for easier bookkeeping 
 		//
@@ -557,6 +566,8 @@ void MapRead(Read &read,
 		for (int m=0; m < clusters[c].matches.size(); m++) {
 			clusters[c].matches[m].second.pos-=chromOffset;
 		}
+
+
 		//
 		// Get shorthand access to alignment boundaries.
 		//
@@ -707,14 +718,31 @@ void MapRead(Read &read,
 		refinedClusters[c].strand = clusters[c].strand;
 		refinedClusters[c].chromIndex = clusters[c].chromIndex;
 		refinedClusters[c].coarse = c;
+		if (opts.dotPlot) {
+			stringstream outNameStrm;
+			outNameStrm << baseName + "." << c << ".orig.dots";
+			ofstream baseDots(outNameStrm.str().c_str());
+			for (int m=0; m < refinedClusters[c].matches.size(); m++) {
+				baseDots << refinedClusters[c].matches[m].second.pos << "\t" << refinedClusters[c].matches[m].first.pos << "\t" << smallOpts.globalK << "\t" << c << "\t0" << endl;
+			}
+			baseDots.close();
+		}
+			
+
 	}
 
 	RemoveEmptyClusters(refinedClusters);
-
+	
 	for (int r = 0; r < refinedClusters.size(); r++) {   
 
 		if (refinedClusters[r].matches.size() < opts.minRefinedClusterSize) {
 			continue;
+		}
+		ofstream dotFile;
+		if (opts.dotPlot) {
+			stringstream outName;
+			outName << baseName << "." << r << ".dots";
+			dotFile.open(outName.str().c_str());
 		}
 
 		//
@@ -722,6 +750,17 @@ void MapRead(Read &read,
 		//
 		DiagonalSort<GenomeTuple>(refinedClusters[r].matches);
 		CleanOffDiagonal(refinedClusters[r].matches, smallOpts);
+
+		if (opts.dotPlot) {
+			stringstream outNameStrm;
+			outNameStrm << baseName + "." << r << ".clean.dots";
+			ofstream baseDots(outNameStrm.str().c_str());
+			for (int m=0; m < refinedClusters[r].matches.size(); m++) {
+				baseDots << refinedClusters[r].matches[m].second.pos << "\t" << refinedClusters[r].matches[m].first.pos << "\t" << smallOpts.globalK << "\t" << r << "\t0" << endl;
+			}
+			baseDots.close();
+		}
+
 
 		if (refinedClusters[r].matches.size() == 0) {
 			continue;
@@ -808,13 +847,14 @@ void MapRead(Read &read,
 											 seqan::Single());
 			}
 		}
+	
 
 		/*
 		// Debug code ----------- print out "seedSet"
 		const string filename2("/home/cmb-16/mjc/jingwenr/lra/lra_test/seedSet.txt");  
-    	FILE *fd = fopen(filename2.c_str(), "w");
+		FILE *fd = fopen(filename2.c_str(), "w");
 		SaveseedSet (seedSet, fd); 
-   		fclose(fd);
+		fclose(fd);
 		*/
 
 		// Perform sparse chaining, uses time O(n log n).
@@ -824,39 +864,51 @@ void MapRead(Read &read,
 		//
 		// The input is a set of seqan::Seed<seqan::Simple> > seeds
 		// 
-   		seqan::String<IndSeed> chain;
+		seqan::String<IndSeed> chain;
 
 
-   		if (opts.NaiveDP) {
-   			// Perform sparse dp with convex gap cost
+		if (opts.NaiveDP) {
+			// Perform sparse dp with convex gap cost
 			seqan::clear(chain);
 			NaiveDP (seedSet, chain);
 			//------------------debug 
-			cout << "NaiveDP Chain: " << length(chain) << endl;
+			cerr << "NaiveDP Chain: " << length(chain) << endl;
 			
 			/*
 			//Debug code ------ print out "chain"
 			const string filename5("/home/cmb-16/mjc/jingwenr/lra/lra_test/NaiveDP_result.txt");  
-    		FILE *fz = fopen(filename5.c_str(), "w");
-   			SaveSparse (chain, fz);
-   			fclose(fz);
+			FILE *fz = fopen(filename5.c_str(), "w");
+			SaveSparse (chain, fz);
+			fclose(fz);
 			*/
-   		}
-   		else {
-   			seqan::clear(chain);
+		}
+		else {
+			seqan::clear(chain);
 			if (seqan::length(seedSet) > 0) {
 				seqan::chainSeedsGlobally(chain, seedSet, seqan::SparseChaining());
-				//cout << "SparseChaining: " << length(chain)<< endl;
+				cerr << "SparseChaining: " << length(chain)<< endl;
 			}
 			/*
 			//Debug code ------ print out "chain"
 			const string filename4("/home/cmb-16/mjc/jingwenr/lra/lra_test/SeqanChaining_result.txt");  
-    		FILE *fi = fopen(filename4.c_str(), "w");
-   			SaveSparse (chain, fi);
-   			fclose(fi);	
+			FILE *fi = fopen(filename4.c_str(), "w");
+			SaveSparse (chain, fi);
+			fclose(fi);	
 			*/
-   		}
-
+		}
+			
+		if (opts.dotPlot) {
+			stringstream outNameStrm;
+			outNameStrm << baseName + "." << r << ".first-sdp.dots";
+			ofstream baseDots(outNameStrm.str().c_str());
+			for (int c=0; c < length(chain); c++) {
+				int p =seqan::beginPositionH(chain[c]);
+				baseDots << seqan::beginPositionH(chain[c]) << "\t" 
+								 << seqan::beginPositionV(chain[c]) << "\t" 
+								 << seqan::endPositionH(chain[c]) - seqan::beginPositionH(chain[c]) << "\t" << 7 << "\t0" << endl;				
+			}
+			baseDots.close();
+		}
 
 		vector<GenomePair> tupChain;
 		int qPrev=0, tPrev=0;
@@ -885,7 +937,7 @@ void MapRead(Read &read,
 		diagOpts = smallOpts;
 		diagOpts.maxDiag=15;
 		diagOpts.minClusterSize=1;
-		StoreDiagonalClusters(tupChain, chainClust, diagOpts, false, refinedClusters[r].strand);
+		//StoreDiagonalClusters(tupChain, chainClust, diagOpts, false, refinedClusters[r].strand);
 
 		RemovePairedIndels(tupChain, chainClust, smallOpts);
 			
@@ -943,16 +995,16 @@ void MapRead(Read &read,
 
 
 		//----------------------debug code
-		cout << "1" << endl;
+		cerr << "1" << endl;
 
 		int chainLength = seqan::length(chain);
+		cerr << "refining " << chainLength << " global anchors" << endl;
 		for (int c = 0; chainLength > 0 and c < seqan::length(chain)-1; c++) {
 			GenomePos curGenomeEnd = seqan::endPositionH(chain[c]);
 			GenomePos nextGenomeStart = seqan::beginPositionH(chain[c+1]);
 
 			GenomePos curReadEnd = seqan::endPositionV(chain[c]);
 			GenomePos nextReadStart = seqan::beginPositionV(chain[c+1]);
-				
 			int rg=nextReadStart-curReadEnd, gg=nextGenomeStart-curGenomeEnd;
 			int mg=min(rg, gg);
 			int rm=rg-mg;
@@ -962,12 +1014,12 @@ void MapRead(Read &read,
 
 			GenomePos subreadLength = nextReadStart-curReadEnd;
 			GenomePos subgenomeLength = nextGenomeStart-curGenomeEnd;
-
+			cerr << "refining\t" << curGenomeEnd << "\t" << nextGenomeStart << "\t" << nextGenomeStart - curGenomeEnd << endl;
 			if (nextReadStart > curReadEnd and nextGenomeStart > curGenomeEnd) {
 
-				if (false and 
-						subreadLength > 50 and 
-						subgenomeLength > 50 and opts.refineLevel & REF_DYN ) {
+				if (subreadLength > 50 and 
+						subgenomeLength > 50 and
+						opts.refineLevel & REF_DYN ) {
 
 					GenomePos maxLen = max(subreadLength, subgenomeLength);
 					if (maxLen < 500) {
@@ -1049,8 +1101,9 @@ void MapRead(Read &read,
 				}
 			}
 		}
+
 		//------------------debug code 
-		cout << "2" << endl;
+		cerr << "2" << endl;
 
 		//
 		// Refine and store the alignment
@@ -1095,17 +1148,27 @@ void MapRead(Read &read,
 			int curRefinedGenomeEnd    = curGenomeEnd;
 			int nextRefinedReadStart   = nextReadStart;
 			int nextRefinedGenomeStart = nextGenomeStart;
+			if (opts.dotPlot) {
+				dotFile << seqan::beginPositionH(chain[c]) << "\t" 
+								<< seqan::beginPositionV(chain[c]) << "\t" 
+								<< seqan::endPositionH(chain[c]) - seqan::beginPositionH(chain[c]) << "\t1\t0" << endl;
+			}
 
 			alignment->blocks.push_back(Block(seqan::beginPositionV(chain[c]),
 																				seqan::beginPositionH(chain[c]), glIndex.k));
 			//			string curAnchor = string(genome.seqs[chromIndex], seqan::beginPositionV(chain[c]), glIndex.k );
-
+			cerr << "Refining " << seqan::length(refinedChains[c]) << " chains " << endl;
 			for (int cs = 0; cs < seqan::length(refinedChains[c]); cs++) {
 				//
 				// Refined anchors are with respect to the chained sequence
 				nextRefinedReadStart   = seqan::beginPositionV(refinedChains[c][cs]);
 				nextRefinedGenomeStart = seqan::beginPositionH(refinedChains[c][cs]);
 				
+				if (opts.dotPlot) {
+					dotFile << seqan::beginPositionH(refinedChains[c][cs]) << "\t" 
+									<< seqan::beginPositionV(refinedChains[c][cs]) << "\t" 
+									<< seqan::endPositionH(refinedChains[c][cs]) - seqan::beginPositionH(refinedChains[c][cs]) << "\t2\t0" << endl;
+				}
 
 				int m, rg, gg;
 				SetMatchAndGaps(curRefinedReadEnd, nextRefinedReadStart,
@@ -1162,6 +1225,10 @@ void MapRead(Read &read,
 			nm+= alignment->blocks[b].length;
 		}
 		alignment->nblocks=seqan::length(chain);
+		if (opts.dotPlot) {
+			dotFile.close();
+		}
+
 	}
 	for (int a=0; a < alignments.size(); a++) {
 		alignments[a]->CalculateStatistics();

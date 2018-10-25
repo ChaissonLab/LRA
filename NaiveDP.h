@@ -218,7 +218,7 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
 
 			//-----------------debug
 			unsigned j = 0;
-			cout << "intermediateSolutions.size(): " << intermediateSolutions.size() << endl;
+			//			cerr << "intermediateSolutions.size(): " << intermediateSolutions.size() << endl;
 
 
 			int64_t quality = qualityOfChainEndingIn[it_k->i3]; // quality stores the current maximum

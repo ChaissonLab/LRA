@@ -93,6 +93,7 @@ int InitMask(Tup &m, int k) {
 		m.t<<=2;
 		m.t+=3;
 	}
+	return m.t;
 }
 
 template<typename tup> void StoreTuple(char *seq, int pos, int k, tup &t) {
