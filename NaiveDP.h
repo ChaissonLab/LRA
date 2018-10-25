@@ -138,17 +138,11 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
 	// For all interval points.....
 	TIntermediateSolutions intermediateSolutions;
 
-	//---------------------debug code
-	//cerr << "intervalPoints.size(): "<< seqan::length(intervalPoints) << endl;
-	unsigned i = 0;
-
 
 	for (TIntervalPointsIterator it_k = seqan::begin(intervalPoints); it_k != seqan::end(intervalPoints); ++it_k) {
 		TSeed const & seed_k = seeds[it_k->i3];
 
-		//--------debug code
-		++i;
-		//cout << "i: " << i << endl;
+
 	
 		if (it_k->i2) { // It's a begin point
 			// Find the seed j so that seed j's Genome.cordinate is less or equal to the beginPositionV of seed_k
@@ -167,6 +161,8 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
 			if (intermediateSolutions.empty()) {
 				continue;
 			}
+
+
 
 
 

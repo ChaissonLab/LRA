@@ -939,6 +939,7 @@ void MapRead(Read &read,
 		vector<int> scoreMat;
 		vector<Arrow> pathMat;
 
+
 		int chainLength = seqan::length(chain);
 		for (int c = 0; chainLength > 0 and c < seqan::length(chain)-1; c++) {
 			GenomePos curGenomeEnd = seqan::endPositionH(chain[c]);
