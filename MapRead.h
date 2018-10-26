@@ -714,7 +714,7 @@ void MapRead(Read &read,
 				
 		}
 
-		refinedClusters[c].SetClusterBoundariesFromMatches();
+		refinedClusters[c].SetClusterBoundariesFromMatches(opts);
 		refinedClusters[c].strand = clusters[c].strand;
 		refinedClusters[c].chromIndex = clusters[c].chromIndex;
 		refinedClusters[c].coarse = c;

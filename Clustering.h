@@ -177,11 +177,11 @@ class Cluster : public ClusterCoordinates {
 			return qStart < rhs.qStart;
 		}
 	}
-	void SetClusterBoundariesFromMatches() {
+	void SetClusterBoundariesFromMatches(Options &opts) {
 		for (int i=0; i < matches.size(); i++) {
-			tEnd   = max(tEnd, matches[i].second.pos);
+			tEnd   = max(tEnd, matches[i].second.pos+opts.globalK);
 			tStart = min(tStart, matches[i].second.pos );
-			qEnd   = max(qEnd, matches[i].first.pos);
+			qEnd   = max(qEnd, matches[i].first.pos+opts.globalK);
 			qStart = min(qStart, matches[i].first.pos);
 		}
 	}
@@ -259,9 +259,9 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &c
 					 abs(DiagonalDifference(matches[ce], matches[ce-1])) < opts.maxDiag  and 
 					 (opts.maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < opts.maxGap) ) {
 			qStart = min(qStart, matches[ce].first.pos);
-			qEnd   = max(qEnd, matches[ce].first.pos);
+			qEnd   = max(qEnd, matches[ce].first.pos+opts.globalK);
 			tStart = min(tStart, matches[ce].second.pos);
-			tEnd   = max(tEnd, matches[ce].second.pos);
+			tEnd   = max(tEnd, matches[ce].second.pos+opts.globalK);
 			ce++;
 			if (ce < matches.size()) {
 				diff = GapDifference(matches[ce], matches[ce-1]);
