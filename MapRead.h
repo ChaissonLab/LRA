@@ -1246,7 +1246,7 @@ void MapRead(Read &read,
 		}
 	}
 	if (semaphore != NULL ) {
-		pthread_mutex_init(semaphore, NULL);
+		pthread_mutex_unlock(semaphore);
 	}
 
 	//
