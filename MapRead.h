@@ -158,55 +158,7 @@ int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd,
 	string readSeq(&qSeq[qStart], qEnd-qStart);
 	string chromSeq(&tSeq[tStart],tEnd-tStart);
 	TSeqAlign align;
-	/*
-	cout << "Aligning " << endl;
-	cout << readSeq << endl;
-	cout << chromSeq << endl;
-	*/
 	int score = AffineOneGapAlign(readSeq, chromSeq, 4, -4, -3, 15, aln);
-	/*
-	seqan::resize(seqan::rows(align), 2);
-	seqan::assignSource(seqan::row(align, 0), readSeq.c_str());
-	seqan::assignSource(seqan::row(align, 1), chromSeq.c_str());
-	int score = seqan::globalAlignment(align, seqan::Score<int, seqan::Simple>(4, -4, -13, -0), -k, k);
-
-	cout << qStart << "\t" << tStart << "\t" << score << "\t" << qEnd-qStart << "\t" << tEnd - tStart << "\t" << k << endl;
-	cout << readSeq << endl;
-	cout << chromSeq << endl;
-	
-	cout << align << endl;
-
-	TSeqRow & row1 = seqan::row(align, 0);
-	TSeqRow & row2 = seqan::row(align, 1);
-	int q=0, t=0;
-	int rowLen = seqan::length(align);
-	int i=0;
-
-
-	TRowIterator qit = begin(row1),
-		qitEnd = end(row1),
-		tit = begin(row2);
-	while ( qit != qitEnd ) {
-		while(qit  < qitEnd and (seqan::isGap(qit) == true or seqan::isGap(tit) == true)) {
-			if (seqan::isGap(qit)) { t+=1;}
-			if (seqan::isGap(tit)) { q+=1;}
-			qit++;
-			tit++;
-		}
-		if (qit != qitEnd and seqan::isGap(qit) == false and seqan::isGap(tit) == false) {
-			int bqs = q;
-			int bts = t;
-			int is=i;
-			while(qit != qitEnd and seqan::isGap(qit) == false and seqan::isGap(tit) == false) {
-					qit++;
-					tit++;
-					q++;
-					t++;
-			}
-			aln.blocks.push_back(Block(bqs, bts, q-bqs));
-		}
-	}
-	*/
 	return score;
 }
 
@@ -394,7 +346,6 @@ void RefineSubstrings(char *read,   GenomePos readSubStart, GenomePos readSubEnd
 											char *genome, GenomePos genomeSubStart, GenomePos genomeSubEnd, 
 											vector<int> &scoreMat, vector<Arrow> &pathMat, 
 											Alignment &aln) {
-
 	aln.blocks.clear();
 	AlignSubstrings( read, readSubStart, readSubEnd, genome, genomeSubStart, genomeSubEnd, scoreMat, pathMat, aln);
 	for (int b = 0; b < aln.blocks.size(); b++) {
@@ -870,7 +821,15 @@ void MapRead(Read &read,
 		if (opts.NaiveDP) {
 			// Perform sparse dp with convex gap cost
 			seqan::clear(chain);
-			NaiveDP (seedSet, chain);
+			if (seqan::length(seedSet) > 5000) {
+				cerr << "Major Danger: seed set of size " << seqan::length(seedSet) << endl;
+			}
+			if (seqan::length(seedSet) < 30000) {
+				NaiveDP (seedSet, chain);
+			}
+			else {
+				cerr << "Skipping naivedp on seed set of size " << seqan::length(seedSet) << endl;
+			}
 
 			//------------------debug 
 			//			cerr << "NaiveDP Chain: " << length(chain) << endl;
@@ -1151,6 +1110,12 @@ void MapRead(Read &read,
 
 			alignment->blocks.push_back(Block(seqan::beginPositionV(chain[c]),
 																				seqan::beginPositionH(chain[c]), glIndex.k));
+			if (alignment->blocks.size() > 1) {
+				int last=alignment->blocks.size();
+				assert(alignment->blocks[last-2].qPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].qPos);
+				assert(alignment->blocks[last-2].tPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].tPos);
+			}
+
 			//			string curAnchor = string(genome.seqs[chromIndex], seqan::beginPositionV(chain[c]), glIndex.k );
 			for (int cs = 0; cs < seqan::length(refinedChains[c]); cs++) {
 				//
@@ -1177,6 +1142,14 @@ void MapRead(Read &read,
 						alignment->blocks.insert(alignment->blocks.end(), 
 																		 betweenAnchorAlignment.blocks.begin(), 
 																		 betweenAnchorAlignment.blocks.end());
+						int b;
+						for (b=1; b < betweenAnchorAlignment.blocks.size(); b++) {
+							assert(betweenAnchorAlignment.blocks[b-1].qPos + 
+										 betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].qPos);
+							assert(betweenAnchorAlignment.blocks[b-1].tPos + 
+										 betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].tPos);						
+						}
+
 						betweenAnchorAlignment.blocks.clear();
 					}
 				}
@@ -1185,6 +1158,12 @@ void MapRead(Read &read,
 				curRefinedGenomeEnd = seqan::endPositionH(refinedChains[c][cs]);
 				alignment->blocks.push_back(Block(nextRefinedReadStart, nextRefinedGenomeStart, 
 																					curRefinedReadEnd - nextRefinedReadStart));
+				if (alignment->blocks.size() > 1) {
+					int last=alignment->blocks.size();
+					assert(alignment->blocks[last-2].qPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].qPos);
+					assert(alignment->blocks[last-2].tPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].tPos);
+				}
+
 			}
 
 			// Add the last gap, or the only one if no refinements happened here.				 
@@ -1203,6 +1182,7 @@ void MapRead(Read &read,
 													 genome.seqs[chromIndex], curRefinedGenomeEnd, nextGenomeStart,
 													 scoreMat, pathMat, aln);
 					alignment->blocks.insert(alignment->blocks.end(), aln.blocks.begin(), aln.blocks.end());
+
 					aln.blocks.clear();			
 				}		
 			}

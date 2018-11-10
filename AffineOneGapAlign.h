@@ -25,9 +25,10 @@ int SuffToIndex(int ii, int jj, int is, int js, int k, int band) {
 	return res;
 }
 
-#define MISSING -3200000
+#define MISSING INT_MIN
 template<typename T>
 void PrintMat(string &qSeq, string &tSeq, vector<T> &mat, int qLen, int tLen, int k, int R, int w) {
+
 	vector<int> row(qLen+1);
 	int diag=min(qLen,tLen);
 	cout << "  ";
@@ -62,7 +63,12 @@ void PrintMat(string &qSeq, string &tSeq, vector<T> &mat, int qLen, int tLen, in
 			cout << "- ";
 		}
 		else {
-			cout << tSeq[jj-1] << " ";
+			if (jj <= tSeq.size()) {
+				cout << tSeq[jj-1] << " ";
+			}
+			else {
+				cout << "  ";
+			}
 		}
 		cout.width(w);
 		cout <<ri;
@@ -162,8 +168,12 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 
 	k = min(diag, k);
 	bool alignTop = true;
-	if (diag + 2*k > max(qLen, tLen)) {
-		k=max(qLen,tLen);
+	if (diag + 2*k >= max(qLen, tLen)) {
+		//
+		// THIS IS A HACK TO GET AROUND AN OFF BY ONE ERROR!!!
+		//
+		k=2*k;
+		//		k=max(qLen,tLen);
 		alignTop= false;
 	}
 		
@@ -540,8 +550,8 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 		}
 	}
 	else {
-		i=qLen;
-		j=tLen;
+		i=qBoundary-1;
+		j=tBoundary-1;
 		maxAlnScore=pScore[PreToIndex(i,j,k,R)];
 	}
 	

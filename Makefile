@@ -45,6 +45,7 @@ tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 # -D _MAT_PRINT_
 
 
+
 lra: lra.o
 	$(CPP) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 

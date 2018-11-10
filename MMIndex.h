@@ -161,6 +161,7 @@ class LocalIndex {
 		assert(index < tupleBoundaries.size());
 		lb = tupleBoundaries[index];
 		ub = tupleBoundaries[index+1];
+		return lb;
 	}
 
 	void IndexSeq(char* seq, int seqLen) {

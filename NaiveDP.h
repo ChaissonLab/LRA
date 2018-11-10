@@ -99,11 +99,11 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
 	typedef seqan::String<TIntervalPoint> TIntervalPoints; 
 	typedef typename seqan::Iterator<TIntervalPoints, seqan::Standard>::Type TIntervalPointsIterator;
 	TIntervalPoints intervalPoints; //intervalPoints contains all the start/end points of seeds
-	std::map<unsigned, int64_t> qualityOfChainEndingIn;
-	std::map<unsigned, unsigned> predecessor;
+	vector<int64_t> qualityOfChainEndingIn(seqan::length(seeds));
+	vector<unsigned> predecessor(seqan::length(seeds));
+
 
 	for (unsigned i = 0; i < seqan::length(seeds); ++i) {
-
 		qualityOfChainEndingIn[i] = seqan::seedSize(seeds[i]);
 		predecessor[i] = std::numeric_limits<unsigned>::max();
 		seqan::appendValue(intervalPoints, TIntervalPoint(beginPositionH(seeds[i]), true, i));

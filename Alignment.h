@@ -191,7 +191,8 @@ class Alignment {
 												 blocks[b].qPos - blocks[b].length);
 			int textGapLen  = (blocks[b+1].tPos - 
 												 blocks[b].tPos - blocks[b].length);
-
+			assert(queryGapLen >= 0);
+			assert(textGapLen >= 0);
 			if (queryGapLen > 0 or textGapLen > 0) {
 				// commonGapLen should be the shorter gap.
 				int commonGapLen = queryGapLen; 
