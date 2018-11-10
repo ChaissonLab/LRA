@@ -821,9 +821,6 @@ void MapRead(Read &read,
 		if (opts.NaiveDP) {
 			// Perform sparse dp with convex gap cost
 			seqan::clear(chain);
-			if (seqan::length(seedSet) > 5000) {
-				cerr << "Major Danger: seed set of size " << seqan::length(seedSet) << endl;
-			}
 			if (seqan::length(seedSet) < 30000) {
 				NaiveDP (seedSet, chain);
 			}
