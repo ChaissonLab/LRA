@@ -346,12 +346,13 @@ void RefineSubstrings(char *read,   GenomePos readSubStart, GenomePos readSubEnd
 											char *genome, GenomePos genomeSubStart, GenomePos genomeSubEnd, 
 											vector<int> &scoreMat, vector<Arrow> &pathMat, 
 											Alignment &aln) {
+	//	cerr << "Refine substrings\t" << readSubStart << "\t" << genomeSubStart << endl;
 	aln.blocks.clear();
 	AlignSubstrings( read, readSubStart, readSubEnd, genome, genomeSubStart, genomeSubEnd, scoreMat, pathMat, aln);
 	for (int b = 0; b < aln.blocks.size(); b++) {
-
 		aln.blocks[b].qPos += readSubStart;
 		aln.blocks[b].tPos += genomeSubStart;
+		//		cerr << aln.blocks[b].qPos << "\t" << aln.blocks[b].tPos << "\t" << aln.blocks[b].length << endl;
 	}
 	
 }
@@ -669,6 +670,11 @@ void MapRead(Read &read,
 		refinedClusters[c].strand = clusters[c].strand;
 		refinedClusters[c].chromIndex = clusters[c].chromIndex;
 		refinedClusters[c].coarse = c;
+		/*
+		for (int m=0; m < refinedClusters[c].matches.size(); m++) {
+			cerr << refinedClusters[c].matches[m].second.pos << "\t" << refinedClusters[c].matches[m].first.pos << "\t" << smallOpts.globalK << "\t" << c << "\t0" << endl;
+		}
+		*/
 		if (opts.dotPlot) {
 			stringstream outNameStrm;
 			outNameStrm << baseName + "." << c << ".orig.dots";
