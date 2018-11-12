@@ -30,10 +30,8 @@ HEADERS=MinCount.h \
   MapRead.h \
   Input.h \
   AffineOneGapAlign.h \
-  MergeSplit.h \
   seqan/include/seqan/seeds/seeds_global_chaining.h \
-  NaiveDP.h \
-  MergeSplit.h
+  NaiveDP.h 
 
 CPP=g++ -std=c++14 
 
