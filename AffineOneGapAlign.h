@@ -139,6 +139,7 @@ void PrintSuffMat(string q, string t,
 
 int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int k,  Alignment &aln) 
 {
+	//	cerr << "Aligning " << endl << qSeq << endl << tSeq << endl;
 	int qLen = qSeq.size();
 	int tLen = tSeq.size();
 	int diag = min(qLen, tLen);

@@ -180,7 +180,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	if (ReadIndex(indexFile, genomemm, header, opts) == 0) {
 		StoreIndex(genomeFile, genomemm, header, opts);
 	}
-	cerr << "genomesize " << genomemm.size() << endl;
+	
 	if (glIndex.Read(genomeFile+".gli") == 0) {
 		glIndex.IndexFile(genomeFile);
 	}

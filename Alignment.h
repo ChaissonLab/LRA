@@ -32,6 +32,7 @@ class Alignment {
 	char *read;
 	char *forward;
 	int readLen;
+	int refLen;
 	GenomePos genomeLen;
 	string readName;
 	char *genome;
@@ -150,6 +151,8 @@ class Alignment {
 		char matchChar = '|';
 		char gapChar = '-';
 		char gapSeparationChar = ' ';
+		refLen=0;
+		int refStart=0;
 		if (blocks.size() == 0) {
 			textStr = "";
 			alignStr = "";
@@ -231,6 +234,7 @@ class Alignment {
 				}
 			}
 		}
+		refLen=t-refStart;
 	}
 
 	void AlignStringsToCigar(string &query, string &target, string &cigar, int &nm, int &nmm, int &nins, int &ndel) {
@@ -315,7 +319,10 @@ class Alignment {
 		int q=0;
 		int t=0;
 		int nBlocks = blocks.size();
-		
+		out << readName << endl;
+		if (nBlocks > 0) {
+			out << "Interval:\t" << chrom<< ":" << blocks[0].tPos << "-" << blocks[0].tPos +refLen << endl;
+		}
 		while (i < queryString.size()) {
 			int end = min((int) queryString.size(), i+50);
 			string qsub = queryString.substr(i,end-i);
