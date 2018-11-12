@@ -95,6 +95,20 @@ SaveOriginalSeed (Cluster &rCr, FILE* fh, int k) {
         }
 }
 
+
+void
+SavetupChain(vector<GenomePair> &rCr, FILE* fh, int k) {
+        if (fh == NULL) {
+                perror("Eorror opening file: ");
+        }
+        else {
+                for (vector<GenomePair>::iterator it = rCr.begin(); it != rCr.end(); ++it) {
+                        fprintf(fh, "%u %u %u %u\n", (*it).first.pos, (*it).second.pos, (*it).first.pos + k - 1, (*it).second.pos + k - 1);
+                }
+        }
+}
+
+
 // Debug code
 void
 SaveseedSet (IndSeedSet &seedSet, FILE* fd) {
@@ -243,6 +257,15 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
 	// Step 3: Write out the resulting chain
 	// -------------------------------------------------------------------------------------------
 
+	/*
+    //Debug-----print intermediateSolutions
+    cout << "intermediateSolutions.size():  " << intermediateSolutions.size() << endl;
+    for (TIntermediateSolutionsIterator it = intermediateSolutions.begin(); it != intermediateSolutions.end(); ++it) {
+    	cout << "*it:    " << *it << endl;
+    }
+    */
+
+
 	clear(chain);
     unsigned next = intermediateSolutions.rbegin()->i3;
     while (next != std::numeric_limits<unsigned>::max())
@@ -251,15 +274,6 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
         next = predecessor[next];
     }
     reverse(chain);
-   // cout << "step3 is finished " << endl;
-
-/*
-    //Debug-----print intermediateSolutions
-    cout << "intermediateSolutions.size():  " << intermediateSolutions.size() << endl;
-    for (TIntermediateSolutionsIterator it = intermediateSolutions.begin(); it != intermediateSolutions.end(); ++it) {
-    	cout << "*it:    " << *it << endl;
-    }
-*/
 }
 
 #endif
