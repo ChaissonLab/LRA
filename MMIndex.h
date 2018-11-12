@@ -155,7 +155,7 @@ class LocalIndex {
 		}
 	}
 
-	int MinimizerBounds(uint64_t querySeqPos, uint64_t &lb, uint64_t &ub) {
+	void MinimizerBounds(uint64_t querySeqPos, uint64_t &lb, uint64_t &ub) {
 		assert(querySeqPos < minimizers.size());
 		int index = this->LookupIndex(querySeqPos);
 		assert(index < tupleBoundaries.size());

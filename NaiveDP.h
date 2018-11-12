@@ -8,7 +8,6 @@
 #include <set>
 
 #include "seqan/basic.h" // Triple
-#include "MergeSplit.h" // beginPosition
 #include "seqan/seeds.h" 
 #include "IndexedSeed.h"
 /*
@@ -83,6 +82,48 @@ GapCost (unsigned int i, unsigned int j, unsigned int i_prime, unsigned int j_pr
 
 */
 
+// Debug code
+void
+SaveOriginalSeed (Cluster &rCr, FILE* fh, int k) {
+        if (fh == NULL) {
+                perror("Eorror opening file: ");
+        }
+        else {
+                for (vector<GenomePair>::iterator it = rCr.matches.begin(); it != rCr.matches.end(); ++it) {
+                        fprintf(fh, "%u %u %u %u\n", (*it).first.pos, (*it).second.pos, (*it).first.pos + k - 1, (*it).second.pos + k - 1);
+                }
+        }
+}
+
+// Debug code
+void
+SaveseedSet (IndSeedSet &seedSet, FILE* fd) {
+        if (fd == NULL) {
+                perror("Error opening file: ");
+        }
+        else {
+                for (TIterator tt = begin(seedSet, seqan::Standard()); tt != end(seedSet, seqan::Standard()); ++tt) {
+                fprintf(fd, "%lu %lu %lu %lu\n", beginPositionH(*tt), beginPositionV(*tt), endPositionH(*tt), endPositionV(*tt)); // (read_start, genome_start,read_end, genome_end)
+                }
+        }
+}
+
+
+
+// Debug code 
+void
+SaveSparse (seqan::String<IndSeed> &chain, FILE* fi) {
+        if (fi == NULL) {
+                perror("Error opening file: ");
+        }
+        else {
+                for (unsigned i = 0; i < length(chain); ++i) {
+                        fprintf(fi, "%lu %lu %lu %lu\n", beginPositionH(chain[i]), beginPositionV(chain[i]), endPositionH(chain[i]), endPositionV(chain[i]));
+                }
+        }
+}
+
+
 
 template<typename TSeedSet, typename TSeed>
 void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
@@ -124,8 +165,11 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
 		}
 	}
 
+	
 */
-	// ---------------------------------------------------------------------------------------
+
+	//cout << "step 1 is finished " << endl;
+ 	// ---------------------------------------------------------------------------------------
 	// Step 2: bulid the chain
 	// ----------------------------------------------------------------------------------------
 	// build a list of "intermediate solutions"
@@ -194,6 +238,7 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
 		}
 	}
 
+	//cout << "step 2 is finished " << endl;
 	// -------------------------------------------------------------------------------------------
 	// Step 3: Write out the resulting chain
 	// -------------------------------------------------------------------------------------------
@@ -206,7 +251,7 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
         next = predecessor[next];
     }
     reverse(chain);
-
+   // cout << "step3 is finished " << endl;
 
 /*
     //Debug-----print intermediateSolutions
