@@ -776,19 +776,9 @@ void MapRead(Read &read,
 		}
 		*/	
 
-		
 		// Debug code ----------- print out "seedSet"
-		/*
-		if (r == 0) {
-			const string filename("/home/cmb-16/mjc/jingwenr/lra/lra_test/TEST/Orignalseeds." + std::to_string(r) + ".txt");
-			FILE *frr = fopen(filename.c_str(), "w");
-			SaveOriginalSeed (refinedClusters[r], frr, opts.globalK); 
-			fclose(frr);
-		}
-		*/
-			
 
-
+		// debug code
 		if (opts.mergeClusters) {
 			vt.clear();
 			// add merge split code here
@@ -801,7 +791,7 @@ void MapRead(Read &read,
 			mergeOpts.maxGap = -1;
 			mergeOpts.maxDiag = 20;
 
-			StoreDiagonalClusters(refinedClusters[r].matches, v, opts, true); 
+			StoreDiagonalClusters(refinedClusters[r].matches, v, mergeOpts, true); 
 			if (v.size() != 0) {
 				std::set<unsigned int> s1;     // s1 stores x boundary; s2 stores y boundary      
 				std::set<unsigned int> s2;    //elements in s are arranged in strictly increasing order. and no duplicates
@@ -828,8 +818,6 @@ void MapRead(Read &read,
 				}
 				*/
 			
-			
-			
 
 				//---------------------------------------------------------------------------------
 				// Step 2: sort matches by x and y coordinates in each Cluster v[i](merged matches)
@@ -852,7 +840,6 @@ void MapRead(Read &read,
 					}
 					CartesianSort<GenomeTuple>(begin, end);            
 				}
-
 
 				//----------------------------------------------------------------------------
 				// Step 3:  split based on x boundaries
@@ -925,8 +912,6 @@ void MapRead(Read &read,
 				}
 				*/
 
-
-
 				/*
 				// Debug code ----------- print out "seedSet"
 				if (r == 2) {
@@ -942,11 +927,6 @@ void MapRead(Read &read,
 				fclose(fm);			
 				}
 				*/
-
-
-
-
-
 
 				//----------------------------------------------------------------------------
 				// Step 4:  split based on y boundaries
@@ -1015,7 +995,7 @@ void MapRead(Read &read,
 				cout << "vt.size(): " << vt.size() << endl;
 				}
 				*/
-        	
+
 				//----------------------------------------------------------------------------
 				// Step 5:  Store the result in seedSet
 				//----------------------------------------------------------------------------
@@ -1034,6 +1014,7 @@ void MapRead(Read &read,
 					fclose(fd);	
 				}
 				*/
+
 				seqan::Iterator<seqan::SeedSet<IndSeed, seqan::Unordered> >::Type it;
 				
 				for ( it = seqan::begin(seedSet); it != seqan::end(seedSet); ++it) {
@@ -1078,7 +1059,7 @@ void MapRead(Read &read,
 				cerr << "Skipping naivedp on seed set of size " << seqan::length(seedSet) << endl;
 			}
 
-
+			/*
 			//Debug code ------ print out "chain"
 			/*
 			if (r == 0) {
@@ -1089,8 +1070,6 @@ void MapRead(Read &read,
 				fclose(fz);		
 			}		
 			*/
-
-
 		}
 		else {
 			seqan::clear(chain);
@@ -1162,7 +1141,7 @@ void MapRead(Read &read,
 			vt.clear();
 
 
-
+			/*
 			// Debug code ----------- print out "seedSet"
 			/*
 			if (r == 0) {
@@ -1173,10 +1152,6 @@ void MapRead(Read &read,
 				fclose(fir);
 			}
 			*/
-
-
-
-
 		}
 		else {
 			for (int ch=0; ch < seqan::length(chain); ch++) {
