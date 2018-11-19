@@ -33,9 +33,12 @@ public:
 	bool doBandedAlignment;
 	int maxGap;
 	bool NaiveDP;
-
+	int readStart;
+	int readStride;
 	
 	Options() {
+		readStart=0;
+		readStride=1;
 		dotPlot=false;
 		globalK=17;
 		globalW=10; 

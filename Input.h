@@ -75,7 +75,6 @@ class Input {
 	bool Initialize(string &filename) {
 		nReads=0;
 		istream *strmPtr;
-		cerr << "opening "<< filename << endl;
 		doInit = false;
 		if (filename == "-") {
 			strmPtr = &std::cin;
@@ -144,11 +143,11 @@ class Input {
 
 	bool GetNext(Read &read, bool top=true) {
 		read.Clear();
-		++nReads;
+
 		if (top == true) {
 			pthread_mutex_lock(&semaphore);
 		}
-
+		++nReads;
 		if (doInit) {
 			assert(top == false);
 			doInit = false;

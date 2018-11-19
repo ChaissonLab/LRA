@@ -382,7 +382,6 @@ void MapRead(Read &read,
 																				allOpts.globalK, allOpts.globalW, readmm);			
 	}
 	else {
-		cerr << "STORING MINIMIZES WITH GLOB " << opts.globalK << endl;
 		StoreMinimizers<GenomeTuple, Tuple>(read.seq, read.length, opts.globalK, opts.globalW, readmm);
 	}
 	sort(readmm.begin(), readmm.end());
@@ -684,12 +683,12 @@ void MapRead(Read &read,
 	//RemoveEmptyClusters(refinedClusters);
 	
 	//------Debug code----------------
-	cout << "refinedClusters.size(): " << refinedClusters.size() << endl;
+
 
 
 	for (int r = 0; r < refinedClusters.size(); r++) {   
 		//debug
-		cout <<"   refinedClusters[r]: " << r<< "\t" << refinedClusters[r].matches.size() << endl;
+		//		cout <<"   refinedClusters[r]: " << r<< "\t" << refinedClusters[r].matches.size() << endl;
 
 
 		if (refinedClusters[r].matches.size() < opts.minRefinedClusterSize) {
@@ -779,13 +778,14 @@ void MapRead(Read &read,
 
 		
 		// Debug code ----------- print out "seedSet"
+		/*
 		if (r == 0) {
 			const string filename("/home/cmb-16/mjc/jingwenr/lra/lra_test/TEST/Orignalseeds." + std::to_string(r) + ".txt");
 			FILE *frr = fopen(filename.c_str(), "w");
 			SaveOriginalSeed (refinedClusters[r], frr, opts.globalK); 
 			fclose(frr);
 		}
-		
+		*/
 			
 
 
@@ -1025,7 +1025,7 @@ void MapRead(Read &read,
 				for (unsigned int i = 0; i != vt.size(); ++i) {
 					seqan::addSeed(seedSet, IndSeed(vt[i].qStart, vt[i].tStart, vt[i].qEnd, vt[i].tEnd, i), seqan::Single());
 				}  
-			
+				/*
 				if (r == 0) {
 					// Debug code ----------- print out "seedSet"
 					const string filename1("/home/cmb-16/mjc/jingwenr/lra/lra_test/TEST/MSseedSet" + std::to_string(r) + ".txt");  
@@ -1033,8 +1033,15 @@ void MapRead(Read &read,
 					SaveseedSet (seedSet, fd); 
 					fclose(fd);	
 				}
-
+				*/
+				seqan::Iterator<seqan::SeedSet<IndSeed, seqan::Unordered> >::Type it;
+				
+				for ( it = seqan::begin(seedSet); it != seqan::end(seedSet); ++it) {
+					assert(beginPositionH(*it) <= endPositionH(*it) );
+					assert(beginPositionV(*it) <= endPositionV(*it) );
+				}
 			}
+
 			else {
 				continue;
 			}	
@@ -1073,6 +1080,7 @@ void MapRead(Read &read,
 
 
 			//Debug code ------ print out "chain"
+			/*
 			if (r == 0) {
 				//cout << "0" << endl;
 				const string filename2("/home/cmb-16/mjc/jingwenr/lra/lra_test/TEST/NaiveDP." + std::to_string(r) + ".txt");  
@@ -1080,7 +1088,7 @@ void MapRead(Read &read,
 				SaveSparse (chain, fz);
 				fclose(fz);		
 			}		
-			
+			*/
 
 
 		}
@@ -1156,6 +1164,7 @@ void MapRead(Read &read,
 
 
 			// Debug code ----------- print out "seedSet"
+			/*
 			if (r == 0) {
 				//cout << "1" << endl;
 				const string filename4("/home/cmb-16/mjc/jingwenr/lra/lra_test/TEST/tupChain" + std::to_string(r) + ".txt");
@@ -1163,7 +1172,7 @@ void MapRead(Read &read,
 				SavetupChain (tupChain, fir, opts.globalK); 
 				fclose(fir);
 			}
-
+			*/
 
 
 

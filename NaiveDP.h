@@ -195,7 +195,7 @@ void NaiveDP (TSeedSet &seedSet, seqan::String<TSeed> &chain) {
 
 	// For all interval points.....
 	TIntermediateSolutions intermediateSolutions;
-
+	//  vector<TIntermediateSolution> intermediateSolutions; //(seqan::length(seeds));
 
 	for (TIntervalPointsIterator it_k = seqan::begin(intervalPoints); it_k != seqan::end(intervalPoints); ++it_k) {
 		TSeed const & seed_k = seeds[it_k->i3];

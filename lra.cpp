@@ -58,7 +58,9 @@ void HelpMap() {
 			 << "               This is 10-20% slower, with an increase in specificity. " << endl
 			 << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl
 			 << "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl
-			 << "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl;
+			 << "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
+			 << "   --start  (int)   Start aligning at this read." << endl
+			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl;
 }
 		
 class MapInfo {
@@ -70,22 +72,29 @@ public:
 	Input *reader;
 	Options *opts;
 	ostream *out;
+	int thread;
+	int numThreads;
 	pthread_mutex_t semaphore;
 };
 
 void MapReads(MapInfo *mapInfo) {
 	Read read;
-	
 	while (mapInfo->reader->GetNext(read)) {
-		MapRead(read,
-						*mapInfo->genome, 
-						*mapInfo->genomemm, 
-						*mapInfo->glIndex, 
-						*mapInfo->opts, 
-						mapInfo->out,
-						&mapInfo->semaphore);
+		if (mapInfo->opts->readStride != 1 and
+				mapInfo->reader->nReads % mapInfo->opts->readStride != mapInfo->opts->readStart ) {
+			continue;
+		}
+		else {
+			MapRead(read,
+							*mapInfo->genome, 
+							*mapInfo->genomemm, 
+							*mapInfo->glIndex, 
+							*mapInfo->opts, 
+							mapInfo->out,
+							&mapInfo->semaphore);
+		}
 	}
-	pthread_exit(NULL); 
+	pthread_exit(NULL);
 }
 
 
@@ -97,7 +106,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	string indexFile="";
 	int w=10;
 	vector<string> allreads;
-
 	for (argi = 0; argi < argc; ) {
 		if (ArgIs(argv[argi], "-a")) {
 			++argi;
@@ -138,9 +146,18 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			++argi;
 		}		
 		else if (ArgIs(argv[argi], "-r")) {
-			opts.refineLevel=atoi(GetArgv(argv, argc, argi));			
+			opts.refineLevel=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "--stride")) {
+			opts.readStride=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--start")) {
+			opts.readStart=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+
 		else if (ArgIs(argv[argi], "-R")) {
 			opts.mergeClusters=true;
 		}
@@ -224,17 +241,20 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 
 		pthread_t *threads = new pthread_t[opts.nproc];
-		MapInfo mapInfo;
-		mapInfo.genome = &genome;
-		mapInfo.genomemm = &genomemm;
-		mapInfo.glIndex = &glIndex;
-		mapInfo.reader = &reader;
-		mapInfo.opts= &opts;
-		mapInfo.out = outPtr;
-		pthread_mutex_init(&mapInfo.semaphore, NULL);
+		vector<MapInfo> mapInfo(opts.nproc);
+		
 		
 		for (int procIndex = 0; procIndex < opts.nproc; procIndex++ ){ 
-			pthread_create(&threads[procIndex], &threadAttr[procIndex], (void* (*)(void*))MapReads, &mapInfo);
+			mapInfo[procIndex].genome = &genome;
+			mapInfo[procIndex].genomemm = &genomemm;
+			mapInfo[procIndex].glIndex = &glIndex;
+			mapInfo[procIndex].reader = &reader;
+			mapInfo[procIndex].opts= &opts;
+			mapInfo[procIndex].out = outPtr;
+			mapInfo[procIndex].thread=procIndex;
+			pthread_mutex_init(&mapInfo[procIndex].semaphore, NULL);
+
+			pthread_create(&threads[procIndex], &threadAttr[procIndex], (void* (*)(void*))MapReads, &mapInfo[procIndex]);
 		}
 
 		for (int procIndex = 0; procIndex < opts.nproc; procIndex++) {

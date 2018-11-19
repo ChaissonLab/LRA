@@ -398,6 +398,7 @@ class Alignment {
 			out << "\t" << passthrough;
 		}
 		out << endl;
+		out.flush();
 	}
 };
 
