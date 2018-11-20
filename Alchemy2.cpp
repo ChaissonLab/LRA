@@ -52,6 +52,7 @@ void HelpAlchemy2() {
 			 << "   -p (string) Simulate from positions." << endl
 			 << "   -E (string) Use emprical read length distribution (false=log-normal)." << endl
 			 << "   -B (int)    Number of bases to simulated. Ignores -r" << endl
+			 << "   -x (int)    Fold coverage to simulate. Ignores -r and -B" << endl
 			 << "   -u (int)    Override model mean read length" << endl
 			 << "   -V (int)    Override model read length variance" << endl << endl;
 	cout << " Examples: " << endl
@@ -404,7 +405,7 @@ int main(int argc, char* argv[]) {
 	string modelFile="", readsFile="", posFile="";
 	string outFile="";
 	string bedFile="";
-	int numBases=0;
+	long numBases=0;
 	int numReads=0;
 	int maxGap=50;
 	double avgReadLen=0;
@@ -413,11 +414,12 @@ int main(int argc, char* argv[]) {
 	int maxSampledReads=50000;
 	bool useEmpiricalReadLengths=false;
 	int minReadLength=1000;
+	long foldCoverage=0;
 	if (argc == 1) {
 		HelpAlchemy2();
 		exit(1);
 	}
-  while ((c = getopt (argc, argv, "b:k:L:G:s:g:m:r:R:B:l:N:p:o:u:V:")) != -1) {
+  while ((c = getopt (argc, argv, "b:k:L:G:s:g:m:r:R:B:l:N:p:o:u:V:x:")) != -1) {
     switch (c)
       {
       case 'b':
@@ -461,6 +463,9 @@ int main(int argc, char* argv[]) {
 				break;
 			 case 'B':
 				 numBases=ParseNumber(optarg);
+				 break;
+			case 'x':
+         foldCoverage=ParseNumber(optarg);
 				 break;
 			 case '?':
 				 HelpAlchemy2();
@@ -552,7 +557,10 @@ int main(int argc, char* argv[]) {
 		model.ReadModel(modelFile);
 		Genome genome;
 		genome.Read(genomeFile);
-
+		long genomeSize=0;
+		for (int i=0; i < genome.lengths.size(); i++ ) {
+			genomeSize+=genome.lengths[i];
+		}
 		vector<long> cumRegionLength;
 		vector<string> chroms;
 		vector<long> start, end;
@@ -597,7 +605,11 @@ int main(int argc, char* argv[]) {
 		std::default_random_engine generator;
 		std::lognormal_distribution<double> distribution(avgReadLen, readVar);
 		int readIndex=0;
-
+		
+		if (foldCoverage != 0) {
+			numBases = foldCoverage*genomeSize;
+		}
+		
 		while (nSimulatedBases < numBases) {
 			long i=RandInt(maxPos);
 			int idx=max(0,(int)(lower_bound(cumRegionLength.begin(), cumRegionLength.end(), i)-cumRegionLength.begin() - 1));
