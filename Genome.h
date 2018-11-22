@@ -28,6 +28,11 @@ class Header {
 			return i-1;
 		}
 	}
+	uint64_t GetChromPos(uint64_t query) {
+		int i = Find(query);
+		return query-pos[i];
+	}
+
 	uint64_t GetOffset(uint64_t query) {
 		int i = Find(query);
 		return pos[i];
@@ -97,6 +102,12 @@ class Genome {
 	}
 
 	Header header;
+	char *GlobalIndexToSeq(long index) {
+		int chrom=header.Find(index);
+		uint64_t chromPos=index-header.pos[chrom];
+		return &seqs[chrom][chromPos];
+	}
+
 	void Read(string &genome) {
 		ifstream testGenome(genome.c_str());
 		if (testGenome.good() == false or testGenome.eof()) {
@@ -110,7 +121,8 @@ class Genome {
 		int i=0;
 		while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
 			char *seq = new char[ks->seq.l];
-			memcpy(seq, ks->seq.s, ks->seq.l);
+			for (i=0;i<ks->seq.l;i++) { seq[i] = toupper(ks->seq.s[i]);}
+			//			memcpy(seq, ks->seq.s, ks->seq.l);
 			seqs.push_back(seq);
 			lengths.push_back(ks->seq.l);
 			offset+=ks->seq.l;

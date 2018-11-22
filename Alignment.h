@@ -344,7 +344,7 @@ class Alignment {
 				 << tStart << "\t" 
 				 << tEnd << "\t"
 				 << (int) mapqv << "\t" 
-				 << readName << "\t" << readLen << "\t"
+				 << readName << "\t" << readLen << "\t" << qStart << "\t" << qEnd << "\t"
 				 << nm << "\t" << nblocks << endl;
 	}
 

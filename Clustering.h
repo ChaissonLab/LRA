@@ -88,6 +88,31 @@ class ClusterCoordinates {
 		strand=-1;
 	}
 
+	bool Encompasses(const ClusterCoordinates &b, float frac) const {
+		int qovp=0;
+		if (b.qStart >= qStart and b.qStart < qEnd) {
+			qovp=min(qEnd, b.qEnd)-b.qStart;
+		}
+		else if (b.qEnd > qStart and b.qEnd < qEnd) {
+			qovp=b.qEnd-max(qStart, b.qStart);
+		}
+		else if (b.qStart <= qStart and b.qEnd > qEnd) {
+			qovp=qEnd-qStart;
+		}
+		int tovp=0;
+		if (b.tStart >= tStart and b.tStart < tEnd) {
+			tovp=min(tEnd, b.tEnd)-b.tStart;
+		}
+		else if (b.tEnd > tStart and b.tEnd < tEnd) {
+			tovp=b.tEnd-max(tStart, b.tStart);
+		}
+		else if (b.tStart <= tStart and b.tEnd > tEnd) {
+			tovp=tEnd-tStart;
+		}
+
+		return (((float)qovp)/(qEnd-qStart) > frac) or ((float)tovp / (tEnd-tStart) > frac);
+	}
+
 	bool Overlaps(const ClusterCoordinates &b, float frac) const {
 		int ovp=0;
 
@@ -163,7 +188,7 @@ class Cluster : public ClusterCoordinates {
 		qStart = min(qStart, rhs.qStart);
 	}
 	int size() const {
-		return end - start;
+		return matches.size();
 	}
 
 	int operator<(const Cluster &rhs) const {
@@ -206,7 +231,10 @@ class ClusterOrder {
 		for (int i=0;i<index.size();i++) { index[i]=i;}
 		Sort();
 	}
-		
+	
+	//
+	// Cartesian sort of clusters.
+	//
 	int operator()(const int i, const int j) {
 			assert((*clusters)[i].strand == 0 or (*clusters)[i].strand == 1);
 			assert((*clusters)[j].strand == 0 or (*clusters)[j].strand == 1);

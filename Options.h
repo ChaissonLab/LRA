@@ -47,7 +47,7 @@ public:
 		bestn=1;
 		globalMaxFreq=20;
 		localMaxFreq=30;
-		maxDiag=3000;
+		maxDiag=200;
 		minDiagCluster=2;
 		minClusterSize =20;
 		minRefinedClusterSize = 40;

@@ -272,13 +272,16 @@ void MergeAdjacentClusters(ClusterOrder &order, Genome &genome, Options &opts) {
 
 			if (nextStartChrom == curEndChrom and
 					gap < opts.maxGap and
-					order[c].strand == order[cn].strand ) {
+					order[c].strand == order[cn].strand and 
+					order[c].Encompasses(order[cn],0.5) == false) {
 				order[c].matches.insert(order[c].matches.end(), 
 																order[cn].matches.begin(),
 																order[cn].matches.end());
 				order[c].qEnd = order[cn].qEnd;
 				order[c].tEnd = order[cn].tEnd;
 				order[cn].tEnd=0;
+				order[cn].tStart=0;
+				order[cn].matches.clear();
 				cn++;
 			}
 			else {
@@ -288,7 +291,8 @@ void MergeAdjacentClusters(ClusterOrder &order, Genome &genome, Options &opts) {
 				while (cn2 < order.size() and 
 							 cn2-cn < MAX_AHEAD and 
 							 nextStartChrom == curEndChrom and 
-							 order[c].strand == order[cn2].strand ) {
+							 order[c].strand == order[cn2].strand and 
+							 order[c].Encompasses(order[cn2],0.5) == false) {
 					gap = abs((int)((int)(order[cn2].tStart - order[cn2].qStart) - (int)(order[c].tEnd-order[c].qEnd)));
 					nextStartChrom = genome.header.Find(order[cn2].tStart);
 					if (gap < opts.maxGap) {
@@ -304,6 +308,7 @@ void MergeAdjacentClusters(ClusterOrder &order, Genome &genome, Options &opts) {
 					order[c].qEnd = order[cn].qEnd;
 					order[c].tEnd = order[cn].tEnd;
 					order[cn].tEnd=0;
+					order[cn].matches.clear();
 					cn++;
 				}
 				else {
@@ -357,11 +362,44 @@ void RefineSubstrings(char *read,   GenomePos readSubStart, GenomePos readSubEnd
 	
 }
 
+void SeparateMatchesByStrand(Read &read, Genome &genome, int k,
+														 vector<pair<GenomeTuple, GenomeTuple> > &allMatches, 
+														 vector<pair<GenomeTuple, GenomeTuple> > &forMatches,
+														 vector<pair<GenomeTuple, GenomeTuple> > &revMatches) {
+	vector<bool> strand(allMatches.size());
+	int nForward=0;
+	for (int i=0; i < allMatches.size(); i++) {
+		int readPos     = allMatches[i].first.pos;
+		uint64_t refPos = allMatches[i].second.pos;
+		char *genomePtr=genome.GlobalIndexToSeq(refPos);
+		if (strncmp(&read.seq[readPos], genomePtr, k) == 0) {
+			nForward++;
+		}
+		else {
+			strand[i] = true;
+		}
+	}
+	forMatches.resize(nForward);
+	revMatches.resize(allMatches.size()-nForward);
+	int i=0,r=0,f=0;
+	for (i=0,r=0,f=0; i < allMatches.size(); i++) {
+		if (strand[i] == 0) {
+			forMatches[f] = allMatches[i];
+			f++;
+		}
+		else {
+			revMatches[r] = allMatches[i];
+			r++;
+		}
+	}
+}
+
+
 //debug code Dont forget delete int &i
 void MapRead(Read &read, 
-						Genome &genome,
-						vector<GenomeTuple> &genomemm,
-						LocalIndex &glIndex,
+						 Genome &genome,
+						 vector<GenomeTuple> &genomemm,
+						 LocalIndex &glIndex,
 						 Options &opts,
 						 ostream *output,
 						 pthread_mutex_t *semaphore=NULL) {
@@ -373,8 +411,8 @@ void MapRead(Read &read,
 
 
 	vector<GenomeTuple> readmm;
-	vector<pair<GenomeTuple, GenomeTuple> > matches;
-								
+	vector<pair<GenomeTuple, GenomeTuple> > allMatches, forMatches, revMatches, matches;
+
 	if (opts.storeAll) {
 		Options allOpts = opts;
 		allOpts.globalW=1;
@@ -385,19 +423,43 @@ void MapRead(Read &read,
 		StoreMinimizers<GenomeTuple, Tuple>(read.seq, read.length, opts.globalK, opts.globalW, readmm);
 	}
 	sort(readmm.begin(), readmm.end());
-	CompareLists(readmm, genomemm, matches, opts);
-	DiagonalSort<GenomeTuple>(matches);
+	//
+	// Add matches between the read and the genome.
+	//
+	CompareLists(readmm, genomemm, allMatches, opts);
 
-	CleanOffDiagonal(matches, opts);
+	DiagonalSort<GenomeTuple>(allMatches);
+	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, forMatches, revMatches);
+
+
+	CleanOffDiagonal(forMatches, opts);
+
+	if (opts.dotPlot) {
+		ofstream clust("for-matches.dots");
+		for (int m=0; m < forMatches.size(); m++) {
+			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK << "\t0\t0"<<endl;
+		}
+		clust.close();
+		ofstream rclust("rev-matches.dots");
+		for (int m=0; m < revMatches.size(); m++) {
+			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos << "\t" << opts.globalK << "\t0\t0"<<endl;
+		}
+		rclust.close();
+
+	}
+
 	vector<Cluster> clusters;
+	int forwardStrand=0;
+	StoreDiagonalClusters(forMatches, clusters, opts, false, forwardStrand);
 
-	StoreDiagonalClusters(matches, clusters, opts, false);
-	AntiDiagonalSort<GenomeTuple>(matches, genome.GetSize());
-	SwapStrand(read, opts, matches);
-	
+
+	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize());
+	SwapStrand(read, opts, revMatches);
+	CleanOffDiagonal(revMatches, opts);
 	vector<Cluster> revClusters;
-
-	StoreDiagonalClusters(matches, revClusters, opts, false, 1);
+	
+	int reverseStrand=1;
+	StoreDiagonalClusters(revMatches, revClusters, opts, false, reverseStrand);
 	//
 	// Add pointers to seq that make code more readable.
 	//
@@ -408,6 +470,17 @@ void MapRead(Read &read,
 
 	clusters.insert(clusters.end(), revClusters.begin(), revClusters.end());
 	ClusterOrder clusterOrder(&clusters);
+	if (opts.dotPlot) {
+		ofstream clust("clusters-pre-merge.tab");
+		for (int c =0; c < clusters.size(); c++) {
+			for (int m=0; m < clusters[c].matches.size(); m++) {
+				clust << clusters[c].matches[m].second.pos << "\t" << clusters[c].matches[m].first.pos << "\t" << opts.globalK << "\t" << c << "\t" << clusters[c].strand << endl;
+			}
+		}
+		clust.close();
+	
+	}
+
 	MergeAdjacentClusters(clusterOrder, genome, opts);
 	int cl=0;
 	int cn;
@@ -426,19 +499,36 @@ void MapRead(Read &read,
 	}
 	clusters= reducedClusters;
 	sort(clusters.begin(), clusters.end(), OrderClusterBySize());	
-	/*	ofstream clust("clusters.tab");
-	for (int c =0; c < clusters.size(); c++) {
-		for (int m=0; m < clusters[c].matches.size(); m++) {
-			clust << clusters[c].matches[m].second.pos << "\t" << clusters[c].matches[m].first.pos << "\t" << c << "\t" << clusters[c].strand << endl;
+	if (opts.dotPlot) {
+		ofstream matchfile("long_matches.tab");
+		for (int m =0; m < matches.size(); m++) {
+			matchfile << matches[m].first.pos << "\t" << matches[m].second.pos << "\t" << opts.globalK << "\t0\t0" << endl;
 		}
+		matchfile.close();
+		ofstream clust("clusters.tab");
+		for (int c =0; c < clusters.size(); c++) {
+			for (int m=0; m < clusters[c].matches.size(); m++) {
+				clust << clusters[c].matches[m].second.pos << "\t" << clusters[c].matches[m].first.pos << "\t" << opts.globalK << "\t" << c << "\t" << clusters[c].strand << endl;
+			}
+		}
+		clust.close();
+	
 	}
-	clust.close();
-	*/
-
 
   RemoveOverlappingClusters(clusters, opts);
 
 	
+	//
+	// Merge overlapping clusters
+	//
+	//RemoveEmptyClusters(clusters, opts.minClusterSize);
+	
+	if (opts.mergeGapped) {
+		ClusterOrder clusterOrder(&clusters);
+		clusterOrder.Sort();
+		MergeOverlappingClusters(clusterOrder);
+	}
+
 
 
 	//
@@ -465,19 +555,6 @@ void MapRead(Read &read,
 	tinyOpts.globalK=smallOpts.globalK-3;
 
 
-	//
-	// Merge overlapping clusters
-	//
-	//RemoveEmptyClusters(clusters, opts.minClusterSize);
-	
-
-
-	if (opts.mergeGapped) {
-		ClusterOrder clusterOrder(&clusters);
-		clusterOrder.Sort();
-		MergeOverlappingClusters(clusterOrder);
-	}
-
 	vector<Cluster> refinedClusters(clusters.size());
 
 	vector<Alignment*> alignments;
@@ -487,6 +564,16 @@ void MapRead(Read &read,
 		if (clusters[c].start == clusters[c].end) {
 			continue;
 		}			
+		if (opts.dotPlot) {
+			stringstream outNameStrm;
+			outNameStrm << baseName + "." << c << ".clust.dots";
+			ofstream baseDots(outNameStrm.str().c_str());
+			for (int m=0; m < clusters[c].matches.size(); m++) {
+				baseDots << clusters[c].matches[m].second.pos << "\t" << clusters[c].matches[m].first.pos << "\t" << smallOpts.globalK << "\t" << c << "\t0" << endl;
+			}
+			baseDots.close();
+		}
+
 		//
 		// Get the boundaries of the cluster in both sequences.
 		//
@@ -499,7 +586,9 @@ void MapRead(Read &read,
 		if (nMatch > 1 ) {
 			tPos = clusters[c].matches[nMatch-1].second.pos;
 			lastChromIndex = genome.header.Find(tPos);
-		} else { lastChromIndex = firstChromIndex; }
+		} else { 
+			lastChromIndex = firstChromIndex; 
+		}
 		clusters[c].chromIndex = firstChromIndex;
 		if (firstChromIndex != lastChromIndex ) {
 			clusters[c].matches.clear();
