@@ -204,9 +204,9 @@ class Cluster : public ClusterCoordinates {
 	}
 	void SetClusterBoundariesFromMatches(Options &opts) {
 		for (int i=0; i < matches.size(); i++) {
-			tEnd   = max(tEnd, matches[i].second.pos + opts.globalK - 1);
+			tEnd   = max(tEnd, matches[i].second.pos + opts.globalK);
 			tStart = min(tStart, matches[i].second.pos );
-			qEnd   = max(qEnd, matches[i].first.pos + opts.globalK - 1);
+			qEnd   = max(qEnd, matches[i].first.pos + opts.globalK);
 			qStart = min(qStart, matches[i].first.pos);
 		}
 	}
@@ -279,17 +279,17 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &c
 	while (cs < matches.size()) {
 		ce = cs+1;
 		GenomePos qStart=matches[cs].first.pos, 
-			qEnd=matches[cs].first.pos + opts.globalK - 1, 
+			qEnd=matches[cs].first.pos + opts.globalK, 
 			tStart=matches[cs].second.pos, 
-			tEnd=matches[cs].second.pos + opts.globalK - 1;
+			tEnd=matches[cs].second.pos + opts.globalK;
 		int diff=0;
 		while (ce < matches.size() and 
 					 abs(DiagonalDifference(matches[ce], matches[ce-1])) < opts.maxDiag  and 
 					 (opts.maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < opts.maxGap) ) {
 			qStart = min(qStart, matches[ce].first.pos);
-			qEnd   = max(qEnd, matches[ce].first.pos + opts.globalK - 1);
+			qEnd   = max(qEnd, matches[ce].first.pos + opts.globalK);
 			tStart = min(tStart, matches[ce].second.pos);
-			tEnd   = max(tEnd, matches[ce].second.pos + opts.globalK - 1);
+			tEnd   = max(tEnd, matches[ce].second.pos + opts.globalK);
 			ce++;
 			if (ce < matches.size()) {
 				diff = GapDifference(matches[ce], matches[ce-1]);

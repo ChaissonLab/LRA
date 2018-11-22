@@ -54,6 +54,26 @@ endPositionV(seqan::Seed<IndexedSeed, TConfig> const & seed)
 }
 
 
+
+template <typename TSpec, typename TConfig>
+inline typename seqan::Size<seqan::Seed<IndexedSeed, TConfig> >::Type
+seedSize(seqan::Seed<IndexedSeed, TConfig> & seed)
+{
+    return _max(endPositionH(seed) - beginPositionH(seed), endPositionV(seed) - beginPositionV(seed));
+}
+
+template <typename TSpec, typename TConfig>
+inline typename seqan::Size<seqan::Seed<IndexedSeed, TConfig> >::Type
+seedSize(seqan::Seed<IndexedSeed, TConfig> const & seed)
+{
+    return _max(endPositionH(seed) - beginPositionH(seed), endPositionV(seed) - beginPositionV(seed));
+}
+
+
+
+
+
+
 // Debugging code
 template <typename TStream, typename TConfig>
 inline TStream &
