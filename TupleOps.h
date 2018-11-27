@@ -3,6 +3,7 @@
 #include <string>
 #include "SeqUtils.h"
 #include "Types.h"
+#include <vector>
 using namespace std;
 
 Tuple mask=0;

@@ -35,7 +35,7 @@ public:
 	bool NaiveDP;
 	int readStart;
 	int readStride;
-	
+	bool seqan;
 	Options() {
 		readStart=0;
 		readStride=1;
@@ -65,6 +65,7 @@ public:
 		maxGap=10000;
 		mergeClusters=false;
 		NaiveDP = false;
+		seqan=false;
 	}
 };
 #endif

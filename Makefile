@@ -1,4 +1,4 @@
-all:	lra alchemy2 tag
+all:	lra alchemy2 tag tgc
 PROF=/home/cmb-16/mjc/shared/lib/
 CCOPTS_BASE=
 DEBUG?=""
@@ -30,6 +30,7 @@ HEADERS=MinCount.h \
   MapRead.h \
   Input.h \
   AffineOneGapAlign.h \
+  GlobalChain.h \
   seqan/include/seqan/seeds/seeds_global_chaining.h \
   NaiveDP.h 
 
@@ -42,7 +43,8 @@ tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 	$(CPP) -g TestAffineOneGapAlign.cpp -o tag 
 # -D _MAT_PRINT_
 
-
+tgc: TestGlobalChain.cpp GlobalChain.h Fragment.h BasicEndpoint.h PrioritySearchTree.h
+	$(CPP) -g TestGlobalChain.cpp -o tgc
 
 lra: lra.o
 	$(CPP) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@

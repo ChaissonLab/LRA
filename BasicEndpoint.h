@@ -32,7 +32,7 @@ class Coordinate {
  }
 
  int operator<=(const Coordinate &rhs) const {
-	 return (*this < rhs) or (x == rhs.x && y == rhs.y);
+	 return (*this.x < rhs.x) or (x == rhs.x && y <= rhs.y);
  }
 
  int Equals(const Coordinate &rhs) const {
@@ -65,7 +65,7 @@ template<typename T_ScoredFragment>
 	class LessThan {
 	public:
 		int operator()(const BasicEndpoint<T_ScoredFragment> &lhs, const BasicEndpoint<T_ScoredFragment> &rhs) const {
-			return lhs.p < rhs.p;
+			return lhs.p <= rhs.p;
 		}
 	};
 	

@@ -23,6 +23,7 @@ using namespace std;
 #include "AffineOneGapAlign.h"
 #include "NaiveDP.h"
 #include <iterator>
+#include "GlobalChain.h"
 
 // Print results to stdout.
 typedef seqan::String<seqan::Dna> TSequence;                 // sequence type
@@ -568,7 +569,9 @@ void MapRead(Read &read,
 			outNameStrm << baseName + "." << c << ".clust.dots";
 			ofstream baseDots(outNameStrm.str().c_str());
 			for (int m=0; m < clusters[c].matches.size(); m++) {
-				baseDots << clusters[c].matches[m].second.pos << "\t" << clusters[c].matches[m].first.pos << "\t" << smallOpts.globalK << "\t" << c << "\t0" << endl;
+				baseDots << clusters[c].matches[m].second.pos << "\t" 
+								 << clusters[c].matches[m].first.pos << "\t" 
+								 << smallOpts.globalK << "\t" << c << "\t0" << endl;
 			}
 			baseDots.close();
 		}
@@ -1224,7 +1227,7 @@ void MapRead(Read &read,
 				NaiveDP (seedSet, chain);
 			}
 			else {
-				cerr << "Skipping naivedp on seed set of size " << seqan::length(seedSet) << endl;
+				//				cerr << "Skipping naivedp on seed set of size " << seqan::length(seedSet) << endl;
 			}
 
 			/*
@@ -1242,8 +1245,32 @@ void MapRead(Read &read,
 		else {
 			seqan::clear(chain);
 			if (seqan::length(seedSet) > 0) {
-				seqan::chainSeedsGlobally(chain, seedSet, seqan::SparseChaining());
-				cerr << "finished the chainSeedsGlobally" << endl;
+				if (opts.seqan) {
+					seqan::chainSeedsGlobally(chain, seedSet, seqan::SparseChaining());
+					cerr << "finished the chainSeedsGlobally" << endl;
+				}
+				else {
+					//
+					// Test code for global chain. Modify to make it work efficiently if correct.
+					//
+					vector<Fragment> fragments;
+					vector<Endpoint> endpoints;
+					vector<int> op;
+					seqan::Iterator<seqan::SeedSet<IndSeed, seqan::Unordered> >::Type it;
+					for ( it = seqan::begin(seedSet); it != seqan::end(seedSet); ++it) {
+						fragments.push_back(Fragment(beginPositionH(*it),beginPositionV(*it), endPositionH(*it),endPositionV(*it),endPositionH(*it)-beginPositionH(*it), (*it).index));
+					}
+					GlobalChain(fragments, op, endpoints);
+					int i;
+					for (int oi=0; oi<op.size(); oi++) {
+						IndSeed s(fragments[op[oi]].xl, 
+											fragments[op[oi]].yl, 
+											fragments[op[oi]].xh, 
+											fragments[op[oi]].yh,
+                      fragments[op[oi]].index);
+						seqan::append(chain,s);
+					}
+				}
 			}
 
 			/*
@@ -1288,7 +1315,7 @@ void MapRead(Read &read,
 				unsigned int fprev = vt[chain[ch].index].start;
 				unsigned int fcur = vt[chain[ch].index].start;
 				tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[fcur].first.pos), 
-																GenomeTuple(0, refinedClusters[r].matches[fcur].second.pos)));	
+																			GenomeTuple(0, refinedClusters[r].matches[fcur].second.pos)));	
 				
 				//cerr << "tupChain[" << tupChain.size() << "]     push_back: " << "first: " << refinedClusters[r].matches[fcur].first.pos<<"  " << refinedClusters[r].matches[fcur].first.pos + smallOpts.globalK 
 				//<< "   second: " << refinedClusters[r].matches[fcur].second.pos << " "<< refinedClusters[r].matches[fcur].second.pos + smallOpts.globalK - 1 <<endl;
@@ -1538,8 +1565,30 @@ void MapRead(Read &read,
 							//NaiveDP< seqan::SeedSet<seqan::Seed<seqan::Simple>, seqan::Unordered>,seqan::Seed<seqan::Simple>(gapSeedSet, gapChain);
 							NaiveDP(gapSeedSet, gapChain);
 						}
-						else {
+						else if (opts.seqan) {
 							seqan::chainSeedsGlobally(gapChain, gapSeedSet, seqan::SparseChaining());
+						}
+						else {
+							//
+							// Test code for global chain. Modify to make it work efficiently if correct.
+							//
+							vector<Fragment> fragments;
+							vector<Endpoint> endpoints;
+							vector<int> op;
+							seqan::Iterator<seqan::SeedSet<seqan::Seed<seqan::Simple>, seqan::Unordered> >::Type it;
+							for ( it = seqan::begin(gapSeedSet); it != seqan::end(gapSeedSet); ++it) {
+								fragments.push_back(Fragment(beginPositionH(*it),beginPositionV(*it), endPositionH(*it),endPositionV(*it),endPositionH(*it)-beginPositionH(*it),0));
+							}
+
+							GlobalChain(fragments, op, endpoints);
+							int i;
+							for (int oi=0; oi<op.size(); oi++) {
+								IndSeed s(fragments[op[oi]].xl, 
+													fragments[op[oi]].yl, 
+													fragments[op[oi]].xh, 
+													fragments[op[oi]].yh);
+								seqan::append(gapChain,s);
+							}
 						}
 					}
 					int pre=seqan::length(gapChain);

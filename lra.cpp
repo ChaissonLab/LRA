@@ -156,6 +156,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.readStride=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "--seqan")) {
+			opts.seqan=true;
+			++argi;
+		}
 		else if (ArgIs(argv[argi], "--start")) {
 			opts.readStart=atoi(GetArgv(argv, argc, argi));
 			++argi;
