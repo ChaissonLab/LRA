@@ -74,7 +74,7 @@ public:
 	ostream *out;
 	int thread;
 	int numThreads;
-	pthread_mutex_t semaphore;
+	pthread_mutex_t *semaphore;
 };
 
 void MapReads(MapInfo *mapInfo) {
@@ -91,7 +91,7 @@ void MapReads(MapInfo *mapInfo) {
 							*mapInfo->glIndex, 
 							*mapInfo->opts, 
 							mapInfo->out,
-							&mapInfo->semaphore);
+							mapInfo->semaphore);
 		}
 	}
 	pthread_exit(NULL);
@@ -250,7 +250,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		pthread_t *threads = new pthread_t[opts.nproc];
 		vector<MapInfo> mapInfo(opts.nproc);
 		
-		
+		pthread_mutex_t semaphore;		
+		pthread_mutex_init(&semaphore, NULL);
 		for (int procIndex = 0; procIndex < opts.nproc; procIndex++ ){ 
 			mapInfo[procIndex].genome = &genome;
 			mapInfo[procIndex].genomemm = &genomemm;
@@ -259,8 +260,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			mapInfo[procIndex].opts= &opts;
 			mapInfo[procIndex].out = outPtr;
 			mapInfo[procIndex].thread=procIndex;
-			pthread_mutex_init(&mapInfo[procIndex].semaphore, NULL);
-
+			mapInfo[procIndex].semaphore=&semaphore;
 			pthread_create(&threads[procIndex], &threadAttr[procIndex], (void* (*)(void*))MapReads, &mapInfo[procIndex]);
 		}
 

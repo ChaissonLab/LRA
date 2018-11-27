@@ -1563,7 +1563,9 @@ void MapRead(Read &read,
    							// Perform sparse dp with convex gap cost
 							seqan::clear(gapChain);
 							//NaiveDP< seqan::SeedSet<seqan::Seed<seqan::Simple>, seqan::Unordered>,seqan::Seed<seqan::Simple>(gapSeedSet, gapChain);
-							NaiveDP(gapSeedSet, gapChain);
+							if (seqan::length(gapSeedSet) < 10000) {
+								NaiveDP(gapSeedSet, gapChain);
+							}
 						}
 						else if (opts.seqan) {
 							seqan::chainSeedsGlobally(gapChain, gapSeedSet, seqan::SparseChaining());
