@@ -50,7 +50,7 @@ void HelpAlchemy2() {
 			 << "   -R (string) Simulate from regions (bed file)" << endl
 			 << "   -l (int)    Minimum read length (1000)." << endl
 			 << "   -p (string) Simulate from positions." << endl
-			 << "   -E (string) Use emprical read length distribution (false=log-normal)." << endl
+			 << "   -E (string) Use empirical read length distribution (false=log-normal)." << endl
 			 << "   -B (int)    Number of bases to simulated. Ignores -r" << endl
 			 << "   -x (int)    Fold coverage to simulate. Ignores -r and -B" << endl
 			 << "   -u (int)    Override model mean read length" << endl
