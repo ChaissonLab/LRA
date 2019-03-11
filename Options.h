@@ -33,13 +33,14 @@ public:
 	bool doBandedAlignment;
 	int maxGap;
 	bool NaiveDP;
+	bool SparseDP;
 	int readStart;
 	int readStride;
 	bool seqan;
 	Options() {
 		readStart=0;
 		readStride=1;
-		dotPlot=false;
+		dotPlot=true;
 		globalK=17;
 		globalW=10; 
 		localK=7;
@@ -66,6 +67,7 @@ public:
 		mergeClusters=false;
 		NaiveDP = false;
 		seqan=false;
+		SparseDP=false;
 	}
 };
 #endif

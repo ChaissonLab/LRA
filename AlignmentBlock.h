@@ -16,7 +16,7 @@ class Block {
 	 
 	GenomePos qPos, tPos, length;
 	Block() {qPos=tPos=length=0;}
-  Block(GenomePos q, GenomePos t, GenomePos l) : qPos(q), tPos(t), length(l) {}
+ 	Block(GenomePos q, GenomePos t, GenomePos l) : qPos(q), tPos(t), length(l) {}
 	Block& Assign(Block &rhs) {
 		qPos = rhs.qPos;
 		tPos = rhs.tPos;

@@ -3,6 +3,12 @@
 
 #include <algorithm>
 #include "Types.h"
+#include <vector>
+#include <iterator>
+
+using std::sort;
+using std::pair;
+
 
 template<typename Tup> 
 class DiagonalSortOp {
@@ -38,8 +44,8 @@ class AntiDiagonalSortOp {
 		
 	GenomePos length;
 	int operator()(const pair<Tup, Tup> &a, const pair<Tup, Tup> &b) {
-		int aDiag = a.first.pos - (length-a.second.pos), 
-			bDiag= b.first.pos - (length-b.second.pos);
+		int aDiag = a.first.pos - (length-a.second.pos),  
+			bDiag= b.first.pos - (length-b.second.pos); 
 
 		if (aDiag != bDiag) {
 			return aDiag < bDiag;
@@ -129,5 +135,102 @@ int CartesianTargetUpperBound(typename vector<pair<Tup, Tup> >::iterator  begin,
 	queryTup.second.pos = query;
 	return upper_bound(begin, end, queryTup, CartesianTargetSortOp<Tup>()) - begin;
 }
+
+
+// From Jingwen
+template<typename T> 
+class SortByRowOp {
+ public:
+	int operator()(const T & a, const T & b) {
+		if (a.se.first != b.se.first) {
+			return a.se.first < b.se.first;
+		}
+		else if (a.se.second != b.se.second){
+			return a.se.second < b.se.second; 
+		}
+		else {
+			return a.ind < b.ind;
+		}
+	}
+};
+
+
+template<typename T1, typename T2> 
+class SortByColOp {
+ public:
+
+ 	SortByColOp(std::vector<T1> & H);// constructor
+ 	std::vector<T1> * Hp;
+
+	int operator()(const T2 & a, const T2 & b) {
+		if ((*Hp)[a].se.second != (*Hp)[b].se.second) {
+			return (*Hp)[a].se.second < (*Hp)[b].se.second;
+		}
+		else if ((*Hp)[a].se.first != (*Hp)[b].se.first){
+			return (*Hp)[a].se.first < (*Hp)[b].se.first; 
+		}
+		else {
+			return (*Hp)[a].ind < (*Hp)[b].ind; 
+		}
+	}
+};
+
+// constructor
+template<typename T1, typename T2>
+SortByColOp<T1, T2>::SortByColOp(std::vector<T1> & H) {
+	Hp = & H;
+}
+
+
+template<typename T1, typename T2>
+class SortByBackDiagOp
+{
+public:
+ 	SortByBackDiagOp(std::vector<T1> & H); // constructor && initialization list
+
+ 	std::vector<T1> * Hp;
+
+ 	int operator()(const T2 & a, const T2 & b) {
+ 		long int aBackDiag = (*Hp)[a].se.first + (*Hp)[a].se.second;
+ 		long int bBackDiag = (*Hp)[b].se.first + (*Hp)[b].se.second;
+ 		if (aBackDiag != bBackDiag) {
+ 			return aBackDiag < bBackDiag;
+ 		}
+ 		else if ((*Hp)[a].se.first != (*Hp)[b].se.first){
+ 			return (*Hp)[a].se.first < (*Hp)[b].se.first;
+ 		}
+ 		else {
+ 			return (*Hp)[a].ind < (*Hp)[b].ind;
+ 		}
+ 	}
+};
+
+
+// Constructor
+template<typename T1, typename T2>
+SortByBackDiagOp<T1, T2>::SortByBackDiagOp(std::vector<T1> & H) {
+	Hp = & H;
+}
+
+
+
+// This Lower_bound function return the index of the element
+template <typename T1, typename T2>
+T1 Lower_Bound (T1 first, T1 last, long int val, std::vector<T2> & E_1) {
+	
+	T1 it;
+	unsigned int count, step;
+	count = std::distance(first, last);
+	while (count > 0) {
+		it = first; step = count/2; std::advance(it, step);
+		if ( E_1[*it] < val) {
+			first = ++it;
+			count -= step + 1;
+		}
+		else count = step;
+	}
+	return first;
+}
+
 
 #endif

@@ -1,18 +1,20 @@
-all:	lra alchemy2 tag tgc
-PROF=/home/cmb-16/mjc/shared/lib/
+all:  lra alchemy2 tag tgc
+#PROF=/home/cmb-16/mjc/shared/lib/
+PROF=/home/cmb-16/mjc/jingwenr/software/lib
 CCOPTS_BASE=
 DEBUG?=""
+OPT?=""
 ifneq ($(DEBUG), "")
 CCOPTS=$(CCOPTS_BASE) $(DEBUG)
 else
 CCOPTS=-O3 $(CCOPTS_BASE)  -DNDEBUG -DSEQAN_ENABLE_TESTING=0 -DSEQAN_ENABLE_DEBUG=0
 endif
 STATIC=
-ifeq ($(OPT), "1")
-CCOPTS=-g $(CCOPTS_BASE) -lprofiler
-STATIC=
+ifneq ($(OPT), "")
+#CCOPTS=-g $(CCOPTS_BASE) -lprofiler
+#STATIC=
+STATIC=-g -L $(PROF) -lprofiler
 endif
-
 
 #-D _TESTING_ -lprofiler 
 #  -L$(PROF) 
@@ -29,10 +31,14 @@ HEADERS=MinCount.h \
   Read.h \
   MapRead.h \
   Input.h \
+  Fragment.h\
+  BasicEndpoint.h\
+  PrioritySearchTree.h\
   AffineOneGapAlign.h \
   GlobalChain.h \
   seqan/include/seqan/seeds/seeds_global_chaining.h \
-  NaiveDP.h 
+  NaiveDP.h \
+  SparseDP.h
 
 CPP=g++ -std=c++14 
 

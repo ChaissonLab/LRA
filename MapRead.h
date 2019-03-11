@@ -9,6 +9,7 @@
 #include "TupleOps.h"
 #include <iostream>
 #include <algorithm>
+#include <iterator>
 
 #include <sstream>
 #include <thread>
@@ -17,14 +18,15 @@
 #include "Clustering.h"
 #include <thread>
 
-#include "seqan/seeds.h"
-#include "seqan/align.h"
-using namespace std;
 #include "AffineOneGapAlign.h"
 #include "NaiveDP.h"
-#include <iterator>
 #include "GlobalChain.h"
+#include "TupleOps.h"
+#include "SparseDP.h"
+#include "MergeSplit.h"
 
+
+using namespace std;
 // Print results to stdout.
 typedef seqan::String<seqan::Dna> TSequence;                 // sequence type
 //typedef seqan::Infix<seqan::String<seqan::Dna> >::Type  Substring;
@@ -36,10 +38,10 @@ typedef seqan::Row<TAlign>::Type TRow;                 // gapped sequence typ
 typedef seqan::Align<TSequence, seqan::ArrayGaps> TSeqAlign;   
 typedef seqan::Row<TSeqAlign>::Type TSeqRow;                 // gapped sequence typ
 
-
+// Check(Jingwen): SwapStrand should operate on genome, because AntiDiagonalSort operates on the second.pos
 void SwapStrand(Read &read, Options &opts, GenomePairs &matches) {
 	for (int m=0; m < matches.size(); m++) {
-		matches[m].first.pos = read.length - (matches[m].first.pos + opts.globalK - 1);
+		matches[m].first.pos = read.length - (matches[m].first.pos + opts.globalK);
 	}
 }
 
@@ -77,8 +79,7 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, Options &opts) {
 		float num=1.0;
 		float denom=1.0;
 
-		while ( ovp < clusters.size() and
-						clusters[a].Overlaps(clusters[ovp], 0.8 ) ) {
+		while ( ovp < clusters.size() and clusters[a].Overlaps(clusters[ovp], 0.8 ) ) {
 			ovp++;
 		}
 		if (ovp - a > opts.maxCandidates) {
@@ -140,9 +141,8 @@ void SimpleMapQV(vector<Alignment*> &alignments) {
 typedef seqan::Iterator<TSeqRow>::Type TRowIterator;
 typedef char TChar;                             // character type
 
-int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, 
-										char *tSeq, GenomePos &tStart, GenomePos &tEnd, 
-										vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln) {
+int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, GenomePos &tStart, GenomePos &tEnd,
+							vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln) {
 	
 	int qLen = qEnd-qStart;
 	int tLen = tEnd-tStart;
@@ -275,9 +275,7 @@ void MergeAdjacentClusters(ClusterOrder &order, Genome &genome, Options &opts) {
 					gap < opts.maxGap and
 					order[c].strand == order[cn].strand and 
 					order[c].Encompasses(order[cn],0.5) == false) {
-				order[c].matches.insert(order[c].matches.end(), 
-																order[cn].matches.begin(),
-																order[cn].matches.end());
+				order[c].matches.insert(order[c].matches.end(), order[cn].matches.begin(), order[cn].matches.end());
 				order[c].qEnd = order[cn].qEnd;
 				order[c].tEnd = order[cn].tEnd;
 				order[cn].tEnd=0;
@@ -303,9 +301,7 @@ void MergeAdjacentClusters(ClusterOrder &order, Genome &genome, Options &opts) {
 				}
 				if (cn2 < order.size() and cn2 - cn < MAX_AHEAD and cn2 > cn and gap < opts.maxGap) {
 					cn=cn2;
-					order[c].matches.insert(order[c].matches.end(), 
-																	order[cn].matches.begin(),
-																	order[cn].matches.end());
+					order[c].matches.insert(order[c].matches.end(), order[cn].matches.begin(), order[cn].matches.end());
 					order[c].qEnd = order[cn].qEnd;
 					order[c].tEnd = order[cn].tEnd;
 					order[cn].tEnd=0;
@@ -348,13 +344,11 @@ void MergeOverlappingClusters(ClusterOrder &order) {
 	RemoveEmptyClusters(*order.clusters);
 }
 
-void RefineSubstrings(char *read,   GenomePos readSubStart, GenomePos readSubEnd, 
-											char *genome, GenomePos genomeSubStart, GenomePos genomeSubEnd, 
-											vector<int> &scoreMat, vector<Arrow> &pathMat, 
-											Alignment &aln) {
+void RefineSubstrings(char *read,   GenomePos readSubStart, GenomePos readSubEnd, char *genome, GenomePos genomeSubStart, GenomePos genomeSubEnd, 
+							vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln) {
 
 	aln.blocks.clear();
-	AlignSubstrings( read, readSubStart, readSubEnd, genome, genomeSubStart, genomeSubEnd, scoreMat, pathMat, aln);
+	AlignSubstrings(read, readSubStart, readSubEnd, genome, genomeSubStart, genomeSubEnd, scoreMat, pathMat, aln);
 	for (int b = 0; b < aln.blocks.size(); b++) {
 		aln.blocks[b].qPos += readSubStart;
 		aln.blocks[b].tPos += genomeSubStart;
@@ -370,7 +364,7 @@ void SeparateMatchesByStrand(Read &read, Genome &genome, int k,
 	vector<bool> strand(allMatches.size());
 	int nForward=0;
 	for (int i=0; i < allMatches.size(); i++) {
-		int readPos     = allMatches[i].first.pos;
+		int readPos = allMatches[i].first.pos;
 		uint64_t refPos = allMatches[i].second.pos;
 		char *genomePtr=genome.GlobalIndexToSeq(refPos);
 		if (strncmp(&read.seq[readPos], genomePtr, k) == 0) {
@@ -397,21 +391,14 @@ void SeparateMatchesByStrand(Read &read, Genome &genome, int k,
 
 
 //debug code Dont forget delete int &i
-void MapRead(Read &read, 
-						 Genome &genome,
-						 vector<GenomeTuple> &genomemm,
-						 LocalIndex &glIndex,
-						 Options &opts,
-						 ostream *output,
-						 pthread_mutex_t *semaphore=NULL) {
+void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, pthread_mutex_t *semaphore=NULL) {
 
 	string baseName = read.name;
-
 
 	for (int i=0; i < baseName.size(); i++) {	if (baseName[i] == '/') baseName[i] = '_';	}
 
 
-	vector<GenomeTuple> readmm;
+	vector<GenomeTuple> readmm; // readmm stores minimizers
 	vector<pair<GenomeTuple, GenomeTuple> > allMatches, forMatches, revMatches, matches;
 
 	if (opts.storeAll) {
@@ -422,13 +409,13 @@ void MapRead(Read &read,
 	else {
 		StoreMinimizers<GenomeTuple, Tuple>(read.seq, read.length, opts.globalK, opts.globalW, readmm);
 	}
-	sort(readmm.begin(), readmm.end());
+	sort(readmm.begin(), readmm.end()); //sort kmers in readmm(minimizers)
 	//
 	// Add matches between the read and the genome.
 	//
 	CompareLists(readmm, genomemm, allMatches, opts);
 
-	DiagonalSort<GenomeTuple>(allMatches);
+	DiagonalSort<GenomeTuple>(allMatches); // sort fragments in allMatches by forward diagonal
 	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, forMatches, revMatches);
 
 
@@ -470,6 +457,7 @@ void MapRead(Read &read,
 
 	clusters.insert(clusters.end(), revClusters.begin(), revClusters.end());
 	ClusterOrder clusterOrder(&clusters);
+	
 	if (opts.dotPlot) {
 		ofstream clust("clusters-pre-merge.tab");
 		for (int c =0; c < clusters.size(); c++) {
@@ -491,14 +479,17 @@ void MapRead(Read &read,
 		}
 	}
 	clusters.resize(cl);
-	
+	/////////////TODO(Jingwen): is the following redundant?	Can't just Cartesian sort clusters?
 	ClusterOrder reducedOrder(&clusters);
 	vector<Cluster> reducedClusters;
 	for (int i = 0; i < reducedOrder.size(); i++) {
 		reducedClusters.push_back(reducedOrder[i]);
 	}
-	clusters= reducedClusters;
-	sort(clusters.begin(), clusters.end(), OrderClusterBySize());	
+	clusters= reducedClusters; // Now clusters is Cartesian sorted(first by strand, then by tStart, then by qStart)
+	//////////////////
+	
+	sort(clusters.begin(), clusters.end(), OrderClusterBySize()); // clusters are sorted in ascending order
+	
 	if (opts.dotPlot) {
 		ofstream matchfile("long_matches.tab");
 		for (int m =0; m < matches.size(); m++) {
@@ -511,11 +502,10 @@ void MapRead(Read &read,
 				clust << clusters[c].matches[m].second.pos << "\t" << clusters[c].matches[m].first.pos << "\t" << opts.globalK << "\t" << c << "\t" << clusters[c].strand << endl;
 			}
 		}
-		clust.close();
-	
+		clust.close();	
 	}
 
-  RemoveOverlappingClusters(clusters, opts);
+	RemoveOverlappingClusters(clusters, opts); 
 
 	
 	//
@@ -569,8 +559,8 @@ void MapRead(Read &read,
 			outNameStrm << baseName + "." << c << ".clust.dots";
 			ofstream baseDots(outNameStrm.str().c_str());
 			for (int m=0; m < clusters[c].matches.size(); m++) {
-				baseDots << clusters[c].matches[m].second.pos << "\t" 
-								 << clusters[c].matches[m].first.pos << "\t" 
+				baseDots << clusters[c].matches[m].first.pos << "\t" 
+								 << clusters[c].matches[m].second.pos << "\t" 
 								 << smallOpts.globalK << "\t" << c << "\t0" << endl;
 			}
 			baseDots.close();
@@ -579,11 +569,10 @@ void MapRead(Read &read,
 		//
 		// Get the boundaries of the cluster in both sequences.
 		//
-		CartesianTargetSort<GenomeTuple>(clusters[c].matches.begin(), 
-																		 clusters[c].matches.end());
+		CartesianTargetSort<GenomeTuple>(clusters[c].matches.begin(), clusters[c].matches.end()); // sorted by second.pos and then first.pos
 		int nMatch = clusters[c].matches.size();
 		GenomePos tPos=clusters[c].matches[0].second.pos;
-		int firstChromIndex   = genome.header.Find(tPos);
+		int firstChromIndex = genome.header.Find(tPos);
 		int lastChromIndex;
 		if (nMatch > 1 ) {
 			tPos = clusters[c].matches[nMatch-1].second.pos;
@@ -591,8 +580,8 @@ void MapRead(Read &read,
 		} else { 
 			lastChromIndex = firstChromIndex; 
 		}
-		clusters[c].chromIndex = firstChromIndex;
-		if (firstChromIndex != lastChromIndex ) {
+		clusters[c].chromIndex = firstChromIndex;  
+		if (firstChromIndex != lastChromIndex ) {// TODO(Jingwen): what's doing here??
 			clusters[c].matches.clear();
 			continue;
 		}
@@ -609,7 +598,8 @@ void MapRead(Read &read,
 		//
 		// Get shorthand access to alignment boundaries.
 		//
-
+		// TODO(Jingwen): clusters[c].matches is cartesianTargetSorted(first by second.pos and then by first.pos)
+		// but in this way, readClusterStart and readClusterEnd are not quite accurate. ????????				
 		GenomePos readClusterStart, readClusterEnd, genomeClusterStart, genomeClusterEnd;
 		readClusterStart = clusters[c].matches[0].first.pos;
 		genomeClusterStart = clusters[c].matches[0].second.pos + chromOffset;
@@ -655,21 +645,12 @@ void MapRead(Read &read,
 			//
 			// Find the coordinates in the cluster that start in this local index.
 			//
-			GenomePos genomeLocalIndexStart = 
-				glIndex.seqOffsets[lsi]  - 
-				chromOffset;
-			GenomePos genomeLocalIndexEnd   = 
-				glIndex.seqOffsets[lsi+1] - 1 - chromOffset;
+			GenomePos genomeLocalIndexStart = glIndex.seqOffsets[lsi]  - chromOffset;
+			GenomePos genomeLocalIndexEnd   = glIndex.seqOffsets[lsi+1] - 1 - chromOffset;
 
-			int matchStart = 
-				CartesianTargetLowerBound<GenomeTuple>(clusters[c].matches.begin(),
-																							 clusters[c].matches.end(),
-																							 genomeLocalIndexStart);
+			int matchStart = CartesianTargetLowerBound<GenomeTuple>(clusters[c].matches.begin(), clusters[c].matches.end(), genomeLocalIndexStart);
 
-			int matchEnd   = 
-				CartesianTargetUpperBound<GenomeTuple>(clusters[c].matches.begin(),
-																							 clusters[c].matches.end(),
-																							 genomeLocalIndexEnd);
+			int matchEnd   = CartesianTargetUpperBound<GenomeTuple>(clusters[c].matches.begin(), clusters[c].matches.end(), genomeLocalIndexEnd);
 
 			//
 			// If there is no overlap with this cluster
@@ -708,9 +689,7 @@ void MapRead(Read &read,
 			//
 
 			int queryIndexStart = readIndex->LookupIndex(readStart);
-			int queryIndexEnd   = 
-				readIndex->LookupIndex(min(readEnd, 
-																	 (GenomePos) read.length-1));
+			int queryIndexEnd = readIndex->LookupIndex(min(readEnd,   (GenomePos) read.length-1));
 			assert(queryIndexEnd < readIndex->seqOffsets.size()+1);
 
 			for (int qi = queryIndexStart; qi <= queryIndexEnd; ++qi){ 
@@ -721,19 +700,9 @@ void MapRead(Read &read,
 				GenomePos readSegmentStart= readIndex->seqOffsets[qi];
 				GenomePos readSegmentEnd  = readIndex->seqOffsets[qi+1];
 
-				CompareLists<LocalTuple>(readIndex->minimizers.begin() + 
-																 qStartBoundary,
-
-																 readIndex->minimizers.begin() +
-																 qEndBoundary,
-
-																 glIndex.minimizers.begin()+
-																 glIndex.tupleBoundaries[lsi], 
-
-																 glIndex.minimizers.begin()+
-																 glIndex.tupleBoundaries[lsi+1], 
-
-																 smallMatches, smallOpts);
+				CompareLists<LocalTuple>(readIndex->minimizers.begin() + qStartBoundary, readIndex->minimizers.begin() + qEndBoundary, 
+												glIndex.minimizers.begin()+ glIndex.tupleBoundaries[lsi], glIndex.minimizers.begin()+ glIndex.tupleBoundaries[lsi+1], 
+														smallMatches, smallOpts);
 
 				lmIndex+=smallMatches.size();
 
@@ -745,9 +714,7 @@ void MapRead(Read &read,
 				DiagonalSort<LocalTuple>(smallMatches);
 				CleanOffDiagonal(smallMatches, smallOpts);					
 
-				AppendValues<LocalPairs>(refinedClusters[c].matches, 
-																 smallMatches.begin(), smallMatches.end(), 
-																 readSegmentStart, genomeLocalIndexStart );
+				AppendValues<LocalPairs>(refinedClusters[c].matches, smallMatches.begin(), smallMatches.end(), readSegmentStart, genomeLocalIndexStart );
 			}
 				
 		}
@@ -761,7 +728,7 @@ void MapRead(Read &read,
 			outNameStrm << baseName + "." << c << ".orig.dots";
 			ofstream baseDots(outNameStrm.str().c_str());
 			for (int m=0; m < refinedClusters[c].matches.size(); m++) {
-				baseDots << refinedClusters[c].matches[m].second.pos << "\t" << refinedClusters[c].matches[m].first.pos << "\t" << smallOpts.globalK << "\t" << c << "\t0" << endl;
+				baseDots << refinedClusters[c].matches[m].first.pos << "\t" << refinedClusters[c].matches[m].second.pos << "\t" << smallOpts.globalK << "\t" << c << endl;
 			}
 			baseDots.close();
 		}
@@ -805,15 +772,18 @@ void MapRead(Read &read,
 		//
 		// Clean local matches to reduce chaining burden.
 		//
-		DiagonalSort<GenomeTuple>(refinedClusters[r].matches);
+		// TODO(Jingwen): already did the above DiagonalSort and CleanoffDiagonal above
+		/*
+		DiagonalSort<GenomeTuple>(refinedClusters[r].matches); // sort first by forward diagonal and then by first.pos
 		CleanOffDiagonal(refinedClusters[r].matches, smallOpts);
+		*/
 
 		if (opts.dotPlot) {
 			stringstream outNameStrm;
 			outNameStrm << baseName + "." << r << ".clean.dots";
 			ofstream baseDots(outNameStrm.str().c_str());
 			for (int m=0; m < refinedClusters[r].matches.size(); m++) {
-				baseDots << refinedClusters[r].matches[m].second.pos << "\t" << refinedClusters[r].matches[m].first.pos << "\t" << smallOpts.globalK << "\t" << r << "\t0" << endl;
+				baseDots  << refinedClusters[r].matches[m].first.pos << "\t" << refinedClusters[r].matches[m].second.pos << "\t" << smallOpts.globalK  << "\t" << r << endl;
 			}
 			baseDots.close();
 		}
@@ -822,11 +792,11 @@ void MapRead(Read &read,
 		if (refinedClusters[r].matches.size() == 0) {
 			continue;
 		}
-		int k=glIndex.k;
+		//int k=glIndex.k;
 		if (refinedClusters[r].matches.size() > read.length or 
 				opts.refineLevel & REF_LOC == 0) {
 			refinedClusters[r].matches= clusters[refinedClusters[r].coarse].matches;
-			k=opts.globalK;
+			//k=opts.globalK;
 			continue;
 		}
 
@@ -836,11 +806,6 @@ void MapRead(Read &read,
 		
 		//
 		// This is where the code should go for merging colinear matches
-
-		// Build SeedSet from refined (small) matches.
-		seqan::SeedSet<IndSeed, seqan::Unordered> seedSet;
-		vector<Cluster> vt; // vt stores the split result of merged anchors
-
 
 		// Jingwen: Instead of copying directly from refinedClusters[r].matches into the seed set, you can use your code to:
 		//  1. Merge adjacent anchors (using "merge" from MergeSplit.h)
@@ -866,348 +831,39 @@ void MapRead(Read &read,
 		// The k-mer that is used in the refined matches is store in 
 		// smallOpts.globalK
 
-		/*
-		// Debug code ----------- print out "seedSet"
-
-		if (refinedClusters.size() == 9) {
-		const string filename0("/home/cmb-16/mjc/jingwenr/lra/lra_test/test_lra1/Orignalseeds.txt");  
-		FILE *frr = fopen(filename0.c_str(), "w");
-		SaveOriginalSeed (refinedClusters[r], frr, opts.globalK); 
-		fclose(frr);	
-		}
-		*/	
-
-		/*
-		// Debug code ----------- print out "seedSet"
-
-			cerr << "1" << endl;
-			const string filename("/home/cmb-16/mjc/jingwenr/lra/lra_test/TEST/Orignalseeds." + std::to_string(r) + ".txt");
-			FILE *frr = fopen(filename.c_str(), "w");
-			SaveOriginalSeed (refinedClusters[r], frr, opts.globalK); 
-			fclose(frr);
-			*/
-		
 
 
-		// debug code
+		vector<Cluster> vt; // vt stores the split result of merged anchors
 		if (opts.mergeClusters) {
 			vt.clear();
-			// add merge split code here
-			//------------------------------------------------------------------
-			// Step 1: merge matches with diagnol difference smaller than maxDiag
-			//------------------------------------------------------------------
-			vector<Cluster> v;
-			vector<Cluster> vq;
-			Options mergeOpts=smallOpts;
-			mergeOpts.maxGap = -1;
-			mergeOpts.maxDiag = 20;
 
-			StoreDiagonalClusters(refinedClusters[r].matches, v, mergeOpts, true); 
-			if (v.size() != 0) {
-				std::set<unsigned int> s1;     // s1 stores x boundary; s2 stores y boundary      
-				std::set<unsigned int> s2;    //elements in s are arranged in strictly increasing order. and no duplicates
-            
-				/*
-				// debug
-				if (r == 2) {
-				cout << "refinedClusters[r].matches.size(): " << refinedClusters[r].matches.size() << endl;
+			MergeClusters(smallOpts, refinedClusters, vt, r);
+
+			if (opts.dotPlot) {
+				stringstream outNameStrm;
+				outNameStrm << baseName + "." << r << ".merged.dots";
+				ofstream baseDots(outNameStrm.str().c_str());
+				for (int m=0; m < vt.size(); m++) {
+					baseDots << vt[m].qStart << "\t" << vt[m].tStart << "\t" << vt[m].qEnd << "\t" << vt[m].tEnd << "\t" << r << endl;
 				}
-				*/
-
-				/*
-				// Debug code ----------- print out "orignal"
-			
-				seqan::SeedSet<IndSeed, seqan::Unordered> seedSet1;
-				for (unsigned int i = 0; i != v.size(); ++i) {
-					seqan::addSeed(seedSet1, IndSeed(v[i].qStart, v[i].tStart, v[i].qEnd, v[i].tEnd, i), seqan::Single());
-				} 
-				for (TIterator tt = begin(seedSet1, seqan::Standard()); tt != end(seedSet1, seqan::Standard()); ++tt) {
-					cerr << *tt << endl;
-				}
-			
-				
-				cout << "v.szie(): " << v.size() << endl;
-				const string filename7("/home/cmb-16/mjc/jingwenr/lra/lra_test/TEST/Merge.txt");  
-				FILE *fr = fopen(filename7.c_str(), "w");
-				SaveseedSet (seedSet1, fr); 
-				fclose(fr);
-				*/	
-			
-
-				//---------------------------------------------------------------------------------
-				// Step 2: sort matches by x first and then by y coordinates in each Cluster v[i](merged matches)
-				//---------------------------------------------------------------------------------
-				for (unsigned int i = 0; i < v.size(); ++i) {
-
-					//insert x boundaries into s1 
-					s1.insert(v[i].qStart);
-					s1.insert(v[i].qEnd);
-
-					// sort matches by x and y inside each merged matches cluster
-					vector<pair<GenomeTuple, GenomeTuple>>::iterator begin = refinedClusters[r].matches.begin();
-					if (v[i].start != 0) {
-						std::advance(begin , v[i].start);
-					}	 
-
-					vector<pair<GenomeTuple, GenomeTuple>>::iterator end = refinedClusters[r].matches.begin();
-					if (v[i].end != 0) {
-						std::advance(end, v[i].end);
-					}
-					CartesianSort<GenomeTuple>(begin, end);            
-				}
-
-				//----------------------------------------------------------------------------
-				// Step 3:  split based on x boundaries
-				//----------------------------------------------------------------------------
-				for (unsigned int i = 0; i < v.size(); ++i) {
-
-					std::set<unsigned int>::iterator qs, qe; 
-					qs = s1.lower_bound(v[i].qStart);
-					qe = s1.lower_bound(v[i].qEnd);
-					std::set<unsigned int>::iterator l = qs;
-					std::advance(l, 1);
-					unsigned int ii = v[i].start;
-					unsigned int jj = ii;
-
-					if (*l == *qe) {
-						vq.push_back(Cluster(v[i].start, v[i].end));
-					}
-					else{
-						while (ii != v[i].end && l != qe) { // end is end + 1!!!!!!
-							while (refinedClusters[r].matches[ii].first.pos <= *l && ii != v[i].end) {
-								if (refinedClusters[r].matches[ii].first.pos + smallOpts.globalK - 1 >= *l) {
-									// split 
-									if (jj + 1 <= ii) {
-										assert(jj < refinedClusters[r].matches.size());
-										vq.push_back(Cluster(jj, ii));
-									}
-									vq.push_back(Cluster(ii, ii + 1));
-									jj = ii + 1;
-								}
-								++ii;
-							}
-							assert(ii - 1 < refinedClusters[r].matches.size());
-							if (ii > jj && refinedClusters[r].matches[ii - 1].first.pos + smallOpts.globalK - 1 < *l) {
-								vq.push_back(Cluster(jj, ii));
-								jj = ii;
-							}
-							std::advance(l, 1);
-						}	
-						if (ii != v[i].end && l == qe) {
-							assert(i < v.size());
-							vq.push_back(Cluster(ii, v[i].end));
-						}
-					}
-				}
-
-
-				/*
-				cerr << "length(seedSet2): " << length(seedSet2)<< endl;;
-				for (TIterator tt = begin(seedSet2, seqan::Standard()); tt != end(seedSet2, seqan::Standard()); ++tt) {
-					cerr << *tt << endl;
-				}
-				*/
-				/*
-				//cout << "vq.szie(): " << vq.size() << endl;
-				const string filename2("/home/cmb-16/mjc/jingwenr/lra/lra_test/TEST/seedSet1.txt");  
-				FILE *fm = fopen(filename2.c_str(), "w");
-				SaveseedSet (seedSet2, fm); 
-				fclose(fm);	
-				*/		
-
-
-				//----------------------------------------------------------------------------
-				// Step 4: sort matches by y first and then by x coordinates in each Cluster vq[i](merged matches)  && split based on y boundaries
-				//----------------------------------------------------------------------------
-				for (unsigned int ij = 0; ij < vq.size(); ++ij) {
-					int css = vq[ij].start; 
-					int cee = vq[ij].start;
-					cee = css + 1;
-					GenomePos qStart = refinedClusters[r].matches[css].first.pos, 
-					qEnd = refinedClusters[r].matches[css].first.pos + smallOpts.globalK, 
-					tStart = refinedClusters[r].matches[css].second.pos, 
-					tEnd = refinedClusters[r].matches[css].second.pos + smallOpts.globalK;	
-
-					while(cee < vq[ij].end) {
-						qStart = min(qStart, refinedClusters[r].matches[cee].first.pos);
-						qEnd = max(qEnd, refinedClusters[r].matches[cee].first.pos + smallOpts.globalK);
-						tStart = min(tStart, refinedClusters[r].matches[cee].second.pos);
-						tEnd = max(tEnd, refinedClusters[r].matches[cee].second.pos + smallOpts.globalK);
-						++cee;
-					}
-					vq[ij].qStart = qStart;
-					vq[ij].qEnd = qEnd;
-					vq[ij].tStart = tStart;
-					vq[ij].tEnd = tEnd;
-
-					//insert y boundaries into s2
-					s2.insert(vq[ij].tStart);
-					s2.insert(vq[ij].tEnd);
-
-					// sort matches by y and then by x inside each vq[i]
-					vector<pair<GenomeTuple, GenomeTuple>>::iterator begin = refinedClusters[r].matches.begin();
-					if (vq[ij].start != 0) {
-						std::advance(begin , vq[ij].start);
-					}	 
-
-					vector<pair<GenomeTuple, GenomeTuple>>::iterator end = refinedClusters[r].matches.begin();
-					if (vq[ij].end != 0) {
-						std::advance(end, vq[ij].end);
-					}
-					CartesianTargetSort<GenomeTuple>(begin, end);            
-				}
-
-				/*
-				cerr << "finished sorting" << endl;
-				// Debug code ----------- print out "seedSet"
-				seqan::SeedSet<IndSeed, seqan::Unordered> seedSet2;
-				for (unsigned int i = 0; i != vq.size(); ++i) {
-					seqan::addSeed(seedSet2, IndSeed(vq[i].qStart, vq[i].tStart, vq[i].qEnd, vq[i].tEnd, i), seqan::Single());
-				}
-				
-				seqan::Iterator<seqan::SeedSet<IndSeed, seqan::Unordered> >::Type it;
-				for ( it = seqan::begin(seedSet2); it != seqan::end(seedSet2); ++it) {
-					cerr << "beginPositionH(*it): " << beginPositionH(*it) << "  endPositionH(*it): " << endPositionH(*it)  << endl;
-					cerr << "beginPositionV(*it): " << beginPositionV(*it) << "  endPositionV(*it): " << endPositionV(*it)  << endl;
-					assert(beginPositionH(*it) <= endPositionH(*it) );
-					assert(beginPositionV(*it) <= endPositionV(*it) );
-				}	
-				*/	
-
-
- 				
- 				v.clear();
-				for (unsigned int i = 0; i < vq.size(); ++i) {
-					std::set<unsigned int>::iterator ts, te; 
-					ts = s2.lower_bound(vq[i].tStart);
-					te = s2.lower_bound(vq[i].tEnd);
-					std::set<unsigned int>::iterator l = ts;
-					std::advance(l, 1);
-					unsigned int ii = vq[i].start;
-					unsigned int jj = ii;
-
-					/*
-					// debug code
-					cout << "ts: " << *ts << endl;
-					cout << "te: " << *te << endl;
-					cout << "l: " << *l << endl;
-					*/
-					
-					
-					if (*l == *ts) {
-						//debug code
-
-						//cerr << "*l == *ts, push back" << "Cluster(" << vq[i].start << ", " << vq[i].end << ", " << vq[i].qStart << ", " << vq[i].qEnd << ", " << vq[i].tStart << ", " << vq[i].tEnd << ", 0)" << endl; 
-						vt.push_back(Cluster(vq[i].start, vq[i].end));
-					}
-					else {
-						while (ii != vq[i].end && l != te) { 
-							while (refinedClusters[r].matches[ii].second.pos <= *l && ii != vq[i].end) {
-								if (refinedClusters[r].matches[ii].second.pos + smallOpts.globalK - 1 >= *l) {
-									// split 
-									if (jj + 1 <= ii) {
-										assert(jj < ii);
-										vt.push_back(Cluster(jj, ii));
-									}
-									vt.push_back(Cluster(ii, ii + 1));
-									jj = ii + 1;
-								}
-								++ii;
-							}
-							if (ii > jj && refinedClusters[r].matches[ii - 1].second.pos + smallOpts.globalK - 1 < *l) {
-								assert(jj < ii);
-								vt.push_back(Cluster(jj, ii));
-								jj = ii;
-							}
-							std::advance(l, 1);
-						}
-						if (ii != vq[i].end && l == te) {
-							assert(ii < vq[i].end);
-							vt.push_back(Cluster(ii, vq[i].end));
-						}
-					}
-				}
-            
-
-				vq.clear();
-				for (unsigned int ij = 0; ij < vt.size(); ++ij) {
-					int css = vt[ij].start; 
-					int cee = vt[ij].start;
-					cee = css + 1;
-					GenomePos qStart = refinedClusters[r].matches[css].first.pos, 
-					qEnd = refinedClusters[r].matches[css].first.pos + smallOpts.globalK, 
-					tStart = refinedClusters[r].matches[css].second.pos, 
-					tEnd = refinedClusters[r].matches[css].second.pos + smallOpts.globalK;	
-
-					while(cee < vt[ij].end) {
-						qStart = min(qStart, refinedClusters[r].matches[cee].first.pos);
-						qEnd = max(qEnd, refinedClusters[r].matches[cee].first.pos + smallOpts.globalK);
-						tStart = min(tStart, refinedClusters[r].matches[cee].second.pos);
-						tEnd = max(tEnd, refinedClusters[r].matches[cee].second.pos + smallOpts.globalK);
-						++cee;
-					}
-					vt[ij].qStart = qStart;
-					vt[ij].qEnd = qEnd;
-					vt[ij].tStart = tStart;
-					vt[ij].tEnd = tEnd;
-					assert(vt[ij].qStart < vt[ij].qEnd);
-					assert(vt[ij].tStart < vt[ij].tEnd);
-				}
-
-
-				//-------------- debug code
-				//cerr << "step 4 is finished" << endl;
-
-				//----------------------------------------------------------------------------
-				// Step 5:  Store the result in seedSet
-				//----------------------------------------------------------------------------
-				// (TODO: Jingwen)Not necessarily use seedSet as input of NaiveDp 
-				seqan::clear(seedSet);
-				for (unsigned int i = 0; i != vt.size(); ++i) {
-					assert(vt[i].qStart < vt[i].qEnd);
-					assert(vt[i].tStart < vt[i].tEnd);
-					seqan::addSeed(seedSet, IndSeed(vt[i].qStart, vt[i].tStart, vt[i].qEnd, vt[i].tEnd, i), seqan::Single());
-				}  
-				/*
-				// Debug code ----------- print out "seedSet"
-				const string filename1("/home/cmb-16/mjc/jingwenr/lra/lra_test/TEST/MSseedSet" + std::to_string(r) + ".txt");  
-				FILE *fd = fopen(filename1.c_str(), "w");
-				SaveseedSet (seedSet, fd); 
-				fclose(fd);	
-				*/
-					
-		
+				baseDots.close();
 			}
 
-			else {
-				continue;
-			}	
-		}
-		else {
-			for (int m=0; m< refinedClusters[r].matches.size(); m++) {
-				seqan::addSeed(seedSet, seqan::Seed<IndexedSeed>(refinedClusters[r].matches[m].second.pos, refinedClusters[r].matches[m].first.pos, k), seqan::Single());
+
+			if (opts.dotPlot) {
+				stringstream outNameStrm;
+				outNameStrm << baseName + "." << r << ".merged.real.dots";
+				ofstream baseDots(outNameStrm.str().c_str());
+				for (int m=0; m < vt.size(); m++) {
+					for (int n = vt[m].start; n < vt[m].end; ++n) {
+						baseDots << refinedClusters[r].matches[n].first.pos << "\t" << refinedClusters[r].matches[n].second.pos << "\t" << smallOpts.globalK << "\t" << m << endl;
+
+					}
+				}
+				baseDots.close();
 			}
+
 		}
-		
-		/*
-		//debug code
-		cerr << "merge result" << endl;
-		for (TIterator tt = begin(seedSet, seqan::Standard()); tt != end(seedSet, seqan::Standard()); ++tt) {
-			cerr << *tt << endl;
-		}
-		*/
-
-		/*
-		seqan::Iterator<seqan::SeedSet<IndSeed, seqan::Unordered> >::Type it;
-		for ( it = seqan::begin(seedSet); it != seqan::end(seedSet); ++it) {
-			cerr << "beginPositionH(*it): " << beginPositionH(*it) << "  endPositionH(*it): " << endPositionH(*it)  << endl;
-			cerr << "beginPositionV(*it): " << beginPositionV(*it) << "  endPositionV(*it): " << endPositionV(*it)  << endl;
-			assert(beginPositionH(*it) <= endPositionH(*it) );
-			assert(beginPositionV(*it) <= endPositionV(*it) );
-		}		
-		*/
-
-
 
 
 		// Perform sparse chaining, uses time O(n log n).
@@ -1215,105 +871,58 @@ void MapRead(Read &read,
 		// Merge anchors that are not overlapping
 
 		//
-		// The input is a set of seqan::Seed<seqan::Simple> > seeds
+		// The input are a buntch of fragments which are either stored in vector<Cluster> vt or refinedClusters[r].matches
 		// 
-		seqan::String<IndSeed> chain;
-
-
-		if (opts.NaiveDP) {
-			// Perform sparse dp with convex gap cost
-			seqan::clear(chain);
-			if (seqan::length(seedSet) < 30000) {
-				NaiveDP (seedSet, chain);
+		vector<unsigned int> chain; // chain contains the index of the fragments involved in the result of SparseDP.
+		if (opts.SparseDP) {
+			chain.clear();
+			if (opts.mergeClusters and vt.size() < 30000 and vt.size() > 0) {
+				SparseDP(vt, chain, smallOpts);
 			}
-			else {
-				//				cerr << "Skipping naivedp on seed set of size " << seqan::length(seedSet) << endl;
+			else if (refinedClusters[r].matches.size() < 30000) {
+				SparseDP(refinedClusters[r].matches, chain, smallOpts);
 			}
-
-			/*
-			//Debug code ------ print out "chain"
-			/*
-			if (r == 0) {
-				//cout << "0" << endl;
-				const string filename2("/home/cmb-16/mjc/jingwenr/lra/lra_test/TEST/NaiveDP." + std::to_string(r) + ".txt");  
-				FILE *fz = fopen(filename2.c_str(), "w");
-				SaveSparse (chain, fz);
-				fclose(fz);		
-			}		
-			*/
 		}
-		else {
-			seqan::clear(chain);
-			if (seqan::length(seedSet) > 0) {
-				if (opts.seqan) {
-					seqan::chainSeedsGlobally(chain, seedSet, seqan::SparseChaining());
-					cerr << "finished the chainSeedsGlobally" << endl;
-				}
-				else {
-					//
-					// Test code for global chain. Modify to make it work efficiently if correct.
-					//
-					vector<Fragment> fragments;
-					vector<Endpoint> endpoints;
-					vector<int> op;
-					seqan::Iterator<seqan::SeedSet<IndSeed, seqan::Unordered> >::Type it;
-					for ( it = seqan::begin(seedSet); it != seqan::end(seedSet); ++it) {
-						fragments.push_back(Fragment(beginPositionH(*it),beginPositionV(*it), endPositionH(*it),endPositionV(*it),endPositionH(*it)-beginPositionH(*it), (*it).index));
-					}
-					GlobalChain(fragments, op, endpoints);
-					int i;
-					for (int oi=0; oi<op.size(); oi++) {
-						IndSeed s(fragments[op[oi]].xl, 
-											fragments[op[oi]].yl, 
-											fragments[op[oi]].xh, 
-											fragments[op[oi]].yh,
-                      fragments[op[oi]].index);
-						seqan::append(chain,s);
-					}
-				}
-			}
-
-			/*
-			//Debug code ------ print out "chain"
-			const string filename4("/home/cmb-16/mjc/jingwenr/lra/lra_test/SeqanChaining_result.txt");  
-			FILE *fi = fopen(filename4.c_str(), "w");
-			SaveSparse (chain, fi);
-			fclose(fi);	
-			*/
+		else { 
+			chain.clear();
+			// TODO(Jingwen): add linear sdp here?
 		}
-			
 		if (opts.dotPlot) {
 			stringstream outNameStrm;
 			outNameStrm << baseName + "." << r << ".first-sdp.dots";
 			ofstream baseDots(outNameStrm.str().c_str());
-			for (int c=0; c < length(chain); c++) {
-				int p =seqan::beginPositionH(chain[c]);
-				baseDots << seqan::beginPositionH(chain[c]) << "\t" 
-								 << seqan::beginPositionV(chain[c]) << "\t" 
-								 << seqan::endPositionH(chain[c]) - seqan::beginPositionH(chain[c]) << "\t" << 7 << "\t0" << endl;				
+			for (int c = 0; c < chain.size(); c++) {
+				if (opts.mergeClusters) {
+					// chain stores indices which refer to elments in vt
+					baseDots << vt[chain[c]].qStart << "\t" 
+							 << vt[chain[c]].tStart << "\t" 
+							 << vt[chain[c]].qEnd << "\t" 
+							 << vt[chain[c]].tEnd << "\t"
+							 << r << endl;							
+				}
+				else {
+					// chain stores indices which refer to elements in refinedClusters[r].matches
+					baseDots << refinedClusters[r].matches[chain[c]].first.pos << "\t" 
+							 << refinedClusters[r].matches[chain[c]].second.pos << "\t" 
+							 << smallOpts.globalK << "\t" << r << endl;						
+				}		
 			}
 			baseDots.close();
 		}
 
-		vector<GenomePair> tupChain;
-		int qPrev=0, tPrev=0;
-		int csg = seqan::length(chain); 
-		if (opts.mergeClusters) {
-			//
-			// Add small anchors to tupChain. (Use greedy algorithm to make small anchors overlap with each other)
-			//
-			/*
-				tupChain.push_back(MatchingPos(GenomeTuple(0, beginPositionV(chain[ch])),
-																			 GenomeTuple(0, beginPositionH(chain[ch])), length_of_split_kmer));
-			*/
+		GenomePairs tupChain;
 
-			for (int ch=0; ch < seqan::length(chain); ch++) { 
+		if (opts.mergeClusters and vt.size() > 0) {
+			//
+			// Add small anchors to tupChain. (Use greedy algorithm to make small anchors not overlap with each other)
+			//
+			for (int ch=0; ch < chain.size(); ch++) { 
 
 				//cerr << "ch: "<< ch<< endl;
 				//cerr << "chain[" << ch <<"]   " << chain[ch] << endl; 
 
-				unsigned int fprev = vt[chain[ch].index].start;
-				unsigned int fcur = vt[chain[ch].index].start;
+				unsigned int fprev = vt[chain[ch]].start;
+				unsigned int fcur = vt[chain[ch]].start;
 				tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[fcur].first.pos), 
 																			GenomeTuple(0, refinedClusters[r].matches[fcur].second.pos)));	
 				
@@ -1322,89 +931,33 @@ void MapRead(Read &read,
 				
 
 				++fcur;					
-				while (fcur < vt[chain[ch].index].end) {
-					while (fcur < vt[chain[ch].index].end && (refinedClusters[r].matches[fcur].first.pos < refinedClusters[r].matches[fprev].first.pos + smallOpts.globalK - 1 ||
-												refinedClusters[r].matches[fcur].second.pos < refinedClusters[r].matches[fprev].second.pos + smallOpts.globalK - 1)) {
-
+				while (fcur < vt[chain[ch]].end) {
+					while (fcur < vt[chain[ch]].end && (refinedClusters[r].matches[fcur].first.pos < refinedClusters[r].matches[fprev].first.pos + smallOpts.globalK ||
+												refinedClusters[r].matches[fcur].second.pos < refinedClusters[r].matches[fprev].second.pos + smallOpts.globalK)) {
 						++fcur;
-
 					}
-					if (fcur != vt[chain[ch].index].end) {
+					if (fcur != vt[chain[ch]].end) {
 						tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[fcur].first.pos), 
 																GenomeTuple(0, refinedClusters[r].matches[fcur].second.pos)));	
 				
 						//cerr << "tupChain[" << tupChain.size() << "]     push_back: " << "first: " << refinedClusters[r].matches[fcur].first.pos<<"  " << refinedClusters[r].matches[fcur].first.pos + smallOpts.globalK 
 						//<< "   second: " << refinedClusters[r].matches[fcur].second.pos << " "<< refinedClusters[r].matches[fcur].second.pos + smallOpts.globalK - 1 <<endl;
 				
-						assert(refinedClusters[r].matches[fcur].first.pos >= refinedClusters[r].matches[fprev].first.pos + smallOpts.globalK - 1);
-						assert(refinedClusters[r].matches[fcur].second.pos >= refinedClusters[r].matches[fprev].second.pos + smallOpts.globalK - 1);								
+						assert(refinedClusters[r].matches[fcur].first.pos >= refinedClusters[r].matches[fprev].first.pos + smallOpts.globalK );
+						assert(refinedClusters[r].matches[fcur].second.pos >= refinedClusters[r].matches[fprev].second.pos + smallOpts.globalK );								
 					}
-
-
 					fprev = fcur;
 					++fcur;
 				}
 			}
 			vt.clear();
-			
-			/*
-			// debug code
-			for (int ch = 0; ch < tupChain.size(); ++ch) {
-				unsigned int fprev = 0;
-				unsigned int fcur = 0;	
-				++fcur;
-				while(fcur < tupChain.size()) {
-					assert(tupChain[fcur].first.pos >= tupChain[fprev].first.pos + smallOpts.globalK -1);
-					assert(tupChain[fcur].second.pos >= tupChain[fprev].second.pos + smallOpts.globalK -1);
-					fprev = fcur;
-					++fcur;
-				}		
-			}
-			*/
-
-
-
-
-
-			/*
-			// Debug code ----------- print out "seedSet"
-			/*
-			if (r == 0) {
-				//cout << "1" << endl;
-				const string filename4("/home/cmb-16/mjc/jingwenr/lra/lra_test/TEST/tupChain" + std::to_string(r) + ".txt");
-				FILE *fir = fopen(filename4.c_str(), "w");
-				SavetupChain (tupChain, fir, opts.globalK); 
-				fclose(fir);
-			}
-			*/
-			/*
-			cerr << "put back seeds is finished " << endl;
-
-			// debug code 
-			for (int ch=0; ch < tupChain.size(); ++ ch) {
-				cerr<<      "tuple chain["<< ch << "]: "
-									  << tupChain[ch].first.pos << ", "
-									  << tupChain[ch].first.pos + smallOpts.globalK - 1 << ", "
-									  << tupChain[ch].second.pos << ", "
-									  << tupChain[ch].second.pos + smallOpts.globalK - 1 << endl;
-			
-			}
-			*/
-				/*
-			// Debug code ----------- print out "seedSet"
-			//cout << "1" << endl;
-			const string filename4("/home/cmb-16/mjc/jingwenr/lra/lra_test/TEST/tupChain" + std::to_string(r) + ".txt");
-			FILE *fir = fopen(filename4.c_str(), "w");
-			SavetupChain (tupChain, fir, opts.globalK); 
-			fclose(fir);
-			*/
-
-
 		}
 		else {
-			for (int ch=0; ch < seqan::length(chain); ch++) {
-				tupChain.push_back(GenomePair(GenomeTuple(0, beginPositionV(chain[ch])),
-																			GenomeTuple(0, beginPositionH(chain[ch]))));
+			// chain stores indices which refer to elements in refinedClusters[r].matches
+			for (int ch=0; ch < chain.size(); ch++) {
+				assert(refinedClusters[r].matches[chain[ch]].first.pos <= read.length); // TODO(Jingwen): delete this after debug
+				tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[chain[ch]].first.pos), 
+														GenomeTuple(0, refinedClusters[r].matches[chain[ch]].second.pos)));
 			}
 		}
 		if (tupChain.size() == 0) {
@@ -1417,19 +970,16 @@ void MapRead(Read &read,
 		diagOpts.maxDiag=15;
 		diagOpts.minClusterSize=1;
 
+		// remove fragments which are in the middle of an insertion and a deletion OR a deletion and an insertion. 
+		StoreDiagonalClusters(tupChain, chainClust, diagOpts, true); ///Jingwen adds this here, otherwise chainClust is empty
 		RemovePairedIndels(tupChain, chainClust, smallOpts);  
-			
-		seqan::clear(chain);
-		for (int m=0; m< tupChain.size(); m++) {
-			IndSeed s(tupChain[m].second.pos, tupChain[m].first.pos, glIndex.k - 1); // the reason of using  glIndex.k - 1 instead of glIndex.k here is that in later part we dont use "half open" seeds 
- 			seqan::append(chain,s);
-
-		}
+	
+		/*
 		int prevq=0;
 		int prevt=0;
 		
 		//		cout << "Chain is on " << chainClust.size() << " diagonals " << endl;
-		/*
+
 		for (int cc = 0; cc < chainClust.size(); cc++ ) {
 			if (cc > 0) {
 								cout << (int) (chainClust[cc].qStart - prevq - (chainClust[cc].tStart - prevt)) << "\t" 
@@ -1442,14 +992,15 @@ void MapRead(Read &read,
 		}
 		*/
 
-		GenomePos chainGenomeStart = seqan::beginPositionH(chain[0]);
-		GenomePos chainGenomeEnd   = seqan::endPositionH(chain[seqan::length(chain)-1]);
+		// tupChain stores the fragments from first sdp. the length of fragments in tupChain is smallOpts.globalK
+		GenomePos chainGenomeStart = tupChain[0].second.pos;
+		GenomePos chainGenomeEnd   = tupChain[tupChain.size()-1].second.pos + smallOpts.globalK;
 
-		GenomePos chainReadStart = seqan::beginPositionV(chain[0]);
-		GenomePos chainReadEnd   = seqan::endPositionV(chain[seqan::length(chain)-1]);
+		GenomePos chainReadStart = tupChain[0].first.pos;
+		GenomePos chainReadEnd   = tupChain[tupChain.size()-1].first.pos + smallOpts.globalK;
 
 
-		GenomePos globalStart = refinedClusters[r].tStart;
+		//GenomePos globalStart = refinedClusters[r].tStart;
 		int chromIndex  = refinedClusters[r].chromIndex;
 			
 		//
@@ -1463,28 +1014,21 @@ void MapRead(Read &read,
 		Options gapOpts=opts;
 		gapOpts.globalMaxFreq=5;
 		gapOpts.globalK=7;
-		vector< seqan::String<seqan::Seed<seqan::Simple> > > refinedChains(seqan::length(chain)-1); 
-		// Build SeedSet.
-		seqan::SeedSet<seqan::Seed<seqan::Simple>, seqan::Unordered> gapSeedSet; 
+		vector<GenomePairs> refinedChains(tupChain.size()-1); // Note: refinedChains[i] stores the gap-fragments which locate after chain[i]
+		vector<int> refinedChainsLength(tupChain.size()-1, -1); // refinedChainsLength[i] stores the tinyOpts.globalK of the gap-fragments which locate after chain[i]
 
 
 		vector<int> scoreMat;
 		vector<Arrow> pathMat;
 
+		int chainLength = tupChain.size();
+		for (int c = 0; chainLength > 0 and c < tupChain.size()-1; c++) {
+			GenomePos curGenomeEnd = tupChain[c].second.pos + smallOpts.globalK;
+			GenomePos nextGenomeStart = tupChain[c+1].second.pos;
 
-		int chainLength = seqan::length(chain);
-		for (int c = 0; chainLength > 0 and c < seqan::length(chain)-1; c++) {
-			GenomePos curGenomeEnd = seqan::endPositionH(chain[c]);
-			GenomePos nextGenomeStart = seqan::beginPositionH(chain[c+1]);
+			GenomePos curReadEnd = tupChain[c].first.pos + smallOpts.globalK;
+			GenomePos nextReadStart = tupChain[c+1].first.pos;
 
-			GenomePos curReadEnd = seqan::endPositionV(chain[c]);
-			GenomePos nextReadStart = seqan::beginPositionV(chain[c+1]);
-			int rg=nextReadStart-curReadEnd, gg=nextGenomeStart-curGenomeEnd;
-			int mg=min(rg, gg);
-			int rm=rg-mg;
-			int gm=gg-mg;
-			rg-=mg;
-			gg-=mg;
 			assert(nextReadStart >= curReadEnd);
 			GenomePos subreadLength = nextReadStart-curReadEnd;
 			assert(nextGenomeStart >= curGenomeEnd);
@@ -1515,61 +1059,46 @@ void MapRead(Read &read,
 					//
 					assert(curGenomeEnd < genome.lengths[chromIndex]);
 					assert(curGenomeEnd + subgenomeLength < genome.lengths[chromIndex]);
-					StoreMinimizers<GenomeTuple, Tuple>( genome.seqs[chromIndex] + curGenomeEnd,
-														 subgenomeLength, tinyOpts.globalK, 1, gapGenomeTup, false);
+					StoreMinimizers<GenomeTuple, Tuple>( genome.seqs[chromIndex] + curGenomeEnd, subgenomeLength, tinyOpts.globalK, 1, gapGenomeTup, false);
 
 					sort(gapGenomeTup.begin(), gapGenomeTup.end());
-					StoreMinimizers<GenomeTuple, Tuple>( strands[refinedClusters[r].strand] + curReadEnd,
-														subreadLength, tinyOpts.globalK, 1, gapReadTup, false);
+					StoreMinimizers<GenomeTuple, Tuple>( strands[refinedClusters[r].strand] + curReadEnd, subreadLength, tinyOpts.globalK, 1, gapReadTup, false);
 					sort(gapReadTup.begin(), gapReadTup.end());
-					CompareLists(gapReadTup.begin(),
-											 gapReadTup.end(),
-											 gapGenomeTup.begin(),
-											 gapGenomeTup.end(),
-											 gapPairs, gapOpts);
+					CompareLists(gapReadTup.begin(), gapReadTup.end(), gapGenomeTup.begin(), gapGenomeTup.end(), gapPairs, gapOpts);
 					//
 					// Remove egregious off diagonal seeds
 					//
-					DiagonalSort<GenomeTuple>(gapPairs);
+					DiagonalSort<GenomeTuple>(gapPairs); // sort gapPairs by forward diagonals and then by first.pos
 					
-					int tinyDiagStart = curGenomeEnd - curReadEnd;
-					int tinyDiagEnd   = nextGenomeStart - nextReadStart;
+					int tinyDiagStart = curReadEnd - curGenomeEnd;
+					int tinyDiagEnd =  nextReadStart - nextGenomeStart;
 					int diagDiff = abs((int) tinyDiagStart - (int) tinyDiagEnd);
 
 					CleanOffDiagonal(gapPairs, tinyOpts, 0, diagDiff);
-					//					CartesianTargetSort<GenomeTuple>(gapPairs);
+					//CartesianTargetSort<GenomeTuple>(gapPairs);
 
 					for(int rm=0; rm < gapPairs.size(); rm++) {
 						gapPairs[rm].first.pos  += curReadEnd;
 						gapPairs[rm].second.pos += curGenomeEnd;
+						assert(gapPairs[rm].first.pos < read.length); // TODO(Jingwen): delete this after debug
 					}
-					int gp=0;
-					int nSaved =0;
+					//int gp=0;
+					//int nSaved =0;
 
-					seqan::clear(gapSeedSet);
-					int gpStart;
-					int clusterIndex=0;
+					//int gpStart;
+					//int clusterIndex=0;
 
-					seqan::SeedSet<seqan::Seed<seqan::Simple>, seqan::Unordered> gapSeedSet;
-					for (int m=0; m< gapPairs.size(); m++) {
-						seqan::addSeed(gapSeedSet, 
-										seqan::Seed<seqan::Simple>(gapPairs[m].second.pos, 
-										gapPairs[m].first.pos, tinyOpts.globalK), 
-										seqan::Single());
-					}
-					seqan::String<seqan::Seed<seqan::Simple> > gapChain;
-					if (seqan::length(gapSeedSet) > 0) {
-						if (opts.NaiveDP) {
-   							// Perform sparse dp with convex gap cost
-							seqan::clear(gapChain);
-							//NaiveDP< seqan::SeedSet<seqan::Seed<seqan::Simple>, seqan::Unordered>,seqan::Seed<seqan::Simple>(gapSeedSet, gapChain);
-							if (seqan::length(gapSeedSet) < 20000) {
-								NaiveDP(gapSeedSet, gapChain);
+					// gapPairs stores all the fragments in the gap. the length of the fragment here is tinyOpts.globalK
+					vector<unsigned int> gapChain; // gapChain stores the index of fragments that are involved in the result of sdp
+					if (gapPairs.size() > 0) {
+						if (opts.SparseDP) {
+							gapChain.clear();
+							if (gapPairs.size() < 20000) {
+								SparseDP(gapPairs, gapChain, tinyOpts); 
+								//cerr << "start 2nd sdp!" << endl;
 							}
 						}
-						else if (opts.seqan) {
-							seqan::chainSeedsGlobally(gapChain, gapSeedSet, seqan::SparseChaining());
-						}
+						/*
 						else {
 							//
 							// Test code for global chain. Modify to make it work efficiently if correct.
@@ -1592,13 +1121,23 @@ void MapRead(Read &read,
 								seqan::append(gapChain,s);
 							}
 						}
+						*/
 					}
-					int pre=seqan::length(gapChain);
-					RemovePairedIndels(curReadEnd, curGenomeEnd, nextReadStart, nextGenomeStart, gapChain, tinyOpts);
 
-					refinedChains[c]=gapChain;						
+					RemovePairedIndels(curReadEnd, curGenomeEnd, nextReadStart, nextGenomeStart, gapChain, gapPairs, tinyOpts);
+					for (unsigned int u = 0; u < gapChain.size(); ++u) {
+						refinedChains[c].push_back(gapPairs[gapChain[u]]);
+						assert(refinedChains[c].back().first.pos <= read.length);
+
+						if (refinedChains[c].size() > 1) { // TODO(Jingwen): delete the debug code
+							int last = refinedChains[c].size();
+							assert(refinedChains[c][last -2].first.pos + tinyOpts.globalK <= refinedChains[c][last -1].first.pos);
+							assert(refinedChains[c][last -2].second.pos + tinyOpts.globalK <= refinedChains[c][last -1].second.pos);						
+						}
+					}
+					refinedChainsLength[c] = tinyOpts.globalK;	
 				}
-			}
+			}	
 		}
 
 		//
@@ -1607,16 +1146,10 @@ void MapRead(Read &read,
 		//
 		// The alignment is on a substring that starts at the beginning of the first chain.
 		//
-		GenomePos alnReadPos = seqan::beginPositionV(chain[0]);
-		GenomePos alnRefPos  = seqan::beginPositionH(chain[0]);
-		Alignment *alignment = new Alignment(strands[refinedClusters[r].strand], 
-																				 read.seq,
-																				 read.length, read.name,
-																				 refinedClusters[r].strand,
-																				 genome.seqs[chromIndex],  
-																				 genome.lengths[chromIndex],
-																				 genome.header.names[chromIndex],
-																				 chromIndex) ;
+		GenomePos alnReadPos = tupChain[0].first.pos;
+		GenomePos alnRefPos  = tupChain[0].second.pos;
+		Alignment *alignment = new Alignment(strands[refinedClusters[r].strand], read.seq, read.length, read.name, refinedClusters[r].strand, genome.seqs[chromIndex],  
+											genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex);
 
 		alignments.push_back(alignment);
 		/*
@@ -1633,71 +1166,63 @@ void MapRead(Read &read,
 			//
 			// Chain is with respect to full sequence
 			//
-			GenomePos curGenomeEnd     = seqan::endPositionH(chain[c]);
-			GenomePos nextGenomeStart  = seqan::beginPositionH(chain[c+1]);
+			GenomePos curGenomeEnd     = tupChain[c].second.pos + smallOpts.globalK;
+			GenomePos nextGenomeStart  = tupChain[c+1].second.pos;
 
-			GenomePos curReadEnd       = seqan::endPositionV(chain[c]);
-			GenomePos nextReadStart    = seqan::beginPositionV(chain[c+1]);
+			GenomePos curReadEnd       = tupChain[c].first.pos + smallOpts.globalK;
+			GenomePos nextReadStart    = tupChain[c+1].first.pos;
 			int curRefinedReadEnd      = curReadEnd;
 			int curRefinedGenomeEnd    = curGenomeEnd;
 			int nextRefinedReadStart   = nextReadStart;
 			int nextRefinedGenomeStart = nextGenomeStart;
 			if (opts.dotPlot) {
-				dotFile << seqan::beginPositionH(chain[c]) << "\t" 
-								<< seqan::beginPositionV(chain[c]) << "\t" 
-								<< seqan::endPositionH(chain[c]) - seqan::beginPositionH(chain[c]) << "\t1\t0" << endl;
+				dotFile << tupChain[c].second.pos << "\t" 
+								<< tupChain[c].first.pos << "\t" 
+								<< smallOpts.globalK << "\t1\t0" << endl;
 			}
 
-			alignment->blocks.push_back(Block(seqan::beginPositionV(chain[c]),
-																				seqan::beginPositionH(chain[c]), glIndex.k - 1)); // use  glIndex.k - 1 instead of glIndex.k here, because we don't use half open seeds later
+			alignment->blocks.push_back(Block(tupChain[c].first.pos, tupChain[c].second.pos, smallOpts.globalK)); 
 			if (alignment->blocks.size() > 1) {
 				int last=alignment->blocks.size();
 				assert(alignment->blocks[last-2].qPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].qPos);
 				assert(alignment->blocks[last-2].tPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].tPos);
 			}
 
-			//			string curAnchor = string(genome.seqs[chromIndex], seqan::beginPositionV(chain[c]), glIndex.k );
-			for (int cs = 0; cs < seqan::length(refinedChains[c]); cs++) {
+			//string curAnchor = string(genome.seqs[chromIndex], seqan::beginPositionV(chain[c]), glIndex.k );
+			for (int cs = 0; cs < refinedChains[c].size(); cs++) {
 				//
 				// Refined anchors are with respect to the chained sequence
-				nextRefinedReadStart   = seqan::beginPositionV(refinedChains[c][cs]);
-				nextRefinedGenomeStart = seqan::beginPositionH(refinedChains[c][cs]);
+				nextRefinedReadStart = refinedChains[c][cs].first.pos;
+				nextRefinedGenomeStart = refinedChains[c][cs].second.pos;
 				
 				if (opts.dotPlot) {
-					dotFile << seqan::beginPositionH(refinedChains[c][cs]) << "\t" 
-									<< seqan::beginPositionV(refinedChains[c][cs]) << "\t" 
-									<< seqan::endPositionH(refinedChains[c][cs]) - seqan::beginPositionH(refinedChains[c][cs]) << "\t2\t0" << endl;
+					dotFile << refinedChains[c][cs].second.pos << "\t" 
+									<< refinedChains[c][cs].first.pos << "\t" 
+									<< refinedChainsLength[c] << "\t2\t0" << endl;
 				}
 
+				// find small matches between fragments in gapChain
 				int m, rg, gg;
-				SetMatchAndGaps(curRefinedReadEnd, nextRefinedReadStart,
-												curRefinedGenomeEnd, nextRefinedGenomeStart, m, rg, gg);
-
+				SetMatchAndGaps(curRefinedReadEnd, nextRefinedReadStart, curRefinedGenomeEnd, nextRefinedGenomeStart, m, rg, gg);
 				if (m > 0) {
 					Alignment betweenAnchorAlignment;
 					if (opts.refineLevel & REF_DP) {						
-						RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextRefinedReadStart,
-														 genome.seqs[chromIndex], curRefinedGenomeEnd, nextRefinedGenomeStart,
-														 scoreMat, pathMat, betweenAnchorAlignment);
-						alignment->blocks.insert(alignment->blocks.end(), 
-																		 betweenAnchorAlignment.blocks.begin(), 
-																		 betweenAnchorAlignment.blocks.end());
+						RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextRefinedReadStart, genome.seqs[chromIndex], 
+												curRefinedGenomeEnd, nextRefinedGenomeStart, scoreMat, pathMat, betweenAnchorAlignment);
+						alignment->blocks.insert(alignment->blocks.end(), betweenAnchorAlignment.blocks.begin(), betweenAnchorAlignment.blocks.end());
 						int b;
 						for (b=1; b < betweenAnchorAlignment.blocks.size(); b++) {
-							assert(betweenAnchorAlignment.blocks[b-1].qPos + 
-										 betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].qPos);
-							assert(betweenAnchorAlignment.blocks[b-1].tPos + 
-										 betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].tPos);						
+							assert(betweenAnchorAlignment.blocks[b-1].qPos + betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].qPos);
+							assert(betweenAnchorAlignment.blocks[b-1].tPos + betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].tPos);						
 						}
-
 						betweenAnchorAlignment.blocks.clear();
 					}
 				}
 
-				curRefinedReadEnd   = seqan::endPositionV(refinedChains[c][cs]);
-				curRefinedGenomeEnd = seqan::endPositionH(refinedChains[c][cs]);
-				alignment->blocks.push_back(Block(nextRefinedReadStart, nextRefinedGenomeStart, 
-																					curRefinedReadEnd - nextRefinedReadStart));
+				curRefinedReadEnd = refinedChains[c][cs].first.pos + refinedChainsLength[c];
+				curRefinedGenomeEnd = refinedChains[c][cs].second.pos + refinedChainsLength[c];
+				alignment->blocks.push_back(Block(nextRefinedReadStart, nextRefinedGenomeStart, curRefinedReadEnd - nextRefinedReadStart));
+
 				if (alignment->blocks.size() > 1) {
 					int last=alignment->blocks.size();
 					assert(alignment->blocks[last-2].qPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].qPos);
@@ -1705,11 +1230,9 @@ void MapRead(Read &read,
 				}
 
 			}
-
 			// Add the last gap, or the only one if no refinements happened here.				 
 			int match, readGap, genomeGap;
-			SetMatchAndGaps(curRefinedReadEnd, nextReadStart,
-											curRefinedGenomeEnd, nextGenomeStart, match, readGap, genomeGap);
+			SetMatchAndGaps(curRefinedReadEnd, nextReadStart, curRefinedGenomeEnd, nextGenomeStart, match, readGap, genomeGap);
 			if (match > 0) {
 				if (opts.refineLevel & REF_DP) {
 					Alignment aln;
@@ -1717,26 +1240,22 @@ void MapRead(Read &read,
 					assert(nextReadStart <read.length);
 					assert(curRefinedGenomeEnd < genome.lengths[chromIndex]);
 					assert(nextGenomeStart < genome.lengths[chromIndex]);
-					RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextReadStart,
-													 genome.seqs[chromIndex], curRefinedGenomeEnd, nextGenomeStart,
-													 scoreMat, pathMat, aln);
+					RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextReadStart, genome.seqs[chromIndex], 
+												curRefinedGenomeEnd, nextGenomeStart, scoreMat, pathMat, aln);
 					alignment->blocks.insert(alignment->blocks.end(), aln.blocks.begin(), aln.blocks.end());
 					aln.blocks.clear();			
-
 				}		
 			}
 		}
 		//		refc.close();
 		//			rdc.close();
-		alignment->blocks.push_back(Block(seqan::beginPositionV(chain[chainLength-1]),
-																			seqan::beginPositionH(chain[chainLength-1]), 
-																			glIndex.k));
+		alignment->blocks.push_back(Block(tupChain[chainLength-1].first.pos, tupChain[chainLength-1].second.pos, smallOpts.globalK));
 
 		int nm=0;
-		for(int b=0; b< alignment->blocks.size(); b++) {
+		for(int b=0; b < alignment->blocks.size(); b++) {
 			nm+= alignment->blocks[b].length;
 		}
-		alignment->nblocks=seqan::length(chain);
+		alignment->nblocks = tupChain.size();
 		if (opts.dotPlot) {
 			dotFile.close();
 		}

@@ -7,11 +7,8 @@
 
 
 
-template <typename TupPos, typename Tup> void StoreMinimizers(char *seq, 
-																															GenomePos seqLen,
-																															int k, 
-																															int w,
-																															vector<TupPos> &minimizers, bool canonical=true) {
+template <typename TupPos, typename Tup> 
+void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &minimizers, bool canonical=true) {
 	//
 	// Initialize first.
 	//

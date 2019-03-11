@@ -306,6 +306,7 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &c
 		}
 		cs=ce;
 	}
+	
 }
 
 bool sign(int val) {
@@ -313,35 +314,32 @@ bool sign(int val) {
 	return false;
 }
 
-void RemovePairedIndels(GenomePos qAlnStart, GenomePos tAlnStart,
-												GenomePos qAlnEnd,   GenomePos tAlnEnd,
-												seqan::String<seqan::Seed<seqan::Simple> > &matches,
-												 Options &opts) {
-	int nMatches=seqan::length(matches);
+void RemovePairedIndels(GenomePos qAlnStart, GenomePos tAlnStart, GenomePos qAlnEnd, GenomePos tAlnEnd, vector<unsigned int> & matches, GenomePairs & Pairs, Options &opts) {
+	unsigned int nMatches = matches.size();
 	if ( nMatches < 3)   { return;}
 	vector<bool> remove(nMatches, false);
-	GenomePos prevQEnd, prevTEnd, qStart, tStart, qEnd, tEnd ;
+	GenomePos prevQEnd, prevTEnd, qStart, tStart, qEnd, tEnd;
 	GenomePos nextQStart;
 	GenomePos nextTStart;
 
-	for (int c = 0; c < nMatches ; c++) {
+	for (unsigned int c = 0; c < nMatches ; c++) {
 
 		if (c == 0) {
 			prevQEnd = qAlnStart;
 			prevTEnd = qAlnEnd;
 		}		
 		else {
-			prevQEnd = seqan::beginPositionV(matches[c-1]) + opts.globalK;
-			prevTEnd = seqan::beginPositionH(matches[c-1])+opts.globalK;
+			prevQEnd = Pairs[matches[c-1]].first.pos + opts.globalK;
+			prevTEnd = Pairs[matches[c-1]].second.pos + opts.globalK;
 		}
-		qStart   = seqan::beginPositionV(matches[c]);
-		tStart   = seqan::beginPositionH(matches[c]);
-		qEnd     = seqan::beginPositionV(matches[c])+opts.globalK;
-		tEnd     = seqan::beginPositionH(matches[c])+opts.globalK;
+		qStart   = Pairs[matches[c]].first.pos;
+		tStart   = Pairs[matches[c]].second.pos;
+		qEnd     = Pairs[matches[c]].first.pos + opts.globalK;
+		tEnd     = Pairs[matches[c]].second.pos + opts.globalK;
 
 		if (c < nMatches-1) {
-			nextQStart = seqan::beginPositionV(matches[c+1]);
-			nextTStart = seqan::beginPositionH(matches[c+1]);
+			nextQStart = Pairs[matches[c+1]].first.pos;
+			nextTStart = Pairs[matches[c+1]].second.pos;
 		}
 		else {
 			nextQStart = qAlnEnd;
@@ -359,20 +357,18 @@ void RemovePairedIndels(GenomePos qAlnStart, GenomePos tAlnStart,
 	}	
 	int m=0;
 
-	for (int i=0; i < seqan::length(matches); i++) {
+	for (int i=0; i < nMatches; i++) {
 		if (remove[i] == false) {
 			matches[m] = matches[i];
 			m++;
 		}
 	}
-	seqan::resize(matches, m);
+	matches.resize(m);
 }
 
 
 template<typename Tup>
-void RemovePairedIndels(vector<pair<Tup, Tup> > &matches, 
-												vector<Cluster > &clusters, 
-												Options &opts) {
+void RemovePairedIndels(vector<pair<Tup, Tup>> & matches, vector<Cluster> & clusters, Options & opts) {
 	if (clusters.size() < 3) { return;}
 	vector<bool> remove(clusters.size(), false);
 	for (int c = 1; c < clusters.size() - 1; c++) {

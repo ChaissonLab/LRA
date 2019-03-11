@@ -68,7 +68,7 @@ public:
 	Tuple t; // used to store kmers, this uses a 64 bit representation of k-mers (A=00, C=01, G=10, T=11)
 	GenomePos pos; // unsigned 32 bit position in a genome (signed integers cannot index entire human genome!) 
 	GenomeTuple() {t=0;pos=0;} 
- GenomeTuple(Tuple _t, GenomePos _p): t(_t), pos(_p) {}
+ 	GenomeTuple(Tuple _t, GenomePos _p): t(_t), pos(_p) {}
 	bool operator<(const GenomeTuple &b) const {
 		return t < b.t;
 	}

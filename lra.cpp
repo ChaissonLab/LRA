@@ -59,6 +59,7 @@ void HelpMap() {
 			 << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl
 			 << "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl
 			 << "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
+			 << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl;
 }
@@ -171,7 +172,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-N")) {
 			opts.NaiveDP = true;
 		}
-		
+		else if (ArgIs(argv[argi], "-S")) {
+			opts.SparseDP = true;
+		}
 		else if (ArgIs(argv[argi], "-o")) {
 			opts.outfile = argv[++argi];
 		}

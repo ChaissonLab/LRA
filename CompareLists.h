@@ -4,12 +4,8 @@
 #include "Options.h"
 
 
-template<typename tup> void CompareLists(typename vector<tup>::iterator qBegin,
-																				 typename vector<tup>::iterator qEnd,
-																				 typename vector<tup>::iterator tBegin,
-																				 typename vector<tup>::iterator tEnd,
-																				 vector<pair<tup, tup> > &result, 
-																				 Options &opts) {
+template<typename tup> void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::iterator qEnd, typename vector<tup>::iterator tBegin,
+											typename vector<tup>::iterator tEnd, vector<pair<tup, tup> > &result, Options &opts) {
 	int qs = 0;
 	int qe = qEnd-qBegin - 1;
 	int ts = 0, te = tEnd - tBegin;
@@ -106,10 +102,7 @@ template<typename tup> void CompareLists(typename vector<tup>::iterator qBegin,
 	} while (qs < qe and ts < te);
 }
 
-template<typename tup> void CompareLists(vector<tup> &query, 
-																				 vector<tup> &target,
-																				 vector<pair<tup, tup> > &result, 
-																				 Options &opts) {
+template<typename tup> void CompareLists(vector<tup> &query, vector<tup> &target, vector<pair<tup, tup> > &result, Options &opts) {
 	CompareLists(query.begin(), query.end(),							 
 							 target.begin(), target.end(), result, opts);
 }

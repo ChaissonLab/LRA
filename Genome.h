@@ -90,7 +90,7 @@ class Header {
 class Genome {
  public:
 	vector<char*> seqs;
-	vector<int>   lengths;
+	vector<int> lengths;
 	map<string, int> nameMap;
 	uint64_t GetSize() {
 		if (header.pos.size() == 0) {
