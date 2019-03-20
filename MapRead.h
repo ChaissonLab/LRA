@@ -10,6 +10,7 @@
 #include <iostream>
 #include <algorithm>
 #include <iterator>
+#include <ctime>
 
 #include <sstream>
 #include <thread>
@@ -24,7 +25,7 @@
 #include "TupleOps.h"
 #include "SparseDP.h"
 #include "MergeSplit.h"
-
+#include "Merge.h"
 
 using namespace std;
 // Print results to stdout.
@@ -392,7 +393,8 @@ void SeparateMatchesByStrand(Read &read, Genome &genome, int k,
 
 //debug code Dont forget delete int &i
 void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, pthread_mutex_t *semaphore=NULL) {
-
+	
+	clock_t begin = std::clock();
 	string baseName = read.name;
 
 	for (int i=0; i < baseName.size(); i++) {	if (baseName[i] == '/') baseName[i] = '_';	}
@@ -837,7 +839,8 @@ void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalInd
 		if (opts.mergeClusters) {
 			vt.clear();
 
-			MergeClusters(smallOpts, refinedClusters, vt, r);
+			//MergeClusters(smallOpts, refinedClusters, vt, r);
+			mergeClusters (smallOpts, refinedClusters[r].matches, vt, r, baseName);
 
 			if (opts.dotPlot) {
 				stringstream outNameStrm;
@@ -960,6 +963,25 @@ void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalInd
 														GenomeTuple(0, refinedClusters[r].matches[chain[ch]].second.pos)));
 			}
 		}
+
+		//(TODO)Jingwen: For Debug(remove this later)
+		if (opts.dotPlot and opts.mergeClusters) {
+			stringstream outNameStrm;
+			outNameStrm << baseName + "." << r << ".first-sdp-clean.dots";
+			ofstream baseDots(outNameStrm.str().c_str());
+			for (int c = 0; c < tupChain.size(); c++) {
+				// chain stores indices which refer to elments in vt
+				baseDots << tupChain[c].first.pos << "\t" 
+						 << tupChain[c].second.pos << "\t" 
+						 << tupChain[c].first.pos + smallOpts.globalK << "\t" 
+						 << tupChain[c].second.pos + smallOpts.globalK << "\t"
+						 << r << endl;							
+			}
+			baseDots.close();
+		}
+
+
+
 		if (tupChain.size() == 0) {
 			refinedClusters[r].matches.clear();
 			continue;
@@ -973,7 +995,23 @@ void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalInd
 		// remove fragments which are in the middle of an insertion and a deletion OR a deletion and an insertion. 
 		StoreDiagonalClusters(tupChain, chainClust, diagOpts, true); ///Jingwen adds this here, otherwise chainClust is empty
 		RemovePairedIndels(tupChain, chainClust, smallOpts);  
-	
+
+
+		//(TODO)Jingwen: For Debug(remove this later)
+		if (opts.dotPlot) {
+			stringstream outNameStrm;
+			outNameStrm << baseName + "." << r << ".first-sdp-clean-removeIndel.dots";
+			ofstream baseDots(outNameStrm.str().c_str());
+			for (int c = 0; c < tupChain.size(); c++) {
+				// chain stores indices which refer to elments in vt
+				baseDots << tupChain[c].first.pos << "\t" 
+						 << tupChain[c].second.pos << "\t" 
+						 << tupChain[c].first.pos + smallOpts.globalK << "\t" 
+						 << tupChain[c].second.pos + smallOpts.globalK << "\t"
+						 << r << endl;							
+			}
+			baseDots.close();
+		}	
 		/*
 		int prevq=0;
 		int prevt=0;
@@ -1176,9 +1214,10 @@ void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalInd
 			int nextRefinedReadStart   = nextReadStart;
 			int nextRefinedGenomeStart = nextGenomeStart;
 			if (opts.dotPlot) {
-				dotFile << tupChain[c].second.pos << "\t" 
-								<< tupChain[c].first.pos << "\t" 
-								<< smallOpts.globalK << "\t1\t0" << endl;
+				dotFile << tupChain[c].first.pos << "\t" 
+								<< tupChain[c].second.pos << "\t" 
+								<< tupChain[c].first.pos + smallOpts.globalK << "\t"
+								<< tupChain[c].second.pos + smallOpts.globalK << "\t" << r << endl;
 			}
 
 			alignment->blocks.push_back(Block(tupChain[c].first.pos, tupChain[c].second.pos, smallOpts.globalK)); 
@@ -1196,9 +1235,10 @@ void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalInd
 				nextRefinedGenomeStart = refinedChains[c][cs].second.pos;
 				
 				if (opts.dotPlot) {
-					dotFile << refinedChains[c][cs].second.pos << "\t" 
-									<< refinedChains[c][cs].first.pos << "\t" 
-									<< refinedChainsLength[c] << "\t2\t0" << endl;
+					dotFile << refinedChains[c][cs].first.pos << "\t" 
+									<< refinedChains[c][cs].second.pos << "\t" 
+									<< refinedChains[c][cs].first.pos + refinedChainsLength[c] << "\t"
+									<< refinedChains[c][cs].second.pos + refinedChainsLength[c] << "\t" << r << endl;
 				}
 
 				// find small matches between fragments in gapChain
@@ -1260,6 +1300,21 @@ void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalInd
 			dotFile.close();
 		}
 
+		//(TODO)Jingwen: For Debug(remove this later)
+		if (opts.dotPlot) {
+			stringstream outNameStrm;
+			outNameStrm << baseName + "." << r << ".alignment.dots";
+			ofstream baseDots(outNameStrm.str().c_str());
+			for (int c = 0; c < alignment->blocks.size(); c++) {
+				baseDots << alignment->blocks[c].qPos << "\t" 
+						 << alignment->blocks[c].tPos << "\t" 
+						 << alignment->blocks[c].qPos + alignment->blocks[c].length << "\t" 
+						 << alignment->blocks[c].tPos + alignment->blocks[c].length << "\t"
+						 << r << endl;							
+			}
+			baseDots.close();
+		}	
+
 	}
 	for (int a=0; a < alignments.size(); a++) {
 		alignments[a]->CalculateStatistics();
@@ -1294,6 +1349,13 @@ void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalInd
 		delete alignments[a];
 	}
 	read.Clear();
+
+
+	// get the time for the program
+	clock_t end = std::clock();
+	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+	cerr << "Time: " << elapsed_secs << endl;
+	
 }
 
 
