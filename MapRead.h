@@ -264,6 +264,7 @@ void MergeAdjacentClusters(ClusterOrder &order, Genome &genome, Options &opts) {
 	int c=0;
 	int cn=0;
 	c=0;
+	cerr << "merging " << order.size() << " clusters" << endl;
 	while(c< order.size()) {
 		cn=c+1;
 		int curEndChrom = genome.header.Find(order[c].tEnd);
@@ -271,11 +272,24 @@ void MergeAdjacentClusters(ClusterOrder &order, Genome &genome, Options &opts) {
 			int nextStartChrom = genome.header.Find(order[cn].tStart);
 			int gap;
 			gap = abs((int)((int)(order[cn].tStart - order[cn].qStart) - (int)(order[c].tEnd-order[c].qEnd)));
-
+			/*
+			for (int ci=0; ci < order[c].matches.size(); ci++) {
+				cerr << c << "\t" 
+						 << order[c].matches[ci].first.pos << "\t" 
+						 << order[c].matches[ci].first.t << "\t" 
+						 << order[c].matches[ci].second.pos << "\t"
+						 << order[c].matches[ci].second.t << endl;
+			}
+			for (int ci=0; ci < order[cn].matches.size(); ci++) {
+				cerr << cn << "\t" << order[cn].matches[ci].first.pos << "\t" 
+						 << order[cn].matches[ci].first.t << "\t" 
+						 << order[cn].matches[ci].second.pos << "\t"
+						 << order[cn].matches[ci].second.t << endl;
+			}*/
 			if (nextStartChrom == curEndChrom and
-					gap < opts.maxGap and
 					order[c].strand == order[cn].strand and 
-					order[c].Encompasses(order[cn],0.5) == false) {
+					( gap < opts.maxGap or
+						order[c].Encompasses(order[cn],0.5) ) ) {
 				order[c].matches.insert(order[c].matches.end(), order[cn].matches.begin(), order[cn].matches.end());
 				order[c].qEnd = order[cn].qEnd;
 				order[c].tEnd = order[cn].tEnd;
@@ -300,7 +314,9 @@ void MergeAdjacentClusters(ClusterOrder &order, Genome &genome, Options &opts) {
 					}
 					cn2++;
 				}
-				if (cn2 < order.size() and cn2 - cn < MAX_AHEAD and cn2 > cn and gap < opts.maxGap) {
+				if (cn2 < order.size() and
+						cn2 - cn < MAX_AHEAD and
+						cn2 > cn and gap < opts.maxGap) {
 					cn=cn2;
 					order[c].matches.insert(order[c].matches.end(), order[cn].matches.begin(), order[cn].matches.end());
 					order[c].qEnd = order[cn].qEnd;
