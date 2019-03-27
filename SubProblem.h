@@ -1,3 +1,4 @@
+
 #ifndef SUBPROBLEM_H_
 #define SUBPROBLEM_H_
 
@@ -107,6 +108,99 @@ std::ostream & operator<<(std::ostream & os, const Subproblem & M) {
 	os << "Di: " << M.Di << ", Dp: " << M.Dp << ", Dv: " << M.Dv <<  ", Db: " << M.Db << ", Ei: " << M.Ei << ", Ep: " << M.Ep << ", Ev: " << M.Ev << ", Eb: " << M.Eb << ", last: " << M.last << ", now: "
 	 << M.now << ", Block: " << M.Block << ", S_1: " << M.S_1 << "\n"; 
 	return os;
+}
+
+
+
+
+class StackOfSubProblems  
+{
+public: 
+	vector<Subproblem> StackSub;
+	StackOfSubProblems () {};
+	~StackOfSubProblems () {};
+
+	int size() {
+		return StackSub.size();
+	}
+	void Clear(int & ee);
+	void Push_Back(int & ee, Subproblem & s); // ee is current position in StackSub
+	void ClearSingle (int & ee);
+
+	Subproblem & operator[](int i) {
+		return StackSub[i];
+	}
+};
+
+
+void
+StackOfSubProblems::Clear (int & ee) {
+	// clear vectors of each element in StackSub;
+
+	for (int i = 0; i <= ee - 1; ++i) {
+		StackSub[i].num = 0;
+		StackSub[i].now = 0;
+		StackSub[i].last = -1;		
+		StackSub[i].Di.clear();
+		StackSub[i].Ei.clear();
+		StackSub[i].Dv.clear();
+		StackSub[i].Ev.clear();
+		StackSub[i].Dp.clear();
+		StackSub[i].Ep.clear();
+		StackSub[i].Db.clear();
+		StackSub[i].Eb.clear();
+		StackSub[i].D.clear();
+		StackSub[i].E.clear();
+		StackSub[i].Block.clear();
+		while (!StackSub[i].S_1.empty()) {
+		StackSub[i].S_1.pop();		
+		}
+	}
+}
+
+void
+StackOfSubProblems::Push_Back (int & ee, Subproblem & s) { // ee is the number of positions which are already filled out in StackSub
+	if (ee < size()) {  // StackSub[0] -- StackSub[ee - 1] are filled out
+		StackSub[ee].num = s.num;
+		StackSub[ee].now = s.now;
+		StackSub[ee].last = s.last;
+		StackSub[ee].Di = s.Di;
+		StackSub[ee].Ei = s.Ei;
+		StackSub[ee].Dv = s.Dv;
+		StackSub[ee].Ev = s.Ev;
+		StackSub[ee].Dp = s.Dp;
+		StackSub[ee].Ep = s.Ep;
+		StackSub[ee].Db = s.Db;
+		StackSub[ee].Eb = s.Eb;
+		StackSub[ee].D = s.D;
+		StackSub[ee].E = s.E;
+		// TODO(Jingwen): No Block and S_1 here?? 		
+	}
+	else { // ee >= size 
+		StackSub.push_back(s);
+	}
+
+}
+
+void
+StackOfSubProblems::ClearSingle (int & ee) {
+		StackSub[ee - 1].num = 0;
+		StackSub[ee - 1].now = 0;
+		StackSub[ee - 1].last = -1;		
+		StackSub[ee - 1].Di.clear();
+		StackSub[ee - 1].Ei.clear();
+		StackSub[ee - 1].Dv.clear();
+		StackSub[ee - 1].Ev.clear();
+		StackSub[ee - 1].Dp.clear();
+		StackSub[ee - 1].Ep.clear();
+		StackSub[ee - 1].Db.clear();
+		StackSub[ee - 1].Eb.clear();
+		StackSub[ee - 1].D.clear();
+		StackSub[ee - 1].E.clear();
+		StackSub[ee - 1].Block.clear();
+		while (!StackSub[ee - 1].S_1.empty()) {
+		StackSub[ee - 1].S_1.pop();		
+		}	
 }
 
 

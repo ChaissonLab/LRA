@@ -40,7 +40,7 @@ public:
 	Options() {
 		readStart=0;
 		readStride=1;
-		dotPlot=true;
+		dotPlot=false;
 		globalK=17;
 		globalW=10; 
 		localK=7;

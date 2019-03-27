@@ -264,7 +264,7 @@ void MergeAdjacentClusters(ClusterOrder &order, Genome &genome, Options &opts) {
 	int c=0;
 	int cn=0;
 	c=0;
-	cerr << "merging " << order.size() << " clusters" << endl;
+	//cerr << "merging " << order.size() << " clusters" << endl;
 	while(c< order.size()) {
 		cn=c+1;
 		int curEndChrom = genome.header.Find(order[c].tEnd);
@@ -410,7 +410,6 @@ void SeparateMatchesByStrand(Read &read, Genome &genome, int k,
 //debug code Dont forget delete int &i
 void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, pthread_mutex_t *semaphore=NULL) {
 	
-	clock_t begin = std::clock();
 	string baseName = read.name;
 
 	for (int i=0; i < baseName.size(); i++) {	if (baseName[i] == '/') baseName[i] = '_';	}
@@ -858,6 +857,7 @@ void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalInd
 			//MergeClusters(smallOpts, refinedClusters, vt, r);
 			mergeClusters (smallOpts, refinedClusters[r].matches, vt, r, baseName);
 
+			//cerr << "vt.size(): " << vt.size() << endl;
 			if (opts.dotPlot) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << r << ".merged.dots";
@@ -923,7 +923,7 @@ void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalInd
 					// chain stores indices which refer to elements in refinedClusters[r].matches
 					baseDots << refinedClusters[r].matches[chain[c]].first.pos << "\t" 
 							 << refinedClusters[r].matches[chain[c]].second.pos << "\t" 
-							 << smallOpts.globalK << "\t" << r << endl;						
+							 << smallOpts.globalK <<"\t" << r << endl;						
 				}		
 			}
 			baseDots.close();
@@ -1366,11 +1366,12 @@ void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalInd
 	}
 	read.Clear();
 
-
+	/*
 	// get the time for the program
 	clock_t end = std::clock();
 	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	cerr << "Time: " << elapsed_secs << endl;
+	*/
 	
 }
 

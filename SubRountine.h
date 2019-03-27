@@ -14,7 +14,7 @@
 #include <string>	// std::string
 #include <fstream>      // std::fstream
 #include <tuple>        // std::tuple, std::get
-#include <cmath>	// std::log
+#include <cmath>	// std::log std::pow
 #include <numeric>	// std::iota
 #include <limits>
 #include <iterator>
@@ -30,6 +30,8 @@ using std::endl;
 // w function
 float
 w (long int i, long int j) { 
+	long int x = labs(j-i);
+	//return -9*(x - (1/2)*x*x + (1/3)*x*x*x - (1/4)*x*x*x*x);
     return - 9*std::log(labs(j - i) + 1);   
 }  
 

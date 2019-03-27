@@ -79,7 +79,7 @@ FindValueInBlock (long int ForwardDiag, std::stack<LPair> S_1, std::vector<long 
 
 
 void 
-PassValueToD (unsigned int i, std::vector<Fragment_Info> & Value, const std::vector<Point> & H1, std::vector<Subproblem> & SubR, std::vector<Subproblem> & SubC, long int & ForwardDiag) {
+PassValueToD (unsigned int i, std::vector<Fragment_Info> & Value, const std::vector<Point> & H1, StackOfSubProblems & SubR, StackOfSubProblems & SubC, long int & ForwardDiag) {
 
 	// If all the subproblems B which contain the point H1[i] have been processed, then we can pass the value of the point H1[i] to the D array for every subproblem A
 	assert (Value[i].counter_B_R == 0 and Value[i].counter_B_C == 0);
@@ -167,7 +167,7 @@ PassValueToD (unsigned int i, std::vector<Fragment_Info> & Value, const std::vec
 //This function is for fragments which are resulting from MergeSplit step. 
 // Each fragment has different length, so we need to pass vector<Cluster> vt to the function
 void ProcessPoint (const std::vector<Cluster> & FragInput, const std::vector<Point> & H1, const std::vector<unsigned int> & H3, std::vector<info> & V, 
-						std::vector<Subproblem> & SubR, std::vector<Subproblem> & SubC, std::vector<Fragment_Info> & Value) {
+						StackOfSubProblems & SubR, StackOfSubProblems & SubC, std::vector<Fragment_Info> & Value) {
 
 	for (unsigned int i = 0; i < H3.size(); ++i) { // process points by back diagonal
 
@@ -333,7 +333,7 @@ void ProcessPoint (const std::vector<Cluster> & FragInput, const std::vector<Poi
 // This function is for fragments which are not resulting from MergeSplit step. 
 // Each fragment has the same length
 void 
-ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H3, std::vector<info> & V, std::vector<Subproblem> & SubR, std::vector<Subproblem> & SubC,
+ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H3, std::vector<info> & V, StackOfSubProblems & SubR, StackOfSubProblems & SubC,
 				  std::vector<Fragment_Info> & Value, Options & opts) {
 
 	for (unsigned int i = 0; i < H3.size(); ++i) { // process points by back diagonal
@@ -494,7 +494,7 @@ ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H
 
 
 void 
-TraceBack (const std::vector<Subproblem> & SubR, const std::vector<Subproblem> & SubC, const std::vector<Fragment_Info> & Value, unsigned int i, std::vector<unsigned int> & FinalChain) {
+TraceBack (StackOfSubProblems & SubR, StackOfSubProblems & SubC, const std::vector<Fragment_Info> & Value, unsigned int i, std::vector<unsigned int> & FinalChain) {
 
 	long int prev_sub = Value[i].prev_sub;
 	long int prev_ind = Value[i].prev_ind;
@@ -579,16 +579,19 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<unsigned int> 
 
 	unsigned int n = 0;
 	unsigned int m = 0;
-	std::vector<Subproblem> SubR;
-	std::vector<Subproblem> SubC;
+	//std::vector<Subproblem> SubR;
+	//std::vector<Subproblem> SubC;
+	StackOfSubProblems SubR;
+	StackOfSubProblems SubC;
+	int eeR=0, eeC=0;
 
 	//cerr << "DivideSubByRow\n";
-	DivideSubProbByRow(H1, Row, 0, Row.size(), n, SubR);
+	DivideSubProbByRow(H1, Row, 0, Row.size(), n, SubR, eeR);
 	//cerr << "SubR: " << SubR << endl;
 
 
 	//cerr << "DivideSubByCol\n";
-	DivideSubProbByCol(H1, H2, Col, 0, Col.size(), m, SubC);
+	DivideSubProbByCol(H1, H2, Col, 0, Col.size(), m, SubC, eeC);
 	//cerr << "SubC: " << SubC << endl;
 
 	std::vector<Fragment_Info> Value(FragInput.size());
@@ -657,6 +660,11 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<unsigned int> 
 	chain.clear();
 	TraceBack(SubR, SubC, Value, max_pos, chain);
 	std::reverse(chain.begin(), chain.end());
+
+
+	// Clear SubR and SubC
+	SubR.Clear(eeR);
+	SubC.Clear(eeC);
 
 	// get the time for the program
 	clock_t end = std::clock();
@@ -742,16 +750,20 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 
 	unsigned int n = 0;
 	unsigned int m = 0;
-	std::vector<Subproblem> SubR;
-	std::vector<Subproblem> SubC;
+	//std::vector<Subproblem> SubR;
+	//std::vector<Subproblem> SubC;
+	StackOfSubProblems SubR;
+	StackOfSubProblems SubC;
+	int eeR = 0, eeC = 0;
+
 
 	//cerr << "DivideSubByRow\n";
-	DivideSubProbByRow(H1, Row, 0, Row.size(), n, SubR);
+	DivideSubProbByRow(H1, Row, 0, Row.size(), n, SubR, eeR);
 	//cerr << "SubR: " << SubR << endl;
 
 
 	//cerr << "DivideSubByCol\n";
-	DivideSubProbByCol(H1, H2, Col, 0, Col.size(), m, SubC);
+	DivideSubProbByCol(H1, H2, Col, 0, Col.size(), m, SubC, eeC);
 	//cerr << "SubC: " << SubC << endl;
 
 	std::vector<Fragment_Info> Value(FragInput.size());
@@ -822,6 +834,10 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 	chain.clear();
 	TraceBack(SubR, SubC, Value, max_pos, chain);
 	std::reverse(chain.begin(), chain.end());
+
+	// Clear SubR and SubC
+	SubR.Clear(eeR);
+	SubC.Clear(eeC);
 
 	// get the time for the program
 	clock_t end = std::clock();
