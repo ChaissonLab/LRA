@@ -408,7 +408,7 @@ void SeparateMatchesByStrand(Read &read, Genome &genome, int k,
 
 
 //debug code Dont forget delete int &i
-void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, pthread_mutex_t *semaphore=NULL) {
+void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, pthread_mutex_t *semaphore=NULL) {
 	
 	string baseName = read.name;
 
@@ -896,10 +896,10 @@ void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalInd
 		if (opts.SparseDP) {
 			chain.clear();
 			if (opts.mergeClusters and vt.size() < 30000 and vt.size() > 0) {
-				SparseDP(vt, chain, smallOpts);
+				SparseDP(vt, chain, smallOpts, LookUpTable);
 			}
 			else if (refinedClusters[r].matches.size() < 30000) {
-				SparseDP(refinedClusters[r].matches, chain, smallOpts);
+				SparseDP(refinedClusters[r].matches, chain, smallOpts, LookUpTable);
 			}
 		}
 		else { 
@@ -1148,7 +1148,7 @@ void MapRead(Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalInd
 						if (opts.SparseDP) {
 							gapChain.clear();
 							if (gapPairs.size() < 20000) {
-								SparseDP(gapPairs, gapChain, tinyOpts); 
+								SparseDP(gapPairs, gapChain, tinyOpts, LookUpTable); 
 								//cerr << "start 2nd sdp!" << endl;
 							}
 						}

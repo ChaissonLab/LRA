@@ -25,6 +25,7 @@ using namespace std;
 #include "SeqUtils.h"
 #include "Options.h"
 #include "Alignment.h"
+#include "LogLookUpTable.h"
 
 #include <math.h>
 
@@ -66,6 +67,7 @@ void HelpMap() {
 		
 class MapInfo {
 public:
+	std::vector<float> *LookUpTable;
 	Header*header;
 	Genome *genome;
 	vector<GenomeTuple> *genomemm;
@@ -86,13 +88,7 @@ void MapReads(MapInfo *mapInfo) {
 			continue;
 		}
 		else {
-			MapRead(read,
-							*mapInfo->genome, 
-							*mapInfo->genomemm, 
-							*mapInfo->glIndex, 
-							*mapInfo->opts, 
-							mapInfo->out,
-							mapInfo->semaphore);
+			MapRead(*mapInfo->LookUpTable, read, *mapInfo->genome, *mapInfo->genomemm, *mapInfo->glIndex, *mapInfo->opts, mapInfo->out, mapInfo->semaphore);
 		}
 	}
 	pthread_exit(NULL);
@@ -244,6 +240,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		genome.header.WriteSAMHeader(*outPtr);
 	}
 
+	vector<float> LookUpTable;
+	CreateLookUpTable(LookUpTable);
+
 	if (opts.nproc > 1) {
 		pthread_attr_t *threadAttr = new pthread_attr_t[opts.nproc];
 		for (int procIndex = 0; procIndex < opts.nproc; procIndex++ ){
@@ -256,6 +255,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		pthread_mutex_t semaphore;		
 		pthread_mutex_init(&semaphore, NULL);
 		for (int procIndex = 0; procIndex < opts.nproc; procIndex++ ){ 
+			mapInfo[procIndex].LookUpTable = &LookUpTable;
 			mapInfo[procIndex].genome = &genome;
 			mapInfo[procIndex].genomemm = &genomemm;
 			mapInfo[procIndex].glIndex = &glIndex;
@@ -275,7 +275,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	}
 	else {
 		while (reader.GetNext(read)) {
-			MapRead(read, genome, genomemm, glIndex, opts, outPtr);
+			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr);
 		}
 	}
 }

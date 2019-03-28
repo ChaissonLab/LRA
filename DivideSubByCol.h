@@ -162,11 +162,7 @@ ScanPoints_Col(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsig
 			}
 		}
 
-		if (count1 != 0) {
-			 V[i].SS_B.push_back(n);
-		}
 		if (count1 != 0 and count2 != 0) {
-			++n;
 			V[i].SS_B.push_back(n);
 			V[i].SS_A.push_back(n);				
 		}
@@ -221,78 +217,37 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 
 	if (end == start + 1) { // subproblem A is empty, while B contains only one row. This is a leaf case.
 
-		Subproblem s = Subproblem(n); // s is leaf subproblem
-		Sub.Push_Back(eeC, s);
-		++eeC; 
-
-		Subproblem ss = Subproblem(n + 1);
+		Subproblem ss = Subproblem(n);
 		Sub.Push_Back(eeC, ss); // ss is a subproblem which Di and Ei coming from one row
 		++eeC;
-		unsigned int last = eeC;
+		ScanPoints_Col(V, H1, H2, Sub[eeC - 1].Ei, Sub[eeC - 1].Di, start, end, n);	
 
-		ScanPoints_Col(V, H1, H2, Sub[last - 2].Ei, Sub[last - 1].Di, start, end, n);	
-
-
-		if (!Sub[last - 2].Ei.empty() and !Sub[last - 1].Di.empty()) { 
+		if (!Sub[eeC - 1].Ei.empty() and !Sub[eeC - 1].Di.empty()) { 
 	
-			// initialize Sub[last - 1]
-			Sub[last - 1].Ei = Sub[last - 2].Ei;
+			// initialize Sub[eeC- 1]
+			unsigned int l = Sub[eeC - 1].Di.size();
+			unsigned int h = Sub[eeC - 1].Ei.size();
 
-			unsigned int l = Sub[last - 1].Di.size();
-			unsigned int h = Sub[last - 1].Ei.size();
-
-			//std::vector<long int> p(h, -1);
-			//std::vector<long int> z(l, -1);
-			//std::vector<unsigned int> t(h, 0);
-			Sub[last - 1].E.assign(h, 0); 
-			std::iota(Sub[last - 1].E.begin(), Sub[last - 1].E.end(), 0);
-			Sub[last - 1].Eb.assign(h, -1);
-			Sub[last - 1].Db.assign(l, -1); 
-			Decide_Eb_Db_C(Sub[last - 1].Di, Sub[last - 1].Ei, Sub[last - 1].Db, Sub[last - 1].Eb, Sub[last - 1].E);
+			Sub[eeC - 1].E.assign(h, 0); 
+			std::iota(Sub[eeC - 1].E.begin(), Sub[eeC - 1].E.end(), 0);
+			Sub[eeC - 1].Eb.assign(h, -1);
+			Sub[eeC - 1].Db.assign(l, -1); 
+			Decide_Eb_Db_C(Sub[eeC - 1].Di, Sub[eeC - 1].Ei, Sub[eeC - 1].Db, Sub[eeC - 1].Eb, Sub[eeC - 1].E);
 
 			// initialize other attributes of this subproblem
-			//std::vector<float> v(l, 0);
-			//std::vector<unsigned int> w(l, 0);
-			Sub[last - 1].Dv.assign(l, 0);
-			Sub[last - 1].Dp.assign(l, 0);
-			Sub[last - 1].D.assign(l, 0);
-			std::iota(Sub[last - 1].D.begin(), Sub[last - 1].D.end(), 0);
+			Sub[eeC - 1].Dv.assign(l, 0);
+			Sub[eeC - 1].Dp.assign(l, 0);
+			Sub[eeC - 1].D.assign(l, 0);
+			std::iota(Sub[eeC - 1].D.begin(), Sub[eeC - 1].D.end(), 0);
 
-			//std::vector<float> q(h, 0);
-			Sub[last - 1].Ev.assign(h, 0);
-			Sub[last - 1].Ep.assign(h, 0); 
+			Sub[eeC - 1].Ev.assign(h, 0);
+			Sub[eeC - 1].Ep.assign(h, 0); 
 			std::pair<long int, long int> dummy_pair = std::make_pair(-1, h+1);
-			Sub[last - 1].S_1.push(dummy_pair); 
-
-
-			// initialize Sub[last - 2] -- the leaf case
-			unsigned int hh = Sub[last - 2].Ei.size();
-			//std::vector<float> pp(hh, 0);
-			//std::vector<unsigned int> zz(hh, 0);
-			Sub[last - 2].Ev.assign(hh, 0); 
-			Sub[last - 2].Ep.assign(hh, 0); 
-			Sub[last - 2].E.assign(hh, 0);
-			std::iota(Sub[last - 2].E.begin(), Sub[last - 2].E.end(), 0);			
-		}
-		else if (!Sub[last - 2].Ei.empty()) {
-
-			//Sub.pop_back(); // delete subproblem ss
-			Sub.ClearSingle(eeC);
-			--eeC;
-			// initialize Sub[last - 2] -- the leaf case
-			unsigned int h = Sub[last - 2].Ei.size();
-			//std::vector<float> p(h, 0);
-			//std::vector<unsigned int> z(h, 0);
-			Sub[last - 2].Ev.assign(h, 0); 
-			Sub[last - 2].Ep.assign(h, 0);
-			Sub[last - 2].E.assign(h, 0); 
-			std::iota(Sub[last - 2].E.begin(), Sub[last - 2].E.end(), 0);				
+			Sub[eeC - 1].S_1.push(dummy_pair); 
+		
 		}
 		else {
 			//Sub.pop_back(); // delete subproblem ss
-			Sub.ClearSingle(eeC);
-			--eeC;
-			//Sub.pop_back(); // delete subproblem s -- the leaf case
 			Sub.ClearSingle(eeC);
 			--eeC;
 			--n;			
@@ -319,9 +274,12 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 			--n;
 		}
 		else if (Sub[eeC-1].Ei.empty() and !Sub[eeC-1].Di.empty()) { // Di is non-empty and Ei is empty
+			++n;
+			DivideSubProbByCol(H1, H2, V, start, std::floor((start + end)/2), n, Sub, eeC);			
 		}
 		else if (!Sub[eeC-1].Ei.empty() and Sub[eeC-1].Di.empty()) { 
-
+			++n;
+			DivideSubProbByCol(H1, H2, V, std::floor((start + end)/2), end, n, Sub, eeC);
 		}
 		else { // non-leaf case
 
@@ -352,12 +310,11 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 			Sub[eeC-1].Ep.assign(h, 0);
 			std::pair<long int, long int> dummy_pair = std::make_pair(-1, h+1);
 			Sub[eeC-1].S_1.push(dummy_pair); 
+			++n;
+			DivideSubProbByCol(H1, H2, V, start, std::floor((start + end)/2), n, Sub, eeC);
+			++n;
+			DivideSubProbByCol(H1, H2, V, std::floor((start + end)/2), end, n, Sub, eeC);
 		}
-
-		++n;
-		DivideSubProbByCol(H1, H2, V, start, std::floor((start + end)/2), n, Sub, eeC);
-		++n;
-		DivideSubProbByCol(H1, H2, V, std::floor((start + end)/2), end, n, Sub, eeC);
 	}
 }
 

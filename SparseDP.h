@@ -167,7 +167,7 @@ PassValueToD (unsigned int i, std::vector<Fragment_Info> & Value, const std::vec
 //This function is for fragments which are resulting from MergeSplit step. 
 // Each fragment has different length, so we need to pass vector<Cluster> vt to the function
 void ProcessPoint (const std::vector<Cluster> & FragInput, const std::vector<Point> & H1, const std::vector<unsigned int> & H3, std::vector<info> & V, 
-						StackOfSubProblems & SubR, StackOfSubProblems & SubC, std::vector<Fragment_Info> & Value) {
+						StackOfSubProblems & SubR, StackOfSubProblems & SubC, std::vector<Fragment_Info> & Value, const std::vector<float> & LookUpTable) {
 
 	for (unsigned int i = 0; i < H3.size(); ++i) { // process points by back diagonal
 
@@ -213,7 +213,7 @@ void ProcessPoint (const std::vector<Cluster> & FragInput, const std::vector<Poi
 						//cerr << "Start to compute the maximization structure.\n";
 
 						SubR[j].now = SubR[j].Eb[*t];
-						Maximization (SubR[j].now, SubR[j].last, SubR[j].Di, SubR[j].Ei, SubR[j].Dv, SubR[j].Db, SubR[j].Block, SubR[j].S_1); // TODO(Jingwen) anything change for SubC????
+						Maximization (SubR[j].now, SubR[j].last, SubR[j].Di, SubR[j].Ei, SubR[j].Dv, SubR[j].Db, SubR[j].Block, SubR[j].S_1, LookUpTable); // TODO(Jingwen) anything change for SubC????
 						SubR[j].last = SubR[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -224,7 +224,7 @@ void ProcessPoint (const std::vector<Cluster> & FragInput, const std::vector<Poi
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 
 						 // FragInput is vector<Cluster> resulting from merge-split step
-						SubR[j].Ev[i1] = SubR[j].Dv[i2] + w(SubR[j].Di[i2], SubR[j].Ei[i1]) + 
+						SubR[j].Ev[i1] = SubR[j].Dv[i2] + w(SubR[j].Di[i2], SubR[j].Ei[i1], LookUpTable) + 
 											std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1); 
 						SubR[j].Ep[i1] = i2;						
 
@@ -281,7 +281,7 @@ void ProcessPoint (const std::vector<Cluster> & FragInput, const std::vector<Poi
 						//cerr << "SubC[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
 						//cerr << "Start to compute the maximization structure.\n";
 						SubC[j].now = SubC[j].Eb[*t]; 
-						Maximization (SubC[j].now, SubC[j].last, SubC[j].Di, SubC[j].Ei, SubC[j].Dv, SubC[j].Db, SubC[j].Block, SubC[j].S_1); 
+						Maximization (SubC[j].now, SubC[j].last, SubC[j].Di, SubC[j].Ei, SubC[j].Dv, SubC[j].Db, SubC[j].Block, SubC[j].S_1, LookUpTable); 
 						SubC[j].last = SubC[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -293,7 +293,7 @@ void ProcessPoint (const std::vector<Cluster> & FragInput, const std::vector<Poi
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 					
 						// FragInput is vector<Cluster> resulting from merge-split step
-						SubC[j].Ev[i1] = SubC[j].Dv[i2] + w(SubC[j].Di[i2], SubC[j].Ei[i1]) + 
+						SubC[j].Ev[i1] = SubC[j].Dv[i2] + w(SubC[j].Di[i2], SubC[j].Ei[i1], LookUpTable) + 
 											std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1); 
 						SubC[j].Ep[i1] = i2;							
 
@@ -334,7 +334,7 @@ void ProcessPoint (const std::vector<Cluster> & FragInput, const std::vector<Poi
 // Each fragment has the same length
 void 
 ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H3, std::vector<info> & V, StackOfSubProblems & SubR, StackOfSubProblems & SubC,
-				  std::vector<Fragment_Info> & Value, Options & opts) {
+				  std::vector<Fragment_Info> & Value, Options & opts, const std::vector<float> & LookUpTable) {
 
 	for (unsigned int i = 0; i < H3.size(); ++i) { // process points by back diagonal
 
@@ -380,7 +380,7 @@ ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H
 						//cerr << "Start to compute the maximization structure.\n";
 
 						SubR[j].now = SubR[j].Eb[*t];
-						Maximization (SubR[j].now, SubR[j].last, SubR[j].Di, SubR[j].Ei, SubR[j].Dv, SubR[j].Db, SubR[j].Block, SubR[j].S_1); // TODO(Jingwen) anything change for SubC????
+						Maximization (SubR[j].now, SubR[j].last, SubR[j].Di, SubR[j].Ei, SubR[j].Dv, SubR[j].Db, SubR[j].Block, SubR[j].S_1, LookUpTable); // TODO(Jingwen) anything change for SubC????
 						SubR[j].last = SubR[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -390,7 +390,7 @@ ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H
 						//cerr << "the index in Ei that ForwardDiag is in----i1: " << i1 << "\n";
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 
-						SubR[j].Ev[i1] = SubR[j].Dv[i2] + w(SubR[j].Di[i2], SubR[j].Ei[i1]) + opts.globalK + 1; 
+						SubR[j].Ev[i1] = SubR[j].Dv[i2] + w(SubR[j].Di[i2], SubR[j].Ei[i1], LookUpTable) + opts.globalK + 1; 
 						SubR[j].Ep[i1] = i2;							
 
 						//cerr << "SubR[" << j << "].Ev[" << i1 << "]: " << SubR[j].Ev[i1] << ", SubR[" << j << "].Ep[" << i1 << "]: " << SubR[j].Ep[i1] << "\n"; 
@@ -446,7 +446,7 @@ ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H
 						//cerr << "SubC[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
 						//cerr << "Start to compute the maximization structure.\n";
 						SubC[j].now = SubC[j].Eb[*t]; 
-						Maximization (SubC[j].now, SubC[j].last, SubC[j].Di, SubC[j].Ei, SubC[j].Dv, SubC[j].Db, SubC[j].Block, SubC[j].S_1); 
+						Maximization (SubC[j].now, SubC[j].last, SubC[j].Di, SubC[j].Ei, SubC[j].Dv, SubC[j].Db, SubC[j].Block, SubC[j].S_1, LookUpTable); 
 						SubC[j].last = SubC[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -458,7 +458,7 @@ ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 					
 
-						SubC[j].Ev[i1] = SubC[j].Dv[i2] + w(SubC[j].Di[i2], SubC[j].Ei[i1]) + opts.globalK + 1; 
+						SubC[j].Ev[i1] = SubC[j].Dv[i2] + w(SubC[j].Di[i2], SubC[j].Ei[i1], LookUpTable) + opts.globalK + 1; 
 						SubC[j].Ep[i1] = i2;							
 
 						//cerr << "SubC[" << j << "].Ev[" << i1 << "]: " << SubC[j].Ev[i1] << ", SubC[" << j << "].Ep[" << i1 << "]: " << SubC[j].Ep[i1] << "\n"; 
@@ -516,7 +516,7 @@ TraceBack (StackOfSubProblems & SubR, StackOfSubProblems & SubC, const std::vect
 
 
 // The input for this function is vector<Cluster> vt which is from Merge_Split step
-int SparseDP (const std::vector<Cluster> & FragInput, std::vector<unsigned int> & chain, Options & opts) {
+int SparseDP (const std::vector<Cluster> & FragInput, std::vector<unsigned int> & chain, Options & opts, const std::vector<float> & LookUpTable) {
 
 	std::vector<Point>  H1;
 	// get points from FragInput and store them in H1
@@ -638,7 +638,7 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<unsigned int> 
 
 	//cerr << "ProcessPoint\n";
 
-	ProcessPoint(FragInput, H1, H3, Row, SubR, SubC, Value);		
+	ProcessPoint(FragInput, H1, H3, Row, SubR, SubC, Value, LookUpTable);		
 
 	//cerr << "end\n";
 
@@ -686,7 +686,7 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<unsigned int> 
 
 // The input for this function is GenomePairs which is not from Merge_Split step
 // Each fragment has the same length
-int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, Options & opts) {
+int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, Options & opts, const std::vector<float> & LookUpTable) {
 	std::vector<Point> H1;
 
 	// FragInput is vector<GenomePair>
@@ -812,7 +812,7 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 	//cerr << "ProcessPoint\n";
 
 
-	ProcessPoint(H1, H3, Row, SubR, SubC, Value, opts);
+	ProcessPoint(H1, H3, Row, SubR, SubC, Value, opts, LookUpTable);
 	
 	//cerr << "end\n";
 

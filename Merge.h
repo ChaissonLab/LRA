@@ -36,19 +36,19 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 	int ch = matches.size();
 	int ReadEnd = matches[ch - 1].first.pos;        
 	int length, ind;
-	if ((ReadEnd - ReadStart + 1)%10 != 0) {
-		length = (ReadEnd - ReadStart + 1)/10 + 1;
+	if ((ReadEnd - ReadStart + 1)%50 != 0) {
+		length = (ReadEnd - ReadStart + 1)/50 + 1;
 		ind = 1;
 	}
 	else {
-		length = (ReadEnd - ReadStart + 1)/10;
+		length = (ReadEnd - ReadStart + 1)/50;
 		ind = 0;
 	}
 	std::vector<int> ReadWindow(length, 0);
 	
 	int j = 0;
-	for (int i = 0; i < ReadWindow.size(); ++i) { // The region that ReadWindow[i] represents is [ReadStart + i*10, ReadStart + (i+1)*10)
-		while (j < matches.size() and matches[j].first.pos >= ReadStart + i*10 and matches[j].first.pos < ReadStart + (i+1)*10) {
+	for (int i = 0; i < ReadWindow.size(); ++i) { // The region that ReadWindow[i] represents is [ReadStart + i*50, ReadStart + (i+1)*50)
+		while (j < matches.size() and matches[j].first.pos >= ReadStart + i*50 and matches[j].first.pos < ReadStart + (i+1)*50) {
 			++ReadWindow[i];
 			++j;
 		}
@@ -76,17 +76,17 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 	CartesianTargetSort<GenomeTuple>(matches.begin(), matches.end());     
 	int GenomeStart = matches[0].second.pos;
 	int GenomeEnd = matches[ch- 1].second.pos;
-	if ((GenomeEnd - GenomeStart + 1)%10 != 0) {
-		length = (GenomeEnd - GenomeStart + 1)/10 + 1;
+	if ((GenomeEnd - GenomeStart + 1)%50 != 0) {
+		length = (GenomeEnd - GenomeStart + 1)/50 + 1;
 	}
 	else {
-		length = (GenomeEnd - GenomeStart + 1)/10;
+		length = (GenomeEnd - GenomeStart + 1)/50;
 	}
 	std::vector<int> GenomeWindow(length, 0);
 
 	j = 0;
 	for (int i = 0; i < GenomeWindow.size(); ++i) {
-		while (j < matches.size() and matches[j].second.pos >= GenomeStart+ i*10 and matches[j].second.pos < GenomeStart + (i+1)*10) {
+		while (j < matches.size() and matches[j].second.pos >= GenomeStart+ i*50 and matches[j].second.pos < GenomeStart + (i+1)*50) {
 			++GenomeWindow[i];
 			++j;
 		}
@@ -127,8 +127,8 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 /*
 	int ReadBoundaryStart, ReadBoundaryEnd;
 	if (!ReadIndex.empty()) {
-		ReadBoundaryStart = (*ReadIndex.begin())*10 + ReadStart;
-		ReadBoundaryEnd = (ReadIndex.back())*10 + 2*10 + ReadStart;		
+		ReadBoundaryStart = (*ReadIndex.begin())*50 + ReadStart;
+		ReadBoundaryEnd = (ReadIndex.back())*50 + 2*50 + ReadStart;		
 	}
 	else {
 		ReadBoundaryStart = ReadEnd;
@@ -157,8 +157,8 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 	
 	int GenomeBoundaryStart, GenomeBoundaryEnd;
 	if (!GenomeIndex.empty()) {
-		GenomeBoundaryStart = (*GenomeIndex.begin())*10 + GenomeStart;
-		GenomeBoundaryEnd = (GenomeIndex.back())*10 + 2*10 + GenomeStart;		
+		GenomeBoundaryStart = (*GenomeIndex.begin())*50 + GenomeStart;
+		GenomeBoundaryEnd = (GenomeIndex.back())*50 + 2*50 + GenomeStart;		
 	}
 	else {
 		GenomeBoundaryStart = GenomeEnd;
@@ -263,7 +263,7 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 		outNameStrm << baseName + "." << r << ".Boundary.txt";
 		ofstream baseDots(outNameStrm.str().c_str());
 		for (int m=0; m < Boundary.size(); m++) {
-			baseDots << ReadStart + Boundary[m].first*10 << "\t" << ReadStart + Boundary[m].second*10 << "\t" << index[m] << endl;
+			baseDots << ReadStart + Boundary[m].first*50 << "\t" << ReadStart + Boundary[m].second*50 << "\t" << index[m] << endl;
 		}
 		baseDots.close();
 	}
@@ -318,8 +318,8 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 		}
 		*/
 
-		start = Boundary[j].first*10 + ReadStart;
-		end = (Boundary[j].second)*10 + ReadStart;
+		start = Boundary[j].first*50 + ReadStart;
+		end = (Boundary[j].second)*50 + ReadStart;
 
 		while (ts < matches.size() and matches[ts].first.pos >= start and matches[ts].first.pos < end) {
 			te = ts + 1;
