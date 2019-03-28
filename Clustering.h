@@ -109,8 +109,7 @@ class ClusterCoordinates {
 		else if (b.tStart <= tStart and b.tEnd > tEnd) {
 			tovp=tEnd-tStart;
 		}
-
-		return (((float)qovp)/(qEnd-qStart) > frac) or ((float)tovp / (tEnd-tStart) > frac);
+		return (((float)qovp)/(qEnd-qStart) > frac) and ((float)tovp / (tEnd-tStart) > frac);
 	}
 
 	bool Overlaps(const ClusterCoordinates &b, float frac) const {
