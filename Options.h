@@ -34,6 +34,7 @@ public:
 	int maxGap;
 	bool NaiveDP;
 	bool SparseDP;
+	bool LookUpTable;
 	int readStart;
 	int readStride;
 	bool seqan;
@@ -68,6 +69,7 @@ public:
 		NaiveDP = false;
 		seqan=false;
 		SparseDP=false;
+		LookUpTable=false;
 	}
 };
 #endif

@@ -172,52 +172,55 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 
 	// -------- Merge ---------
 /*
-    Options mergeOpts = opts;
-    mergeOpts.maxGap = 5000;
-    mergeOpts.maxDiag = 20;
-	int cs = 0;
-	int ce = 0;
+	int start = 0;
+	int end = 0;	
+	ts = 0; te = 0;
+	for (int j = 0; j < Boundary.size(); ++j) {
 
-	while (cs < matches.size()) {
-		ce = cs + 1;
-		GenomePos qStart=matches[cs].first.pos, 
-			qEnd=matches[cs].first.pos + opts.globalK, 
-			tStart=matches[cs].second.pos, 
-			tEnd=matches[cs].second.pos + opts.globalK;
+		start = Boundary[j].first*50 + ReadStart;
+		end = (Boundary[j].second)*50 + ReadStart;
 
-		while (ce < matches.size() 
-					and (matches[ce].first.pos < ReadBoundaryStart or matches[ce].first.pos >= ReadBoundaryEnd)
-					and (matches[ce - 1].first.pos < ReadBoundaryStart or matches[ce - 1].first.pos >= ReadBoundaryEnd)
-					and (matches[ce].second.pos < GenomeBoundaryStart or matches[ce].second.pos >= GenomeBoundaryEnd)
-					and (matches[ce - 1].second.pos < GenomeBoundaryStart or matches[ce - 1].second.pos >= GenomeBoundaryEnd)) {
+		while (ts < matches.size() and matches[ts].first.pos >= start and matches[ts].first.pos < end) {
+			te = ts + 1;
+			GenomePos qStart=matches[ts].first.pos, 
+					  qEnd=matches[ts].first.pos + opts.globalK, 
+					  tStart=matches[ts].second.pos, 
+				      tEnd=matches[ts].second.pos + opts.globalK;		
 
-			int rgap = matches[ce].first.pos - matches[ce - 1].first.pos - opts.globalK;
-			int ggap = matches[ce].second.pos - matches[ce - 1].second.pos - opts.globalK;
+			while (te < matches.size() and matches[te].first.pos >= start and matches[te].first.pos < end) {
 
-			if (gapdifference(ce, matches) <= mergeOpts.maxDiag and std::max(std::abs(rgap), std::abs(ggap)) <= mergeOpts.maxGap) {
-				qStart = min(qStart, matches[ce].first.pos);
-				qEnd   = max(qEnd, matches[ce].first.pos + opts.globalK);
-				tStart = min(tStart, matches[ce].second.pos);
-				tEnd   = max(tEnd, matches[ce].second.pos + opts.globalK);				
-				++ce;
+				int rgap = matches[te].first.pos - matches[te - 1].first.pos - opts.globalK;
+				int ggap = matches[te].second.pos - matches[te - 1].second.pos - opts.globalK;	
+
+				if (gapdifference(te, matches) <= mergeOpts.maxDiag and std::max(std::abs(rgap), std::abs(ggap)) <= mergeOpts.maxGap) {
+					qStart = min(qStart, matches[te].first.pos);
+					qEnd   = max(qEnd, matches[te].first.pos + opts.globalK);
+					tStart = min(tStart, matches[te].second.pos);
+					tEnd   = max(tEnd, matches[te].second.pos + opts.globalK);				
+					++te;
+				}
+				else {
+					v.push_back(Cluster(ts, te, qStart, qEnd, tStart, tEnd, 0)); // I just put 0 here for the strand argument
+					ts = te;
+					break;
+				}					
+			}	
+
+			if (te < matches.size() and matches[te].first.pos >= end) {
+				v.push_back(Cluster(ts, te, qStart, qEnd, tStart, tEnd, 0));
+				ts = te;				
 			}
-			else {
-				v.push_back(Cluster(cs, ce, qStart, qEnd, tStart, tEnd, 0)); // I just put 0 here for the strand argument
-				cs = ce;
-				break;
+
+			if (te == matches.size()) {
+				v.push_back(Cluster(ts, te, qStart, qEnd, tStart, tEnd, 0));
+				ts = te;
 			}
 		}
-		if (ce < matches.size() and (!(matches[ce].first.pos < ReadBoundaryStart or matches[ce].first.pos >= ReadBoundaryEnd) 
-				or !(matches[ce - 1].first.pos < ReadBoundaryStart or matches[ce - 1].first.pos >= ReadBoundaryEnd)
-				or !(matches[ce].second.pos < GenomeBoundaryStart or matches[ce].second.pos >= GenomeBoundaryEnd)
-				or !(matches[ce - 1].second.pos < GenomeBoundaryStart or matches[ce - 1].second.pos >= GenomeBoundaryEnd))) {
-			v.push_back(Cluster(cs, ce, qStart, qEnd, tStart, tEnd, 0));
-			cs = ce;
+		if (matches[ts].first.pos >= end) {
+			continue;
 		}
-
-		if (ce == matches.size()) {
-			v.push_back(Cluster(cs, ce, qStart, qEnd, tStart, tEnd, 0));
-			cs = ce;
+		if (ts == matches.size()) {
+			continue;
 		}
 
 	}
@@ -272,14 +275,14 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 
 	int ts = 0;
 	int te = 0;
-	// merge without any bounday
+	// merge without any boundary
 	if (Boundary.empty()) {
 		while (ts < matches.size()) {
 			te = ts + 1;
-			GenomePos qStart=matches[ts].first.pos, 
-					  qEnd=matches[ts].first.pos + opts.globalK, 
-					  tStart=matches[ts].second.pos, 
-				      tEnd=matches[ts].second.pos + opts.globalK;	
+			GenomePos qStart  =matches[ts].first.pos, 
+					  qEnd = matches[ts].first.pos + opts.globalK, 
+					  tStart = matches[ts].second.pos, 
+				      tEnd = matches[ts].second.pos + opts.globalK;	
 			while (te < matches.size()) {
 				int rgap = matches[te].first.pos - matches[te - 1].first.pos - opts.globalK;
 				int ggap = matches[te].second.pos - matches[te - 1].second.pos - opts.globalK;	
@@ -303,77 +306,83 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 		}
 	}
 
-
+	//Boundary is not empty
 	int start = 0;
 	int end = 0;	
 	ts = 0; te = 0;
 	for (int j = 0; j < Boundary.size(); ++j) {
 
-		//TODO(Jingwen): Debug code. Remove later
-		/*
-		if (Boundary[j].second > Boundary[j].first + 1) {
-			for (int q = Boundary[j].first; q < Boundary[j].second-1; ++q) {
-				assert(ReadIndex[q] == ReadIndex[q+1]);
-			}
-		}
-		*/
-
 		start = Boundary[j].first*50 + ReadStart;
 		end = (Boundary[j].second)*50 + ReadStart;
 
-		while (ts < matches.size() and matches[ts].first.pos >= start and matches[ts].first.pos < end) {
-			te = ts + 1;
-			GenomePos qStart=matches[ts].first.pos, 
-					  qEnd=matches[ts].first.pos + opts.globalK, 
-					  tStart=matches[ts].second.pos, 
-				      tEnd=matches[ts].second.pos + opts.globalK;		
+		if (index[j] == 0) {
+			// merge anchors in [start, end)
 
-			while (te < matches.size() and matches[te].first.pos >= start and matches[te].first.pos < end) {
+			while (ts < matches.size() and matches[ts].first.pos >= start and matches[ts].first.pos < end) {
+				te = ts + 1;
+				GenomePos qStart=matches[ts].first.pos, 
+						  qEnd=matches[ts].first.pos + opts.globalK, 
+						  tStart=matches[ts].second.pos, 
+					      tEnd=matches[ts].second.pos + opts.globalK;		
 
-				int rgap = matches[te].first.pos - matches[te - 1].first.pos - opts.globalK;
-				int ggap = matches[te].second.pos - matches[te - 1].second.pos - opts.globalK;	
+				while (te < matches.size() and matches[te].first.pos >= start and matches[te].first.pos < end) {
 
-				if (gapdifference(te, matches) <= mergeOpts.maxDiag and std::max(std::abs(rgap), std::abs(ggap)) <= mergeOpts.maxGap) {
-					qStart = min(qStart, matches[te].first.pos);
-					qEnd   = max(qEnd, matches[te].first.pos + opts.globalK);
-					tStart = min(tStart, matches[te].second.pos);
-					tEnd   = max(tEnd, matches[te].second.pos + opts.globalK);				
-					++te;
+					int rgap = matches[te].first.pos - matches[te - 1].first.pos - opts.globalK;
+					int ggap = matches[te].second.pos - matches[te - 1].second.pos - opts.globalK;	
+
+					if (gapdifference(te, matches) <= mergeOpts.maxDiag and std::max(std::abs(rgap), std::abs(ggap)) <= mergeOpts.maxGap) {
+						qStart = min(qStart, matches[te].first.pos);
+						qEnd   = max(qEnd, matches[te].first.pos + opts.globalK);
+						tStart = min(tStart, matches[te].second.pos);
+						tEnd   = max(tEnd, matches[te].second.pos + opts.globalK);				
+						++te;
+					}
+					else {
+						v.push_back(Cluster(ts, te, qStart, qEnd, tStart, tEnd, 0)); // I just put 0 here for the strand argument
+						ts = te;
+						break;
+					}					
+				}	
+
+				if (te < matches.size() and matches[te].first.pos >= end) {
+					v.push_back(Cluster(ts, te, qStart, qEnd, tStart, tEnd, 0));
+					ts = te;				
 				}
-				else {
-					v.push_back(Cluster(ts, te, qStart, qEnd, tStart, tEnd, 0)); // I just put 0 here for the strand argument
+
+				if (te == matches.size()) {
+					v.push_back(Cluster(ts, te, qStart, qEnd, tStart, tEnd, 0));
 					ts = te;
-					break;
-				}					
-			}	
-
-			if (te < matches.size() and matches[te].first.pos >= end) {
-				v.push_back(Cluster(ts, te, qStart, qEnd, tStart, tEnd, 0));
-				ts = te;				
+				}
 			}
-
-			if (te == matches.size()) {
-				v.push_back(Cluster(ts, te, qStart, qEnd, tStart, tEnd, 0));
-				ts = te;
+			if (matches[ts].first.pos >= end) {
+				continue;
+			}
+			if (ts == matches.size()) {
+				continue;
 			}
 		}
-		if (matches[ts].first.pos >= end) {
-			continue;
-		}
-		if (ts == matches.size()) {
-			continue;
+		else {
+			// Do not merge anchors in [start, end)
+			while (ts < matches.size() and matches[ts].first.pos >= start and matches[ts].first.pos < end) {
+				GenomePos qStart = matches[ts].first.pos, 
+						  qEnd = matches[ts].first.pos + opts.globalK, 
+						  tStart = matches[ts].second.pos, 
+					      tEnd = matches[ts].second.pos + opts.globalK;	
+				v.push_back(Cluster(ts, ts + 1, qStart, qEnd, tStart, tEnd, 0));				 
+				++ts;
+			}
 		}
 
 	}
 
-/*
+
 	stringstream outNameStrm;
 	outNameStrm << "AnchorEfficiency.txt";
 	ofstream baseDots;
 	baseDots.open(outNameStrm.str().c_str(), std::ios::app);
 	baseDots << v.size() << "\t" << matches.size() << endl;
 	baseDots.close();
-*/
+
 	
 }
 

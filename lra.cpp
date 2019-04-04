@@ -61,6 +61,7 @@ void HelpMap() {
 			 << "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl
 			 << "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
 			 << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
+			 << "	-T 	(flag)  Use log LookUpTable when gap length is larger than 501." << endl
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl;
 }
@@ -170,6 +171,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "-S")) {
 			opts.SparseDP = true;
+		}
+		else if (ArgIs(argv[argi], "-T")) {
+			opts.LookUpTable = true;
 		}
 		else if (ArgIs(argv[argi], "-o")) {
 			opts.outfile = argv[++argi];

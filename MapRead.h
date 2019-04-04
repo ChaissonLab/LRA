@@ -800,7 +800,10 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			outNameStrm << baseName + "." << r << ".clean.dots";
 			ofstream baseDots(outNameStrm.str().c_str());
 			for (int m=0; m < refinedClusters[r].matches.size(); m++) {
-				baseDots  << refinedClusters[r].matches[m].first.pos << "\t" << refinedClusters[r].matches[m].second.pos << "\t" << smallOpts.globalK  << "\t" << r << endl;
+				baseDots  << refinedClusters[r].matches[m].first.pos << "\t" 
+						  << refinedClusters[r].matches[m].second.pos << "\t" 
+						  << smallOpts.globalK  << "\t" 
+						  << r << endl;
 			}
 			baseDots.close();
 		}
@@ -863,7 +866,11 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				outNameStrm << baseName + "." << r << ".merged.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
 				for (int m=0; m < vt.size(); m++) {
-					baseDots << vt[m].qStart << "\t" << vt[m].tStart << "\t" << vt[m].qEnd << "\t" << vt[m].tEnd << "\t" << r << endl;
+					baseDots << vt[m].qStart << "\t" 
+							 << vt[m].tStart << "\t" 
+							 << vt[m].qEnd << "\t" 
+							 << vt[m].tEnd << "\t" 
+							 << r << endl;
 				}
 				baseDots.close();
 			}
@@ -1009,8 +1016,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		diagOpts.minClusterSize=1;
 
 		// remove fragments which are in the middle of an insertion and a deletion OR a deletion and an insertion. 
-		StoreDiagonalClusters(tupChain, chainClust, diagOpts, true); ///Jingwen adds this here, otherwise chainClust is empty
-		RemovePairedIndels(tupChain, chainClust, smallOpts);  
+		//StoreDiagonalClusters(tupChain, chainClust, diagOpts, true); ///Jingwen adds this here, otherwise chainClust is empty
+		//RemovePairedIndels(tupChain, chainClust, smallOpts);  
 
 
 		//(TODO)Jingwen: For Debug(remove this later)
@@ -1022,8 +1029,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				// chain stores indices which refer to elments in vt
 				baseDots << tupChain[c].first.pos << "\t" 
 						 << tupChain[c].second.pos << "\t" 
-						 << tupChain[c].first.pos + smallOpts.globalK << "\t" 
-						 << tupChain[c].second.pos + smallOpts.globalK << "\t"
+						 << smallOpts.globalK << "\t"
 						 << r << endl;							
 			}
 			baseDots.close();
@@ -1150,6 +1156,22 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 							if (gapPairs.size() < 20000) {
 								SparseDP(gapPairs, gapChain, tinyOpts, LookUpTable); 
 								//cerr << "start 2nd sdp!" << endl;
+
+								if (opts.dotPlot) {
+									stringstream outNameStrm;
+									outNameStrm << baseName + "." << r << ".second-sdp.dots";
+									ofstream baseDots;
+									baseDots.open(outNameStrm.str().c_str(), std::ios::app);
+									for (int c = 0; c < gapChain.size(); c++) {
+										// chain stores indices which refer to elements in refinedClusters[r].matches
+										baseDots << gapPairs[gapChain[c]].first.pos << "\t" 
+												 << gapPairs[gapChain[c]].second.pos << "\t" 
+												 << gapOpts.globalK  << "\t"
+												 << r << endl;						
+									}
+									baseDots.close();
+								}
+
 							}
 						}
 						/*
