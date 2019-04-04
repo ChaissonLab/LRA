@@ -68,7 +68,7 @@ public:
 		mergeClusters=false;
 		NaiveDP = false;
 		seqan=false;
-		SparseDP=false;
+		SparseDP=true;
 		LookUpTable=false;
 	}
 };
