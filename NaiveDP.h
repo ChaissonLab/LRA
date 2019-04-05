@@ -7,13 +7,7 @@
 #include <cstdio>    // std::FILE std::perror
 #include <set>
 
-#include "seqan/basic.h" // Triple
-#include "seqan/seeds.h" 
 #include "IndexedSeed.h"
-/*
-typedef seqan::Seed<IndexedSeed> IndSeed;
-typedef seqan::SeedSet<IndSeed> IndSeedSet;
-*/
 
 
 
