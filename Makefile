@@ -36,7 +36,6 @@ HEADERS=MinCount.h \
   PrioritySearchTree.h\
   AffineOneGapAlign.h \
   GlobalChain.h \
-  seqan/include/seqan/seeds/seeds_global_chaining.h \
   NaiveDP.h \
   SparseDP.h
 

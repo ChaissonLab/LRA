@@ -181,6 +181,19 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;
 		}
+
+		else if (ArgIs(argv[argi], "--locMatch")) {
+			opts.localMatch=atoi(GetArgv(argv,argc,argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--locBand")) {
+			opts.localBand=atoi(GetArgv(argv,argc,argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--locIndel")) {
+			opts.localIndel=atoi(GetArgv(argv,argc,argi));
+			++argi;
+		}
 		else {
 			if (genomeFile == "") {
 				genomeFile = argv[argi];

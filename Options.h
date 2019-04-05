@@ -38,7 +38,16 @@ public:
 	int readStart;
 	int readStride;
 	bool seqan;
+	int localMatch;
+  int localMismatch;
+	int localIndel;
+	int localBand;
+
 	Options() {
+		localMatch=4;
+		localMismatch=-3;
+		localIndel=-3;
+		localBand=15;
 		readStart=0;
 		readStride=1;
 		dotPlot=false;
@@ -68,8 +77,9 @@ public:
 		mergeClusters=false;
 		NaiveDP = false;
 		seqan=false;
-		SparseDP=false;
+		SparseDP=true;
 		LookUpTable=false;
+    
 	}
 };
 #endif

@@ -1,7 +1,6 @@
 #ifndef CLUSTERING_H_
 #define CLUSTERING_H_
 #include "Options.h"
-#include "seqan/seeds.h"
 
 template<typename Tup>
 int64_t DiagonalDifference(Tup &a, Tup &b) {

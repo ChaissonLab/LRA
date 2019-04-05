@@ -14,13 +14,13 @@
 
 #include <sstream>
 #include <thread>
-#include "IndexedSeed.h"
+
 
 #include "Clustering.h"
 #include <thread>
 
 #include "AffineOneGapAlign.h"
-#include "NaiveDP.h"
+//#include "NaiveDP.h"
 #include "GlobalChain.h"
 #include "TupleOps.h"
 #include "SparseDP.h"
@@ -28,18 +28,9 @@
 #include "Merge.h"
 
 using namespace std;
-// Print results to stdout.
-typedef seqan::String<seqan::Dna> TSequence;                 // sequence type
-//typedef seqan::Infix<seqan::String<seqan::Dna> >::Type  Substring;
-typedef seqan::Infix<char* >::Type  Substring;
 
-typedef seqan::Align<Substring, seqan::ArrayGaps> TAlign;     // align type
-typedef seqan::Row<TAlign>::Type TRow;                 // gapped sequence typ
 
-typedef seqan::Align<TSequence, seqan::ArrayGaps> TSeqAlign;   
-typedef seqan::Row<TSeqAlign>::Type TSeqRow;                 // gapped sequence typ
 
-// Check(Jingwen): SwapStrand should operate on genome, because AntiDiagonalSort operates on the second.pos
 void SwapStrand(Read &read, Options &opts, GenomePairs &matches) {
 	for (int m=0; m < matches.size(); m++) {
 		matches[m].first.pos = read.length - (matches[m].first.pos + opts.globalK);
@@ -139,11 +130,8 @@ void SimpleMapQV(vector<Alignment*> &alignments) {
 	}			
 }
 
-typedef seqan::Iterator<TSeqRow>::Type TRowIterator;
-typedef char TChar;                             // character type
-
 int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, GenomePos &tStart, GenomePos &tEnd,
-							vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln) {
+										vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &options) {
 	
 	int qLen = qEnd-qStart;
 	int tLen = tEnd-tStart;
@@ -159,8 +147,8 @@ int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, 
 
 	string readSeq(&qSeq[qStart], qEnd-qStart);
 	string chromSeq(&tSeq[tStart],tEnd-tStart);
-	TSeqAlign align;
-	int score = AffineOneGapAlign(readSeq, chromSeq, 4, -4, -3, 15, aln);
+
+	int score = AffineOneGapAlign(readSeq, chromSeq, options.localMatch, options.localMismatch, options.localIndel, options.localBand, aln);
 	return score;
 }
 
@@ -362,10 +350,10 @@ void MergeOverlappingClusters(ClusterOrder &order) {
 }
 
 void RefineSubstrings(char *read,   GenomePos readSubStart, GenomePos readSubEnd, char *genome, GenomePos genomeSubStart, GenomePos genomeSubEnd, 
-							vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln) {
+											vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &opts) {
 
 	aln.blocks.clear();
-	AlignSubstrings(read, readSubStart, readSubEnd, genome, genomeSubStart, genomeSubEnd, scoreMat, pathMat, aln);
+	AlignSubstrings(read, readSubStart, readSubEnd, genome, genomeSubStart, genomeSubEnd, scoreMat, pathMat, aln, opts);
 	for (int b = 0; b < aln.blocks.size(); b++) {
 		aln.blocks[b].qPos += readSubStart;
 		aln.blocks[b].tPos += genomeSubStart;
@@ -1228,16 +1216,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 											genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex);
 
 		alignments.push_back(alignment);
-		/*
-		ofstream refc("refc.tab");
-		ofstream reft("reft.tab");
-		for (int c=0; c < refinedChains.size(); c++) {
-			for (int m=0; m < seqan::length(refinedChains[c]); m++) {
-				reft <<  seqan::beginPositionV(refinedChains[c][m]) << "\t" << 
-					seqan::beginPositionH(refinedChains[c][m]) << endl;
-			}
-		}
-		*/	
 		for (int c = 0; chainLength> 0 and  c < chainLength-1; c++) {
 			//
 			// Chain is with respect to full sequence
@@ -1286,7 +1264,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					Alignment betweenAnchorAlignment;
 					if (opts.refineLevel & REF_DP) {						
 						RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextRefinedReadStart, genome.seqs[chromIndex], 
-												curRefinedGenomeEnd, nextRefinedGenomeStart, scoreMat, pathMat, betweenAnchorAlignment);
+														 curRefinedGenomeEnd, nextRefinedGenomeStart, scoreMat, pathMat, betweenAnchorAlignment, opts);
 						alignment->blocks.insert(alignment->blocks.end(), betweenAnchorAlignment.blocks.begin(), betweenAnchorAlignment.blocks.end());
 						int b;
 						for (b=1; b < betweenAnchorAlignment.blocks.size(); b++) {
@@ -1319,7 +1297,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					assert(curRefinedGenomeEnd < genome.lengths[chromIndex]);
 					assert(nextGenomeStart < genome.lengths[chromIndex]);
 					RefineSubstrings(strands[refinedClusters[r].strand], curRefinedReadEnd, nextReadStart, genome.seqs[chromIndex], 
-												curRefinedGenomeEnd, nextGenomeStart, scoreMat, pathMat, aln);
+													 curRefinedGenomeEnd, nextGenomeStart, scoreMat, pathMat, aln, opts);
 					alignment->blocks.insert(alignment->blocks.end(), aln.blocks.begin(), aln.blocks.end());
 					aln.blocks.clear();			
 				}		
