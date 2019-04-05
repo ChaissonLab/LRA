@@ -1365,6 +1365,23 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		pthread_mutex_lock(semaphore);
 	}
 	for (int a=0; a < min(opts.bestn, (int) alignments.size()); a++ ){
+
+
+		// for debug. TODO(Jingwen): delete this later
+		if (opts.dotPlot) {
+			stringstream outNameStrm;
+			outNameStrm << baseName << ".finalalignment.dots";
+			ofstream baseDots(outNameStrm.str().c_str());
+			for (int c = 0; c < alignments[a]->blocks.size(); c++) {
+				baseDots << alignments[a]->blocks[c].qPos << "\t" 
+						 << alignments[a]->blocks[c].tPos << "\t" 
+						 << alignments[a]->blocks[c].qPos + alignments[a]->blocks[c].length << "\t" 
+						 << alignments[a]->blocks[c].tPos + alignments[a]->blocks[c].length << "\t"
+						 << a << endl;							
+			}
+			baseDots.close();
+		}	
+
 		if (opts.printFormat == 'b') {
 			alignments[a]->PrintBed(*output);
 		}
