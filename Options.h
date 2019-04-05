@@ -78,7 +78,7 @@ public:
 		NaiveDP = false;
 		seqan=false;
 		SparseDP=true;
-		LookUpTable=false;
+		LookUpTable=true;
     
 	}
 };
