@@ -47,7 +47,7 @@ const char* GetArgv(const char* argv[], int argc, int argi) {
 
 void HelpMap() {
 	cout << "Usage: lra align genome.fa reads [reads2 ...] [options]" << endl << endl;
-	cout << "   The genome should be indexed using the 'lsc index' program." << endl
+	cout << "   The genome should be indexed using the 'lra index' program." << endl
 			 << "   'reads' may be either fasta, sam, or bam, and multiple input files may be given." << endl << endl;
 	cout << "Options:" << endl
 			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam 'p' pair ." << endl
@@ -62,6 +62,7 @@ void HelpMap() {
 			 << "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
 			 << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
 			 << "	-T 	(flag)  Use log LookUpTable when gap length is larger than 501." << endl
+		         << "   -t n(int)   Use n threads (1)" << endl
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl;
 }
@@ -297,7 +298,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	}
 }
 void HelpStoreIndex() {
-	cout << "Usage: lsa index file.fa [options]" << endl
+	cout << "Usage: lra index file.fa [options]" << endl
 			 << "  Global index options " << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
 			 << "   -F (int) Maximum minimizer frequency (200)." << endl
@@ -310,7 +311,7 @@ void HelpStoreIndex() {
 }
 
 void HelpStoreGlobal() {
-	cout << "Usage: lsa index file.fa [options]" << endl
+	cout << "Usage: lra index file.fa [options]" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
 			 << "   -F (int) Maximum minimizer frequency (200)." << endl
 			 << "   -K (int) Word size" << endl
@@ -318,7 +319,7 @@ void HelpStoreGlobal() {
 	
 }
 void HelpStoreLocal() {
-	cout << "Usage: lsa local file.fa [options]" << endl
+	cout << "Usage: lra local file.fa [options]" << endl
 			 << "   -w (int) Local minimizer window size (10)." << endl
 			 << "   -f (int) Local maximum minimizer frequency (5)." << endl
 			 << "   -k (int) Local word size (10)" << endl
@@ -458,10 +459,10 @@ void RunStoreIndex(int argc, const char* argv[]) {
 
 
 void Usage() {
-	cout << "Program: lsa (long sequence alignment)" << endl;
+	cout << "Program: lra (long sequence alignment)" << endl;
 	cout << "Version: " << version << endl;
 	cout << "Contact: Mark Chaisson (mchaisso@usc.edu)" << endl << endl;
-	cout << "Usage:   lsa <command> [options]"<< endl << endl;
+	cout << "Usage:   lra <command> [options]"<< endl << endl;
 	cout << "Command: index   - Build global and local indexes on a genome." << endl;
 	cout << "         align   - Map reads using the index." << endl;
 	cout << "         global  - Build a global index." << endl;
