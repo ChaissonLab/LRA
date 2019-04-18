@@ -82,7 +82,13 @@ class LocalIndex {
 	vector<uint64_t>    seqOffsets;
 	vector<uint64_t>    tupleBoundaries;
 	uint64_t offset;
-	
+
+	void StoreLocalIndexSize(int s) {
+		if (s > 0 and s < (1 << (LOCAL_POS_BITS-1))) {
+			localIndexSize = s;
+		}
+	}
+
 	LocalIndex() { 
 		k = 10;
 		w=5; 
@@ -90,7 +96,7 @@ class LocalIndex {
 		maxFreq=5;
 		tupleBoundaries.push_back(0);
 		seqOffsets.push_back(0);
-		localIndexSize = 1 << (LOCAL_POS_BITS-1);
+		localIndexSize = min(1 << (LOCAL_POS_BITS-1), 512);
 	}
 	
 	LocalIndex( LocalIndex &init) { 
@@ -98,7 +104,7 @@ class LocalIndex {
 		w=init.w;
 		offset=0;
 		maxFreq=init.maxFreq;
-		localIndexSize = 1 << (LOCAL_POS_BITS-1);
+		localIndexSize = init.localIndexSize;
 		tupleBoundaries.push_back(0);
 		seqOffsets.push_back(0);
 	}		
@@ -107,6 +113,7 @@ class LocalIndex {
 		ofstream fout(filename.c_str(), ios::out|ios::binary);
 		fout.write((char*)&k, sizeof(int));
 		fout.write((char*)&w, sizeof(int));
+		fout.write((char*)&localIndexSize, sizeof(int));
 		int nRegions=seqOffsets.size();
 		fout.write((char*)&nRegions, sizeof(int));
 		fout.write((char*)&seqOffsets[0], sizeof(uint64_t)*seqOffsets.size());
@@ -124,6 +131,7 @@ class LocalIndex {
 		}
 		fin.read((char*)&k, sizeof(int));
 		fin.read((char*)&w, sizeof(int));
+		fin.read((char*)&localIndexSize, sizeof(int));
 		int nRegions;
 		fin.read((char*)&nRegions, sizeof(int));
 		seqOffsets.resize(nRegions);		

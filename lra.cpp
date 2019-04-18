@@ -33,6 +33,10 @@ using namespace std;
 
 const char* version="0.1-alpha";
 
+bool IsArg(const char* a) {
+	if (strlen(a) > 0 and a[0] == '-') { return true; } else { return false;}
+}
+
 bool ArgIs(const char* a, const char* b) {
 	return strcmp(a,b) == 0;
 }
@@ -105,94 +109,96 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	int w=10;
 	vector<string> allreads;
 	for (argi = 0; argi < argc; ) {
-		if (ArgIs(argv[argi], "-a")) {
-			++argi;
-			opts.storeAll=true;
-		}		
-		else if (ArgIs(argv[argi], "-W")) {
-			opts.globalW=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}		
-		else if (ArgIs(argv[argi], "-M")) {
-			opts.minClusterSize=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}		
-		else if (ArgIs(argv[argi], "-m")) {
-			opts.minRefinedClusterSize=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}		
-		else if (ArgIs(argv[argi], "-f")) {
-			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}		
-		else if (ArgIs(argv[argi], "-K")) {
-			opts.globalK=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}		
-		else if (ArgIs(argv[argi], "-H")) {
-			opts.hardClip=true;
-		}
-		else if (ArgIs(argv[argi], "-p")) {			
-			opts.printFormat = GetArgv(argv, argc, argi)[0];
-			++argi;
-		}
-		else if (ArgIs(argv[argi], "--maxDiag")) {
-			opts.maxDiag = atoi(GetArgv(argv, argc, argi));
-		}
-		else if (ArgIs(argv[argi], "-n")) {
-			opts.bestn=atoi(GetArgv(argv, argc, argi));
-		}
-		else if (ArgIs(argv[argi], "-t")) {
-			opts.nproc=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}		
-		else if (ArgIs(argv[argi], "-r")) {
-			opts.refineLevel=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}
-		else if (ArgIs(argv[argi], "--stride")) {
-			opts.readStride=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}
-		else if (ArgIs(argv[argi], "--seqan")) {
-			opts.seqan=true;
-			++argi;
-		}
-		else if (ArgIs(argv[argi], "--start")) {
-			opts.readStart=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}
+		if (IsArg(argv[argi])) {
+			if (ArgIs(argv[argi], "-a")) {
+				++argi;
+				opts.storeAll=true;
+			}		
+			else if (ArgIs(argv[argi], "-W")) {
+				opts.globalW=atoi(GetArgv(argv, argc, argi));
+				++argi;
+			}		
+			else if (ArgIs(argv[argi], "-M")) {
+				opts.minClusterSize=atoi(GetArgv(argv, argc, argi));
+				++argi;
+			}		
+			else if (ArgIs(argv[argi], "-m")) {
+				opts.minRefinedClusterSize=atoi(GetArgv(argv, argc, argi));
+				++argi;
+			}		
+			else if (ArgIs(argv[argi], "-f")) {
+				opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
+				++argi;
+			}		
+			else if (ArgIs(argv[argi], "-K")) {
+				opts.globalK=atoi(GetArgv(argv, argc, argi));
+				++argi;
+			}		
+			else if (ArgIs(argv[argi], "-H")) {
+				opts.hardClip=true;
+			}
+			else if (ArgIs(argv[argi], "-p")) {			
+				opts.printFormat = GetArgv(argv, argc, argi)[0];
+				++argi;
+			}
+			else if (ArgIs(argv[argi], "--maxDiag")) {
+				opts.maxDiag = atoi(GetArgv(argv, argc, argi));
+			}
+			else if (ArgIs(argv[argi], "-n")) {
+				opts.bestn=atoi(GetArgv(argv, argc, argi));
+			}
+			else if (ArgIs(argv[argi], "-t")) {
+				opts.nproc=atoi(GetArgv(argv, argc, argi));
+				++argi;
+			}		
+			else if (ArgIs(argv[argi], "-r")) {
+				opts.refineLevel=atoi(GetArgv(argv, argc, argi));
+				++argi;
+			}
+			else if (ArgIs(argv[argi], "--stride")) {
+				opts.readStride=atoi(GetArgv(argv, argc, argi));
+				++argi;
+			}
+			else if (ArgIs(argv[argi], "--seqan")) {
+				opts.seqan=true;
+				++argi;
+			}
+			else if (ArgIs(argv[argi], "--start")) {
+				opts.readStart=atoi(GetArgv(argv, argc, argi));
+				++argi;
+			}
 
-		else if (ArgIs(argv[argi], "-R")) {
-			opts.mergeClusters=true;
-		}
-		else if (ArgIs(argv[argi], "-N")) {
-			opts.NaiveDP = true;
-		}
-		else if (ArgIs(argv[argi], "-S")) {
-			opts.SparseDP = true;
-		}
-		else if (ArgIs(argv[argi], "-T")) {
-			opts.LookUpTable = true;
-		}
-		else if (ArgIs(argv[argi], "-o")) {
-			opts.outfile = argv[++argi];
-		}
-		else if (ArgIs(argv[argi], "-d")) {
-			opts.dotPlot = true;
-		}
+			else if (ArgIs(argv[argi], "-R")) {
+				opts.mergeClusters=true;
+			}
+			else if (ArgIs(argv[argi], "-N")) {
+				opts.NaiveDP = true;
+			}
+			else if (ArgIs(argv[argi], "-S")) {
+				opts.SparseDP = true;
+			}
+			else if (ArgIs(argv[argi], "-T")) {
+				opts.LookUpTable = true;
+			}
+			else if (ArgIs(argv[argi], "-o")) {
+				opts.outfile = argv[++argi];
+			}
+			else if (ArgIs(argv[argi], "-d")) {
+				opts.dotPlot = true;
+			}
 
-		else if (ArgIs(argv[argi], "--locMatch")) {
-			opts.localMatch=atoi(GetArgv(argv,argc,argi));
-			++argi;
-		}
-		else if (ArgIs(argv[argi], "--locBand")) {
-			opts.localBand=atoi(GetArgv(argv,argc,argi));
-			++argi;
-		}
-		else if (ArgIs(argv[argi], "--locIndel")) {
-			opts.localIndel=atoi(GetArgv(argv,argc,argi));
-			++argi;
+			else if (ArgIs(argv[argi], "--locMatch")) {
+				opts.localMatch=atoi(GetArgv(argv,argc,argi));
+				++argi;
+			}
+			else if (ArgIs(argv[argi], "--locBand")) {
+				opts.localBand=atoi(GetArgv(argv,argc,argi));
+				++argi;
+			}
+			else if (ArgIs(argv[argi], "--locIndel")) {
+				opts.localIndel=atoi(GetArgv(argv,argc,argi));
+				++argi;
+			}
 		}
 		else {
 			if (genomeFile == "") {
@@ -215,15 +221,18 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	Header header;
 	vector<GenomeTuple> genomemm;
 	LocalIndex glIndex;
-
+	
 
 	if (ReadIndex(indexFile, genomemm, header, opts) == 0) {
 		StoreIndex(genomeFile, genomemm, header, opts);
 	}
 	
 	if (glIndex.Read(genomeFile+".gli") == 0) {
+		glIndex.StoreLocalIndexSize(opts.localIndexSize);
+		cerr << "set lis " << opts.localIndexSize << endl;
 		glIndex.IndexFile(genomeFile);
 	}
+	cout << "glIndex local size " << glIndex.localIndexSize << endl;
 	GenomePos mm=0;
 	for(GenomePos mi =0; mi < genomemm.size(); mi++) {
 		if (genomemm[mi].pos > mm) {
@@ -306,6 +315,7 @@ void HelpStoreIndex() {
 			 << "   -w (int) Local minimizer window size (10)." << endl
 			 << "   -f (int) Local maximum minimizer frequency (5)." << endl
 			 << "   -k (int) Local word size (10)" << endl
+			 << "   -s (int) Local index size, should be <= 4^word size" << endl
 			 << "   -h Print help." << endl;
 }
 
@@ -322,6 +332,7 @@ void HelpStoreLocal() {
 			 << "   -w (int) Local minimizer window size (10)." << endl
 			 << "   -f (int) Local maximum minimizer frequency (5)." << endl
 			 << "   -k (int) Local word size (10)" << endl
+			 << "   -s (int) Local index size, should be <= 4^word size" << endl		
 			 << "   -h Print help." << endl;
 }
 
@@ -334,7 +345,7 @@ void RunStoreLocal(int argc, const char* argv[],
 	opts.localK=glIndex.k;
 	for (argi = 0; argi < argc; ) {
 		if (ArgIs(argv[argi], "-h")) {
-			HelpStoreLocal();
+			HelpStoreIndex();
 			exit(1);
 		}
 		else if (ArgIs(argv[argi], "-k")) {
@@ -349,6 +360,10 @@ void RunStoreLocal(int argc, const char* argv[],
 			opts.localMaxFreq=atoi(argv[++argi]);
 			glIndex.maxFreq=opts.localMaxFreq;
 		}
+		else if (ArgIs(argv[argi], "-s")) {
+			opts.localIndexSize=atoi(argv[++argi]);
+		}
+
 		else if (ArgIs(argv[argi], "-K") or ArgIs(argv[argi], "-W") or ArgIs(argv[argi], "-F")) {
 			argi+=2;
 			continue;
@@ -365,10 +380,10 @@ void RunStoreLocal(int argc, const char* argv[],
 		++argi;
 	}
 	if (genome == "") {
-		HelpStoreGlobal();
+		HelpStoreIndex();
 		exit(1);
 	}
-
+	glIndex.StoreLocalIndexSize(opts.localIndexSize);
 	glIndex.IndexFile(genome);
 	glIndex.Write(genome + ".gli");
 }
@@ -383,51 +398,48 @@ void RunStoreGlobal(int argc, const char* argv[],
 	bool compress=false;
 	opts.globalW=10;
 	for (argi = 0; argi < argc; ) {
-		if (ArgIs(argv[argi], "-W")) {
-			++argi;
-			opts.globalW = atoi(argv[argi]);
-		}
-		else if (ArgIs(argv[argi], "-F")) {
-			++argi;
-			opts.globalMaxFreq = atoi(argv[argi]);
-		}		
-		else if (ArgIs(argv[argi], "-i")) {
-			++argi;
-			indexFile=argv[argi];
-		}
-		else if (ArgIs(argv[argi], "-c")) {
-			cerr << "WARNING: Compressing index" << endl;
-			compress = true;
-		}
-		else if (ArgIs(argv[argi], "-p")) {
-			++argi;
-			printIndex = true;
-		}
-		else if (ArgIs(argv[argi], "-K")) {
-			++argi;
-			opts.globalK=atoi(argv[argi]);
-		}		
-		else if (ArgIs(argv[argi], "-k") or ArgIs(argv[argi], "-w") or ArgIs(argv[argi], "-f")) {
-			argi+=2;
-			continue;
-		}
-		else if (ArgIs(argv[argi], "-h")) {
-			++argi;
-			HelpStoreGlobal();
-			exit(0);
-		}		
-
-		else if (strlen(argv[argi]) > 0 && argv[argi][0] == '-') {
-			HelpStoreGlobal();
-			cout << "Invalid option " << argv[argi] << endl;
-			exit(1);
+		if (IsArg(argv[argi])) {
+			if (ArgIs(argv[argi], "-W")) {
+				++argi;
+				opts.globalW = atoi(argv[argi]);
+			}
+			else if (ArgIs(argv[argi], "-F")) {
+				++argi;
+				opts.globalMaxFreq = atoi(argv[argi]);
+			}		
+			else if (ArgIs(argv[argi], "-i")) {
+				++argi;
+				indexFile=argv[argi];
+			}
+			else if (ArgIs(argv[argi], "-c")) {
+				cerr << "WARNING: Compressing index" << endl;
+				compress = true;
+			}
+			else if (ArgIs(argv[argi], "-p")) {
+				++argi;
+				printIndex = true;
+			}
+			else if (ArgIs(argv[argi], "-K")) {
+				++argi;
+				opts.globalK=atoi(argv[argi]);
+			}		
+			else if (ArgIs(argv[argi], "-k") or ArgIs(argv[argi], "-w") or ArgIs(argv[argi], "-f") or ArgIs(argv[argi], "-s")) {
+				argi+=2;
+				continue;
+			}
+			else if (ArgIs(argv[argi], "-h")) {
+				++argi;
+				HelpStoreIndex();
+				exit(0);
+			}		
 		}
 		else {
 			genome = argv[argi];
 			cerr << "genome " << genome << endl;
 		}
 		++argi;
-	}
+	}			
+	
 	if (genome == "") {
 		HelpStoreGlobal();
 		exit(1);
@@ -450,7 +462,6 @@ void RunStoreIndex(int argc, const char* argv[]) {
 	vector<GenomeTuple> minimizers;
 	Header header;
 	Options opts;
-
 	RunStoreGlobal(argc, argv, minimizers, header, opts);
   RunStoreLocal(argc, argv, glIndex, opts);
 }

@@ -52,7 +52,7 @@ tgc: TestGlobalChain.cpp GlobalChain.h Fragment.h BasicEndpoint.h PrioritySearch
 	$(CPP) -g TestGlobalChain.cpp -o tgc
 
 lra: lra.o
-	$(CPP) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
+	$(CPP) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -Wl,-rpath=$(PWD)/htslib/lib -lpthread -o $@
 
 alchemy2: Alchemy2.o
 	$(CPP) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@

@@ -13,6 +13,7 @@ public:
 	int localW;
 	int globalMaxFreq;
 	int localMaxFreq;
+	int localIndexSize;
 	int maxDiag;
 	int cleanMaxDiag;
 	int minClusterSize;
@@ -49,6 +50,7 @@ public:
 		localMismatch=-3;
 		localIndel=-3;
 		localBand=15;
+		localIndexSize=0;
 		readStart=0;
 		readStride=1;
 		dotPlot=true;

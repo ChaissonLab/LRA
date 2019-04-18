@@ -806,6 +806,11 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		GenomePos chromEndOffset   = genome.header.GetNextOffset(genomeClusterEnd);
 		// Search region starts in window, or beginning of chromosome
 		GenomePos wts, wte;
+		//
+		// Expand the region that is refined to +/- a window size. This
+		// allows for matches that are not at the beginning or ending of a true match due
+		// to sequence errors or variation.
+		//
 		if ( chromOffset + opts.window > genomeClusterStart ) {
 			wts = chromOffset;
 		}
