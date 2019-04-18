@@ -40,7 +40,7 @@ public:
 	int readStride;
 	bool seqan;
 	int localMatch;
-  int localMismatch;
+ 	int localMismatch;
 	int localIndel;
 	int localBand;
 
@@ -64,7 +64,7 @@ public:
 		minDiagCluster=20;
 		minClusterSize =20;
 		minRefinedClusterSize = 40;
-		window=50;
+		window=100;
 		mergeGapped=false;
 		viewPairwise=false;
 		hardClip=false;

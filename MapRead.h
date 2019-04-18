@@ -401,12 +401,23 @@ void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<pair<Geno
 }
 
 
-void traceback(vector<int> & clusterchain, int & i, vector<int> & clusters_predecessor, vector<bool> & used) {
+void traceback(vector<int> & clusterchain, int & i, vector<int> & clusters_predecessor, vector<bool> & used, int & m) {
+
 	clusterchain.push_back(i);
 	used[i] = 1;
-	if (clusters_predecessor[i] != -1 and used[clusters_predecessor[i]] != 1) {
-		traceback(clusterchain, clusters_predecessor[i], clusters_predecessor, used);
+	cerr << "push back " << i << endl;
+
+	if (clusters_predecessor[i] != -1) {
+		if (used[clusters_predecessor[i]] != 1) {
+			traceback(clusterchain, clusters_predecessor[i], clusters_predecessor, used, m);			
+		}
+		else {
+			for (int lr = 0; lr < clusterchain.size(); ++lr) {
+				used[clusterchain[lr]] = 0;
+			}			
+		}
 	}
+	else ++m;
 }
 
 
@@ -524,16 +535,21 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				if(clusterOrder[c].Overlaps(clusterOrder[s], 0.8) and clusterOrder[c].OverlapsOnRead(read.length, 0.7) 
 					and clusterOrder[s].OverlapsOnRead(read.length, 0.7)) {++repetitivenum[c];}
 
-				if (clusterOrder[s].qStart < clusterOrder[c].qStart and  clusterOrder[s].tStart < clusterOrder[c].tStart 
-						and !clusterOrder[c].Encompasses(clusterOrder[s], 0.2) and clusterOrder[c].strand == clusterOrder[s].strand) {
+				int gap = abs((int)(clusterOrder[c].qStart - clusterOrder[c].tStart) - (int)(clusterOrder[s].qEnd - clusterOrder[s].tEnd));
+				if ( (clusterOrder[s].qEnd - (clusterOrder[s].qEnd - clusterOrder[s].qStart)/5) < clusterOrder[c].qStart 
+						and  (clusterOrder[s].tEnd - (clusterOrder[s].tEnd - clusterOrder[s].tStart)/5) < clusterOrder[c].tStart 
+						and !clusterOrder[c].Encompasses(clusterOrder[s], 0.4) and clusterOrder[c].strand == clusterOrder[s].strand
+						and gap < opts.maxGap) {
 
-					int gap = abs((int)(clusterOrder[c].qStart - clusterOrder[c].tStart) - (int)(clusterOrder[s].qEnd - clusterOrder[s].tEnd));
 					float objective;
 					if (gap < 501)  {
-						objective = clusters_value[c] + clusters_value[s] - 12*log((float)gap);
+						//objective = clusters_value[c] + clusters_value[s] - log((float)gap) - 0.5*((float)gap);
+						objective = clusters_value[c] + clusters_value[s] - 0.5*((float)gap);
+
 					}
 					else {
-						objective = clusters_value[c] + clusters_value[s] - 12*LookUpTable[(int)floor((gap-501)/5)];
+						//objective = clusters_value[c] + clusters_value[s] - LookUpTable[(int)floor((gap-501)/5)] - 0.5*((float)gap);
+						objective = clusters_value[c] + clusters_value[s] - 0.5*((float)gap);
 					}				
 					if (objective >= clusters_value[c]) {
 						clusters_value[c] = objective;
@@ -554,9 +570,13 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 	vector<bool> used(clusters.size(), 0);
 
 	// traceback 
-	for (int r = 0; r <= repetitive; ++r) {
-		clusterchain[r].clear();
-		traceback(clusterchain[r], clusters_valueOrder.index[r], clusters_predecessor, used);
+	for (int r= 0, m = 0; m <= repetitive; ++r) {
+		cerr << "r: " << r << "  m: " << m << endl;
+		clusterchain[m].clear();
+		if (used[clusters_valueOrder.index[r]] != 1) {
+			cerr << " used[" << clusters_valueOrder.index[r] << "] != 1" << endl;
+			traceback(clusterchain[m], clusters_valueOrder.index[r], clusters_predecessor, used, m);
+		}
 	}
 	used.clear();
 
@@ -616,6 +636,11 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			}			
 		}
 	}		
+
+	// delete clusters with small size
+	for (int c= 0; c < clusterchain.size(); ++c) {
+		if (((float)(clusters[clusterchain[c][0]].qEnd - clusters[clusterchain[c][0]].qStart))/read.length < 0.5) ind[clusterchain[c][0]] = 0;
+	}
 
 	int cl=0;
 	int cn;
