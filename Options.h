@@ -14,6 +14,7 @@ public:
 	int globalMaxFreq;
 	int localMaxFreq;
 	int maxDiag;
+	int cleanMaxDiag;
 	int minClusterSize;
 	int window;
 	bool dotPlot;
@@ -39,7 +40,7 @@ public:
 	int readStride;
 	bool seqan;
 	int localMatch;
-  int localMismatch;
+ 	int localMismatch;
 	int localIndel;
 	int localBand;
 
@@ -50,7 +51,7 @@ public:
 		localBand=15;
 		readStart=0;
 		readStride=1;
-		dotPlot=false;
+		dotPlot=true;
 		globalK=17;
 		globalW=10; 
 		localK=7;
@@ -58,11 +59,12 @@ public:
 		bestn=1;
 		globalMaxFreq=20;
 		localMaxFreq=30;
-		maxDiag=200;
-		minDiagCluster=2;
+		maxDiag=500;
+		cleanMaxDiag=50;
+		minDiagCluster=20;
 		minClusterSize =20;
 		minRefinedClusterSize = 40;
-		window=1000;
+		window=100;
 		mergeGapped=false;
 		viewPairwise=false;
 		hardClip=false;
