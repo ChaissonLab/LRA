@@ -61,7 +61,7 @@ public:
 		localMaxFreq=30;
 		maxDiag=500;
 		cleanMaxDiag=50;
-		minDiagCluster=20;
+		minDiagCluster=10;
 		minClusterSize =20;
 		minRefinedClusterSize = 40;
 		window=100;
@@ -75,7 +75,7 @@ public:
 		maxCandidates=3;
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
-		maxGap=10000;
+		maxGap=1000;
 		mergeClusters=false;
 		NaiveDP = false;
 		seqan=false;

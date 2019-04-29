@@ -177,7 +177,7 @@ class LocalIndex {
 		
 		for (int i = 0; i < nIndex; i++) {	
 			locMinimizers.clear();
-			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos) seqLen, (GenomePos) seqPos+localIndexSize) - seqPos, k, w, locMinimizers, false );
+			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos) seqLen, (GenomePos) seqPos+localIndexSize) - seqPos, k, w, locMinimizers); // canonical ==false
 			//
 			// Sort minimzers by tuple value.
 			//

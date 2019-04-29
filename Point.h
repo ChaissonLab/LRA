@@ -7,8 +7,9 @@ class Point
 {
 public:
 
-	Pair se; //store the start and end of a point
-	bool ind; // ind = 1 means this is a start
+	Pair se; //store the coordinates of a point (q, t)
+	bool ind; // ind = 1 means this is a start; ind = 0 means this is an end
+	bool inv; // inv = 1 means this is forward directiion; inv = 0 means this is a backward direction
 	unsigned int frag_num; // store the index of the fragment that contains this point
 	Point(unsigned int & frag_num1);
 	Point() {};

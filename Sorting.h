@@ -137,7 +137,6 @@ int CartesianTargetUpperBound(typename vector<pair<Tup, Tup> >::iterator  begin,
 }
 
 
-// From Jingwen
 template<typename T> 
 class SortByRowOp {
  public:
@@ -149,7 +148,7 @@ class SortByRowOp {
 			return a.se.second < b.se.second; 
 		}
 		else {
-			return a.ind < b.ind;
+			return a.ind < b.ind; 
 		}
 	}
 };

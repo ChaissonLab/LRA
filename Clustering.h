@@ -3,10 +3,18 @@
 #include "Options.h"
 #include <vector>
 template<typename Tup>
-int64_t DiagonalDifference(Tup &a, Tup &b) {
+int64_t DiagonalDifference(Tup &a, Tup &b, int strand=0) {
+	if (strand == 0) {
 		int64_t aDiag = a.first.pos - a.second.pos, 
 			bDiag= b.first.pos - b.second.pos;
-		return aDiag - bDiag;
+		return aDiag - bDiag;		
+	}
+	else {
+		int64_t aDiag = a.first.pos + a.second.pos, 
+			bDiag= b.first.pos + b.second.pos;
+		return aDiag - bDiag;				
+	}
+
 }
 template<typename Tup>
 int64_t GapDifference(Tup &a, Tup &b) {
@@ -22,20 +30,20 @@ int DiagonalDrift(int curDiag, Tup &t) {
 }
 
 template<typename Tup>
-void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int diagOrigin=-1, int diagDrift=-1) {
+void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (matches.size() == 0) {
 		return;
 	}
 	
 	vector<bool> onDiag(matches.size(), false);
 	
-	if (matches.size() > 1 and abs(DiagonalDifference(matches[0], matches[1])) < opts.cleanMaxDiag and 
-				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[0]) < diagDrift )) {
+	if (matches.size() > 1 and abs(DiagonalDifference(matches[0], matches[1], strand)) < opts.cleanMaxDiag and 
+				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[0]) < diagDrift )) { // TODO(Jingwen): Maybe change DiagonalDrift to include cases where strand=1
 		onDiag[0] = true;
 	}
 	int m;
 	for (int i = 1; i < matches.size() ; i++) {
-		if (abs(DiagonalDifference(matches[i], matches[i-1])) < opts.cleanMaxDiag and 
+		if (abs(DiagonalDifference(matches[i], matches[i-1], strand)) < opts.cleanMaxDiag and 
 				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i]) < diagDrift )) {	
 			onDiag[i] = true;
 		}
@@ -242,11 +250,12 @@ class ClusterOrder {
 	int operator()(const int i, const int j) {
 			assert((*clusters)[i].strand == 0 or (*clusters)[i].strand == 1);
 			assert((*clusters)[j].strand == 0 or (*clusters)[j].strand == 1);
-
+		/*
 		if ((*clusters)[i].strand != (*clusters)[j].strand) {
 			return (*clusters)[i].strand < (*clusters)[j].strand;
 		}
-		else if ((*clusters)[i].tStart != (*clusters)[j].tStart) {
+		*/
+		if ((*clusters)[i].tStart != (*clusters)[j].tStart) {
 			return (*clusters)[i].tStart < (*clusters)[j].tStart;
 		}
 		else {
@@ -295,9 +304,9 @@ class Clusters_valueOrder {
 
 
 template<typename Tup>
-void PrintDiagonal(vector<pair<Tup, Tup> > &matches) {
+void PrintDiagonal(vector<pair<Tup, Tup> > &matches, int strand=0) {
 	for (int m=1; m < matches.size(); m++) {
-		int64_t d=DiagonalDifference(matches[m], matches[m-1]);
+		int64_t d=DiagonalDifference(matches[m], matches[m-1], strand);
 		cout << matches[m-1].first.pos << "\t" << matches[m].first.pos << "\t" << matches[m-1].second.pos << "\t" << matches[m].second.pos << "\t" << d << endl;
 	}
 }
@@ -318,7 +327,7 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &c
 			tEnd=matches[cs].second.pos + opts.globalK;
 		int diff=0;
 		while (ce < matches.size() and 
-					 abs(DiagonalDifference(matches[ce], matches[ce-1])) < opts.maxDiag  and 
+					 abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) < opts.maxDiag  and 
 					 (opts.maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < opts.maxGap) ) {
 
 			qStart = min(qStart, matches[ce].first.pos);
