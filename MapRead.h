@@ -548,12 +548,10 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 	if (clusters.size() > 1) {
 		for (int c = 1; c < clusters.size(); ++c) {
-			cerr << "c: " << c << endl;
 
 			clusters_value[c] = (float)(max(clusterOrder[c].qEnd - clusterOrder[c].qStart, clusterOrder[c].tEnd - clusterOrder[c].tStart));
 
 			for (int s = 0; s <= c - 1; ++s) {
-				cerr << "s: " << s << endl;
 				if(clusterOrder[c].Overlaps(clusterOrder[s], 0.8) and clusterOrder[c].OverlapsOnRead(read.length, 0.7) 
 					and clusterOrder[s].OverlapsOnRead(read.length, 0.7)) {++repetitivenum[c];}
 
@@ -563,7 +561,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 						and !clusterOrder[c].Encompasses(clusterOrder[s], 0.4) //and clusterOrder[c].strand == clusterOrder[s].strand
 						and gap < opts.maxGap) {
 
-					cerr << "pass the if " << endl;
 					float objective;
 					if (gap < 501)  {
 						//objective = clusters_value[c] + clusters_value[s] - log((float)gap) - 0.5*((float)gap);
@@ -587,17 +584,17 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 	int repetitive = *max_element(repetitivenum.begin(), repetitivenum.end()); //repetitive+1 shows the number of chains we want to trace back
 
-	cerr << "the number of chains we want to trace back: " << repetitive+1 << endl;
+	//cerr << "the number of chains we want to trace back: " << repetitive+1 << endl;
 	vector<vector<int>> clusterchain(repetitive+1);
 	Clusters_valueOrder clusters_valueOrder(&clusters_value); // sort clusters_value in descending order
 	vector<bool> used(clusters.size(), 0);
 
 	// traceback 
 	for (int r= 0, m = 0; m <= repetitive; ++r) {
-		cerr << "r: " << r << "  m: " << m << endl;
+		//cerr << "r: " << r << "  m: " << m << endl;
 		clusterchain[m].clear();
 		if (used[clusters_valueOrder.index[r]] != 1) {
-			cerr << " used[" << clusters_valueOrder.index[r] << "] != 1" << endl;
+			//cerr << " used[" << clusters_valueOrder.index[r] << "] != 1" << endl;
 			traceback(clusterchain[m], clusters_valueOrder.index[r], clusters_predecessor, used, m);
 		}
 	}
