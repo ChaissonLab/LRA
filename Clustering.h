@@ -229,8 +229,8 @@ class ClusterOrder {
  public:
 	vector<Cluster> *clusters;
 	vector<int> index;
-	
-  ClusterOrder(vector<Cluster> *c) : clusters(c) {
+
+  	ClusterOrder(vector<Cluster> *c) : clusters(c) {
 		index.resize(clusters->size());
 		for (int i=0;i<index.size();i++) { index[i]=i;}
 		Sort();
@@ -271,15 +271,19 @@ class Clusters_valueOrder {
 	vector<float> *clusters_value;
 	vector<int> index;
 	
-  Clusters_valueOrder(vector<float> *c) : clusters_value(c) {
+ 	Clusters_valueOrder(vector<float> *c) : clusters_value(c) {
 		index.resize((*clusters_value).size());
 		for (int i=0;i<index.size();i++) { index[i]=i;}
 		Sort();
 	}
-	
+
 	int operator()(const int i, const int j) {
-		return (*clusters_value)[i] >= (*clusters_value)[j];			
+		assert(i < clusters_value->size());
+		assert(j < clusters_value->size());
+		return (*clusters_value)[i] > (*clusters_value)[j];			
 	}
+
+
 	void Sort() {
 		sort(index.begin(), index.end(), *this);
 	}
