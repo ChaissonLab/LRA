@@ -39,33 +39,35 @@ HEADERS=MinCount.h \
   NaiveDP.h \
   SparseDP.h
 
-CPP=g++ -std=c++14 
+CXX=g++ -std=c++14 
 
 htslib/lib/libhts.a:
 	cd htslib && autoheader && autoconf && ./configure --disable-s3 --disable-lzma --disable-bz2 --prefix=$(PWD)/htslib/ && make -j 4 && make install
 
 tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
-	$(CPP) -g TestAffineOneGapAlign.cpp -o tag 
+	$(CXX) -g TestAffineOneGapAlign.cpp -o tag 
 # -D _MAT_PRINT_
 
 tgc: TestGlobalChain.cpp GlobalChain.h Fragment.h BasicEndpoint.h PrioritySearchTree.h
-	$(CPP) -g TestGlobalChain.cpp -o tgc
+	$(CXX) -g TestGlobalChain.cpp -o tgc
 
 lra: lra.o
-	$(CPP) $(STATIC) $(CCOPTS) $^  -L $(PWD)/htslib/lib -Wl,-rpath,$(PWD)/htslib/lib -lhts -lz -lpthread -o $@
+	$(CXX) $(STATIC) $(CCOPTS) $^ -L $(PWD)/htslib/lib  -lhts -lz -lpthread -o $@ -Wl,-rpath,$(PWD)/htslib/lib
 
 alchemy2: Alchemy2.o
-	$(CPP) $(STATIC) $(CCOPTS) $^  -L htslib/lib -Wl,-rpath,htslib/lib -lhts -lz -lpthread -o $@
+	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -Wl,-rpath,htslib/lib -lhts -lz -lpthread -o $@
 
 qti: QueryTime.o
-	$(CPP) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
+	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
 lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a
-	$(CPP) $(CCOPTS) -c  -I htslib/include -I seqan/include  lra.cpp
+	$(CXX) $(CCOPTS) -c  -I htslib/include -I seqan/include  lra.cpp
 
 Alchemy2.o: Alchemy2.cpp  htslib/lib/libhts.a
-	$(CPP) $(CCOPTS) -c  -I htslib/include -I seqan/include  Alchemy2.cpp
+	$(CXX) $(CCOPTS) -c  -I htslib/include -I seqan/include  Alchemy2.cpp
 
+QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
+	$(CXX) $(CCOPTS) -c  -I htslib/include -I seqan/include  QueryTime.cpp
 
 clean:
 	rm -f lra lra.o

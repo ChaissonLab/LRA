@@ -375,14 +375,14 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 
 	}
 
-
+/*
 	stringstream outNameStrm;
 	outNameStrm << "AnchorEfficiency.txt";
 	ofstream baseDots;
 	baseDots.open(outNameStrm.str().c_str(), std::ios::app);
 	baseDots << v.size() << "\t" << matches.size() << endl;
 	baseDots.close();
-
+*/
 	
 }
 

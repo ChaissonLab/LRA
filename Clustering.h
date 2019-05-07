@@ -1,7 +1,7 @@
 #ifndef CLUSTERING_H_
 #define CLUSTERING_H_
 #include "Options.h"
-
+#include <vector>
 template<typename Tup>
 int64_t DiagonalDifference(Tup &a, Tup &b) {
 		int64_t aDiag = a.first.pos - a.second.pos, 
@@ -29,14 +29,14 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int diagO
 	
 	vector<bool> onDiag(matches.size(), false);
 	
-	if (matches.size() > 1 and abs(DiagonalDifference(matches[0], matches[1])) < opts.maxDiag and 
+	if (matches.size() > 1 and abs(DiagonalDifference(matches[0], matches[1])) < opts.cleanMaxDiag and 
 				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[0]) < diagDrift )) {
 		onDiag[0] = true;
 	}
 	int m;
 	for (int i = 1; i < matches.size() ; i++) {
-		if (abs(DiagonalDifference(matches[i], matches[i-1])) < opts.maxDiag and 
-				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i]) < diagDrift ) ) {	
+		if (abs(DiagonalDifference(matches[i], matches[i-1])) < opts.cleanMaxDiag and 
+				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i]) < diagDrift )) {	
 			onDiag[i] = true;
 		}
 	}
@@ -92,7 +92,7 @@ class ClusterCoordinates {
 		if (b.qStart >= qStart and b.qStart < qEnd) {
 			qovp=min(qEnd, b.qEnd)-b.qStart;
 		}
-		else if (b.qEnd > qStart and b.qEnd < qEnd) {
+		else if (b.qEnd > qStart and b.qEnd <= qEnd) {
 			qovp=b.qEnd-max(qStart, b.qStart);
 		}
 		else if (b.qStart <= qStart and b.qEnd > qEnd) {
@@ -102,13 +102,13 @@ class ClusterCoordinates {
 		if (b.tStart >= tStart and b.tStart < tEnd) {
 			tovp=min(tEnd, b.tEnd)-b.tStart;
 		}
-		else if (b.tEnd > tStart and b.tEnd < tEnd) {
+		else if (b.tEnd > tStart and b.tEnd <= tEnd) {
 			tovp=b.tEnd-max(tStart, b.tStart);
 		}
 		else if (b.tStart <= tStart and b.tEnd > tEnd) {
 			tovp=tEnd-tStart;
 		}
-		return (((float)qovp)/(qEnd-qStart) > frac) and ((float)tovp / (tEnd-tStart) > frac);
+		return (((float)qovp)/(qEnd-qStart) > frac) or ((float)tovp / (tEnd-tStart) > frac);
 	}
 
 	bool Overlaps(const ClusterCoordinates &b, float frac) const {
@@ -124,9 +124,47 @@ class ClusterCoordinates {
 			ovp=qEnd-qStart;
 		}
 		float denomA=qEnd-qStart;
-		float denomB=b.qEnd- b.qStart;
-		if ( max(ovp/denomA, ovp/denomB)  > frac) { return true; }
+		float denomB=b.qEnd-b.qStart;
+		if ( max(ovp/denomA, ovp/denomB) > frac) { return true; }
 		else { return false; }
+	}
+
+	int Overlaps(const ClusterCoordinates &b) const {
+		int ovp=0;
+
+		if (b.qStart >= qStart and b.qStart < qEnd) {
+			ovp=min(qEnd, b.qEnd)-b.qStart;
+		}
+		else if (b.qEnd > qStart and b.qEnd < qEnd) {
+			ovp=b.qEnd-max(qStart, b.qStart);
+		}
+		else if (b.qStart <= qStart and b.qEnd > qEnd) {
+			ovp=qEnd-qStart;
+		}
+		return ovp;
+	}
+
+	float OverlapsRate(const ClusterCoordinates &b) const {
+		int ovp=0;
+
+		if (b.qStart >= qStart and b.qStart < qEnd) {
+			ovp=min(qEnd, b.qEnd)-b.qStart;
+		}
+		else if (b.qEnd > qStart and b.qEnd < qEnd) {
+			ovp=b.qEnd-max(qStart, b.qStart);
+		}
+		else if (b.qStart <= qStart and b.qEnd > qEnd) {
+			ovp=qEnd-qStart;
+		}
+		float denomA=qEnd-qStart;
+		float denomB=b.qEnd-b.qStart;
+		return max(ovp/denomA, ovp/denomB);
+	}
+
+	bool OverlapsOnRead(int & ReadLength, float frac) const {
+
+		if (((float)(qEnd - qStart))/ReadLength > frac) {return true;}
+		else { return false;}
 	}
 
  ClusterCoordinates(int s,int e) : start(s), end(e) {
@@ -223,8 +261,8 @@ class ClusterOrder {
  public:
 	vector<Cluster> *clusters;
 	vector<int> index;
-	
-  ClusterOrder(vector<Cluster> *c) : clusters(c) {
+
+  	ClusterOrder(vector<Cluster> *c) : clusters(c) {
 		index.resize(clusters->size());
 		for (int i=0;i<index.size();i++) { index[i]=i;}
 		Sort();
@@ -258,6 +296,40 @@ class ClusterOrder {
 	}
 };
 
+
+
+class Clusters_valueOrder {
+ public:
+	vector<float> *clusters_value;
+	vector<int> index;
+	
+ 	Clusters_valueOrder(vector<float> *c) : clusters_value(c) {
+		index.resize((*clusters_value).size());
+		for (int i=0;i<index.size();i++) { index[i]=i;}
+		Sort();
+	}
+
+	int operator()(const int i, const int j) {
+		assert(i < clusters_value->size());
+		assert(j < clusters_value->size());
+		return (*clusters_value)[i] > (*clusters_value)[j];			
+	}
+
+
+	void Sort() {
+		sort(index.begin(), index.end(), *this);
+	}
+	float & operator[](int i) {
+		return (*clusters_value)[index[i]];
+	}
+	int size() {
+		return index.size();
+	}
+};
+
+
+
+
 template<typename Tup>
 void PrintDiagonal(vector<pair<Tup, Tup> > &matches) {
 	for (int m=1; m < matches.size(); m++) {
@@ -268,38 +340,45 @@ void PrintDiagonal(vector<pair<Tup, Tup> > &matches) {
 		
 
 template<typename Tup>
-void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &clusters, Options &opts, bool lite, int strand=0) {
+void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &clusters, Options &opts, int s, int e, bool rough, bool lite, int strand=0) {
+	int maxGap = -1;
+	if (rough == false) { maxGap = opts.maxGapBtwnAnchors;} 
 	int i;
-	int cs = 0, ce =0;
-	cs = 0;
+	int cs = s, ce =e;
+	cs = s;
 	int64_t dd,absdd;
 	
-	while (cs < matches.size()) {
+	while (cs < e) {
 		ce = cs+1;
 		GenomePos qStart=matches[cs].first.pos, 
 			qEnd=matches[cs].first.pos + opts.globalK, 
 			tStart=matches[cs].second.pos, 
 			tEnd=matches[cs].second.pos + opts.globalK;
 		int diff=0;
-		while (ce < matches.size() and 
-					 abs(DiagonalDifference(matches[ce], matches[ce-1])) < opts.maxDiag  and 
-					 (opts.maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < opts.maxGap) ) {
+		// (TODO)Jingwen: Delete (opts.maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < opts.maxGap) in the below
+		while (ce < e and abs(DiagonalDifference(matches[ce], matches[ce-1])) < opts.maxDiag and (maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < maxGap)) {
+
 			qStart = min(qStart, matches[ce].first.pos);
 			qEnd   = max(qEnd, matches[ce].first.pos + opts.globalK);
 			tStart = min(tStart, matches[ce].second.pos);
 			tEnd   = max(tEnd, matches[ce].second.pos + opts.globalK);
 			ce++;
-			if (ce < matches.size()) {
+			if (ce < e) {
 				diff = GapDifference(matches[ce], matches[ce-1]);
 			}
 
 		}			
 		if (ce - cs >= opts.minClusterSize) {
-			if (lite == false ) {
-				clusters.push_back(Cluster(cs,ce, qStart, qEnd, tStart, tEnd, strand, matches.begin() + cs, matches.begin()+ce));
+			if (rough == true) {
+				clusters.push_back(Cluster(cs, ce));
 			}
 			else {
-				clusters.push_back(Cluster(cs,ce, qStart, qEnd, tStart, tEnd, strand));
+				if (lite == false ) {
+					clusters.push_back(Cluster(cs,ce, qStart, qEnd, tStart, tEnd, strand, matches.begin() + cs, matches.begin()+ce));
+				}
+				else {
+					clusters.push_back(Cluster(cs,ce, qStart, qEnd, tStart, tEnd, strand));
+				}
 			}
 		}
 		cs=ce;
