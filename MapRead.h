@@ -25,7 +25,6 @@
 #include "GlobalChain.h"
 #include "TupleOps.h"
 #include "SparseDP.h"
-#include "MergeSplit.h"
 #include "Merge.h"
 
 using namespace std;
@@ -459,9 +458,39 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 
 	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, forMatches, revMatches);
+	
+	if (opts.dotPlot) {
+		ofstream clust("for-matches0.dots");
+		for (int m=0; m < forMatches.size(); m++) {
+			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK << "\t0\t0"<<endl;
+		}
+		clust.close();
+		ofstream rclust("rev-matches0.dots");
+		for (int m=0; m < revMatches.size(); m++) {
+			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos << "\t" << opts.globalK << "\t0\t0"<<endl;
+		}
+		rclust.close();
+
+	}
+
 
 
 	CleanOffDiagonal(forMatches, opts);
+	vector<Cluster> clusters;
+	vector<Cluster> roughclusters;
+	int forwardStrand=0;
+	// max.diag must be large enough for the following function "StoreDiagonalClusters". 
+	// Otherwise fragments on the same line (line with little curve) might end up in several clusters[i], instead of one clusters[i]
+	StoreDiagonalClusters(forMatches, roughclusters, opts, 0, forMatches.size(), true, false, forwardStrand); // rough == true means only storing "start and end" in every clusters[i]
+
+	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize());
+	SwapStrand(read, opts, revMatches);
+	CleanOffDiagonal(revMatches, opts);
+	//vector<Cluster> revClusters;
+	vector<Cluster> revroughClusters;
+	
+	int reverseStrand=1;
+	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), true, false, reverseStrand);
 
 	if (opts.dotPlot) {
 		ofstream clust("for-matches.dots");
@@ -475,19 +504,31 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		}
 		rclust.close();
 
+		ofstream wclust("roughclusters-matches.dots");
+		for (int m=0; m < roughclusters.size(); m++) {
+			for (int c = roughclusters[m].start; c < roughclusters[m].end; ++c) {
+				wclust << forMatches[c].first.pos << "\t" << forMatches[c].second.pos << "\t" << opts.globalK << "\t" << m << "\t0"<<endl;				
+			}
+
+		}
+		wclust.close();
+
+
 	}
 
-	vector<Cluster> clusters;
-	int forwardStrand=0;
-	StoreDiagonalClusters(forMatches, clusters, opts, false, forwardStrand);
 
-	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize());
-	SwapStrand(read, opts, revMatches);
-	CleanOffDiagonal(revMatches, opts);
-	vector<Cluster> revClusters;
-	
-	int reverseStrand=1;
-	StoreDiagonalClusters(revMatches, revClusters, opts, false, reverseStrand);
+	for (int c = 0; c < roughclusters.size(); c++) {
+		CartesianSort(forMatches, roughclusters[c].start, roughclusters[c].end);
+		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
+	}
+
+	for (int c = 0; c < revroughClusters.size(); c++) {
+		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
+		StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
+	}
+
+
+
 	//
 	// Add pointers to seq that make code more readable.
 	//
@@ -496,7 +537,10 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 	CreateRC(read.seq, read.length, readRC);
 	char *strands[2] = { read.seq, readRC };
 
-	clusters.insert(clusters.end(), revClusters.begin(), revClusters.end());
+	//clusters.insert(clusters.end(), revClusters.begin(), revClusters.end());
+
+
+
 	if (clusters.size() != 0) {
 
 	
@@ -533,25 +577,61 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 				for (int s = 0; s <= c - 1; ++s) {
 
-					if(clusterOrder[c].Overlaps(clusterOrder[s], 0.8) and clusterOrder[c].OverlapsOnRead(read.length, 0.7) 
-						and clusterOrder[s].OverlapsOnRead(read.length, 0.7)) {++repetitivenum[c];}
+					if (clusterOrder[c].Overlaps(clusterOrder[s], 0.8) and clusterOrder[c].OverlapsOnRead(read.length, 0.5) and clusterOrder[s].OverlapsOnRead(read.length, 0.5)) {
+							++repetitivenum[c];
+					}
 
 					int gap = abs((int)(clusterOrder[c].qStart - clusterOrder[c].tStart) - (int)(clusterOrder[s].qEnd - clusterOrder[s].tEnd));
-					if ( (clusterOrder[s].qEnd - (clusterOrder[s].qEnd - clusterOrder[s].qStart)/5) < clusterOrder[c].qStart 
-							and  (clusterOrder[s].tEnd - (clusterOrder[s].tEnd - clusterOrder[s].tStart)/5) < clusterOrder[c].tStart 
-							and !clusterOrder[c].Encompasses(clusterOrder[s], 0.4) and clusterOrder[c].strand == clusterOrder[s].strand
-							and gap < opts.maxGap) {
+
+					//TODO(Jingwen): Only for debug and delete the following later
+					/*
+				){
+						cerr << "c: " << c << " s: " << s << endl;
+						cerr << "(clusterOrder[s].qEnd - (clusterOrder[s].qEnd - clusterOrder[s].qStart)/3) < clusterOrder[c].qStart: " << ((clusterOrder[s].qEnd - (clusterOrder[s].qEnd - clusterOrder[s].qStart)/3) < clusterOrder[c].qStart) << endl;
+						cerr << "(clusterOrder[s].tEnd - (clusterOrder[s].tEnd - clusterOrder[s].tStart)/3) < clusterOrder[c].tStart: " << ((clusterOrder[s].tEnd - (clusterOrder[s].tEnd - clusterOrder[s].tStart)/3) < clusterOrder[c].tStart)  << endl;
+						cerr << "((!clusterOrder[c].Encompasses(clusterOrder[s], 0.8) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.4)) or (!clusterOrder[c].Encompasses(clusterOrder[s], 0.4) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.8))): " 
+						     <<(((!clusterOrder[c].Encompasses(clusterOrder[s], 0.7) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.4)) or (!clusterOrder[c].Encompasses(clusterOrder[s], 0.4) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.7)))) << endl;
+						cerr << "clusterOrder[c].strand == clusterOrder[s].strand: " << (clusterOrder[c].strand == clusterOrder[s].strand) << endl;
+						cerr << "gap: " << gap << endl;
+					}
+					*/
+				
+					if ( (clusterOrder[s].qEnd - ((clusterOrder[s].qEnd - clusterOrder[s].qStart)/3)*2) < clusterOrder[c].qStart 
+							and  (clusterOrder[s].tEnd - ((clusterOrder[s].tEnd - clusterOrder[s].tStart)/3)*2) < clusterOrder[c].tStart 
+							and ((!clusterOrder[c].Encompasses(clusterOrder[s], 0.7) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.4)) or (!clusterOrder[c].Encompasses(clusterOrder[s], 0.4) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.7)))
+							and clusterOrder[c].strand == clusterOrder[s].strand
+							//and gap < opts.maxGap 
+							) {
 
 						float objective;
+						float rate = max(clusterOrder[c].OverlapsRate(clusterOrder[s]), clusterOrder[s].OverlapsRate(clusterOrder[c]));
+						int overlap = clusterOrder[c].Overlaps(clusterOrder[s]);
 						if (gap < 501)  {
 							//objective = clusters_value[c] + clusters_value[s] - log((float)gap) - 0.5*((float)gap);
-							objective = clusters_value[c] + clusters_value[s] - 0.5*((float)gap);
+							objective = (float)(max(clusterOrder[c].qEnd - clusterOrder[c].qStart, clusterOrder[c].tEnd - clusterOrder[c].tStart)) +
+											clusters_value[s] - 0.5*((float)gap) - 2*rate*((float)overlap);
 
 						}
 						else {
 							//objective = clusters_value[c] + clusters_value[s] - LookUpTable[(int)floor((gap-501)/5)] - 0.5*((float)gap);
-							objective = clusters_value[c] + clusters_value[s] - 0.5*((float)gap);
-						}				
+							objective = (float)(max(clusterOrder[c].qEnd - clusterOrder[c].qStart, clusterOrder[c].tEnd - clusterOrder[c].tStart)) +
+											clusters_value[s]- 0.5*((float)gap) - 2*rate*((float)overlap);
+						}	
+						/*		
+					) {
+							cerr << "clusterOrder[c].qStart: " << clusterOrder[c].qStart << " clusterOrder[c].tStart: " << clusterOrder[c].tStart << " clusterOrder[c].qEnd: " << clusterOrder[c].qEnd << 
+							" clusterOrder[c].tEnd: " << clusterOrder[c].tEnd << endl;
+
+							cerr << "clusterOrder[s].qStart: " << clusterOrder[s].qStart << " clusterOrder[s].tStart: " << clusterOrder[s].tStart << " clusterOrder[s].qEnd: " << clusterOrder[s].qEnd << 
+							" clusterOrder[s].tEnd: " << clusterOrder[s].tEnd << endl;
+
+							cerr << "clusters_value[" << c << "]: " << clusters_value[c] << endl;
+							cerr << "clusters_value[" << s << "]: " << clusters_value[s] << endl;
+							cerr << "0.5*((float)gap): " << 0.5*((float)gap) << endl;
+							cerr << "objective: " << objective << endl;
+						}
+						*/
+						
 						if (objective >= clusters_value[c]) {
 							clusters_value[c] = objective;
 							clusters_predecessor[c] = s;
@@ -600,7 +680,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 		traceback(clusterchain, max_ind, clusters_predecessor);
 	*/
-
 
 		int l = 0;
 		for (int r = 0; r < clusterchain.size(); ++r) {
@@ -760,7 +839,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 		for (int c = 0; c < clusters.size(); c++) {
 
-			if (clusters[c].start == clusters[c].end) {
+			//	TODO(Jingwen): replace "clusters[c].start == clusters[c].end" by the following "clusters[c].matches.size() == 0", because start and end are not accurate
+			if (clusters[c].matches.size() == 0) {
 				continue;
 			}			
 			if (opts.dotPlot) {
@@ -1085,7 +1165,10 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					SparseDP(vt, chain, smallOpts, LookUpTable);
 				}
 				else if (refinedClusters[r].matches.size() < 30000) {
-					SparseDP(refinedClusters[r].matches, chain, smallOpts, LookUpTable);
+					if (refinedClusters[r].matches.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
+						SparseDP(refinedClusters[r].matches, chain, smallOpts, LookUpTable, 5);
+					}
+					else {SparseDP(refinedClusters[r].matches, chain, smallOpts, LookUpTable);}
 				}
 			}
 			else { 
@@ -1335,7 +1418,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 							if (opts.SparseDP) {
 								gapChain.clear();
 								if (gapPairs.size() < 20000) {
-									SparseDP(gapPairs, gapChain, tinyOpts, LookUpTable); 
+									if (gapPairs.size()/((float)min(subreadLength, subgenomeLength)) < 0.1) SparseDP(gapPairs, gapChain, tinyOpts, LookUpTable, 5); 
+									else SparseDP(gapPairs, gapChain, tinyOpts, LookUpTable); 
 									//cerr << "start 2nd sdp!" << endl;
 
 									if (opts.dotPlot) {

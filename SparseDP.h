@@ -334,7 +334,7 @@ void ProcessPoint (const std::vector<Cluster> & FragInput, const std::vector<Poi
 // Each fragment has the same length
 void 
 ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H3, std::vector<info> & V, StackOfSubProblems & SubR, StackOfSubProblems & SubC,
-				  std::vector<Fragment_Info> & Value, Options & opts, const std::vector<float> & LookUpTable) {
+				  std::vector<Fragment_Info> & Value, Options & opts, const std::vector<float> & LookUpTable, int rate) {
 
 	for (unsigned int i = 0; i < H3.size(); ++i) { // process points by back diagonal
 
@@ -390,7 +390,7 @@ ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H
 						//cerr << "the index in Ei that ForwardDiag is in----i1: " << i1 << "\n";
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 
-						SubR[j].Ev[i1] = SubR[j].Dv[i2] + w(SubR[j].Di[i2], SubR[j].Ei[i1], LookUpTable, opts) + opts.globalK + 1; 
+						SubR[j].Ev[i1] = SubR[j].Dv[i2] + w(SubR[j].Di[i2], SubR[j].Ei[i1], LookUpTable, opts) + (opts.globalK + 1) * rate; 
 						SubR[j].Ep[i1] = i2;							
 
 						//cerr << "SubR[" << j << "].Ev[" << i1 << "]: " << SubR[j].Ev[i1] << ", SubR[" << j << "].Ep[" << i1 << "]: " << SubR[j].Ep[i1] << "\n"; 
@@ -458,7 +458,7 @@ ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 					
 
-						SubC[j].Ev[i1] = SubC[j].Dv[i2] + w(SubC[j].Di[i2], SubC[j].Ei[i1], LookUpTable, opts) + opts.globalK + 1; 
+						SubC[j].Ev[i1] = SubC[j].Dv[i2] + w(SubC[j].Di[i2], SubC[j].Ei[i1], LookUpTable, opts) + (opts.globalK + 1) * rate; 
 						SubC[j].Ep[i1] = i2;							
 
 						//cerr << "SubC[" << j << "].Ev[" << i1 << "]: " << SubC[j].Ev[i1] << ", SubC[" << j << "].Ep[" << i1 << "]: " << SubC[j].Ep[i1] << "\n"; 
@@ -686,7 +686,7 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<unsigned int> 
 
 // The input for this function is GenomePairs which is not from Merge_Split step
 // Each fragment has the same length
-int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, Options & opts, const std::vector<float> & LookUpTable) {
+int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, Options & opts, const std::vector<float> & LookUpTable, int rate = 1) {
 	std::vector<Point> H1;
 
 	// FragInput is vector<GenomePair>
@@ -774,12 +774,12 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 			if (H1[tt].ind == 1) { //H1[tt] is a start point
 				Value[ii].SS_B_R = Row[t].SS_B;
 				Value[ii].counter_B_R = Row[t].SS_B.size();
-				Value[ii].val = (opts.globalK + 1);
+				Value[ii].val = (opts.globalK + 1) * rate;
 			}
 			else { // H1[tt] is an end point
 				Value[ii].SS_A_R = Row[t].SS_A;
 				Value[ii].counter_A_R = Row[t].SS_A.size();
-				Value[ii].val = (opts.globalK + 1);
+				Value[ii].val = (opts.globalK + 1) * rate;
 			}
 
 		}
@@ -794,12 +794,12 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 			if (H1[H2[tt]].ind == 1) { //H1[H2[tt]] a start point
 				Value[ii].SS_B_C = Col[t].SS_B;
 				Value[ii].counter_B_C = Col[t].SS_B.size();
-				Value[ii].val = (opts.globalK + 1);
+				Value[ii].val = (opts.globalK + 1) * rate;
 			}
 			else { // H1[H2[tt]] is an end point
 				Value[ii].SS_A_C = Col[t].SS_A;
 				Value[ii].counter_A_C = Col[t].SS_A.size();
-				Value[ii].val = (opts.globalK + 1);
+				Value[ii].val = (opts.globalK + 1) * rate;
 			}
 
 		}
@@ -812,7 +812,7 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 	//cerr << "ProcessPoint\n";
 
 
-	ProcessPoint(H1, H3, Row, SubR, SubC, Value, opts, LookUpTable);
+	ProcessPoint(H1, H3, Row, SubR, SubC, Value, opts, LookUpTable, rate);
 	
 	//cerr << "end\n";
 
