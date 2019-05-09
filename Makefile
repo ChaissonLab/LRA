@@ -52,10 +52,10 @@ tgc: TestGlobalChain.cpp GlobalChain.h Fragment.h BasicEndpoint.h PrioritySearch
 	$(CXX) -g TestGlobalChain.cpp -o tgc
 
 lra: lra.o
-	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
+	$(CXX) $(STATIC) $(CCOPTS) $^ -L $(PWD)/htslib/lib  -lhts -lz -lpthread -o $@ -Wl,-rpath,$(PWD)/htslib/lib
 
 alchemy2: Alchemy2.o
-	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
+	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -Wl,-rpath,htslib/lib -lhts -lz -lpthread -o $@
 
 qti: QueryTime.o
 	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
@@ -68,7 +68,6 @@ Alchemy2.o: Alchemy2.cpp  htslib/lib/libhts.a
 
 QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
 	$(CXX) $(CCOPTS) -c  -I htslib/include -I seqan/include  QueryTime.cpp
-
 
 clean:
 	rm -f lra lra.o

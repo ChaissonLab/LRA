@@ -33,6 +33,7 @@ public:
 	int refineLevel;
 	bool doBandedAlignment;
 	int maxGap;
+	int maxGapBtwnAnchors;
 	bool NaiveDP;
 	bool SparseDP;
 	bool LookUpTable;
@@ -59,10 +60,10 @@ public:
 		bestn=1;
 		globalMaxFreq=20;
 		localMaxFreq=30;
-		maxDiag=500;
-		cleanMaxDiag=50;
-		minDiagCluster=10;
-		minClusterSize =20;
+		maxDiag=500; // We want maxDiag to be a small number // used to be 500
+		cleanMaxDiag=100; // used to be 50
+		minDiagCluster=20;
+		minClusterSize = 10; // used to be 10
 		minRefinedClusterSize = 40;
 		window=100;
 		mergeGapped=false;
@@ -75,7 +76,8 @@ public:
 		maxCandidates=3;
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
-		maxGap=1000;
+		maxGap=10000;
+		maxGapBtwnAnchors = 2000; // no larger than 2000 // used to be 2000
 		mergeClusters=false;
 		NaiveDP = false;
 		seqan=false;

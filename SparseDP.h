@@ -425,8 +425,13 @@ void ProcessPoint (const std::vector<Cluster> & FragInput, const std::vector<Poi
 // This function is for fragments which are not resulting from MergeSplit step. 
 // Note: Each fragment has the same length
 void 
-ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
-				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, std::vector<Fragment_Info> & Value, Options & opts, const std::vector<float> & LookUpTable) {
+
+//ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
+			//	 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, std::vector<Fragment_Info> & Value, Options & opts, const std::vector<float> & LookUpTable) {
+
+ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H3, std::vector<info> & V, StackOfSubProblems & SubR, StackOfSubProblems & SubC,
+				  std::vector<Fragment_Info> & Value, Options & opts, const std::vector<float> & LookUpTable, int rate) {
+
 
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
@@ -484,8 +489,12 @@ ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubPr
 						//cerr << "the index in Ei that ForwardDiag is in----i1: " << i1 << "\n";
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 
-						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts) + opts.globalK + 1; 
-						SubR1[j].Ep[i1] = i2;							
+
+//						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts) + opts.globalK + 1; 
+//						SubR1[j].Ep[i1] = i2;							
+
+						SubR[j].Ev[i1] = SubR[j].Dv[i2] + w(SubR[j].Di[i2], SubR[j].Ei[i1], LookUpTable, opts) + (opts.globalK + 1) * rate; 
+						SubR[j].Ep[i1] = i2;							
 
 						//cerr << "SubR1[" << j << "].Ev[" << i1 << "]: " << SubR1[j].Ev[i1] << ", SubR1[" << j << "].Ep[" << i1 << "]: " << SubR1[j].Ep[i1] << "\n"; 
 
@@ -553,8 +562,12 @@ ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubPr
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 					
 
-						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK + 1; 
-						SubC1[j].Ep[i1] = i2;							
+//<<<<<<< HEAD
+	//					SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK + 1; 
+	//					SubC1[j].Ep[i1] = i2;							
+
+						SubC[j].Ev[i1] = SubC[j].Dv[i2] + w(SubC[j].Di[i2], SubC[j].Ei[i1], LookUpTable, opts) + (opts.globalK + 1) * rate; 
+						SubC[j].Ep[i1] = i2;							
 
 						//cerr << "SubC1[" << j << "].Ev[" << i1 << "]: " << SubC1[j].Ev[i1] << ", SubC1[" << j << "].Ep[" << i1 << "]: " << SubC1[j].Ep[i1] << "\n"; 
 
@@ -916,7 +929,7 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<unsigned int> 
 
 // The input for this function is GenomePairs which is not from Merge_Split step
 // Each fragment has the same length
-int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, Options & opts, const std::vector<float> & LookUpTable) {
+int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, Options & opts, const std::vector<float> & LookUpTable, int rate = 1) {
 	std::vector<Point> H1;
 
 	// FragInput is vector<GenomePair>
@@ -1031,6 +1044,7 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 		for (unsigned int tt = Row[t].pstart; tt < Row[t].pend; ++tt) {
 
 			unsigned int ii = H1[tt].frag_num;
+//<<<<<<< HEAD
 			if (H1[tt].ind == 1 and H1[tt].inv == 1) { //H1[tt] is a start point (s1)
 				Value[ii].SS_B_R1 = Row[t].SS_B1;
 				Value[ii].counter_B_R1 = Row[t].SS_B1.size();
@@ -1050,6 +1064,18 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 				Value[ii].SS_A_R2 = Row[t].SS_A2;
 				Value[ii].counter_A_R2 = Row[t].SS_A2.size();
 				//Value[ii].val = (opts.globalK + 1);				
+/*=======
+			if (H1[tt].ind == 1) { //H1[tt] is a start point
+				Value[ii].SS_B_R = Row[t].SS_B;
+				Value[ii].counter_B_R = Row[t].SS_B.size();
+				Value[ii].val = (opts.globalK + 1) * rate;
+			}
+			else { // H1[tt] is an end point
+				Value[ii].SS_A_R = Row[t].SS_A;
+				Value[ii].counter_A_R = Row[t].SS_A.size();
+				Value[ii].val = (opts.globalK + 1) * rate;
+>>>>>>> c05fdfab8ae8dd4429da5010e128885b0e8e44f1
+*/
 			}
 		}
 	}
@@ -1060,6 +1086,7 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 		for (unsigned int tt = Col[t].pstart; tt < Col[t].pend; ++tt) { 
 
 			unsigned int ii = H1[H2[tt]].frag_num;
+//<<<<<<< HEAD
 			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
 				Value[ii].SS_B_C1 = Col[t].SS_B1;
 				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
@@ -1079,6 +1106,18 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 				Value[ii].SS_A_C2 = Col[t].SS_A2;
 				Value[ii].counter_A_C2 = Col[t].SS_A2.size();
 				//Value[ii].val = (opts.globalK + 1);				
+/*=======
+			if (H1[H2[tt]].ind == 1) { //H1[H2[tt]] a start point
+				Value[ii].SS_B_C = Col[t].SS_B;
+				Value[ii].counter_B_C = Col[t].SS_B.size();
+				Value[ii].val = (opts.globalK + 1) * rate;
+			}
+			else { // H1[H2[tt]] is an end point
+				Value[ii].SS_A_C = Col[t].SS_A;
+				Value[ii].counter_A_C = Col[t].SS_A.size();
+				Value[ii].val = (opts.globalK + 1) * rate;
+>>>>>>> c05fdfab8ae8dd4429da5010e128885b0e8e44f1
+*/
 			}
 
 		}
@@ -1091,7 +1130,12 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 	//cerr << "ProcessPoint\n";
 
 
+/*<<<<<<< HEAD
 	ProcessPoint(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable);
+=======
+*/
+	ProcessPoint(H1, H3, Row, SubR, SubC, Value, opts, LookUpTable, rate);
+//>>>>>>> c05fdfab8ae8dd4429da5010e128885b0e8e44f1
 	
 	//cerr << "end\n";
 
