@@ -232,11 +232,12 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 	// -----------------------Merge--------------------------
     Options mergeOpts = opts;
     mergeOpts.maxGap = 3000;
-    mergeOpts.maxDiag = 40;
+    mergeOpts.maxDiag = 50;
 	int cs= 0;
 	int ce = 0;
 	std::vector<std::pair<int, int>> Boundary;
 	std::vector<int> index; // TODO(Jingwen): this is only for debug. delete this later
+
 	// set up the boundary according ReadIndex
 	while (cs < ReadIndex.size()) {
 		ce = cs + 1;
@@ -275,11 +276,13 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 
 	int ts = 0;
 	int te = 0;
+	GenomePos prev_qEnd = 0; GenomePos prev_tEnd = 0;
+	//cerr << "Boundary's size(): " << Boundary.size() << endl;
 	// merge without any boundary
-	if (Boundary.empty()) {
+	if (Boundary.size() == 1) {
 		while (ts < matches.size()) {
 			te = ts + 1;
-			GenomePos qStart  =matches[ts].first.pos, 
+			GenomePos qStart  = matches[ts].first.pos, 
 					  qEnd = matches[ts].first.pos + opts.globalK, 
 					  tStart = matches[ts].second.pos, 
 				      tEnd = matches[ts].second.pos + opts.globalK;	
@@ -295,7 +298,12 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 				}
 				else {
 					v.push_back(Cluster(ts, te, qStart, qEnd, tStart, tEnd, 0)); // I just put 0 here for the strand argument
+					prev_qEnd = qEnd;
+					prev_tEnd = tEnd;
 					ts = te;
+					while ((matches[ts].first.pos < prev_qEnd or matches[ts].second.pos < prev_tEnd) and ts < matches.size()) {
+						++ts;
+					}
 					break;
 				}	
 			}	
@@ -312,18 +320,19 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 	ts = 0; te = 0;
 	for (int j = 0; j < Boundary.size(); ++j) {
 
-		start = Boundary[j].first*50 + ReadStart;
+		start = (Boundary[j].first)*50 + ReadStart;
 		end = (Boundary[j].second)*50 + ReadStart;
-
+		//cerr << "start: " << start << endl;
+		//cerr << "end: " << end << endl;
 		if (index[j] == 0) {
 			// merge anchors in [start, end)
 
 			while (ts < matches.size() and matches[ts].first.pos >= start and matches[ts].first.pos < end) {
 				te = ts + 1;
-				GenomePos qStart=matches[ts].first.pos, 
-						  qEnd=matches[ts].first.pos + opts.globalK, 
-						  tStart=matches[ts].second.pos, 
-					      tEnd=matches[ts].second.pos + opts.globalK;		
+				GenomePos qStart = matches[ts].first.pos, 
+						  qEnd = matches[ts].first.pos + opts.globalK, 
+						  tStart = matches[ts].second.pos, 
+					      tEnd = matches[ts].second.pos + opts.globalK;		
 
 				while (te < matches.size() and matches[te].first.pos >= start and matches[te].first.pos < end) {
 
@@ -340,6 +349,11 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 					else {
 						v.push_back(Cluster(ts, te, qStart, qEnd, tStart, tEnd, 0)); // I just put 0 here for the strand argument
 						ts = te;
+						prev_qEnd = qEnd;
+						prev_tEnd = tEnd;
+						while((matches[ts].first.pos < prev_qEnd or matches[ts].second.pos < prev_tEnd) and ts < matches.size()) {
+							++ts;
+						}
 						break;
 					}					
 				}	
