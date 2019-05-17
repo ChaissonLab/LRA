@@ -29,6 +29,7 @@ gapdifference (int & ce, GenomePairs & matches) {
 
 void 
 mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, int r, string & baseName) {
+	//cerr << "mergeClusters!" << endl;
 	// ---------- sort fragments(starting points) first by first.pos, then by second.pos ---------------
 	// store the number of starting points in every window in ReadWindow
 	CartesianSort<GenomeTuple>(matches.begin(), matches.end());     
@@ -57,6 +58,7 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 	for (int i = 0; i < ReadWindow.size() - 1; ++i) {
 		ReadWindow[i] = ReadWindow[i] + ReadWindow[i + 1];
 	}
+
 
 	if (opts.dotPlot) {
 		stringstream outNameStrm;
@@ -352,6 +354,7 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 						prev_qEnd = qEnd;
 						prev_tEnd = tEnd;
 						while((matches[ts].first.pos < prev_qEnd or matches[ts].second.pos < prev_tEnd) and ts < matches.size()) {
+							v.push_back(Cluster(ts, ts+1, matches[ts].first.pos, matches[ts].first.pos + opts.globalK, matches[ts].second.pos, matches[ts].second.pos + opts.globalK, 0));
 							++ts;
 						}
 						break;
@@ -389,14 +392,16 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 
 	}
 
-/*
+
 	stringstream outNameStrm;
-	outNameStrm << "AnchorEfficiency.txt";
+	outNameStrm << "AnchorEfficiency.Merge.tab";
+	//ofstream baseDots(outNameStrm.str().c_str());
+
 	ofstream baseDots;
 	baseDots.open(outNameStrm.str().c_str(), std::ios::app);
 	baseDots << v.size() << "\t" << matches.size() << endl;
 	baseDots.close();
-*/
+
 	
 }
 

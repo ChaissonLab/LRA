@@ -15,7 +15,8 @@
 using namespace std;
 
 
-void MergeClusters (Options & smallOpts, vector<Cluster> & refinedClusters, vector<Cluster> & vt, int r) {
+void MergeClusters (Options & smallOpts, vector<Cluster> & refinedClusters, vector<Cluster> & vt, int r, string & baseName) {
+    //cerr << "MergeClusters!" << endl;
  
     // add merge split code here
     //------------------------------------------------------------------
@@ -24,10 +25,43 @@ void MergeClusters (Options & smallOpts, vector<Cluster> & refinedClusters, vect
     vector<Cluster> v;
     vector<Cluster> vq;
     Options mergeOpts = smallOpts;
-    mergeOpts.maxGap = 3500;
+    mergeOpts.maxGapBtwnAnchors = 1000;
     mergeOpts.maxDiag = 20;
+    mergeOpts.minClusterSize = 10;
 
-    StoreDiagonalClusters(refinedClusters[r].matches, v, mergeOpts, true); 
+    StoreDiagonalClusters(refinedClusters[r].matches, v, mergeOpts, 0, refinedClusters[r].size(), false, true); 
+
+    if (smallOpts.dotPlot) {
+        stringstream outNameStrm;
+        outNameStrm << baseName + "." << r << ".DiagonalClusters.dots";
+        ofstream Dots(outNameStrm.str().c_str());
+        for (int m=0; m < v.size(); m++) {
+            Dots << v[m].qStart << "\t" 
+                     << v[m].tStart << "\t" 
+                     << v[m].qEnd << "\t" 
+                     << v[m].tEnd << "\t" 
+                     << m << endl;               
+        }
+        Dots.close();
+    }
+
+
+     if (smallOpts.dotPlot) {
+        stringstream outNameStrm;
+        outNameStrm << baseName + "." << r << ".DiagonalClusters_realanchors.dots";
+        ofstream Dots(outNameStrm.str().c_str());
+        for (int m=0; m < v.size(); m++) {
+            for (int c=v[m].start; c < v[m].end; ++c) {
+               Dots << refinedClusters[r].matches[c].first.pos << "\t" 
+                         << refinedClusters[r].matches[c].second.pos << "\t" 
+                         << refinedClusters[r].matches[c].first.pos + smallOpts.globalK << "\t" 
+                         << refinedClusters[r].matches[c].second.pos + smallOpts.globalK << "\t" 
+                         << m << endl;     
+            }     
+        }
+        Dots.close();
+    }   
+
 
 
     if (v.size() != 0) {
@@ -264,6 +298,16 @@ void MergeClusters (Options & smallOpts, vector<Cluster> & refinedClusters, vect
             assert(vt[ij].tStart < vt[ij].tEnd);
         }
     }
-}
 
+
+    stringstream outNameStrm;
+    outNameStrm << "AnchorEfficiency.MergeSplit.tab";
+    //ofstream baseDots(outNameStrm.str().c_str());
+    ofstream baseDots;
+    baseDots.open(outNameStrm.str().c_str(), std::ios::app);
+    baseDots << vt.size() << "\t" << refinedClusters[r].matches.size() << endl;
+    baseDots.close();
+
+
+}
 #endif
