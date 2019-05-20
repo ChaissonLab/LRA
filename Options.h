@@ -44,6 +44,7 @@ public:
  	int localMismatch;
 	int localIndel;
 	int localBand;
+	bool MergeSplit;
 
 	Options() {
 		localMatch=4;
@@ -61,7 +62,7 @@ public:
 		globalMaxFreq=20;
 		localMaxFreq=30;
 		maxDiag=500; // We want maxDiag to be a small number // used to be 500
-		cleanMaxDiag=100; // used to be 50
+		cleanMaxDiag=100; // used to be 100
 		minDiagCluster=20;
 		minClusterSize = 10; // used to be 10
 		minRefinedClusterSize = 40;
@@ -83,6 +84,7 @@ public:
 		seqan=false;
 		SparseDP=true;
 		LookUpTable=true;
+		MergeSplit=true;
     
 	}
 };

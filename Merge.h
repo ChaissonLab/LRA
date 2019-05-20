@@ -60,7 +60,7 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 	}
 
 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and baseName == "m54016_171123_192157_51315193_0_8888_0_8888") {
 		stringstream outNameStrm;
 		outNameStrm << baseName + "." << r << ".ReadWindow.txt";
 		ofstream baseDots(outNameStrm.str().c_str());
@@ -100,7 +100,7 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 	cerr << "GenomeWindow: " << GenomeWindow.size() << endl;
 	cerr << "GenomeStart: " << GenomeStart << endl;
 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and baseName == "m54016_171123_192157_51315193_0_8888_0_8888") {
 		stringstream outNameStrm;
 		outNameStrm << baseName + "." << r << ".GenomeWindow.txt";
 		ofstream baseDots(outNameStrm.str().c_str());
@@ -264,7 +264,7 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 	}
 
 	// TODO(Jingwen): for debug 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and baseName == "m54016_171123_192157_51315193_0_8888_0_8888") {
 		stringstream outNameStrm;
 		outNameStrm << baseName + "." << r << ".Boundary.txt";
 		ofstream baseDots(outNameStrm.str().c_str());

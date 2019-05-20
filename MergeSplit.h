@@ -25,13 +25,13 @@ void MergeClusters (Options & smallOpts, vector<Cluster> & refinedClusters, vect
     vector<Cluster> v;
     vector<Cluster> vq;
     Options mergeOpts = smallOpts;
-    mergeOpts.maxGapBtwnAnchors = 1000;
+    mergeOpts.maxGapBtwnAnchors = 200; // used to be 1000, but 1000 is too large, which will influence the alignment on the boundary
     mergeOpts.maxDiag = 20;
-    mergeOpts.minClusterSize = 10;
+    mergeOpts.minClusterSize = 2;
 
     StoreDiagonalClusters(refinedClusters[r].matches, v, mergeOpts, 0, refinedClusters[r].size(), false, true); 
 
-    if (smallOpts.dotPlot) {
+    if (smallOpts.dotPlot and baseName == "m54016_171123_192157_51315193_0_8888_0_8888") {
         stringstream outNameStrm;
         outNameStrm << baseName + "." << r << ".DiagonalClusters.dots";
         ofstream Dots(outNameStrm.str().c_str());
@@ -46,7 +46,7 @@ void MergeClusters (Options & smallOpts, vector<Cluster> & refinedClusters, vect
     }
 
 
-     if (smallOpts.dotPlot) {
+     if (smallOpts.dotPlot and baseName == "m54016_171123_192157_51315193_0_8888_0_8888") {
         stringstream outNameStrm;
         outNameStrm << baseName + "." << r << ".DiagonalClusters_realanchors.dots";
         ofstream Dots(outNameStrm.str().c_str());
