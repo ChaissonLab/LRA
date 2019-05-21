@@ -2,6 +2,7 @@
 #define CLUSTERING_H_
 #include "Options.h"
 #include <vector>
+
 template<typename Tup>
 int64_t DiagonalDifference(Tup &a, Tup &b, int strand=0) {
 	if (strand == 0) { // forMatches
@@ -350,12 +351,14 @@ void PrintDiagonal(vector<pair<Tup, Tup> > &matches, int strand=0) {
 
 template<typename Tup>
 void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &clusters, Options &opts, int s, int e, bool rough, bool lite, int strand=0) {
-	int maxGap = -1;
-	if (rough == false) { maxGap = opts.maxGapBtwnAnchors;} 
+	int maxGap = -1, maxDiag = -1;
+	if (rough == false) { maxGap = opts.maxGapBtwnAnchors;}
+	else { maxDiag = opts.maxDiag;} 
 	int i;
 	int cs = s, ce =e;
 	cs = s;
 	int64_t dd,absdd;
+	cerr << "s: " << s << "  e: " << e << endl; 
 	
 	while (cs < e) {
 		ce = cs+1;
@@ -366,18 +369,18 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &c
 		int diff=0;
 
 		// (TODO)Jingwen: Delete (opts.maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < opts.maxGap) in the below
-		while (ce < e and abs(DiagonalDifference(matches[ce], matches[ce-1])) < opts.maxDiag and (maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < maxGap)) {
+		while (ce < e and (abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) < opts.maxDiag or maxDiag == -1) and (maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < maxGap)) {
 
 			qStart = min(qStart, matches[ce].first.pos);
 			qEnd   = max(qEnd, matches[ce].first.pos + opts.globalK);
 			tStart = min(tStart, matches[ce].second.pos);
 			tEnd   = max(tEnd, matches[ce].second.pos + opts.globalK);
 			ce++;
-			if (ce < e) {
-				diff = GapDifference(matches[ce], matches[ce-1]);
-			}
-
-		}			
+		}	
+		cerr << "GapDifference(matches[ce], matches[ce-1]): " << GapDifference(matches[ce], matches[ce-1]) << endl;
+		cerr << "abs(DiagonalDifference(matches[ce], matches[ce-1], strand)): " << abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) << endl;
+		cerr << "ce: " << ce << endl;
+		
 		if (ce - cs >= opts.minClusterSize) {
 			if (rough == true) {
 				clusters.push_back(Cluster(cs, ce));

@@ -62,9 +62,10 @@ void HelpMap() {
 			 << "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
 			 << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
 			 << "	-T 	(flag)  Use log LookUpTable when gap length is larger than 501." << endl
-		         << "   -t n(int)   Use n threads (1)" << endl
+		     << "   -t n(int)   Use n threads (1)" << endl
 			 << "   --start  (int)   Start aligning at this read." << endl
-			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl;
+			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
+			 << "   -aa (flag)  use Merge.h" << endl;
 }
 		
 class MapInfo {
@@ -182,6 +183,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;
 		}
+		else if (ArgIs(argv[argi], "-aa")) {
+			opts.MergeSplit = false;
+		}		
 
 		else if (ArgIs(argv[argi], "--locMatch")) {
 			opts.localMatch=atoi(GetArgv(argv,argc,argi));

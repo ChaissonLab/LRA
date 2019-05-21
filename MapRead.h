@@ -456,7 +456,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, forMatches, revMatches);
 
-	/*
+	
 	if (opts.dotPlot) {
 		ofstream clust("for-matches0.dots");
 		for (int m=0; m < forMatches.size(); m++) {
@@ -470,7 +470,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		rclust.close();
 
 	} 
-	*/
+
 
 
 	CleanOffDiagonal(forMatches, opts);
@@ -479,11 +479,14 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 	int forwardStrand=0;
 	// max.diag must be large enough for the following function "StoreDiagonalClusters". 
 	// Otherwise fragments on the same line (line with little curve) might end up in several clusters[i], instead of one clusters[i]
+
+	// The strategy we are taking now: let max.diag be a small number (like 500), which also alleviate the cases where anchors are on a curvy line.
+	// Then break the clusters[i] into two if any two anchors are far away. 
 	StoreDiagonalClusters(forMatches, roughclusters, opts, 0, forMatches.size(), true, false, forwardStrand); // rough == true means only storing "start and end" in every clusters[i]
 
 	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize());
 	//SwapStrand(read, opts, revMatches);
-	CleanOffDiagonal(revMatches, opts);
+	CleanOffDiagonal(revMatches, opts, 1);
 	//vector<Cluster> revClusters;
 	vector<Cluster> revroughClusters;
 	
@@ -509,9 +512,15 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			}
 
 		}
-		wclust.close();
 
+		ofstream revclust("revroughClusters-matches.dots");
+		for (int m=0; m < revroughClusters.size(); m++) {
+			for (int c = revroughClusters[m].start; c < revroughClusters[m].end; ++c) {
+				revclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos << "\t" << opts.globalK << "\t" << m << "\t0"<<endl;				
+			}
 
+		}
+		revclust.close();
 	}
 
 
@@ -580,6 +589,11 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 					int gap = abs((int)(clusterOrder[c].qStart - clusterOrder[c].tStart) - (int)(clusterOrder[s].qEnd - clusterOrder[s].tEnd));
 
+					int ReverseStrand = -1;
+					if (clusterOrder[c].strand == clusterOrder[s].strand and clusterOrder[c].strand == 0) {ReverseStrand = 1;}
+					else if (clusterOrder[c].strand == clusterOrder[s].strand and clusterOrder[c].strand == 0) {ReverseStrand = -1;}
+					else {ReverseStrand = 1;}
+
 					//TODO(Jingwen): Only for debug and delete the following later
 					/*
 				){
@@ -593,9 +607,11 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					}
 					*/
 				
-					if ( (clusterOrder[s].qEnd - ((clusterOrder[s].qEnd - clusterOrder[s].qStart)/3)*2) < clusterOrder[c].qStart 
-							and  (clusterOrder[s].tEnd - ((clusterOrder[s].tEnd - clusterOrder[s].tStart)/3)*2) < clusterOrder[c].tStart 
+					if ( ((clusterOrder[s].qEnd - ((clusterOrder[s].qEnd - clusterOrder[s].qStart)/3)*2) < clusterOrder[c].qStart or ReverseStrand == -1)
+							and  ((clusterOrder[s].tEnd - ((clusterOrder[s].tEnd - clusterOrder[s].tStart)/3)*2) < clusterOrder[c].tStart or ReverseStrand == -1)
 							and ((!clusterOrder[c].Encompasses(clusterOrder[s], 0.7) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.4)) or (!clusterOrder[c].Encompasses(clusterOrder[s], 0.4) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.7)))
+							and ((clusterOrder[c].qEnd - ((clusterOrder[c].qEnd - clusterOrder[c].qStart)/3)*2) < clusterOrder[s].qStart or ReverseStrand == 1)
+							and ((clusterOrder[c].tEnd - ((clusterOrder[c].tEnd - clusterOrder[c].tStart)/3)*2) > clusterOrder[s].tStart or ReverseStrand == 1)
 							//and clusterOrder[c].strand == clusterOrder[s].strand and gap < opts.maxGap 
 							) {
 
@@ -702,8 +718,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					clusters[clusterchain[c][0]].matches.insert(clusters[clusterchain[c][0]].matches.end(), clusters[clusterchain[c][s]].matches.begin(), clusters[clusterchain[c][s]].matches.end());
 					clusters[clusterchain[c][0]].qStart = clusters[clusterchain[c][s]].qStart;
 					clusters[clusterchain[c][0]].tStart = clusters[clusterchain[c][s]].tStart;
-					clusters[clusterchain[c][s]].tEnd=0;
-					clusters[clusterchain[c][s]].tStart=0;
+					//clusters[clusterchain[c][s]].tEnd=0;
+					//clusters[clusterchain[c][s]].tStart=0;
 					clusters[clusterchain[c][s]].matches.clear();				
 				}			
 			}
@@ -764,6 +780,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 
 		// TODO(Jingwen): only for debug && delete this later 
+		/*
 		if (opts.dotPlot) {
 			ofstream clust("clusters-after-remove-overlapping.tab");
 			for (int c =0; c < clusters.size(); c++) {
@@ -775,6 +792,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			}
 			clust.close();
 		}
+		*/
 
 		
 
@@ -842,6 +860,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			CartesianTargetSort<GenomeTuple>(clusters[c].matches.begin(), clusters[c].matches.end()); // sorted by second.pos and then first.pos
 			int nMatch = clusters[c].matches.size();
 			GenomePos tPos=clusters[c].matches[0].second.pos;
+			
 			int firstChromIndex = genome.header.Find(tPos);
 			int lastChromIndex;
 			if (nMatch > 1 ) {
@@ -1128,7 +1147,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					}
 					baseDots.close();
 				}
-
+			}
 
 			// Perform sparse chaining, uses time O(n log n).
 			//
@@ -1141,7 +1160,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			if (opts.SparseDP) {
 				chain.clear();
 				if (opts.mergeClusters and vt.size() < 30000 and vt.size() > 0) {
-					SparseDP(vt, chain, smallOpts, LookUpTable);
+					//SparseDP(vt, chain, smallOpts, LookUpTable);
 				}
 				else if (refinedClusters[r].matches.size() < 30000) {
 					if (refinedClusters[r].matches.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
@@ -1399,8 +1418,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 							if (opts.SparseDP) {
 								gapChain.clear();
 								if (gapPairs.size() < 20000) {
-									if (gapPairs.size()/((float)min(subreadLength, subgenomeLength)) < 0.1) SparseDP(gapPairs, gapChain, tinyOpts, LookUpTable, 5); 
-									else SparseDP(gapPairs, gapChain, tinyOpts, LookUpTable); 
+									if (gapPairs.size()/((float)min(subreadLength, subgenomeLength)) < 0.1) {SparseDP(gapPairs, gapChain, tinyOpts, LookUpTable, 5);}
+									else {SparseDP(gapPairs, gapChain, tinyOpts, LookUpTable); }
 									//cerr << "start 2nd sdp!" << endl;
 
 									if (opts.dotPlot) {
@@ -1649,6 +1668,5 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		*/
 	}
 }
-
 
 #endif
