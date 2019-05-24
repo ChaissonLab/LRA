@@ -6,8 +6,8 @@
 template<typename Tup>
 int64_t DiagonalDifference(Tup &a, Tup &b, int strand=0) {
 	if (strand == 0) { // forMatches
-		int64_t aDiag = a.first.pos - a.second.pos, 
-			bDiag= b.first.pos - b.second.pos;
+		int64_t aDiag = (int64_t)a.first.pos - (int64_t)a.second.pos, 
+			bDiag = (int64_t)b.first.pos - (int64_t)b.second.pos;
 		return aDiag - bDiag;		
 	}
 	else { // revMathches
@@ -181,6 +181,11 @@ class ClusterCoordinates {
 		seq=NULL;
 		chromIndex=0;
 	}
+ ClusterCoordinates(int s,int e, int st) : start(s), end(e), strand(st) {
+		qStart=qEnd=tStart=tEnd=0;
+		seq=NULL;
+		chromIndex=0;
+	}
   ClusterCoordinates(int s, int e, 
 					GenomePos qs, GenomePos qe,
 					GenomePos ts, GenomePos te, 
@@ -197,6 +202,7 @@ class Cluster : public ClusterCoordinates {
 	Cluster() {}
   Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=0;}
 
+  Cluster(int s, int e, int st) : ClusterCoordinates(s,e,st) { coarse=0;}
 
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
@@ -247,16 +253,15 @@ class Cluster : public ClusterCoordinates {
 			return qStart < rhs.qStart;
 		}
 	}
+
 	void SetClusterBoundariesFromMatches(Options &opts) {
 		for (int i=0; i < matches.size(); i++) {
-			tEnd   = max(tEnd, matches[i].second.pos + opts.globalK);
+			tEnd = max(tEnd, matches[i].second.pos + opts.globalK);
 			tStart = min(tStart, matches[i].second.pos );
-			qEnd   = max(qEnd, matches[i].first.pos + opts.globalK);
+			qEnd = max(qEnd, matches[i].first.pos + opts.globalK);
 			qStart = min(qStart, matches[i].first.pos);
 		}
-	}
-			
-		
+	}				
 };
 
 class OrderClusterBySize {
@@ -283,11 +288,7 @@ class ClusterOrder {
 	int operator()(const int i, const int j) {
 			assert((*clusters)[i].strand == 0 or (*clusters)[i].strand == 1);
 			assert((*clusters)[j].strand == 0 or (*clusters)[j].strand == 1);
-		/*
-		if ((*clusters)[i].strand != (*clusters)[j].strand) {
-			return (*clusters)[i].strand < (*clusters)[j].strand;
-		}
-		*/
+
 		if ((*clusters)[i].tStart != (*clusters)[j].tStart) {
 			return (*clusters)[i].tStart < (*clusters)[j].tStart;
 		}
@@ -338,6 +339,30 @@ class Clusters_valueOrder {
 };
 
 
+class LogCluster {
+ public:
+ 	vector<Cluster> SubCluster;
+ 	Cluster * Hp;
+ 	LogCluster () {};
+ 	~LogCluster() {};
+
+ 	void setHp(Cluster & H) {
+ 		Hp = & H;
+ 	}; 
+
+ 	void SetSubClusterBoundariesFromMatches (Options &opts) {
+ 		for (int i = 0; i < SubCluster.size(); ++i) {
+ 			
+ 			// set the boundaries for SubCluster[i]
+ 			for (int is = SubCluster[i].start; is < SubCluster[i].end; ++is) {
+	 			SubCluster[i].tEnd   = max(SubCluster[i].tEnd, Hp->matches[is].second.pos + opts.globalK);
+				SubCluster[i].tStart = min(SubCluster[i].tStart, Hp->matches[is].second.pos);
+				SubCluster[i].qEnd   = max(SubCluster[i].qEnd, Hp->matches[is].first.pos + opts.globalK);
+				SubCluster[i].qStart = min(SubCluster[i].qStart, Hp->matches[is].first.pos); 				
+ 			}
+ 		}
+ 	}
+};
 
 
 template<typename Tup>
@@ -494,6 +519,5 @@ void RemovePairedIndels(vector<pair<Tup, Tup>> & matches, vector<Cluster> & clus
 	matches.resize(m);
 }
 
-
-	
+ 
 #endif

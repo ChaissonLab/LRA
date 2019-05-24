@@ -14,8 +14,8 @@ template<typename Tup>
 class DiagonalSortOp {
  public:
 	int operator()(const pair<Tup, Tup> &a, const pair<Tup, Tup> &b) {
-		int aDiag = a.first.pos - a.second.pos, 
-			bDiag= b.first.pos - b.second.pos;
+		int aDiag = (int)a.first.pos - (int)a.second.pos, 
+			bDiag= (int)b.first.pos - (int)b.second.pos;
 
 		if (aDiag != bDiag) {
 			return aDiag < bDiag;
@@ -44,8 +44,8 @@ class AntiDiagonalSortOp {
 		
 	GenomePos length;
 	int operator()(const pair<Tup, Tup> &a, const pair<Tup, Tup> &b) {
-		int aDiag = a.first.pos - (length-a.second.pos),  
-			bDiag= b.first.pos - (length-b.second.pos); 
+		int aDiag = (int)a.first.pos - (int)(length-a.second.pos),  
+			bDiag= (int)b.first.pos - (int)(length-b.second.pos); 
 
 		if (aDiag != bDiag) {
 			return aDiag < bDiag;
