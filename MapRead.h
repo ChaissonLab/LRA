@@ -21,7 +21,7 @@
 #include <thread>
 
 #include "AffineOneGapAlign.h"
-//#include "NaiveDP.h"
+#include "MergeSplit.h"
 #include "GlobalChain.h"
 #include "TupleOps.h"
 #include "SparseDP.h"
@@ -512,8 +512,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 		}
 		wclust.close();
-
-
 	}
 
 
@@ -705,7 +703,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					for (int m = 0; m < clusters[clusterchain[c][s]].matches.size(); ++m) {
 						baseDots << clusters[clusterchain[c][s]].matches[m].first.pos << "\t" 
 								 << clusters[clusterchain[c][s]].matches[m].second.pos << "\t" 
-								 << opts.globalK <<"\t" << c << "\t" << clusters[clusterchain[c][s]].strand << endl;					
+								 << opts.globalK + clusters[clusterchain[c][s]].matches[m].first.pos <<"\t" << opts.globalK + clusters[clusterchain[c][s]].matches[m].second.pos
+								  << "\t" << c << "\t" << clusters[clusterchain[c][s]].strand << endl;					
 					}				
 				}
 				baseDots.close();
@@ -1116,7 +1115,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			if (opts.mergeClusters) {
 				vt.clear();
 
-				//MergeClusters(smallOpts, refinedClusters, vt, r);
+				// MergeClusters(smallOpts, refinedClusters, vt, r, baseName);
 				mergeClusters (smallOpts, refinedClusters[r].matches, vt, r, baseName);
 
 				//cerr << "vt.size(): " << vt.size() << endl;
@@ -1129,7 +1128,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 								 << vt[m].tStart << "\t" 
 								 << vt[m].qEnd << "\t" 
 								 << vt[m].tEnd << "\t" 
-								 << r << endl;
+								 << m << endl;
 					}
 					baseDots.close();
 				}
