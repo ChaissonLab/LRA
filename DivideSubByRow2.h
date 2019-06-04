@@ -29,7 +29,7 @@ using std::iota;
 // Note: H1[j].inv == 0
 void 
 ScanPoints_Row2 (std::vector<info> & V, std::vector<Point> & H1, std::vector<long int> & Bi,  unsigned int & s, unsigned int & e, bool & DE, unsigned int & n) {
-
+	// elements in set are unique and follow an increasing order
 	std::set<long int> ForwardIndex;
 	for (unsigned int i = s; i < e; ++i) {
 
@@ -48,8 +48,8 @@ ScanPoints_Row2 (std::vector<info> & V, std::vector<Point> & H1, std::vector<lon
 		}
 
 	}	
-
-	for (std::set<long int>::reverse_iterator it = ForwardIndex.rbegin(); it != ForwardIndex.rend(); ++it) { // elements in D/E array are in the decreasing order) {
+	// elements in D/E array are in the decreasing order
+	for (std::set<long int>::reverse_iterator it = ForwardIndex.rbegin(); it != ForwardIndex.rend(); ++it) {  
 		Bi.push_back(*it);
 	}
 }
@@ -100,11 +100,11 @@ ScanPoints_Row2 (std::vector<info> & V, std::vector<Point> & H1, std::vector<lon
 // This function will decide Eb and Db array
 void
 Decide_Eb_Db_R2 (std::vector<long int> & Di, std::vector<long int> & Ei, std::vector<long int> & Db, std::vector<long int> & Eb, std::vector<unsigned int> & E) {
-
+	// find the index *t that Ei[*t] is the first element which is < Di[s]
+	// Note: here we compare from the right
+	//
 	for (unsigned int s = 0; s < Di.size(); ++s) {
-		std::vector<unsigned int>::reverse_iterator t = Lower_Bound<std::vector<unsigned int>::reverse_iterator,long int>(E.rbegin(), E.rend(), Di[s], Ei); // find the index *t that Ei[*t] 
-																																							// is the first element which is >= Di[s]
-																																							// Note: here we compare from the right
+		std::vector<unsigned int>::reverse_iterator t = Lower_Bound<std::vector<unsigned int>::reverse_iterator,long int>(E.rbegin(), E.rend(), Di[s], Ei); 
 		if (t == E.rbegin()) {
 			break;
 		}

@@ -10,10 +10,11 @@ class Fragment_Info
 {
 public:
 	float val;
-	long int prev_sub;
-	long int prev_ind;
+	long int prev_sub; // the previous subproblem's number
+	long int prev_ind; // the index in the Ev of the previous subproblem
 	bool prev; //if prev == TRUE then the previous subproblem is row subproblem. Else it's col subproblem 
 	bool inv; // if inv == TRUE, then the previous subproblem is dividing (s1, e1). Else it's dividing (s2, e2)
+	bool orient; // if orient = 0 means reverse orientated anchor
 	std::vector<unsigned int> SS_A_R1;
 	std::vector<unsigned int> SS_B_R1;
 	unsigned int counter_A_R1;
@@ -41,6 +42,7 @@ Fragment_Info::Fragment_Info () {
 	prev_ind = -1;
 	prev = 1;	
 	inv = 1;
+	orient = 1;
 }
 
 

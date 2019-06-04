@@ -26,6 +26,8 @@
 #include "TupleOps.h"
 #include "SparseDP.h"
 #include "Merge.h"
+#include "SparseDP_Forward.h"
+
 
 using namespace std;
 
@@ -583,13 +585,18 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		clusters_value[0] = (float)(max(clusterOrder[0].qEnd - clusterOrder[0].qStart, clusterOrder[0].tEnd - clusterOrder[0].tStart));
 		vector<int> repetitivenum(clusters.size(), 0);
 
+		// Get clusters_value 
+		for (int cv = 0; cv < clusters_value.size(); cv++) {
+			clusters_value[cv] = (float)(max(clusterOrder[cv].qEnd - clusterOrder[cv].qStart, clusterOrder[cv].tEnd - clusterOrder[cv].tStart));
+		}
+
 		if (clusters.size() > 1) {
 			for (int c = 1; c < clusters.size(); ++c) {
 				//cerr << "c: " << c << " clusterOrder.index[c]: " << clusterOrder.index[c] << endl;
 				//cerr << "read length: " << read.length << "  clusterOrder[c].qEnd - clusterOrder[c].qStart: " << clusterOrder[c].qEnd - clusterOrder[c].qStart << endl;
 				//cerr << "((float)(qEnd - qStart))/ReadLength: " << ((float)(clusterOrder[c].qEnd -  clusterOrder[c].qStart))/read.length << endl;
 				//cerr << "clusters_value[c]: " << clusters_value[c] << endl;
-				clusters_value[c] = (float)(max(clusterOrder[c].qEnd - clusterOrder[c].qStart, clusterOrder[c].tEnd - clusterOrder[c].tStart));
+				//clusters_value[c] = (float)(max(clusterOrder[c].qEnd - clusterOrder[c].qStart, clusterOrder[c].tEnd - clusterOrder[c].tStart));
 
 				for (int s = 0; s <= c - 1; ++s) {
 
@@ -601,8 +608,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 					int ReverseStrand = -1;
 					if (clusterOrder[c].strand == clusterOrder[s].strand and clusterOrder[c].strand == 0) {ReverseStrand = 1;}
-					else if (clusterOrder[c].strand == clusterOrder[s].strand and clusterOrder[c].strand == 0) {ReverseStrand = -1;}
-					else {ReverseStrand = 1;}
+					else if (clusterOrder[c].strand == clusterOrder[s].strand and clusterOrder[c].strand == 1) {ReverseStrand = -1;}
+					else { ReverseStrand = 1;}
 
 					//TODO(Jingwen): Only for debug and delete the following later
 					/*
@@ -632,7 +639,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 							//objective = clusters_value[c] + clusters_value[s] - log((float)gap) - 0.5*((float)gap);
 							objective = (float)(max(clusterOrder[c].qEnd - clusterOrder[c].qStart, clusterOrder[c].tEnd - clusterOrder[c].tStart)) +
 											clusters_value[s] - 0.5*((float)gap) - 2*rate*((float)overlap);
-
 						}
 						else {
 							//objective = clusters_value[c] + clusters_value[s] - LookUpTable[(int)floor((gap-501)/5)] - 0.5*((float)gap);
@@ -645,7 +651,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 						}			
 					}
 				} 
-
 			}	
 		}
 
@@ -677,6 +682,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			if (!clusters[clusterchain[0][0]].OverlapsOnRead(read.length, 0.1)) clusterchain.clear();
 		}
 		
+
 
 	/*
 		float max_value = 0;
@@ -1386,6 +1392,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				}
 				else if (refinedClusters[r].matches.size() < 30000) {
 					if (refinedClusters[r].matches.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
+						cerr << "rate is low" << endl;
 						SparseDP(refinedClusters[r].matches, chain, smallOpts, LookUpTable, refinedLogClusters[r], refinedClusters[r].strands, 5);
 					}
 					else {
@@ -1495,7 +1502,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					// Swap anchors of reverse strand back to reverse strand coordinates, making it easier to fill up the gap
 					if (refinedClusters[r].strands[chain[ch]] == 1) {
 						tupChain.push_back(GenomePair(GenomeTuple(0, read.length - (refinedClusters[r].matches[chain[ch]].first.pos + smallOpts.globalK)), 
-										GenomeTuple(0, refinedClusters[r].matches[chain[ch]].second.pos)));
+													GenomeTuple(0, refinedClusters[r].matches[chain[ch]].second.pos)));
 					}
 					else {
 						tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[chain[ch]].first.pos), 
@@ -1539,17 +1546,20 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 									 << tupChainClusters[m].strand << endl;								
 						}
 						else {
+
 							baseDots << read.length - tupChain[c].first.pos - smallOpts.globalK << "\t" 
-									 << tupChain[c].second.pos << "\t" 
+									 << tupChain[c].second.pos + smallOpts.globalK<< "\t" 
 									 << read.length - tupChain[c].first.pos << "\t" 
-									 << tupChain[c].second.pos + smallOpts.globalK << "\t"
+									 << tupChain[c].second.pos << "\t"
 									 << m << "\t"
-									 << tupChainClusters[m].strand << endl;								
+									 << tupChainClusters[m].strand << endl;	
+
 						}	
 						//TODO(Jingwe): the following code is only for debug
 						if (tupChainClusters[m].strand == 1 and c != tupChainClusters[m].end - 1) {
 							assert(tupChain[c].first.pos > tupChain[c+1].first.pos);
 							assert(tupChain[c].second.pos > tupChain[c+1].second.pos);
+							if (!(tupChain[c].first.pos > tupChain[c+1].first.pos) or !(tupChain[c].second.pos > tupChain[c+1].second.pos)) cerr << "m: " << m  << endl;
 						}
 					}
 				}
@@ -1729,10 +1739,10 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 									gapChain.clear();
 									if (gapPairs.size() < 20000) {
 										if (gapPairs.size()/((float)min(subreadLength, subgenomeLength)) < 0.1) {
-											SparseDP(gapPairs, gapChain, tinyOpts, LookUpTable, 5);
+											SparseDP_ForwardOnly(gapPairs, gapChain, tinyOpts, LookUpTable, 5);
 										}
 										else { 
-											SparseDP(gapPairs, gapChain, tinyOpts, LookUpTable); 
+											SparseDP_ForwardOnly(gapPairs, gapChain, tinyOpts, LookUpTable); 
 										}
 
 										if (opts.dotPlot) {

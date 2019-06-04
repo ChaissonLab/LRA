@@ -26,7 +26,7 @@ using std::iota;
 // Note: H1[j].inv == 0 and backdiag
 void 
 ScanPoints_Col2(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector<long int> & Bi, unsigned int & s, unsigned int & e,  bool & DE, unsigned int & n) {
-	
+	// elements in set are unique and follow an increasing order
 	std::set<long int> ForwardIndex;
 	for (unsigned int i = s; i < e; ++i) {
 		unsigned int count = 0;
@@ -43,8 +43,8 @@ ScanPoints_Col2(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsi
 			else V[i].SS_A2.push_back(n);
 		}
 	}	
-
-	for (std::set<long int>::iterator it = ForwardIndex.begin(); it != ForwardIndex.end(); ++it) { // elements in D array are in the ascending order
+	// elements in D/E array are in the ascending order
+	for (std::set<long int>::iterator it = ForwardIndex.begin(); it != ForwardIndex.end(); ++it) { 
 		Bi.push_back(*it);
 	}
 }
@@ -94,8 +94,8 @@ void
 Decide_Eb_Db_C2 (std::vector<long int> & Di, std::vector<long int> & Ei, std::vector<long int> & Db, std::vector<long int> & Eb, std::vector<unsigned int> & E) {
 
 	for (unsigned int s = 0; s < Di.size(); ++s) {
-		std::vector<unsigned int>::iterator t = Lower_Bound<std::vector<unsigned int>::iterator,long int>(E.begin(), E.end(), Di[s], Ei); // find the index *t that Ei[*t] is the first element which 
-																																			// is >= Di[s]
+		// find the index *t that Ei[*t] is the first element which is >= Di[s]
+		std::vector<unsigned int>::iterator t = Lower_Bound<std::vector<unsigned int>::iterator,long int>(E.begin(), E.end(), Di[s], Ei); 
 		if (t == E.end()) {
 			break;
 		}

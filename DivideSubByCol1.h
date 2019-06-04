@@ -112,7 +112,7 @@ ScanPoints_Col1(std::vector<info> & V, std::vector<Pair> & H1, std::vector<unsig
 //Note this function didn't count the number of points which have forward diagonal <= the current forward diagonal>
 void 
 ScanPoints_Col1(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector<long int> & Bi, unsigned int & s, unsigned int & e,  bool & DE, unsigned int & n) {
-	
+	// elements in set are unique and follow an increasing order
 	std::set<long int> ForwardIndex;
 	for (unsigned int i = s; i < e; ++i) {
 		unsigned int count = 0;
@@ -129,8 +129,8 @@ ScanPoints_Col1(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsi
 			else V[i].SS_A1.push_back(n);
 		}
 	}	
-
-	for (std::set<long int>::reverse_iterator it = ForwardIndex.rbegin(); it != ForwardIndex.rend(); ++it) { // elements in D array are in the decreasing order
+	// elements in D array are in the decreasing order
+	for (std::set<long int>::reverse_iterator it = ForwardIndex.rbegin(); it != ForwardIndex.rend(); ++it) { 
 		Bi.push_back(*it);
 	}
 }
@@ -181,9 +181,10 @@ void
 Decide_Eb_Db_C1 (std::vector<long int> & Di, std::vector<long int> & Ei, std::vector<long int> & Db, std::vector<long int> & Eb, std::vector<unsigned int> & E) {
 
 	for (unsigned int s = 0; s < Di.size(); ++s) {
-		std::vector<unsigned int>::reverse_iterator t = Lower_Bound<std::vector<unsigned int>::reverse_iterator,long int>(E.rbegin(), E.rend(), Di[s], Ei); // find the index *t that Ei[*t] 
-																																							// is the first element which is >= Di[s]
-																																							// Note: here we compare from the right
+		// find the index *t that Ei[*t] is the first element which is >= Di[s]
+		// Note: here we compare from the right (reverse_iterator)
+		//
+		std::vector<unsigned int>::reverse_iterator t = Lower_Bound<std::vector<unsigned int>::reverse_iterator,long int>(E.rbegin(), E.rend(), Di[s], Ei); 
 		if (t == E.rbegin()) {
 			break;
 		}

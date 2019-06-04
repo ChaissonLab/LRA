@@ -244,6 +244,7 @@ SortByBackDiagOp<T1, T2>::SortByBackDiagOp(std::vector<T1> & H) {
 
 
 // This Lower_bound function return the index of the element
+// the first element in the range [first,last) which is greater than or equal to val.
 template <typename T1, typename T2>
 T1 Lower_Bound (T1 first, T1 last, long int val, std::vector<T2> & E_1) {
 	
