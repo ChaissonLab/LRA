@@ -33,6 +33,7 @@
 #include "TupleOps.h"
 #include "Options.h"
 #include "Clustering.h"
+#include "Read.h"
 
 
 using std::cerr;
@@ -489,7 +490,7 @@ ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubPr
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 
 
-//						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts) + opts.globalK + 1; 
+//						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts) + opts.globalK; 
 //						SubR1[j].Ep[i1] = i2;							
 
 						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts) + (opts.globalK + 1) * rate; 
@@ -560,7 +561,7 @@ ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubPr
 						//cerr << "the index in Ei that ForwardDiag is in----i1: " << i1 << "\n";
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 					
-	//					SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK + 1; 
+	//					SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK; 
 	//					SubC1[j].Ep[i1] = i2;							
 
 						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + (opts.globalK + 1) * rate; 
@@ -926,49 +927,82 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<unsigned int> 
 
 // The input for this function is GenomePairs which is not from Merge_Split step
 // Each fragment has the same length
-int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, Options & opts, const std::vector<float> & LookUpTable, int rate = 1) {
+int SparseDP (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Options &opts, const std::vector<float> &LookUpTable, LogCluster &logcluster, vector<int> &strands, int rate = 1) {
+
+	if (FragInput.size() == 0) return 0;
+
 	std::vector<Point> H1;
 
 	// FragInput is vector<GenomePair>
 	// get points from FragInput and store them in H1		
-	for (unsigned int i = 0; i < FragInput.size(); ++i) {
-	
-		// insert start point s1 into H1
-		Point s1;
-		H1.push_back(s1);
-		H1.back().ind = 1; // start
-		H1.back().inv = 1; // forward direction
-		H1.back().frag_num = i;
-		H1.back().se.first = FragInput[i].first.pos; 
-		H1.back().se.second = FragInput[i].second.pos;	
+	for (unsigned int j = 0; j < logcluster.SubCluster.size(); j++) {
+		//
+		// If SubCluster[j] is on reverse strand, then we need to insert four points. Otherwise only insert two points
+		//
 
-		// insert start point s2 into H1
-		Point s2;
-		H1.push_back(s2);
-		H1.back().ind = 1; // start
-		H1.back().inv = 0; // backward direction
-		H1.back().frag_num = i;
-		H1.back().se.first = FragInput[i].first.pos; 
-		H1.back().se.second = FragInput[i].second.pos + opts.globalK;	
+		for (unsigned int i = logcluster.SubCluster[j].start; i < logcluster.SubCluster[j].end; i++) {
 
-		// insert end point e1 into H1
-		Point e1;
-		H1.push_back(e1);
-		H1.back().ind = 0; // end
-		H1.back().inv = 1; // forward direction		
-		H1.back().frag_num = i;
-		H1.back().se.first = FragInput[i].first.pos + opts.globalK;
-		H1.back().se.second = FragInput[i].second.pos + opts.globalK;	
+			if (logcluster.SubCluster[j].strand == 0) {
+				strands[i] = 0;
+				// insert start point s1 into H1
+				Point s1;
+				H1.push_back(s1);
+				H1.back().ind = 1; // start
+				H1.back().inv = 1; // forward direction
+				H1.back().frag_num = i;
+				H1.back().se.first = FragInput[i].first.pos; 
+				H1.back().se.second = FragInput[i].second.pos;	
 
-		// insert end point e2 into H1
-		Point e2;
-		H1.push_back(e2);
-		H1.back().ind = 0; // end
-		H1.back().inv = 0; // backward direction		
-		H1.back().frag_num = i;
-		H1.back().se.first = FragInput[i].first.pos + opts.globalK;
-		H1.back().se.second = FragInput[i].second.pos;	
+				// insert end point e1 into H1
+				Point e1;
+				H1.push_back(e1);
+				H1.back().ind = 0; // end
+				H1.back().inv = 1; // forward direction		
+				H1.back().frag_num = i;
+				H1.back().se.first = FragInput[i].first.pos + opts.globalK;
+				H1.back().se.second = FragInput[i].second.pos + opts.globalK;					
+			}
+			else {
+				strands[i] = 1;
+				// insert start point s1 into H1
+				Point s1;
+				H1.push_back(s1);
+				H1.back().ind = 1; // start
+				H1.back().inv = 1; // forward direction
+				H1.back().frag_num = i;
+				H1.back().se.first = FragInput[i].first.pos; 
+				H1.back().se.second = FragInput[i].second.pos;	
+
+				// insert end point e1 into H1
+				Point e1;
+				H1.push_back(e1);
+				H1.back().ind = 0; // end
+				H1.back().inv = 1; // forward direction		
+				H1.back().frag_num = i;
+				H1.back().se.first = FragInput[i].first.pos + opts.globalK;
+				H1.back().se.second = FragInput[i].second.pos + opts.globalK;
+
+				// insert start point s2 into H1
+				Point s2;
+				H1.push_back(s2);
+				H1.back().ind = 1; // start
+				H1.back().inv = 0; // backward direction
+				H1.back().frag_num = i;
+				H1.back().se.first = FragInput[i].first.pos; 
+				H1.back().se.second = FragInput[i].second.pos + opts.globalK ;	
+
+				// insert end point e2 into H1
+				Point e2;
+				H1.push_back(e2);
+				H1.back().ind = 0; // end
+				H1.back().inv = 0; // backward direction		
+				H1.back().frag_num = i;
+				H1.back().se.first = FragInput[i].first.pos + opts.globalK;
+				H1.back().se.second = FragInput[i].second.pos;	
+			} 
+		}
 	}
+
 
 	clock_t begin = std::clock();
 
@@ -1050,17 +1084,17 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 			else if (H1[tt].ind == 0 and H1[tt].inv == 1) { // H1[tt] is an end point (e1)
 				Value[ii].SS_A_R1 = Row[t].SS_A1;
 				Value[ii].counter_A_R1 = Row[t].SS_A1.size();
-				//Value[ii].val = (opts.globalK + 1); // TODO(Jingwen): make sure that this is redundant
+				//Value[ii].val = (opts.globalK); // TODO(Jingwen): make sure that this is redundant
 			}
 			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
 				Value[ii].SS_B_R2 = Row[t].SS_B2;
 				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
-				//Value[ii].val = (opts.globalK + 1);
+				//Value[ii].val = (opts.globalK);
 			}
 			else { // H1[tt] is an end point (e2)
 				Value[ii].SS_A_R2 = Row[t].SS_A2;
 				Value[ii].counter_A_R2 = Row[t].SS_A2.size();
-				//Value[ii].val = (opts.globalK + 1);				
+				//Value[ii].val = (opts.globalK);				
 			}
 		}
 	}
@@ -1080,17 +1114,17 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 			else if (H1[H2[tt]].ind == 0 and H1[H2[tt]].inv == 1) { // H1[H2[tt]] is an end point (e1)
 				Value[ii].SS_A_C1 = Col[t].SS_A1;
 				Value[ii].counter_A_C1 = Col[t].SS_A1.size();
-				//Value[ii].val = (opts.globalK + 1);
+				//Value[ii].val = (opts.globalK);
 			}
 			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
 				Value[ii].SS_B_C2 = Col[t].SS_B2;
 				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
-				//Value[ii].val = (opts.globalK + 1);				
+				//Value[ii].val = (opts.globalK);				
 			}
 			else { // H1[H2[tt]] is an end point (e2)
 				Value[ii].SS_A_C2 = Col[t].SS_A2;
 				Value[ii].counter_A_C2 = Col[t].SS_A2.size();
-				//Value[ii].val = (opts.globalK + 1);				
+				//Value[ii].val = (opts.globalK);				
 			}
 
 		}
@@ -1146,6 +1180,213 @@ int SparseDP (const GenomePairs & FragInput, std::vector<unsigned int> & chain, 
 */
 
 	return 0;
+}
+
+
+// The input for this function is GenomePairs which is from gapPairs
+// Each fragment has the same length
+int SparseDP (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Options &opts, const std::vector<float> &LookUpTable, int rate = 1) {
+	
+	if (FragInput.size() == 0) return 0;
+
+
+	std::vector<Point> H1;
+
+	// FragInput is vector<GenomePair>
+	// get points from FragInput and store them in H1		
+
+	for (unsigned int i = 0; i < FragInput.size(); i++) {
+
+			// insert start point s1 into H1
+			Point s1;
+			H1.push_back(s1);
+			H1.back().ind = 1; // start
+			H1.back().inv = 1; // forward direction
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].first.pos; 
+			H1.back().se.second = FragInput[i].second.pos;	
+
+			// insert end point e1 into H1
+			Point e1;
+			H1.push_back(e1);
+			H1.back().ind = 0; // end
+			H1.back().inv = 1; // forward direction		
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].first.pos + opts.globalK;
+			H1.back().se.second = FragInput[i].second.pos + opts.globalK;					
+		
+	}
+	
+	//Sort the point by row
+	sort(H1.begin(), H1.end(), SortByRowOp<Point>()); // with same q and t coordinates, end point < start point
+
+	//cerr << "H1: " << H1 << endl;
+	std::vector<unsigned int> H2(H1.size());
+	//std::vector<unsigned int> H3(H1.size()); // TODO(Jingwen): Probably don't need this
+	iota(H2.begin(), H2.end(), 0);
+	//iota(H3.begin(), H3.end(), 0);
+
+	//Sort the point by column and by back diagonal
+	sort(H2.begin(), H2.end(), SortByColOp<Point, unsigned int>(H1));
+	//sort(H3.begin(), H3.end(), SortByBackDiagOp<Point, unsigned int>(H1));
+
+	
+	// print out H2, and H3
+	/*
+	cerr << "H2: [";
+	for (unsigned int t = 0; t < H2.size(); ++t) {
+		cerr << H1[H2[t]] << endl;
+	}	
+	cerr << "]\n";
+
+
+	cerr << "H3: [";
+	for (unsigned int t = 0; t < H2.size(); ++t) {
+		cerr << H1[H3[t]] << endl;
+	}	
+	cerr << "]\n";
+	*/
+
+	std::vector<info> Row;
+	std::vector<info> Col;
+	GetRowInfo(H1, Row);
+	GetColInfo(H1, H2, Col);
+	//cerr << "Row: " << Row << "\n";
+	//cerr << "Col: " << Col << "\n";
+
+	unsigned int n1 = 0;
+	unsigned int m1 = 0;
+	unsigned int n2 = 0;
+	unsigned int m2 = 0;
+	//std::vector<Subproblem> SubR;
+	//std::vector<Subproblem> SubC;
+	StackOfSubProblems SubR1;
+	StackOfSubProblems SubC1;
+	int eeR1 = 0, eeC1 = 0;
+
+	StackOfSubProblems SubR2;
+	StackOfSubProblems SubC2;
+	int eeR2 = 0, eeC2 = 0;
+
+	//cerr << "DivideSubByRow\n";
+	DivideSubProbByRow1(H1, Row, 0, Row.size(), n1, SubR1, eeR1);
+	//cerr << "SubR: " << SubR << endl;
+
+	//cerr << "DivideSubByCol\n";
+	DivideSubProbByCol1(H1, H2, Col, 0, Col.size(), m1, SubC1, eeC1);
+	//cerr << "SubC: " << SubC << endl;
+
+	DivideSubProbByRow2(H1, Row, 0, Row.size(), n2, SubR2, eeR2);	
+	DivideSubProbByCol2(H1, H2, Col, 0, Col.size(), m2, SubC2, eeC2);
+
+
+	// Get SS_A_R1, SS_B_R1, SS_A_R2 and SS_B_R2 for each fragment
+	std::vector<Fragment_Info> Value(FragInput.size());
+	for (unsigned int t = 0; t < Row.size(); ++t) {
+		for (unsigned int tt = Row[t].pstart; tt < Row[t].pend; ++tt) {
+
+			unsigned int ii = H1[tt].frag_num;
+
+			if (H1[tt].ind == 1 and H1[tt].inv == 1) { //H1[tt] is a start point (s1)
+				Value[ii].SS_B_R1 = Row[t].SS_B1;
+				Value[ii].counter_B_R1 = Row[t].SS_B1.size();
+				Value[ii].val = (opts.globalK + 1);
+			}
+			else if (H1[tt].ind == 0 and H1[tt].inv == 1) { // H1[tt] is an end point (e1)
+				Value[ii].SS_A_R1 = Row[t].SS_A1;
+				Value[ii].counter_A_R1 = Row[t].SS_A1.size();
+				//Value[ii].val = (opts.globalK); // TODO(Jingwen): make sure that this is redundant
+			}
+			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
+				Value[ii].SS_B_R2 = Row[t].SS_B2;
+				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
+				//Value[ii].val = (opts.globalK);
+			}
+			else { // H1[tt] is an end point (e2)
+				Value[ii].SS_A_R2 = Row[t].SS_A2;
+				Value[ii].counter_A_R2 = Row[t].SS_A2.size();
+				//Value[ii].val = (opts.globalK);				
+			}
+		}
+	}
+
+
+	// Get SS_A_C1, SS_B_C1, SS_A_C2 and SS_B_C2 for each fragment
+	for (unsigned int t = 0; t < Col.size(); ++t) {
+		for (unsigned int tt = Col[t].pstart; tt < Col[t].pend; ++tt) { 
+
+			unsigned int ii = H1[H2[tt]].frag_num;
+
+			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
+				Value[ii].SS_B_C1 = Col[t].SS_B1;
+				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
+				Value[ii].val = (opts.globalK + 1);
+			}
+			else if (H1[H2[tt]].ind == 0 and H1[H2[tt]].inv == 1) { // H1[H2[tt]] is an end point (e1)
+				Value[ii].SS_A_C1 = Col[t].SS_A1;
+				Value[ii].counter_A_C1 = Col[t].SS_A1.size();
+				//Value[ii].val = (opts.globalK);
+			}
+			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
+				Value[ii].SS_B_C2 = Col[t].SS_B2;
+				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
+				//Value[ii].val = (opts.globalK);				
+			}
+			else { // H1[H2[tt]] is an end point (e2)
+				Value[ii].SS_A_C2 = Col[t].SS_A2;
+				Value[ii].counter_A_C2 = Col[t].SS_A2.size();
+				//Value[ii].val = (opts.globalK);				
+			}
+
+		}
+	}
+
+
+	//cerr << "Value: " << Value << endl;
+	
+
+	//cerr << "ProcessPoint\n";
+
+	ProcessPoint(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, rate);
+
+	
+	//cerr << "end\n";
+
+	// find the max_value for the FinalChain 
+	unsigned int  l = 0;
+	float max_value = 0;
+	unsigned int max_pos = 0;
+	while (l < Value.size()) {
+		if (Value[l].val > max_value) {
+			max_value = Value[l].val;
+			max_pos = l;
+		}
+		++l;
+	}
+	
+	//cerr << "TraceBack\n";
+	// Trace back to get the FinalChain
+	// store the index of points
+	chain.clear();
+	TraceBack(SubR1, SubC1, SubR2,SubC2, Value, max_pos, chain);
+	std::reverse(chain.begin(), chain.end());
+
+	// Clear SubR and SubC
+	SubR1.Clear(eeR1);
+	SubC1.Clear(eeC1);
+	SubR2.Clear(eeR2);
+	SubC2.Clear(eeC2);
+
+/*	// print out the final chain
+	cerr << "FinalChain: (";
+	for (unsigned int i = 0; i < FinalChain.size(); ++i) {
+		cerr << A[FinalChain[i]] << ", ";
+	}
+	cerr << ")" << endl;
+*/
+
+	return 0;
+
 }
 
 

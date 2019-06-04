@@ -2,7 +2,7 @@
 #include "htslib/kseq.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <math.h>
 
 #include <thread>
 #include <string>
@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <zlib.h>
 #include <vector>
+
 #include "htslib/kseq.h"
 #include "htslib/sam.h"
 #include "Input.h"
@@ -20,15 +21,14 @@
 #include "TupleOps.h"
 #include "MinCount.h"
 #include "MapRead.h"
-using namespace std;
 #include <algorithm>
 #include "SeqUtils.h"
 #include "Options.h"
 #include "Alignment.h"
 #include "LogLookUpTable.h"
 
-#include <math.h>
 
+using namespace std;
 
 
 const char* version="0.1-alpha";

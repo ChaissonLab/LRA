@@ -76,6 +76,60 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int stran
 	matches.resize(c);
 }
 
+
+// TODO(Jingwen): the following function is only for test, delete it later
+template<typename Tup>
+void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int &start, int &end, Options &opts, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
+	if (end - start == 0) {
+		return;
+	}
+	
+	vector<bool> onDiag(end - start, false);
+	
+	if (end - start > 1 and abs(DiagonalDifference(matches[start], matches[start + 1], strand)) < opts.cleanMaxDiag and 
+				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[start]) < diagDrift )) { // TODO(Jingwen): Maybe change DiagonalDrift to include cases where strand=1
+		onDiag[0] = true;
+	}
+	int m;
+	for (int i = start + 1; i < end ; i++) {
+		if (abs(DiagonalDifference(matches[i], matches[i-1], strand)) < opts.cleanMaxDiag and 
+				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i]) < diagDrift )) {	
+			onDiag[i - start] = true;
+		}
+	}
+	bool prevOnDiag = false;
+	int  diagStart;
+	for (int i = 0; i < end - start; i++) {
+		if (prevOnDiag == false and onDiag[i] == true) {
+			diagStart = i;
+		}
+		if (prevOnDiag == true and onDiag[i] == false) {
+			if (i - diagStart < opts.minDiagCluster) {
+				for (int j = diagStart; j < i; j++) {
+					onDiag[j] = false;
+				}
+			}
+		}
+		prevOnDiag = onDiag[i];
+	}
+
+	int c   = start;
+	for (int i=0; i < end - start; i++) {
+		if (onDiag[i]) {
+			matches[c] = matches[i + start]; c++;
+		}
+	}
+
+	matches.resize(c);
+	end = c;
+}
+
+
+
+
+
+
+
 class ClusterCoordinates {
  public:
 	int start;
@@ -198,6 +252,7 @@ class ClusterCoordinates {
 class Cluster : public ClusterCoordinates {
  public:
 	GenomePairs matches;
+	vector<int> strands; // stores the strand of every GenomePair in matches
 	int coarse;
 	Cluster() {}
   Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=0;}
@@ -208,6 +263,10 @@ class Cluster : public ClusterCoordinates {
 					GenomePos qs, GenomePos qe,
 					GenomePos ts, GenomePos te, 
 					int st) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=0;} 
+  Cluster(int s, int e, 
+					GenomePos qs, GenomePos qe,
+					GenomePos ts, GenomePos te, 
+					int st, int cs) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=cs;} 
 	
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
@@ -343,24 +402,48 @@ class LogCluster {
  public:
  	vector<Cluster> SubCluster;
  	Cluster * Hp;
+ 	int coarse;
  	LogCluster () {};
  	~LogCluster() {};
 
  	void setHp(Cluster & H) {
  		Hp = & H;
  	}; 
+ 	void SetCoarse () {
+ 		coarse = SubCluster[0].coarse;
+ 	}
 
- 	void SetSubClusterBoundariesFromMatches (Options &opts) {
- 		for (int i = 0; i < SubCluster.size(); ++i) {
- 			
- 			// set the boundaries for SubCluster[i]
- 			for (int is = SubCluster[i].start; is < SubCluster[i].end; ++is) {
-	 			SubCluster[i].tEnd   = max(SubCluster[i].tEnd, Hp->matches[is].second.pos + opts.globalK);
+ 	void SetSubClusterBoundariesFromMatches (Options &opts, int i) {
+		// set the boundaries for SubCluster[i]
+
+		for (int is = SubCluster[i].start; is < SubCluster[i].end; ++is) {
+			if (SubCluster[i].strand == 0) {
+				if (is == SubCluster[i].start) {
+			 		SubCluster[i].tStart = Hp->matches[is].second.pos;
+			 		SubCluster[i].qStart = Hp->matches[is].first.pos;					
+				}
+				SubCluster[i].tEnd   = max(SubCluster[i].tEnd, Hp->matches[is].second.pos + opts.globalK);
 				SubCluster[i].tStart = min(SubCluster[i].tStart, Hp->matches[is].second.pos);
 				SubCluster[i].qEnd   = max(SubCluster[i].qEnd, Hp->matches[is].first.pos + opts.globalK);
-				SubCluster[i].qStart = min(SubCluster[i].qStart, Hp->matches[is].first.pos); 				
- 			}
- 		}
+				SubCluster[i].qStart = min(SubCluster[i].qStart, Hp->matches[is].first.pos); 						
+			}
+			else {
+				if (is == SubCluster[i].start) {
+			 		SubCluster[i].tStart = Hp->matches[is].second.pos;
+			 		SubCluster[i].qStart = Hp->matches[is].first.pos;					
+				}
+				SubCluster[i].tEnd   = max(SubCluster[i].tEnd, Hp->matches[is].second.pos + opts.globalK);
+				SubCluster[i].tStart = min(SubCluster[i].tStart, Hp->matches[is].second.pos);
+				SubCluster[i].qEnd   = max(SubCluster[i].qEnd, Hp->matches[is].first.pos + opts.globalK); // because [qStart, qEnd)
+				SubCluster[i].qStart = min(SubCluster[i].qStart, Hp->matches[is].first.pos); 		
+
+				//TODO(Jingwen): delete the following code later
+				//SubCluster[i].qEnd   = max(SubCluster[i].qEnd, Hp->matches[is].first.pos + 1); // because [qStart, qEnd)
+				//SubCluster[i].qStart = min(SubCluster[i].qStart, Hp->matches[is].first.pos - opts.globalK + 1); 		
+			}
+		
+		}
+
  	}
 };
 
@@ -383,7 +466,6 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &c
 	int cs = s, ce =e;
 	cs = s;
 	int64_t dd,absdd;
-	cerr << "s: " << s << "  e: " << e << endl; 
 	
 	while (cs < e) {
 		ce = cs+1;
@@ -402,10 +484,7 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &c
 			tEnd   = max(tEnd, matches[ce].second.pos + opts.globalK);
 			ce++;
 		}	
-		cerr << "GapDifference(matches[ce], matches[ce-1]): " << GapDifference(matches[ce], matches[ce-1]) << endl;
-		cerr << "abs(DiagonalDifference(matches[ce], matches[ce-1], strand)): " << abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) << endl;
-		cerr << "ce: " << ce << endl;
-		
+
 		if (ce - cs >= opts.minClusterSize) {
 			if (rough == true) {
 				clusters.push_back(Cluster(cs, ce));
@@ -423,6 +502,7 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &c
 	}
 	
 }
+
 
 bool sign(int val) {
 	if (val >= 0) return true;
