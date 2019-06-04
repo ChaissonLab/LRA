@@ -1,13 +1,13 @@
-all:  lra alchemy2 tag tgc
+all:  lra alchemy2 tag tgc iik
 #PROF=/home/cmb-16/mjc/shared/lib/
-PROF=/home/cmb-16/mjc/jingwenr/software/lib
+#PROF=/home/cmb-16/mjc/jingwenr/software/lib
 CCOPTS_BASE=
 DEBUG?=""
 OPT?=""
 ifneq ($(DEBUG), "")
 CCOPTS=$(CCOPTS_BASE) $(DEBUG)
 else
-CCOPTS=-O3 $(CCOPTS_BASE)  -DNDEBUG -DSEQAN_ENABLE_TESTING=0 -DSEQAN_ENABLE_DEBUG=0
+CCOPTS=-O3 $(CCOPTS_BASE)  -DNDEBUG 
 endif
 STATIC=
 ifneq ($(OPT), "")
@@ -39,7 +39,8 @@ HEADERS=MinCount.h \
   NaiveDP.h \
   SparseDP.h
 
-CXX=g++ -std=c++14 
+CXX=g++
+# -std=c++14 
 
 htslib/lib/libhts.a:
 	cd htslib && autoheader && autoconf && ./configure --disable-s3 --disable-lzma --disable-bz2 --prefix=$(PWD)/htslib/ && make -j 4 && make install
@@ -69,7 +70,14 @@ Alchemy2.o: Alchemy2.cpp  htslib/lib/libhts.a
 QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
 	$(CXX) $(CCOPTS) -c  -I htslib/include -I seqan/include  QueryTime.cpp
 
+
+IndexInformativeKmers.o: IndexInformativeKmers.cpp 
+	$(CXX) $(CCOPTS) $^ -c -I htslib -I bwa
+
+iik: IndexInformativeKmers.o bwa/bwa.o bwa/kstring.o bwa/utils.o bwa/kthread.o bwa/kstring.o bwa/ksw.o bwa/bwt.o bwa/bntseq.o bwa/bwamem.o bwa/bwamem_pair.o bwa/bwamem_extra.o bwa/malloc_wrap.o	bwa/QSufSort.o bwa/bwt_gen.o bwa/rope.o bwa/rle.o bwa/is.o bwa/bwtindex.o
+	$(CXX) $(CCOPTS) $^ -o iik -L htslib/lib/libhts.a -lz -lpthread -I htslib
+
 clean:
-	rm -f lra lra.o
+	rm -f lra lra.o iik IndexInformativeKmers.o
 
 
