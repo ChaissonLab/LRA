@@ -74,6 +74,9 @@ QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
 IndexInformativeKmers.o: IndexInformativeKmers.cpp 
 	$(CXX) $(CCOPTS) $^ -c -I htslib -I bwa
 
+bwa/bwa.o:
+	cd bwa && make
+
 iik: IndexInformativeKmers.o bwa/bwa.o bwa/kstring.o bwa/utils.o bwa/kthread.o bwa/kstring.o bwa/ksw.o bwa/bwt.o bwa/bntseq.o bwa/bwamem.o bwa/bwamem_pair.o bwa/bwamem_extra.o bwa/malloc_wrap.o	bwa/QSufSort.o bwa/bwt_gen.o bwa/rope.o bwa/rle.o bwa/is.o bwa/bwtindex.o
 	$(CXX) $(CCOPTS) $^ -o iik -L htslib/lib/libhts.a -lz -lpthread -I htslib
 
