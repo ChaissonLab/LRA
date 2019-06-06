@@ -130,7 +130,7 @@ void CartesianTargetSort(vector<pair<Tup, Tup>> &matches, int s, int e) {
 	sort(matches.begin() + s, matches.begin() + e, CartesianTargetSortOp<Tup>());
 }
 
-/*
+
 template<typename Tup>
 int CartesianTargetLowerBound(typename vector<pair<Tup, Tup> >::iterator  begin,
 															typename vector<pair<Tup, Tup> >::iterator  end, 
@@ -139,16 +139,7 @@ int CartesianTargetLowerBound(typename vector<pair<Tup, Tup> >::iterator  begin,
 	queryTup.second.pos = query;
 	return lower_bound(begin, end, queryTup, CartesianTargetSortOp<Tup>()) - begin;
 }
-*/
 
-template<typename Tup>
-int CartesianTargetLowerBound(vector<pair<Tup, Tup> > &matches, int s, int e, int64_t query) {
-	pair<Tup, Tup> queryTup;
-	queryTup.second.pos = query;
-	return lower_bound(matches.begin() + s, matches.end() + e, queryTup, CartesianTargetSortOp<Tup>()) - matches.begin();
-}
-
-/*
 template<typename Tup>
 int CartesianTargetUpperBound(typename vector<pair<Tup, Tup> >::iterator  begin,
 															typename vector<pair<Tup, Tup> >::iterator  end, 
@@ -157,15 +148,7 @@ int CartesianTargetUpperBound(typename vector<pair<Tup, Tup> >::iterator  begin,
 	queryTup.second.pos = query;
 	return upper_bound(begin, end, queryTup, CartesianTargetSortOp<Tup>()) - begin;
 }
-*/
 
-
-template<typename Tup>
-int CartesianTargetUpperBound(vector<pair<Tup, Tup> > &matches, int s, int e, int64_t query) {
-	pair<Tup, Tup> queryTup;
-	queryTup.second.pos = query;
-	return upper_bound(matches.begin()+s, matches.end()+e, queryTup, CartesianTargetSortOp<Tup>()) - matches.begin();
-}
 
 template<typename T> 
 class SortByRowOp {

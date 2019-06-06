@@ -125,11 +125,6 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int &start, int &end, Op
 }
 
 
-
-
-
-
-
 class ClusterCoordinates {
  public:
 	int start;
@@ -367,7 +362,6 @@ class ClusterOrder {
 };
 
 
-
 class Clusters_valueOrder {
  public:
 	vector<float> *clusters_value;
@@ -396,6 +390,20 @@ class Clusters_valueOrder {
 		return index.size();
 	}
 };
+
+/*
+class clusterchain {
+public: 
+	vector<int> chain;
+	GenomePos qStart;
+	GenomePos qEnd;
+	GenomePos tStart;
+	GenomePos tEnd;
+	int status; // status == 1 means this chain is a secondary chain;
+				// status == 2 means this chain is a chimeric chain;
+	int primary; // primary stores the index of the primary chain
+};
+*/
 
 
 class LogCluster {

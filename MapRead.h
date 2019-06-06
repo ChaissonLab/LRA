@@ -426,6 +426,14 @@ void traceback(vector<int> & clusterchain, int & i, vector<int> & clusters_prede
 	else ++m;
 }
 
+// TODO(Jingwen): determine which traceback should be used
+void traceback (vector<int> &onechain, int &i, vector<int> &clusters_predecessor) {
+
+	onechain.push_back(i);
+	if (clusters_predecessor[i] != -1) {
+		traceback(onechain, clusters_predecessor[i], clusters_predecessor);
+	}
+}
 
 
 void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, pthread_mutex_t *semaphore=NULL) {
@@ -672,6 +680,61 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				traceback(clusterchain[m], clusters_valueOrder.index[r], clusters_predecessor, used, m);
 			}
 		}
+
+
+
+/*
+
+		// traceback chains until chains overlap less than 30% on the read
+		// chains that are overlapped over 70% are considered as secondary alignment
+		vector<vector<int>> clusterchain;
+		Clusters_valueOrder clusters_valueOrder(&clusters_value); // sort clusters_value in descending order
+
+		for (int r= 0; r < clusters_value.size() ; ++r) {
+
+			vector<int> onechain;
+			traceback(onechain, clusters_valueOrder.index[r], clusters_predecessor);
+
+			int TrueIndex = clusterOrder.index[onechain[0]];
+			GenomePos qEnd = clusters[TrueIndex].qEnd;
+			GenomePos tEnd = clusters[TrueIndex].tEnd;
+
+			TrueIndex = clusterOrder.index[onechain.back()];
+			GenomePos qStart = clusters[TrueIndex].qStart;
+			GenomePos tStart = clusters[TrueIndex].tStart;
+
+			//
+			// If this chain overlap with read greater than 30%, insert it to clusterchain
+			if (((float)(qEnd - qStart)/read.length) > 0.3) {
+				clusterchain.push_back(onechain);
+			}
+		}
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 		used.clear();
 		clusters_value.clear();
 		repetitivenum.clear();
@@ -849,7 +912,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 								  << clusters[logClusters[c].coarse].matches[m].second.pos << "\t" 
 								  << clusters[logClusters[c].coarse].matches[m].first.pos + opts.globalK << "\t" 
 								  << clusters[logClusters[c].coarse].matches[m].second.pos + opts.globalK  << "\t" 
-								 << n << "\t" 
+								 << c << "\t" 
 								 << logClusters[c].SubCluster[n].strand << endl;
 						}
 						else {
@@ -857,7 +920,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 									<< clusters[logClusters[c].coarse].matches[m].second.pos << "\t" 
 									<< read.length - clusters[logClusters[c].coarse].matches[m].first.pos - 1 - opts.globalK << "\t"
 									<< clusters[logClusters[c].coarse].matches[m].second.pos + opts.globalK << "\t"
-									<<  n << "\t" 
+									<<  c << "\t" 
 									<< logClusters[c].SubCluster[n].strand << endl;
 						}
 					}
@@ -1057,17 +1120,18 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					//
 					GenomePos genomeLocalIndexStart = glIndex.seqOffsets[lsi]  - chromOffset;
 					GenomePos genomeLocalIndexEnd   = glIndex.seqOffsets[lsi+1] - 1 - chromOffset;
-/*
+
 					int matchStart = CartesianTargetLowerBound<GenomeTuple>(clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].start,
 																		 clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].end, genomeLocalIndexStart);
 
 					int matchEnd = CartesianTargetUpperBound<GenomeTuple>(clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].start, 
 																		 clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].end, genomeLocalIndexEnd);
-*/
 
-					int matchStart = CartesianTargetLowerBound<GenomeTuple>(clusters[logClusters[c].coarse].matches, logClusters[c].SubCluster[sc].start, logClusters[c].SubCluster[sc].end, genomeLocalIndexStart);
+					//int matchStart = CartesianTargetLowerBound<GenomeTuple>(clusters[logClusters[c].coarse].matches, logClusters[c].SubCluster[sc].start, logClusters[c].SubCluster[sc].end, genomeLocalIndexStart);
 
-					int matchEnd = CartesianTargetUpperBound<GenomeTuple>(clusters[logClusters[c].coarse].matches, logClusters[c].SubCluster[sc].start, logClusters[c].SubCluster[sc].end, genomeLocalIndexEnd);
+					//int matchEnd = CartesianTargetUpperBound<GenomeTuple>(clusters[logClusters[c].coarse].matches, logClusters[c].SubCluster[sc].start, logClusters[c].SubCluster[sc].end, genomeLocalIndexEnd);
+
+
 
 					//
 					// If there is no overlap with this cluster
@@ -1347,6 +1411,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				//MergeClusters(smallOpts, refinedClusters, vt, r);
 				mergeClusters (smallOpts, refinedClusters[r].matches, vt, r, baseName);
 
+				/*
 				//TODO(Jingwen): Only for debug
 				if (opts.dotPlot) {
 					stringstream outNameStrm;
@@ -1361,6 +1426,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					}
 					baseDots.close();
 				}
+				*/
+				/*
 				if (opts.dotPlot) {
 					stringstream outNameStrm;
 					outNameStrm << baseName + "." << r << ".merged.real.dots";
@@ -1373,6 +1440,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					}
 					baseDots.close();
 				}
+				*/
 
 
 			}
@@ -1392,7 +1460,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				}
 				else if (refinedClusters[r].matches.size() < 30000) {
 					if (refinedClusters[r].matches.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
-						cerr << "rate is low" << endl;
 						SparseDP(refinedClusters[r].matches, chain, smallOpts, LookUpTable, refinedLogClusters[r], refinedClusters[r].strands, 5);
 					}
 					else {
@@ -1993,26 +2060,32 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 									 << s << "\t"
 									 << alignments[a].SegAlignment[s]->strand << endl;
 						}
-
 					}		
-								
-
-					if (opts.printFormat == 'b') {
-						alignments[a].SegAlignment[s]->PrintBed(*output);
-					}
-					else if (opts.printFormat == 's') {
-						alignments[a].SegAlignment[s]->PrintSAM(*output, opts);
-					}
-					else if (opts.printFormat == 'p') {
-						alignments[a].SegAlignment[s]->PrintPairwise(*output);
-					}
-
-
 				}
 			}
 			
 			baseDots.close();
 		}
+
+
+
+
+		for (int a=0; a < min(opts.bestn, (int) alignments.size()); a++){
+
+			for (int s = 0; s < alignments[a].SegAlignment.size(); s++) {
+
+				if (opts.printFormat == 'b') {
+					alignments[a].SegAlignment[s]->PrintBed(*output);
+				}
+				else if (opts.printFormat == 's') {
+					alignments[a].SegAlignment[s]->PrintSAM(*output, opts);
+				}
+				else if (opts.printFormat == 'p') {
+					alignments[a].SegAlignment[s]->PrintPairwise(*output);
+				}
+			}
+		}
+
 
 		if (semaphore != NULL ) {
 			pthread_mutex_unlock(semaphore);

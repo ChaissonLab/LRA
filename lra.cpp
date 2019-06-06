@@ -457,7 +457,19 @@ void RunStoreIndex(int argc, const char* argv[]) {
 	Options opts;
 
 	RunStoreGlobal(argc, argv, minimizers, header, opts);
-  RunStoreLocal(argc, argv, glIndex, opts);
+
+
+	// save the minimizers in a file
+	// TODO(Jingwen): delete this later
+/*
+	ofstream clust("minimizers.dots");
+	for (int m=0; m < minimizers.size(); m++) {
+		clust << minimizers[m].pos << "\t" << minimizers[m].pos + opts.globalK - 1 <<endl;
+	}
+	clust.close();
+*/
+
+    RunStoreLocal(argc, argv, glIndex, opts);
 }
 
 
@@ -493,7 +505,7 @@ int main(int argc, const char *argv[]) {
 		}
 		else if (ArgIs(argv[argi], "global")) {
 			argc -=2;
-      RunStoreGlobal(argc,  &argv[2], minimizers, header, opts);		
+      		RunStoreGlobal(argc,  &argv[2], minimizers, header, opts);		
 			exit(0);
 		}
 		else if (ArgIs(argv[argi], "local")) {

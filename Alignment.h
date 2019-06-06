@@ -380,7 +380,6 @@ class Alignment {
 
 	void PrintSAM(ostream &out, Options &opts, char *passthrough=NULL) {
 		stringstream samStrm;
-
 		samStrm << readName << "\t";
 		assert(prepared);
 		if (blocks.size() == 0) {
