@@ -67,18 +67,22 @@ void CountKmers(ProcInfo* procInfo) {
 			mult[p%window] = -1;
 			pos[p%window]=0;
 		}
-		if (p % window == window-1) {
+		if ((p % window) == (window-1) or p == procInfo->end-k-1) {
 			//
 			// Reached the end of the window
 			//
-			int minMult=-1;
-			int minMultPos=-1;
-			for (int i=0; i < min(window, -(p-window*(procInfo->genome->lengths[procInfo->c]/window)));i++) {
-				if (minMult < 0 or (mult[i] > 0 and minMult < mult[i])) {
+			int minMult = -1;
+			int minMultPos = -1;
+			int minMultIdx=-1;
+			for (int i=0; i < min(window, procInfo->end - (p/window) * window);i++) {
+
+				if ((minMult < 0 and mult[i] > 0) or (minMult > 0 and minMult > mult[i])) {
 					minMult = mult[i];
 					minMultPos = pos[i];
+					minMultIdx=i;
 				}
 			}
+
 			(*procInfo->pos)[p/window] = minMultPos;
 			(*procInfo->mult)[p/window] = minMult;
 		}
@@ -88,14 +92,15 @@ int main(int argc, char* argv[]) {
 	int optind=1;
 	bwaidx_t *idx;
 	Genome genome;
-	if (argc < 4) {
-		cerr <<" Usage: iik genome.fasta k maxMult" << endl;
+	if (argc < 5) {
+		cerr <<" Usage: iik genome.fasta k window maxMult" << endl;
 		exit(0);
 	}
 	string genomeName=argv[1];
 	int k=atoi(argv[2]);
-	int maxMult=atoi(argv[3]);
-	int window=10;
+	int window=atoi(argv[3]);
+	int maxMult=atoi(argv[4]);
+
 
 	if ((idx = bwa_idx_load(argv[optind], BWA_IDX_BWT|BWA_IDX_BNS)) == 0) return 1;
 	cerr << "Done reading index" << endl;
@@ -107,15 +112,15 @@ int main(int argc, char* argv[]) {
 	ProcInfo procInfo;
 	procInfo.idx = idx;
 
-	int nproc=24;
+	int nproc=48;
 	for (int c =0; c < genome.seqs.size(); c++) {
 		std::map<int,int> hist;
 		uint8_t *binseq = new uint8_t[genome.lengths[c]];
 		for (int p=0; p < genome.lengths[c] ; p++) {
 			binseq[p] =  genome.seqs[c][p] < 4? genome.seqs[c][p] : nst_nt4_table[(int)genome.seqs[c][p]];
 		}
-		vector<int> pos(genome.lengths[c]/window, 0);
-		vector<int> mult(genome.lengths[c]/window, 0);
+		vector<int> pos(genome.lengths[c]/window, -1);
+		vector<int> mult(genome.lengths[c]/window, -1);
 
 		vector<ProcInfo> procs(nproc);
 		pthread_attr_t *threadAttr = new pthread_attr_t[nproc];
@@ -140,7 +145,7 @@ int main(int argc, char* argv[]) {
 			pthread_join(threads[procIndex], NULL);
 		}
 
-
+		/*
 		for (int i=0; i < mult.size(); i++) {
 			if (mult[i] > 0) {
 				if (hist.find(mult[i]) == hist.end()) {
@@ -155,16 +160,26 @@ int main(int argc, char* argv[]) {
 				cerr << it->first << "\t" << it->second << endl;
 			}
 		}
+		*/
+
 		int i;
-		while (i < genome.lengths[c]) {
+		i=0;
+		int npos=0;
+		while (i < genome.lengths[c]/window) {
 			int n=i;
 			long totalMult=0;
-			while (n < genome.lengths[c] and mult[n] < maxMult and mult[n] > 0) { totalMult+=mult[n]; n++; }
+			while (n < genome.lengths[c]/window and mult[n] <= maxMult and mult[n] > 0) { totalMult+=mult[n]; n++; npos+=1;}
 			if (n > i){ 
 				float avgMult = ((float)totalMult)/(n-i);
-				cout << genome.header.names[c] << "\t" << i*window << "\t" << n*window << "\t" << avgMult << endl;
+				if (n < genome.lengths[c]/window) {
+					cout << genome.header.names[c] << "\t" << pos[i] << "\t" << pos[n-1] << "\t" << avgMult << endl;
+				}
+				else {
+					cout << genome.header.names[c] << "\t" << pos[i] << "\t" << pos[pos.size()-1] << "\t" << avgMult << endl;
+				}
 			}
 			i=n+1;
 		}
+		cerr << "done with " << genome.header.names[c] << "\t" << npos << endl;
 	}
 }
