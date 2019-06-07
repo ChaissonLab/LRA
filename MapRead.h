@@ -462,7 +462,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 	DiagonalSort<GenomeTuple>(allMatches); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
 
 	// TODO(Jinwen): delete this after debug
-	if (opts.dotPlot) {
+	if (opts.dotPlot ) {
 		ofstream clust("all-matches.dots");
 		for (int m=0; m < allMatches.size(); m++) {
 			clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos << "\t" << opts.globalK << "\t0\t0"<<endl;
@@ -474,7 +474,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, forMatches, revMatches);
 
 	
-	if (opts.dotPlot) {
+	if (opts.dotPlot ) {
 		ofstream clust("for-matches0.dots");
 		for (int m=0; m < forMatches.size(); m++) {
 			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK << "\t0\t0"<<endl;
@@ -510,7 +510,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 	int reverseStrand=1;
 	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), true, false, reverseStrand);
 
-	if (opts.dotPlot) {
+	if (opts.dotPlot ) {
 		ofstream clust("for-matches.dots");
 		for (int m=0; m < forMatches.size(); m++) {
 			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK << "\t0\t0"<<endl;
@@ -564,7 +564,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 	if (clusters.size() != 0) {
 
 	
-		if (opts.dotPlot) {
+		if (opts.dotPlot ) {
 			ofstream clust("clusters-pre-merge.tab");
 			for (int c =0; c < clusters.size(); c++) {
 
@@ -778,7 +778,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 
 		//cerr << "clusterchain.size(): " << clusterchain.size() << endl;
-		if (opts.dotPlot) {
+		if (opts.dotPlot ) {
 			for (int c = 0; c < clusterchain.size(); c++) {
 				stringstream outNameStrm;
 				outNameStrm << "clusters-sdp." << c << ".dots";
@@ -894,7 +894,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		//TODO(Jingwen): check whether we need the following sort
 		//sort(clusters.begin(), clusters.end(), OrderClusterBySize()); // clusters are sorted in descending order
 		
-		if (opts.dotPlot) {
+		if (opts.dotPlot ) {
 			ofstream matchfile("long_matches.tab");
 			for (int m =0; m < matches.size(); m++) {
 				matchfile << matches[m].first.pos << "\t" << matches[m].second.pos << "\t" << opts.globalK << "\t0\t0" << endl;
@@ -934,7 +934,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 		// TODO(Jingwen): only for debug && delete this later 
 		/*
-		if (opts.dotPlot) {
+		if (opts.dotPlot ) {
 			ofstream clust("clusters-after-remove-overlapping.tab");
 			for (int c =0; c < clusters.size(); c++) {
 
@@ -999,7 +999,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				continue;
 			}			
 
-			if (opts.dotPlot) {
+			if (opts.dotPlot ) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << c << ".clust.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
@@ -1290,7 +1290,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			refinedClusters[c].strands.resize(refinedClusters[c].matches.size()); // refinedClusters[c].strands keeps track of the strand direction of every anchors in refinedClusters[c].matches
 
 
-			if (opts.dotPlot) {
+			if (opts.dotPlot ) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << c << ".orig.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
@@ -1334,7 +1334,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			}
 
 			ofstream dotFile;
-			if (opts.dotPlot) {
+			if (opts.dotPlot ) {
 				stringstream outName;
 				outName << baseName << "." << r << ".dots";
 				dotFile.open(outName.str().c_str());
@@ -1349,7 +1349,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			CleanOffDiagonal(refinedClusters[r].matches, smallOpts);
 			*/
 
-			if (opts.dotPlot) {
+			if (opts.dotPlot ) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << r << ".clean.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
@@ -1413,7 +1413,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 				/*
 				//TODO(Jingwen): Only for debug
-				if (opts.dotPlot) {
+				if (opts.dotPlot ) {
 					stringstream outNameStrm;
 					outNameStrm << baseName + "." << r << ".merged.dots";
 					ofstream baseDots(outNameStrm.str().c_str());
@@ -1428,7 +1428,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				}
 				*/
 				/*
-				if (opts.dotPlot) {
+				if (opts.dotPlot ) {
 					stringstream outNameStrm;
 					outNameStrm << baseName + "." << r << ".merged.real.dots";
 					ofstream baseDots(outNameStrm.str().c_str());
@@ -1473,7 +1473,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			}
 
 			// TODO(Jingwen): Only for debug
-			if (opts.dotPlot) {
+			if (opts.dotPlot ) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << r << ".first-sdp.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
@@ -1597,7 +1597,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 
 			//(TODO)Jingwen: For Debug(remove this later)
-			if (opts.dotPlot) {
+			if (opts.dotPlot ) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << r << ".first-sdp-clean.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
@@ -1666,7 +1666,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			//RemovePairedIndels(curReadEnd, curGenomeEnd, nextReadStart, nextGenomeStart, tupChain, refinedClusters[r].matches, smallOpts);
 
 			//(TODO)Jingwen: For Debug(remove this later)
-			if (opts.dotPlot) {
+			if (opts.dotPlot ) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << r << ".first-sdp-clean-removeIndel.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
@@ -1812,7 +1812,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 											SparseDP_ForwardOnly(gapPairs, gapChain, tinyOpts, LookUpTable); 
 										}
 
-										if (opts.dotPlot) {
+										if (opts.dotPlot ) {
 											stringstream outNameStrm;
 											outNameStrm << baseName + "." << r << ".second-sdp.dots";
 											ofstream baseDots;
@@ -1886,7 +1886,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					int nextRefinedReadStart   = nextReadStart;
 					int nextRefinedGenomeStart = nextGenomeStart;
 
-					if (opts.dotPlot) {
+					if (opts.dotPlot ) {
 						if (tupChainClusters[s].strand == 0) {
 							dotFile << tupChain[c].first.pos << "\t" 
 									<< tupChain[c].second.pos << "\t" 
@@ -1922,7 +1922,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 						nextRefinedReadStart = refinedChains[c - tupChainClusters[s].start][cs].first.pos;
 						nextRefinedGenomeStart = refinedChains[c - tupChainClusters[s].start][cs].second.pos;
 						
-						if (opts.dotPlot) {
+						if (opts.dotPlot ) {
 							if (tupChainClusters[s].strand == 0) {
 								dotFile << refinedChains[c - tupChainClusters[s].start][cs].first.pos << "\t" 
 										<< refinedChains[c - tupChainClusters[s].start][cs].second.pos << "\t" 
@@ -1995,7 +1995,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					nm+= alignment->blocks[b].length;
 				}
 				alignment->nblocks = tupChainClusters[s].end - tupChainClusters[s].start;
-				if (opts.dotPlot) {
+				if (opts.dotPlot ) {
 					dotFile.close();
 				}
 			}
@@ -2026,7 +2026,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 
 
-		if (opts.dotPlot) {
+		if (opts.dotPlot ) {
 			stringstream outNameStrm;
 			//outNameStrm << baseName + "." << a << ".alignment.dots";
 			ofstream baseDots;

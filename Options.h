@@ -53,7 +53,7 @@ public:
 		localBand=15;
 		readStart=0;
 		readStride=1;
-		dotPlot=false;
+		dotPlot=true;
 		globalK=17;
 		globalW=10; 
 		localK=7;
