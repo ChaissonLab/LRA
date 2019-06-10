@@ -1127,10 +1127,10 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					int matchEnd = CartesianTargetUpperBound<GenomeTuple>(clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].start, 
 																		 clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].end, genomeLocalIndexEnd);
 
+					matchStart += logClusters[c].SubCluster[sc].start;
+					matchEnd += logClusters[c].SubCluster[sc].start;
 					//int matchStart = CartesianTargetLowerBound<GenomeTuple>(clusters[logClusters[c].coarse].matches, logClusters[c].SubCluster[sc].start, logClusters[c].SubCluster[sc].end, genomeLocalIndexStart);
-
 					//int matchEnd = CartesianTargetUpperBound<GenomeTuple>(clusters[logClusters[c].coarse].matches, logClusters[c].SubCluster[sc].start, logClusters[c].SubCluster[sc].end, genomeLocalIndexEnd);
-
 
 
 					//
@@ -1291,10 +1291,13 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 
 			if (opts.dotPlot ) {
+
+
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << c << ".orig.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
 				for (int m=0; m<refinedLogClusters[c].SubCluster.size(); ++m) {
+
 					for (int n=refinedLogClusters[c].SubCluster[m].start; n<refinedLogClusters[c].SubCluster[m].end; n++) {
 						if (refinedLogClusters[c].SubCluster[m].strand == 0) {
 							baseDots << refinedClusters[c].matches[n].first.pos << "\t" << refinedClusters[c].matches[n].second.pos << "\t" 
