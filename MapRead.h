@@ -465,7 +465,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 	if (opts.dotPlot ) {
 		ofstream clust("all-matches.dots");
 		for (int m=0; m < allMatches.size(); m++) {
-			clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos << "\t" << opts.globalK << "\t0\t0"<<endl;
+			clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos << "\t" << allMatches[m].first.pos+ opts.globalK << "\t" 
+				<< allMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
 		}
 		clust.close();
 	}
@@ -477,12 +478,14 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 	if (opts.dotPlot ) {
 		ofstream clust("for-matches0.dots");
 		for (int m=0; m < forMatches.size(); m++) {
-			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK << "\t0\t0"<<endl;
+			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"
+					<< forMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
 		}
 		clust.close();
 		ofstream rclust("rev-matches0.dots");
 		for (int m=0; m < revMatches.size(); m++) {
-			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos << "\t" << opts.globalK << "\t0\t0"<<endl;
+			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos << "\t" << opts.globalK + revMatches[m].first.pos << "\t"
+					<< revMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
 		}
 		rclust.close();
 
@@ -506,26 +509,28 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 	CleanOffDiagonal(revMatches, opts, 1);
 	//vector<Cluster> revClusters;
 	vector<Cluster> revroughClusters;
-	
 	int reverseStrand=1;
 	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), true, false, reverseStrand);
 
 	if (opts.dotPlot ) {
 		ofstream clust("for-matches.dots");
 		for (int m=0; m < forMatches.size(); m++) {
-			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK << "\t0\t0"<<endl;
+			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"
+					<< forMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
 		}
 		clust.close();
 		ofstream rclust("rev-matches.dots");
-		for (int m=0; m < revMatches.size(); m++) {
-			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos << "\t" << opts.globalK << "\t0\t0"<<endl;
+		for (int m=0; m < revMatches.size(); m++) {			
+			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos << "\t" << opts.globalK + revMatches[m].first.pos << "\t"
+					<< revMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
 		}
 		rclust.close();
 
 		ofstream wclust("roughclusters-matches.dots");
 		for (int m=0; m < roughclusters.size(); m++) {
 			for (int c = roughclusters[m].start; c < roughclusters[m].end; ++c) {
-				wclust << forMatches[c].first.pos << "\t" << forMatches[c].second.pos << "\t" << opts.globalK << "\t" << m << "\t0"<<endl;				
+				wclust << forMatches[c].first.pos << "\t" << forMatches[c].second.pos << "\t" << opts.globalK + forMatches[c].first.pos << "\t"
+					<< forMatches[c].second.pos + opts.globalK << "\t" << m << "\t0"<<endl;				
 			}
 
 		}
@@ -533,7 +538,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		ofstream revclust("revroughClusters-matches.dots");
 		for (int m=0; m < revroughClusters.size(); m++) {
 			for (int c = revroughClusters[m].start; c < revroughClusters[m].end; ++c) {
-				revclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos << "\t" << opts.globalK << "\t" << m << "\t0"<<endl;				
+				revclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos << "\t" << opts.globalK + revMatches[c].first.pos << "\t"
+					 << revMatches[c].second.pos + opts.globalK << "\t" << m << "\t0"<<endl;				
 			}
 
 		}
@@ -901,7 +907,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			}
 			matchfile.close();
 			ofstream clust("clusters.tab");
-			for (int c =0; c < clusters.size(); c++) {
+			for (int c =0; c < logClusters.size(); c++) {
 		
 				for (int n=0; n<logClusters[c].SubCluster.size();n++) {
 
@@ -991,11 +997,10 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 		//vector<Alignment*> alignments;
 
-
-		for (int c = 0; c < clusters.size(); c++) {
+		for (int c = 0; c < logClusters.size(); c++) {
 			
 			//	TODO(Jingwen): replace "clusters[c].start == clusters[c].end" by the following "clusters[c].matches.size() == 0", because start and end are not accurate
-			if (clusters[c].matches.size() == 0) {
+			if (clusters[logClusters[c].coarse].matches.size() == 0) {
 				continue;
 			}			
 
@@ -1026,19 +1031,19 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			//
 			// Get the boundaries of the cluster in genome sequence.
 			//
-			int nMatch = clusters[c].matches.size();
-			GenomePos tPos=clusters[c].tStart;
+			int nMatch = clusters[logClusters[c].coarse].matches.size();
+			GenomePos tPos=clusters[logClusters[c].coarse].tStart;
 			int firstChromIndex = genome.header.Find(tPos);
 			int lastChromIndex;
 			if (nMatch > 1 ) {
-				tPos = clusters[c].tEnd;
+				tPos = clusters[logClusters[c].coarse].tEnd;
 				lastChromIndex = genome.header.Find(tPos);
 			} else { 
 				lastChromIndex = firstChromIndex; 
 			}
-			clusters[c].chromIndex = firstChromIndex;  
+			clusters[logClusters[c].coarse].chromIndex = firstChromIndex;  
 			if (firstChromIndex != lastChromIndex ) {
-				clusters[c].matches.clear();
+				clusters[logClusters[c].coarse].matches.clear();
 				continue;
 			}
 	
@@ -1050,10 +1055,10 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			// while the qStart, qEnd, tStart, tEnd in refinedLogClusters[c].SubCluster are referring to forward strand direction;
 			// and the coordinates of reversed anchors in refinedClusters[c].matches are in forward strand direction
 			GenomePos chromOffset = genome.header.pos[firstChromIndex];
-			for (int m=0; m < clusters[c].matches.size(); m++) {
-				clusters[c].matches[m].second.pos-=chromOffset;
+			for (int m=0; m < clusters[logClusters[c].coarse].matches.size(); m++) {
+				clusters[logClusters[c].coarse].matches[m].second.pos-=chromOffset;
 			}
-			GenomePos GenomeClusterEnd = clusters[c].tEnd;
+			GenomePos GenomeClusterEnd = clusters[logClusters[c].coarse].tEnd;
 			GenomePos chromEndOffset = genome.header.GetNextOffset(GenomeClusterEnd);
 			refinedLogClusters[c].setHp(refinedClusters[c]);
 
@@ -1285,7 +1290,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			}
 
 			SetClusterBoundariesFromSubCluster(refinedClusters[c], opts, refinedLogClusters[c]);
-			refinedClusters[c].chromIndex = clusters[c].chromIndex;
+			refinedClusters[c].chromIndex = clusters[logClusters[c].coarse].chromIndex;
 			refinedClusters[c].coarse = c;
 			refinedClusters[c].strands.resize(refinedClusters[c].matches.size()); // refinedClusters[c].strands keeps track of the strand direction of every anchors in refinedClusters[c].matches
 
