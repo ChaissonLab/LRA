@@ -7,6 +7,7 @@
 #include "AlignmentBlock.h"
 #include "Path.h"
 #include "SeqUtils.h"
+#include "Read.h"
 #include "Options.h"
 #include <assert.h>
 #include <sstream>

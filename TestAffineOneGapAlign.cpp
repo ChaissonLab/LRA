@@ -11,7 +11,7 @@ void Test(string query, string target) {
 	aln.genomeLen = target.size();
 	aln.read=(char*) query.c_str();
 	aln.genome=(char*) target.c_str();
-	aln.CalculateStatistics();
+	aln.CalculateStatistics(0,0);
 	aln.PrintPairwise(cout);
 	
 	aln.Clear();
