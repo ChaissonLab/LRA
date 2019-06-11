@@ -12,6 +12,7 @@
 int PreToIndex(int i, int j, int k, int band) {
 	int d=i-j;
 	// The extra + 1 is because of the rail on the side of each k-band
+	assert(j*band+d+k-1 >= 0);
 	return j*band+d+k+1;
 }
 

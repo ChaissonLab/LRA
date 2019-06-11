@@ -172,10 +172,14 @@ int main(int argc, char* argv[]) {
 			if (n > i){ 
 				float avgMult = ((float)totalMult)/(n-i);
 				if (n < genome.lengths[c]/window) {
-					cout << genome.header.names[c] << "\t" << pos[i] << "\t" << pos[n-1] << "\t" << avgMult << endl;
+					if (pos[i] > 0 and pos[n] > 0) {
+						cout << genome.header.names[c] << "\t" << pos[i] << "\t" << pos[n-1] << "\t" << avgMult << endl;
+					}
 				}
 				else {
-					cout << genome.header.names[c] << "\t" << pos[i] << "\t" << pos[pos.size()-1] << "\t" << avgMult << endl;
+					if (pos[i] > 0 and pos[pos.size()-1] > 0) {
+						cout << genome.header.names[c] << "\t" << pos[i] << "\t" << pos[pos.size()-1] << "\t" << avgMult << endl;
+					}
 				}
 			}
 			i=n+1;

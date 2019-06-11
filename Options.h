@@ -60,10 +60,10 @@ public:
 		bestn=1;
 		globalMaxFreq=20;
 		localMaxFreq=30;
-		maxDiag=500; // We want maxDiag to be a small number // used to be 500
+		maxDiag=500;
 		cleanMaxDiag=100; // used to be 50
 		minDiagCluster=20;
-		minClusterSize = 10; // used to be 10
+		minClusterSize = 10;
 		minRefinedClusterSize = 40;
 		window=100;
 		mergeGapped=false;
