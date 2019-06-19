@@ -2,7 +2,7 @@
 #include "htslib/kseq.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <math.h>
 
 #include <thread>
 #include <string>
@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <zlib.h>
 #include <vector>
+
 #include "htslib/kseq.h"
 #include "htslib/sam.h"
 #include "Input.h"
@@ -20,15 +21,14 @@
 #include "TupleOps.h"
 #include "MinCount.h"
 #include "MapRead.h"
-using namespace std;
 #include <algorithm>
 #include "SeqUtils.h"
 #include "Options.h"
 #include "Alignment.h"
 #include "LogLookUpTable.h"
 
-#include <math.h>
 
+using namespace std;
 
 
 const char* version="0.1-alpha";
@@ -62,9 +62,10 @@ void HelpMap() {
 			 << "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
 			 << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
 			 << "	-T 	(flag)  Use log LookUpTable when gap length is larger than 501." << endl
-		         << "   -t n(int)   Use n threads (1)" << endl
+		     << "   -t n(int)   Use n threads (1)" << endl
 			 << "   --start  (int)   Start aligning at this read." << endl
-			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl;
+			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
+			 << "   -aa (flag)  use Merge.h" << endl;
 }
 		
 class MapInfo {
@@ -178,6 +179,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;
 		}
+		else if (ArgIs(argv[argi], "-aa")) {
+			opts.MergeSplit = false;
+		}		
 
 		else if (ArgIs(argv[argi], "--locMatch")) {
 			opts.localMatch=atoi(GetArgv(argv,argc,argi));
@@ -449,7 +453,19 @@ void RunStoreIndex(int argc, const char* argv[]) {
 	Options opts;
 
 	RunStoreGlobal(argc, argv, minimizers, header, opts);
-  RunStoreLocal(argc, argv, glIndex, opts);
+
+
+	// save the minimizers in a file
+	// TODO(Jingwen): delete this later
+/*
+	ofstream clust("minimizers.dots");
+	for (int m=0; m < minimizers.size(); m++) {
+		clust << minimizers[m].pos << "\t" << minimizers[m].pos + opts.globalK - 1 <<endl;
+	}
+	clust.close();
+*/
+
+    RunStoreLocal(argc, argv, glIndex, opts);
 }
 
 
@@ -485,7 +501,7 @@ int main(int argc, const char *argv[]) {
 		}
 		else if (ArgIs(argv[argi], "global")) {
 			argc -=2;
-      RunStoreGlobal(argc,  &argv[2], minimizers, header, opts);		
+      		RunStoreGlobal(argc,  &argv[2], minimizers, header, opts);		
 			exit(0);
 		}
 		else if (ArgIs(argv[argi], "local")) {

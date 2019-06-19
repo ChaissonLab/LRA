@@ -14,8 +14,8 @@ template<typename Tup>
 class DiagonalSortOp {
  public:
 	int operator()(const pair<Tup, Tup> &a, const pair<Tup, Tup> &b) {
-		int aDiag = a.first.pos - a.second.pos, 
-			bDiag= b.first.pos - b.second.pos;
+		int aDiag = (int)a.first.pos - (int)a.second.pos, 
+			bDiag= (int)b.first.pos - (int)b.second.pos;
 
 		if (aDiag != bDiag) {
 			return aDiag < bDiag;
@@ -28,8 +28,7 @@ class DiagonalSortOp {
 
 
 template<typename Tup>
-void DiagonalSort(typename vector<pair<Tup, Tup> >::iterator  begin,
-									typename vector<pair<Tup, Tup> >::iterator  end) {
+void DiagonalSort(typename vector<pair<Tup, Tup> >::iterator  begin, typename vector<pair<Tup, Tup> >::iterator  end) {
 	sort(begin, end, DiagonalSortOp<Tup>());
 }
 template<typename Tup>
@@ -44,8 +43,8 @@ class AntiDiagonalSortOp {
 		
 	GenomePos length;
 	int operator()(const pair<Tup, Tup> &a, const pair<Tup, Tup> &b) {
-		int aDiag = a.first.pos - (length-a.second.pos),  
-			bDiag= b.first.pos - (length-b.second.pos); 
+		int aDiag = (int)a.first.pos - (int)(length-a.second.pos),  
+			bDiag= (int)b.first.pos - (int)(length-b.second.pos); 
 
 		if (aDiag != bDiag) {
 			return aDiag < bDiag;
@@ -127,6 +126,12 @@ void CartesianTargetSort(typename vector<pair<Tup, Tup> >::iterator  begin,
 
 
 template<typename Tup>
+void CartesianTargetSort(vector<pair<Tup, Tup>> &matches, int s, int e) {
+	sort(matches.begin() + s, matches.begin() + e, CartesianTargetSortOp<Tup>());
+}
+
+
+template<typename Tup>
 int CartesianTargetLowerBound(typename vector<pair<Tup, Tup> >::iterator  begin,
 															typename vector<pair<Tup, Tup> >::iterator  end, 
 															int64_t query) {
@@ -145,7 +150,6 @@ int CartesianTargetUpperBound(typename vector<pair<Tup, Tup> >::iterator  begin,
 }
 
 
-// From Jingwen
 template<typename T> 
 class SortByRowOp {
  public:
@@ -157,7 +161,7 @@ class SortByRowOp {
 			return a.se.second < b.se.second; 
 		}
 		else {
-			return a.ind < b.ind;
+			return a.ind < b.ind; 
 		}
 	}
 };
@@ -223,6 +227,7 @@ SortByBackDiagOp<T1, T2>::SortByBackDiagOp(std::vector<T1> & H) {
 
 
 // This Lower_bound function return the index of the element
+// the first element in the range [first,last) which is greater than or equal to val.
 template <typename T1, typename T2>
 T1 Lower_Bound (T1 first, T1 last, long int val, std::vector<T2> & E_1) {
 	

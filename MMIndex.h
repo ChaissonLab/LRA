@@ -79,8 +79,8 @@ class LocalIndex {
 	int w;
 	int maxFreq;
 	vector<LocalTuple>  minimizers;
-	vector<uint64_t>    seqOffsets;
-	vector<uint64_t>    tupleBoundaries;
+	vector<uint64_t>    seqOffsets; // seqOffsets stores actual boundaries 
+	vector<uint64_t>    tupleBoundaries; // tupleBoundaries stores the number of minimizers in the corresponding interval
 	uint64_t offset;
 	
 	LocalIndex() { 
@@ -177,7 +177,7 @@ class LocalIndex {
 		
 		for (int i = 0; i < nIndex; i++) {	
 			locMinimizers.clear();
-			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos) seqLen, (GenomePos) seqPos+localIndexSize) - seqPos, k, w, locMinimizers, false );
+			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos) seqLen, (GenomePos) seqPos+localIndexSize) - seqPos, k, w, locMinimizers, false); // canonical = false
 			//
 			// Sort minimzers by tuple value.
 			//
@@ -223,10 +223,7 @@ class LocalIndex {
 
 
 
-void StoreIndex(string &genome, 
-								vector<GenomeTuple> &minimizers, 
-								Header &header,
-								Options &opts) {	
+void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header, Options &opts) {	
 	
 	ifstream testGenome(genome.c_str());
 	if (testGenome.good() == false or testGenome.eof()) {

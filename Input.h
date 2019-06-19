@@ -106,7 +106,9 @@ class Input {
 
 			}	
 			htsfp = hts_open(filename.c_str(),"r");
+
 			const htsFormat *fmt = hts_get_format(htsfp);
+
 			if (fmt == NULL or (fmt->format != sam and fmt->format != bam)) {
 				cout << "Cannot determine format of input reads." << endl;
 				exit(1);

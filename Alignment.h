@@ -7,6 +7,7 @@
 #include "AlignmentBlock.h"
 #include "Path.h"
 #include "SeqUtils.h"
+#include "Read.h"
 #include "Options.h"
 #include <assert.h>
 #include <sstream>
@@ -15,6 +16,10 @@ using namespace std;
 const unsigned int READ_UNMAPPED=0x4;
 const unsigned int READ_REVERSE=0x10;
 const unsigned int READ_SECONDARY=0x100;
+const unsigned int READ_MULTIPLESEGMENTS=0x1;
+const unsigned int READ_FIRSTSEGMENT=0x40;
+const unsigned int READ_LASTSEGMENT=0x80;
+const unsigned int READ_SUPPLEMENTARY=0x800;
 
 class Alignment {
  public:
@@ -63,7 +68,7 @@ class Alignment {
 		read=NULL;
 		forward=NULL;
 	}
- Alignment(char *_read, char *_forward, 
+ 	Alignment(char *_read, char *_forward, 
 					 int _rl, string _rn, int _str, 
 					 char *_genome, GenomePos _gl, string &_chrom, int _ci) : Alignment() { 
 		read=_read; 
@@ -272,7 +277,7 @@ class Alignment {
 		}
 		cigar=cigarstrm.str();
 	}
-	void CalculateStatistics() {
+	void CalculateStatistics(int size, int cur) {
 
 		CreateAlignmentStrings(read, genome, queryString, alignString, refString);
 		AlignStringsToCigar(queryString, refString, cigar, nm, nmm, ndel, nins);
@@ -287,12 +292,38 @@ class Alignment {
 			tStart = blocks[0].tPos;
 			tEnd   = blocks[last-1].tPos + blocks[last-1].length;
 		}
-			//
-			// Flag that the stats are calculated for methods that need them.
-			// 
+		//
+		// Flag that the stats are calculated for methods that need them.
+		// 
 		prepared=true;
-		if (strand == 1) {
-			SetReverse();
+		if (size == 1) {
+			if (strand == 1) {
+				flag = flag | READ_REVERSE;
+			}
+		}
+		else if (cur == 0) { // this is a chimeric alignment
+			if (strand == 1) {
+				flag = flag | READ_MULTIPLESEGMENTS | READ_FIRSTSEGMENT | READ_SUPPLEMENTARY | READ_REVERSE;
+			}
+			else {
+				flag = flag | READ_MULTIPLESEGMENTS | READ_FIRSTSEGMENT | READ_SUPPLEMENTARY;
+			}
+		}
+		else if (cur == size - 1) {
+			if (strand == 1) {
+				flag = flag | READ_MULTIPLESEGMENTS | READ_LASTSEGMENT | READ_SUPPLEMENTARY | READ_REVERSE;
+			}
+			else {
+				flag = flag | READ_MULTIPLESEGMENTS | READ_LASTSEGMENT | READ_SUPPLEMENTARY;
+			}
+		}
+		else {
+			if (strand == 1) {
+				flag = flag | READ_MULTIPLESEGMENTS | READ_LASTSEGMENT | READ_FIRSTSEGMENT | READ_SUPPLEMENTARY | READ_REVERSE;
+			}
+			else {
+				flag = flag | READ_MULTIPLESEGMENTS | READ_LASTSEGMENT | READ_FIRSTSEGMENT | READ_SUPPLEMENTARY;
+			}
 		}
 	}
 	
@@ -350,7 +381,6 @@ class Alignment {
 
 	void PrintSAM(ostream &out, Options &opts, char *passthrough=NULL) {
 		stringstream samStrm;
-
 		samStrm << readName << "\t";
 		assert(prepared);
 		if (blocks.size() == 0) {
@@ -400,6 +430,61 @@ class Alignment {
 		out << endl;
 		out.flush();
 	}
+};
+
+
+
+class SegAlignmentGroup {
+public:
+	vector<Alignment*> SegAlignment;
+	GenomePos qStart, qEnd, tStart, tEnd;
+	unsigned char mapqv;
+	int nm;
+	SegAlignmentGroup () {};
+	~SegAlignmentGroup () {};
+
+	void SetBoundariesFromSegAlignmentAndnm (Read & read) {
+		qStart = 0, qEnd = 0, tStart = 0, tEnd = 0, nm = 0;
+		for (int s = 0; s < SegAlignment.size(); s++) {
+			if (SegAlignment[s]->strand == 0) {
+				qStart = min(qStart, SegAlignment[s]->qStart);
+				qEnd   = max(qEnd, SegAlignment[s]->qEnd);
+				tStart = min(tStart, SegAlignment[s]->tStart);
+				tEnd   = max(tEnd, SegAlignment[s]->tEnd);
+			}
+			else {
+				qStart = min(qStart, read.length - SegAlignment[s]->qEnd);
+				qEnd   = max(qEnd, read.length - SegAlignment[s]->qStart);
+				tStart = min(tStart, SegAlignment[s]->tStart);
+				tEnd   = max(tEnd, SegAlignment[s]->tEnd);				
+			}
+			nm += SegAlignment[s]->nm;
+		}
+
+	}
+
+	bool Overlaps(const SegAlignmentGroup &b, float frac) const {
+		int ovp=0;
+		if (b.qStart >= qStart and b.qStart < qEnd) {
+			ovp=min(qEnd, b.qEnd)-b.qStart;
+		}
+		else if (b.qEnd > qStart and b.qEnd < qEnd) {
+			ovp=b.qEnd-max(qStart, b.qStart);
+		}
+		else if (b.qStart <= qStart and b.qEnd > qEnd) {
+			ovp=qEnd-qStart;
+		}
+		float denom=qEnd-qStart;
+		if (ovp/denom > frac) { return true; }
+		else { return false; }
+	}
+
+	void SetMapqv () {
+		for (int s = 0; s < SegAlignment.size(); s++) {
+			SegAlignment[s]->mapqv = mapqv;
+		}
+	}
+
 };
 
 

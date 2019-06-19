@@ -44,6 +44,7 @@ public:
  	int localMismatch;
 	int localIndel;
 	int localBand;
+	int MergeSplit;
 
 	Options() {
 		localMatch=4;
@@ -83,6 +84,7 @@ public:
 		seqan=false;
 		SparseDP=true;
 		LookUpTable=true;
+		MergeSplit=true;
     
 	}
 };

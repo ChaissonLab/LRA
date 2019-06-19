@@ -123,7 +123,7 @@ template <typename tup> void TupleRC(tup a, tup &b, int k) {
 	nucMask.t=3;
 	tup least;
 	b.t=0;
-	for (i=0; i <k; i++) {
+	for (i=0; i<k; i++) {
 		least.t = ~ (a.t & nucMask.t) & nucMask.t;
 		a.t >>=2;
 		b.t <<=2;
@@ -133,16 +133,12 @@ template <typename tup> void TupleRC(tup a, tup &b, int k) {
 }
 
 typedef pair<GenomeTuple, GenomeTuple> GenomePair;
-typedef vector<GenomePair > GenomePairs;
+typedef vector<GenomePair> GenomePairs;
 typedef pair<LocalTuple, LocalTuple> LocalPair;
-typedef vector<LocalPair > LocalPairs;
+typedef vector<LocalPair> LocalPairs;
 
 template<typename List>
-void AppendValues(GenomePairs &dest,
-									typename List::iterator sourceStart,
-									typename List::iterator sourceEnd,
-									GenomePos queryOffset,
-									GenomePos targetOffset) {
+void AppendValues(GenomePairs &dest, typename List::iterator sourceStart, typename List::iterator sourceEnd, GenomePos queryOffset, GenomePos targetOffset) {
 	int i=dest.size();
 	dest.resize(dest.size() + sourceEnd-sourceStart);
 	typename List::iterator sourceIt=sourceStart;
