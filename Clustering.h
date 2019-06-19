@@ -513,7 +513,7 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 			ce++;
 		}	
 
-		if (ce - cs >= opts.minClusterSize) {
+		if (ce - cs >= opts.minClusterSize and qEnd - qStart >= opts.minClusterLength and tEnd - tStart >= opts.minClusterLength) {
 			if (rough == true) {
 				clusters.push_back(Cluster(cs, ce));
 			}
