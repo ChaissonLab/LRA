@@ -79,7 +79,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int stran
 
 // TODO(Jingwen): the following function is only for test, delete it later
 template<typename Tup>
-void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int &start, int &end, Options &opts, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
+void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int start, int end, Options &opts, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (end - start == 0) {
 		return;
 	}
@@ -113,7 +113,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int &start, int &end, Op
 		prevOnDiag = onDiag[i];
 	}
 
-	int c   = start;
+	int c = start;
 	for (int i=0; i < end - start; i++) {
 		if (onDiag[i]) {
 			matches[c] = matches[i + start]; c++;
@@ -410,8 +410,15 @@ class LogCluster {
  public:
  	vector<Cluster> SubCluster;
  	Cluster * Hp;
- 	int coarse;
- 	LogCluster () {};
+ 	bool ISsecondary; // ISsecondary == 1 means this is a secondary chain. Otherwise it's a primary chain
+ 	int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
+ 	vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains
+ 	int coarse; 
+ 	LogCluster () {
+ 		ISsecondary = 0;
+ 		primary = -1;
+ 		coarse = -1;
+ 	};
  	~LogCluster() {};
 
  	void setHp(Cluster & H) {
@@ -425,6 +432,18 @@ class LogCluster {
 		// set the boundaries for SubCluster[i]
 
 		for (int is = SubCluster[i].start; is < SubCluster[i].end; ++is) {
+
+			if (is == SubCluster[i].start) {
+		 		SubCluster[i].tStart = Hp->matches[is].second.pos;
+		 		SubCluster[i].qStart = Hp->matches[is].first.pos;					
+			}
+			SubCluster[i].tEnd   = max(SubCluster[i].tEnd, Hp->matches[is].second.pos + opts.globalK);
+			SubCluster[i].tStart = min(SubCluster[i].tStart, Hp->matches[is].second.pos);
+			SubCluster[i].qEnd   = max(SubCluster[i].qEnd, Hp->matches[is].first.pos + opts.globalK);
+			SubCluster[i].qStart = min(SubCluster[i].qStart, Hp->matches[is].first.pos); 	
+
+			// TODO(Jingwen): delete the following code					
+			/*	
 			if (SubCluster[i].strand == 0) {
 				if (is == SubCluster[i].start) {
 			 		SubCluster[i].tStart = Hp->matches[is].second.pos;
@@ -449,6 +468,7 @@ class LogCluster {
 				//SubCluster[i].qEnd   = max(SubCluster[i].qEnd, Hp->matches[is].first.pos + 1); // because [qStart, qEnd)
 				//SubCluster[i].qStart = min(SubCluster[i].qStart, Hp->matches[is].first.pos - opts.globalK + 1); 		
 			}
+			*/
 		
 		}
 
@@ -466,7 +486,7 @@ void PrintDiagonal(vector<pair<Tup, Tup> > &matches, int strand=0) {
 		
 
 template<typename Tup>
-void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster > &clusters, Options &opts, int s, int e, bool rough, bool lite, int strand=0) {
+void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, bool rough, bool lite, int strand=0) {
 	int maxGap = -1, maxDiag = -1;
 	if (rough == false) { maxGap = opts.maxGapBtwnAnchors;}
 	else { maxDiag = opts.maxDiag;} 

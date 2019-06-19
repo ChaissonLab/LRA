@@ -36,8 +36,9 @@ HEADERS=MinCount.h \
   PrioritySearchTree.h\
   AffineOneGapAlign.h \
   GlobalChain.h \
-  NaiveDP.h \
-  SparseDP.h
+  SparseDP.h \
+  SparseDP_Forward.h \
+  MergeAnchors.h
 
 CXX=g++ -std=c++14 
 

@@ -26,7 +26,10 @@
 #include "TupleOps.h"
 #include "SparseDP.h"
 #include "Merge.h"
+#include "MergeAnchors.h"
 #include "SparseDP_Forward.h"
+#include "Chain.h"
+#include "overload.h"
 
 
 using namespace std;
@@ -102,9 +105,8 @@ void SimpleMapQV(vector<SegAlignmentGroup> &alignments) {
 		return;
 	}
 	if (alignments.size() == 1) {
-		// TODO(Jingwen): give mapq 255 to every segment
 		alignments[a].mapqv=255;
-		alignments[a].SetMapqv();
+		alignments[a].SetMapqv(); // give mapq 255 to every segment
 		return;
 	}
 	while (a < alignments.size() - 1) {
@@ -474,25 +476,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, forMatches, revMatches);
 
-	
-	if (opts.dotPlot ) {
-		ofstream clust("for-matches0.dots");
-		for (int m=0; m < forMatches.size(); m++) {
-			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"
-					<< forMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
-		}
-		clust.close();
-		ofstream rclust("rev-matches0.dots");
-		for (int m=0; m < revMatches.size(); m++) {
-			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos << "\t" << opts.globalK + revMatches[m].first.pos << "\t"
-					<< revMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
-		}
-		rclust.close();
-
-	} 
-
-
-
 	CleanOffDiagonal(forMatches, opts);
 	vector<Cluster> clusters;
 	vector<Cluster> roughclusters;
@@ -593,11 +576,13 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		//MergeAdjacentClusters(clusterOrder, genome, opts);
 
 
+		//
 		// Merge clusters
+		//
 		vector<float> clusters_value(clusters.size(), 0);
 		vector<int> clusters_predecessor(clusters.size(), -1);
-		clusters_value[0] = (float)(max(clusterOrder[0].qEnd - clusterOrder[0].qStart, clusterOrder[0].tEnd - clusterOrder[0].tStart));
-		vector<int> repetitivenum(clusters.size(), 0);
+		//clusters_value[0] = (float)(max(clusterOrder[0].qEnd - clusterOrder[0].qStart, clusterOrder[0].tEnd - clusterOrder[0].tStart));
+		//vector<int> repetitivenum(clusters.size(), 0);
 
 		// Get clusters_value 
 		for (int cv = 0; cv < clusters_value.size(); cv++) {
@@ -606,17 +591,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 		if (clusters.size() > 1) {
 			for (int c = 1; c < clusters.size(); ++c) {
-				//cerr << "c: " << c << " clusterOrder.index[c]: " << clusterOrder.index[c] << endl;
-				//cerr << "read length: " << read.length << "  clusterOrder[c].qEnd - clusterOrder[c].qStart: " << clusterOrder[c].qEnd - clusterOrder[c].qStart << endl;
-				//cerr << "((float)(qEnd - qStart))/ReadLength: " << ((float)(clusterOrder[c].qEnd -  clusterOrder[c].qStart))/read.length << endl;
-				//cerr << "clusters_value[c]: " << clusters_value[c] << endl;
-				//clusters_value[c] = (float)(max(clusterOrder[c].qEnd - clusterOrder[c].qStart, clusterOrder[c].tEnd - clusterOrder[c].tStart));
 
 				for (int s = 0; s <= c - 1; ++s) {
-
-					if (clusterOrder[c].Overlaps(clusterOrder[s], 0.8) and clusterOrder[c].OverlapsOnRead(read.length, 0.5) and clusterOrder[s].OverlapsOnRead(read.length, 0.5)) {
-							++repetitivenum[c];
-					}
 
 					int gap = abs((int)(clusterOrder[c].qStart - clusterOrder[c].tStart) - (int)(clusterOrder[s].qEnd - clusterOrder[s].tEnd));
 
@@ -624,23 +600,11 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					if (clusterOrder[c].strand == clusterOrder[s].strand and clusterOrder[c].strand == 0) {ReverseStrand = 1;}
 					else if (clusterOrder[c].strand == clusterOrder[s].strand and clusterOrder[c].strand == 1) {ReverseStrand = -1;}
 					else { ReverseStrand = 1;}
-
-					//TODO(Jingwen): Only for debug and delete the following later
-					/*
-				){
-						cerr << "c: " << c << " s: " << s << endl;
-						cerr << "(clusterOrder[s].qEnd - (clusterOrder[s].qEnd - clusterOrder[s].qStart)/3) < clusterOrder[c].qStart: " << ((clusterOrder[s].qEnd - (clusterOrder[s].qEnd - clusterOrder[s].qStart)/3) < clusterOrder[c].qStart) << endl;
-						cerr << "(clusterOrder[s].tEnd - (clusterOrder[s].tEnd - clusterOrder[s].tStart)/3) < clusterOrder[c].tStart: " << ((clusterOrder[s].tEnd - (clusterOrder[s].tEnd - clusterOrder[s].tStart)/3) < clusterOrder[c].tStart)  << endl;
-						cerr << "((!clusterOrder[c].Encompasses(clusterOrder[s], 0.8) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.4)) or (!clusterOrder[c].Encompasses(clusterOrder[s], 0.4) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.8))): " 
-						     <<(((!clusterOrder[c].Encompasses(clusterOrder[s], 0.7) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.4)) or (!clusterOrder[c].Encompasses(clusterOrder[s], 0.4) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.7)))) << endl;
-						cerr << "clusterOrder[c].strand == clusterOrder[s].strand: " << (clusterOrder[c].strand == clusterOrder[s].strand) << endl;
-						cerr << "gap: " << gap << endl;
-					}
-					*/
 				
 					if ( ((clusterOrder[s].qEnd - ((clusterOrder[s].qEnd - clusterOrder[s].qStart)/3)*2) < clusterOrder[c].qStart or ReverseStrand == -1)
 							and  ((clusterOrder[s].tEnd - ((clusterOrder[s].tEnd - clusterOrder[s].tStart)/3)*2) < clusterOrder[c].tStart or ReverseStrand == -1)
-							and ((!clusterOrder[c].Encompasses(clusterOrder[s], 0.7) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.4)) or (!clusterOrder[c].Encompasses(clusterOrder[s], 0.4) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.7)))
+							and ((!clusterOrder[c].Encompasses(clusterOrder[s], 0.7) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.4)) or 
+								(!clusterOrder[c].Encompasses(clusterOrder[s], 0.4) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.7)))
 							and ((clusterOrder[c].qEnd - ((clusterOrder[c].qEnd - clusterOrder[c].qStart)/3)*2) < clusterOrder[s].qStart or ReverseStrand == 1)
 							and ((clusterOrder[c].tEnd - ((clusterOrder[c].tEnd - clusterOrder[c].tStart)/3)*2) > clusterOrder[s].tStart or ReverseStrand == 1)
 							//and clusterOrder[c].strand == clusterOrder[s].strand and gap < opts.maxGap 
@@ -649,16 +613,12 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 						float objective;
 						float rate = max(clusterOrder[c].OverlapsRate(clusterOrder[s]), clusterOrder[s].OverlapsRate(clusterOrder[c]));
 						int overlap = clusterOrder[c].Overlaps(clusterOrder[s]);
-						if (gap < 501)  {
-							//objective = clusters_value[c] + clusters_value[s] - log((float)gap) - 0.5*((float)gap);
-							objective = (float)(max(clusterOrder[c].qEnd - clusterOrder[c].qStart, clusterOrder[c].tEnd - clusterOrder[c].tStart)) +
-											clusters_value[s] - 0.5*((float)gap) - 2*rate*((float)overlap);
-						}
-						else {
-							//objective = clusters_value[c] + clusters_value[s] - LookUpTable[(int)floor((gap-501)/5)] - 0.5*((float)gap);
-							objective = (float)(max(clusterOrder[c].qEnd - clusterOrder[c].qStart, clusterOrder[c].tEnd - clusterOrder[c].tStart)) +
-											clusters_value[s]- 0.5*((float)gap) - 2*rate*((float)overlap);
-						}	
+						objective = (float)(max(clusterOrder[c].qEnd - clusterOrder[c].qStart, clusterOrder[c].tEnd - clusterOrder[c].tStart)) +
+										clusters_value[s] - 0.5*((float)gap) - 2*rate*((float)overlap);
+
+						//objective = clusters_value[c] + clusters_value[s] - log((float)gap) - 0.5*((float)gap);
+						//objective = clusters_value[c] + clusters_value[s] - LookUpTable[(int)floor((gap-501)/5)] - 0.5*((float)gap);
+
 						if (objective >= clusters_value[c]) {
 							clusters_value[c] = objective;
 							clusters_predecessor[c] = s;
@@ -669,38 +629,24 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		}
 
 
-		int repetitive = *max_element(repetitivenum.begin(), repetitivenum.end()); //repetitive+1 shows the number of chains we want to trace back
-
-		//cerr << "the number of chains we want to trace back: " << repetitive+1 << endl;
-
-		vector<vector<int>> clusterchain(repetitive+1);
 		Clusters_valueOrder clusters_valueOrder(&clusters_value); // sort clusters_value in descending order
-		vector<bool> used(clusters.size(), 0);
 
-		// traceback repetitive+1 non-overlapped chains
-		for (int r= 0, m = 0; (m <= repetitive) && (r < clusters_value.size()) ; ++r) {
-			//cerr << "r: " << r << "  m: " << m << endl;
-			clusterchain[m].clear();
-			if (used[clusters_valueOrder.index[r]] != 1) {
-				//cerr << " used[" << clusters_valueOrder.index[r] << "] != 1" << endl;
-				traceback(clusterchain[m], clusters_valueOrder.index[r], clusters_predecessor, used, m);
-			}
-		}
-
-
-
-/*
-
+		//
 		// traceback chains until chains overlap less than 30% on the read
-		// chains that are overlapped over 70% are considered as secondary alignment
-		vector<vector<int>> clusterchain;
-		Clusters_valueOrder clusters_valueOrder(&clusters_value); // sort clusters_value in descending order
+		// chains that are overlapped over 70% are considered as secondary alignments
+		// chains that are overlapped less than 50% are considered as different primary alignments
+		//
+		//vector<vector<int>> clusterchain;
+		vector<Primary_chain> Primary_chains;
+		Primary_chains.clear();
+		//Clusters_valueOrder clusters_valueOrder(&clusters_value); // sort clusters_value in descending order
 
-		for (int r= 0; r < clusters_value.size() ; ++r) {
+		for (int r = 0; r < clusters_value.size() ; ++r) {
 
 			vector<int> onechain;
 			traceback(onechain, clusters_valueOrder.index[r], clusters_predecessor);
 
+			// Note: onechain store index from the last one to the first one
 			int TrueIndex = clusterOrder.index[onechain[0]];
 			GenomePos qEnd = clusters[TrueIndex].qEnd;
 			GenomePos tEnd = clusters[TrueIndex].tEnd;
@@ -712,92 +658,65 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			//
 			// If this chain overlap with read greater than 30%, insert it to clusterchain
 			if (((float)(qEnd - qStart)/read.length) > 0.3) {
-				clusterchain.push_back(onechain);
+				//clusterchain.push_back(onechain);
+				//
+				// Compare onechain to all the Primary_chains we've found. 
+				// If onechain overlaps with one primary chain over 70% ---> onechain is a secondary chain 
+				// If onechain overlaps with all the primary chains less than 50% ---> onechain is another primary chain
+				if (Primary_chains.size() == 0) {
+					Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
+				} 
+				else {
+					bool newpr = 1, inserted = 0;
+					int p = 0;
+					while (p < Primary_chains.size()) {
+						if (Primary_chains[p].Overlaps(qStart, qEnd, 0.7)) {
+							Primary_chains[p].chains.push_back(onechain);
+							inserted = 1;
+							break;
+						}
+						else if (Primary_chains[p].Overlaps(qStart, qEnd, 0.5)) {
+							newpr = 0;
+						}
+						++p;
+					}			
+					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 1) {
+						Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
+					}	
+				}
+
 			}
 		}
-*/
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-		used.clear();
 		clusters_value.clear();
-		repetitivenum.clear();
 
-		// TODO(Jingwen): determine the lowest threshold of the percentage(alignment length/read/length)
-		
-		if (repetitive == 0) {
-			if (!clusters[clusterchain[0][0]].OverlapsOnRead(read.length, 0.1)) clusterchain.clear();
-		}
-		
-
-
-	/*
-		float max_value = 0;
-		int max_ind = -1;
-
-		for (int c = 0; c < clusters.size(); ++c){
-			cerr << "c: " << c << "  clusters_value[c]: " << clusters_value[c] << endl;
-			if (max_value < clusters_value[c]) {
-				max_value = clusters_value[c];
-				max_ind = c;
+		// change the index in Primary_chains[i].chains[j] to the index refering to clusters
+		int chainNum = 0;
+		for (int r = 0; r < Primary_chains.size(); r++) {
+			for (int p = 0; p < Primary_chains[r].chains.size(); p++) {
+				chainNum++;
+				for (int l = 0; l < Primary_chains[r].chains[p].size(); l++) {
+					int id = Primary_chains[r].chains[p][l]; 
+					Primary_chains[r].chains[p][l] = clusterOrder.index[id];
+				}
 			}
 		}
 
-		cerr << "max_ind: " << max_ind << "  max_value: " << max_value << endl;
 
-		traceback(clusterchain, max_ind, clusters_predecessor);
-	*/
-
-		// get non-overlapped chains
-		int l = 0;
-		for (int r = 0; r < clusterchain.size(); ++r) {
-			if (clusterchain[r].size() != 0) {
-				++l;
-				for (int c = 0; c < clusterchain[r].size(); ++c) {
-					clusterchain[r][c] = clusterOrder.index[clusterchain[r][c]];			
-				}					
-			}
-		}
-		if (l != clusterchain.size())  clusterchain.resize(l);
-
-
-		//cerr << "clusterchain.size(): " << clusterchain.size() << endl;
-		if (opts.dotPlot ) {
-			for (int c = 0; c < clusterchain.size(); c++) {
+		if (opts.dotPlot) {
+			for (int c = 0; c < Primary_chains.size(); c++) {
 				stringstream outNameStrm;
 				outNameStrm << "clusters-sdp." << c << ".dots";
 				ofstream baseDots(outNameStrm.str().c_str());
-				// clusterchain stores indices which refer to elements in clusters[clusterchain[c]].matches
-				for (int s = 0; s < clusterchain[c].size(); ++s) {
-					for (int m = 0; m < clusters[clusterchain[c][s]].matches.size(); ++m) {
-						baseDots << clusters[clusterchain[c][s]].matches[m].first.pos << "\t" 
-								 << clusters[clusterchain[c][s]].matches[m].second.pos << "\t" 
-								 << clusters[clusterchain[c][s]].matches[m].first.pos + opts.globalK << "\t"
-								 << clusters[clusterchain[c][s]].matches[m].second.pos + opts.globalK << "\t"
+
+				for (int s = 0; s < Primary_chains[c].chains[0].size(); ++s) {
+					for (int m = 0; m < clusters[Primary_chains[c].chains[0][s]].matches.size(); ++m) {
+						baseDots << clusters[Primary_chains[c].chains[0][s]].matches[m].first.pos << "\t" 
+								 << clusters[Primary_chains[c].chains[0][s]].matches[m].second.pos << "\t" 
+								 << clusters[Primary_chains[c].chains[0][s]].matches[m].first.pos + opts.globalK << "\t"
+								 << clusters[Primary_chains[c].chains[0][s]].matches[m].second.pos + opts.globalK << "\t"
 								 << c << "\t" 
-								 << clusters[clusterchain[c][s]].strand << endl;					
+								 << clusters[Primary_chains[c].chains[0][s]].strand << endl;					
 					}				
 				}
 				baseDots.close();
@@ -805,49 +724,69 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		}
 
 		//
-		// delete other clusters that are not in top chains 
+		// Record every chain's information in logClusters
 		//
-		vector<LogCluster> logClusters (clusterchain.size());
-		vector<int> ind(clusters.size(), 0);
-		for (int c = 0; c < clusterchain.size(); ++c) {
-			ind[clusterchain[c][0]] = 1;
-			if (clusters[clusterchain[c][0]].strand == 1) {
-				logClusters[c].SubCluster.push_back(Cluster(0, clusters[clusterchain[c][0]].matches.size(), read.length - clusters[clusterchain[c][0]].qEnd, 
-																read.length - clusters[clusterchain[c][0]].qStart, clusters[clusterchain[c][0]].tStart, 
-																	clusters[clusterchain[c][0]].tEnd, clusters[clusterchain[c][0]].strand, clusterchain[c][0]));	
-				// Swap rev anchors	
-				for (int m = 0; m < clusters[clusterchain[c][0]].matches.size(); m++) {
-					clusters[clusterchain[c][0]].matches[m].first.pos = read.length - (clusters[clusterchain[c][0]].matches[m].first.pos + opts.globalK);
-				}						
-			}
-			else {
-				logClusters[c].SubCluster.push_back(Cluster(0, clusters[clusterchain[c][0]].matches.size(), clusters[clusterchain[c][0]].qStart, clusters[clusterchain[c][0]].qEnd,
-															clusters[clusterchain[c][0]].tStart, clusters[clusterchain[c][0]].tEnd, clusters[clusterchain[c][0]].strand, clusterchain[c][0]));
+		vector<LogCluster> logClusters(chainNum);
+		vector<int> ind(clusters.size(), 0); // ind[i] == 1 means clusters[ind[i]] should be kept
+		int num = 0;
+		for (int c = 0; c < Primary_chains.size(); ++c) {
+
+			int pr = num;
+			for (int  p = 0; p < Primary_chains[c].chains.size(); ++p) {
+				
+				int id = Primary_chains[c].chains[p][0];
+				ind[id] = 1;
+
+				if (p != 0) {
+					logClusters[num].ISsecondary = 1;
+					logClusters[num].primary = pr;
+					logClusters[pr].secondary.push_back(num);
+				}
+				if (clusters[id].strand == 1) {
+					logClusters[num].SubCluster.push_back(Cluster(0, clusters[id].matches.size(), read.length - clusters[id].qEnd, 
+																	read.length - clusters[id].qStart, clusters[id].tStart, 
+																		clusters[id].tEnd, clusters[id].strand, id));	
+					// Swap rev anchors	
+					for (int m = 0; m < clusters[id].matches.size(); m++) {
+						clusters[id].matches[m].first.pos = read.length - (clusters[id].matches[m].first.pos + opts.globalK);
+					}						
+				}
+				else {
+					logClusters[num].SubCluster.push_back(Cluster(0, clusters[id].matches.size(), clusters[id].qStart, clusters[id].qEnd,
+																clusters[id].tStart, clusters[id].tEnd, clusters[id].strand, id));
+				}
+
+				if (Primary_chains[c].chains[p].size() > 1) {
+
+					for (int s = 1; s < Primary_chains[c].chains[p].size(); ++s) {
+
+						int lc = clusters[id].matches.size();
+						int ids = Primary_chains[c].chains[p][s];
+						clusters[id].matches.insert(clusters[id].matches.end(), clusters[ids].matches.begin(), clusters[ids].matches.end());
+						clusters[id].qStart = clusters[ids].qStart;
+						clusters[id].tStart = clusters[ids].tStart;
+
+						// If this is a reverse strand, then swap it, which will make the later step "refine clusters" easier
+						// and also swap the qStart, qEnd
+						if (clusters[ids].strand == 1) {
+							logClusters[num].SubCluster.push_back(Cluster(lc, clusters[id].matches.size(), read.length - clusters[ids].qEnd,
+																		 read.length - clusters[ids].qStart, clusters[ids].tStart, 
+																		 clusters[ids].tEnd, clusters[ids].strand));
+
+							for (int m = lc; m < clusters[id].matches.size(); m++) {
+								clusters[id].matches[m].first.pos = read.length - (clusters[id].matches[m].first.pos + opts.globalK);
+							}				
+						}
+						else {
+							logClusters[num].SubCluster.push_back(Cluster(lc, clusters[id].matches.size(), clusters[ids].qStart, clusters[ids].qEnd,
+												clusters[ids].tStart, clusters[ids].tEnd, clusters[ids].strand));
+						}
+					}			
+				}
+				logClusters[num].SetCoarse();	
+				++num;			
 			}
 
-			if (clusterchain[c].size() > 1) {
-				for (int s = 1; s < clusterchain[c].size(); ++s) {
-					int lc = clusters[clusterchain[c][0]].matches.size();
-					clusters[clusterchain[c][0]].matches.insert(clusters[clusterchain[c][0]].matches.end(), clusters[clusterchain[c][s]].matches.begin(), clusters[clusterchain[c][s]].matches.end());
-					clusters[clusterchain[c][0]].qStart = clusters[clusterchain[c][s]].qStart;
-					clusters[clusterchain[c][0]].tStart = clusters[clusterchain[c][s]].tStart;
-
-					// If this is a reverse strand, then swap it, which will make the later step "refine clusters" easier
-					// and also swap the qStart, qEnd
-					if (clusters[clusterchain[c][s]].strand == 1) {
-						logClusters[c].SubCluster.push_back(Cluster(lc, clusters[clusterchain[c][0]].matches.size(), read.length - clusters[clusterchain[c][s]].qEnd, read.length - clusters[clusterchain[c][s]].qStart,
-																	clusters[clusterchain[c][s]].tStart, clusters[clusterchain[c][s]].tEnd, clusters[clusterchain[c][s]].strand));
-						for (int m = lc; m < clusters[clusterchain[c][0]].matches.size(); m++) {
-							clusters[clusterchain[c][0]].matches[m].first.pos = read.length - (clusters[clusterchain[c][0]].matches[m].first.pos + opts.globalK);
-						}				
-					}
-					else {
-						logClusters[c].SubCluster.push_back(Cluster(lc, clusters[clusterchain[c][0]].matches.size(), clusters[clusterchain[c][s]].qStart, clusters[clusterchain[c][s]].qEnd,
-											clusters[clusterchain[c][s]].tStart, clusters[clusterchain[c][s]].tEnd, clusters[clusterchain[c][s]].strand));
-					}
-				}			
-			}
-			logClusters[c].SetCoarse();
 
 		}		
 
@@ -881,7 +820,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 
 		clusters.resize(cl);
-		clusterchain.clear();
+		//clusterchain.clear();
 		clusters_predecessor.clear();
 
 
@@ -982,7 +921,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		smallOpts.globalW=glIndex.w;
 		smallOpts.globalMaxFreq=6;
 		smallOpts.cleanMaxDiag=25;
-		//smallOpts.maxDiag=25;
+		smallOpts.maxDiag=25;
+		smallOpts.maxGap=300;
 		smallOpts.minDiagCluster=3;
 
 		Options tinyOpts = smallOpts;
@@ -997,6 +937,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 		//vector<Alignment*> alignments;
 
+		//logClusters[c] stores all anchors from one chain
 		for (int c = 0; c < logClusters.size(); c++) {
 			
 			//	TODO(Jingwen): replace "clusters[c].start == clusters[c].end" by the following "clusters[c].matches.size() == 0", because start and end are not accurate
@@ -1070,11 +1011,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				//
 				// sorted by second.pos and then first.pos
 				//
-				//CartesianTargetSort<GenomeTuple>(clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].start, clusters[c].matches.begin() + logClusters[c].SubCluster[sc].end); 
 				CartesianTargetSort<GenomeTuple>(clusters[logClusters[c].coarse].matches, logClusters[c].SubCluster[sc].start, logClusters[c].SubCluster[sc].end); 
-
-
-
 
 				//
 				// Get shorthand access to alignment boundaries.
@@ -1127,16 +1064,13 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					GenomePos genomeLocalIndexEnd   = glIndex.seqOffsets[lsi+1] - 1 - chromOffset;
 
 					int matchStart = CartesianTargetLowerBound<GenomeTuple>(clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].start,
-																		 clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].end, genomeLocalIndexStart);
+																clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].end, genomeLocalIndexStart);
 
 					int matchEnd = CartesianTargetUpperBound<GenomeTuple>(clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].start, 
-																		 clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].end, genomeLocalIndexEnd);
+																clusters[logClusters[c].coarse].matches.begin() + logClusters[c].SubCluster[sc].end, genomeLocalIndexEnd);
 
 					matchStart += logClusters[c].SubCluster[sc].start;
 					matchEnd += logClusters[c].SubCluster[sc].start;
-					//int matchStart = CartesianTargetLowerBound<GenomeTuple>(clusters[logClusters[c].coarse].matches, logClusters[c].SubCluster[sc].start, logClusters[c].SubCluster[sc].end, genomeLocalIndexStart);
-					//int matchEnd = CartesianTargetUpperBound<GenomeTuple>(clusters[logClusters[c].coarse].matches, logClusters[c].SubCluster[sc].start, logClusters[c].SubCluster[sc].end, genomeLocalIndexEnd);
-
 
 					//
 					// If there is no overlap with this cluster
@@ -1173,7 +1107,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					//
 					// Find the boundaries where in the query the matches should be added.
 					//
-
 					int queryIndexStart = readIndex->LookupIndex(readStart);
 					int queryIndexEnd = readIndex->LookupIndex(min(readEnd, (GenomePos) read.length-1));
 					assert(queryIndexEnd < readIndex->seqOffsets.size()+1);
@@ -1204,89 +1137,19 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					}
 						
 				}
+				//DiagonalSort<GenomeTuple>(refinedClusters[c].matches.begin() + rfCsize, refinedClusters[c].matches.begin() + refinedClusters[c].matches.size());
+				//CleanOffDiagonal(refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size(), smallOpts, logClusters[c].SubCluster[sc].strand);
+
 				refinedLogClusters[c].SubCluster.push_back(Cluster(rfCsize, refinedClusters[c].matches.size(), logClusters[c].SubCluster[sc].strand));
 				if (logClusters[c].SubCluster[sc].strand == 1) SwapStrand(read, smallOpts, refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size());	
 				refinedLogClusters[c].SetSubClusterBoundariesFromMatches(smallOpts, sc);
-				
-				// TODO(Check if we need this): sort the whole matches vector
-				//int si = refinedLogClusters[c].SubCluster.size();
-				//sort(refinedClusters[c].matches.begin() + refinedLogClusters[c].SubCluster[si - 1].start, refinedClusters[c].matches.end(), DiagonalSortOp<GenomeTuple>());
-				//CleanOffDiagonal(refinedClusters[c].matches, refinedLogClusters[c].SubCluster[si - 1].start, refinedLogClusters[c].SubCluster[si - 1].end, smallOpts);			
-				//if (logClusters[c].SubCluster[sc].strand == 1) SwapStrand(read, smallOpts, refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size());	
-				//refinedLogClusters[c].SetSubClusterBoundariesFromMatches(smallOpts, sc);
-		/*	
-				// 
-				// Remove the part where reverse strand overlaps with forward strand and the part where reverse strands overlap with each other;
-				// 
-
-				int RemoveFrontAnchors = 0, RemoveBackAnchors = 0;
-				if (sc > 0) {
-					cerr << "sc: " << sc << endl;
-					// the current one is reverse stranded;
-					// case 1: the previous one is forward stranded;
-					// case 2: the previous one is reverse stranded;
-					// case 3: the next one is forward stranded;
-					if (refinedLogClusters[c].SubCluster[sc].strand == 1 and refinedLogClusters[c].SubCluster[sc - 1].qStart < refinedLogClusters[c].SubCluster[sc].qEnd) {
-						RemoveBackAnchors = 1;
-						cerr << "RemoveBackAnchors = 1" << endl;
-					}	
-				
-					else if (refinedLogClusters[c].SubCluster[sc].strand == 0 and refinedLogClusters[c].SubCluster[sc - 1].strand == 1 and 
-														refinedLogClusters[c].SubCluster[sc - 1].qStart < refinedLogClusters[c].SubCluster[sc].qEnd) {
-						RemoveFrontAnchors = 1;
-						cerr << "RemoveFrontAnchors = 1" << endl;
-					}	
-					
+				if (logClusters[c].ISsecondary == 1) {
+					refinedLogClusters[c].ISsecondary = 1;
+					refinedLogClusters[c].primary = logClusters[c].primary;
 				}
-				//
-				// Mark those anchors which are needed to be deleted
-	
-				if (RemoveFrontAnchors == 1) {
-					for (int ca = refinedLogClusters[c].SubCluster[sc - 1].start; ca < refinedLogClusters[c].SubCluster[sc - 1].end; ca++) {
-						if (refinedClusters[c].matches[ca].first.pos < refinedLogClusters[c].SubCluster[sc].qEnd) {
-							refinedClusters[c].matches[ca].first.pos = 0;
-							refinedClusters[c].matches[ca].second.pos = 0;
-						}							
-					}
-					//
-					// Delete those anchors which are marked
-					int cl = refinedLogClusters[c].SubCluster[sc - 1].start;
-					for (int ca = refinedLogClusters[c].SubCluster[sc - 1].start; ca < refinedLogClusters[c].SubCluster[sc].end; ca++) {
-						if (refinedClusters[c].matches[ca].first.pos != 0 and refinedClusters[c].matches[ca].second.pos != 0) {
-							refinedClusters[c].matches[cl] = refinedClusters[c].matches[ca];
-							cl++;
-						}
-					}
-					refinedClusters[c].matches.resize(cl);	
-					refinedLogClusters[c].SubCluster[sc - 1].end = refinedLogClusters[c].SubCluster[sc - 1].end - (refinedLogClusters[c].SubCluster[sc].end - cl);
-					refinedLogClusters[c].SubCluster[sc].end = cl;
-					refinedLogClusters[c].SubCluster[sc].start = refinedLogClusters[c].SubCluster[sc - 1].end;
-
+				else {
+					refinedLogClusters[c].secondary =  logClusters[c].secondary;
 				}
-
-				if (RemoveBackAnchors == 1) {
-					for (int ca = refinedLogClusters[c].SubCluster[sc].start; ca < refinedLogClusters[c].SubCluster[sc].end; ca++) {
-						if (refinedClusters[c].matches[ca].first.pos + smallOpts.globalK > refinedLogClusters[c].SubCluster[sc - 1].qStart) {
-							refinedClusters[c].matches[ca].first.pos = 0;
-							refinedClusters[c].matches[ca].second.pos = 0;
-						}							
-					}	
-					//
-					// Delete those anchors which are marked
-					int cl = refinedLogClusters[c].SubCluster[sc].start;
-					for (int ca = refinedLogClusters[c].SubCluster[sc].start; ca < refinedLogClusters[c].SubCluster[sc].end; ca++) {
-						if (refinedClusters[c].matches[ca].first.pos != 0 and refinedClusters[c].matches[ca].second.pos != 0) {
-
-							refinedClusters[c].matches[cl] = refinedClusters[c].matches[ca];
-							//assert(refinedClusters[c].matches[cl].first.pos > 50000)
-							cl++;
-						}
-					}
-					refinedClusters[c].matches.resize(cl);	
-					refinedLogClusters[c].SubCluster[sc].end = cl;
-				}
-		*/
-
 			}
 
 			SetClusterBoundariesFromSubCluster(refinedClusters[c], opts, refinedLogClusters[c]);
@@ -1308,14 +1171,14 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 							baseDots << refinedClusters[c].matches[n].first.pos << "\t" << refinedClusters[c].matches[n].second.pos << "\t" 
 										<< refinedClusters[c].matches[n].first.pos + smallOpts.globalK << "\t" 
 										<< refinedClusters[c].matches[n].second.pos + smallOpts.globalK << "\t"  
-										<< m << "\t"
+										<< c << "\t"
 										<< refinedLogClusters[c].SubCluster[m].strand << endl;
 						}
 						else {
 							baseDots << refinedClusters[c].matches[n].first.pos << "\t" << refinedClusters[c].matches[n].second.pos + smallOpts.globalK << "\t"
 										<< refinedClusters[c].matches[n].first.pos + smallOpts.globalK << "\t" 
 										<< refinedClusters[c].matches[n].second.pos  << "\t"  
-										<< m << "\t"
+										<< c << "\t"
 										<< refinedLogClusters[c].SubCluster[m].strand << endl;							
 						}
 					}
@@ -1330,12 +1193,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		//
 		//RemoveEmptyClusters(refinedClusters);
 		
-		vector<SegAlignmentGroup> alignments(refinedClusters.size());
-		//vector<vector<Alignment*>> alignments(r);
+		vector<SegAlignmentGroup> alignments(refinedClusters.size()); // alignments[i] stores the alignment for one chain
 		for (int r = 0; r < refinedClusters.size(); ++r) {   
-			//debug
-			//cout <<"   refinedClusters[r]: " << r << "\t" << refinedClusters[r].matches.size() << endl;
-
 
 			if (refinedClusters[r].matches.size() < opts.minRefinedClusterSize) {
 				continue;
@@ -1413,11 +1272,45 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 
 			vector<Cluster> vt; // vt stores the split result of merged anchors
+			vector<ClusterCoordinates> mergedAnchors;
 			if (opts.mergeClusters) {
 				vt.clear();
+				//mergedAnchors.clear();
 
 				//MergeClusters(smallOpts, refinedClusters, vt, r);
-				mergeClusters (smallOpts, refinedClusters[r].matches, vt, r, baseName);
+				//mergeClusters (smallOpts, refinedClusters[r].matches, vt, r, baseName);
+				MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors);
+				
+				// TODO(Jingwen): only for debug the new MergeAnchors function
+				if (opts.dotPlot ) {
+					stringstream outNameStrm;
+					outNameStrm << baseName + "." << r << ".merged.dots";
+					ofstream baseDots(outNameStrm.str().c_str());
+					for (int m=0; m < mergedAnchors.size(); m++) {
+
+						if (mergedAnchors[m].strand == 0) {
+							// chain stores indices which refer to elments in vt
+							baseDots << mergedAnchors[m].qStart << "\t" 
+									 << mergedAnchors[m].tStart << "\t" 
+									 << mergedAnchors[m].qEnd << "\t" 
+									 << mergedAnchors[m].tEnd << "\t"
+									 << r << "\t"
+									 << mergedAnchors[m].strand << endl;									
+						}		
+						else {
+							baseDots << mergedAnchors[m].qStart << "\t" 
+									 << mergedAnchors[m].tEnd << "\t" 
+									 << mergedAnchors[m].qEnd << "\t" 
+									 << mergedAnchors[m].tStart << "\t"
+									 << r << "\t"
+									 << mergedAnchors[m].strand << endl;								
+						}	
+
+					}
+					baseDots.close();
+				}
+
+
 
 				/*
 				//TODO(Jingwen): Only for debug
@@ -1453,7 +1346,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 			}
 
-			// Perform sparse chaining, uses time O(n log n).
+
+			// Perform sparse chaining, uses time O(n (log n)^2).
 			//
 			// Merge anchors that are not overlapping
 
@@ -1463,8 +1357,13 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			vector<unsigned int> chain; // chain contains the index of the fragments involved in the result of SparseDP.
 			if (opts.SparseDP) {
 				chain.clear();
-				if (opts.mergeClusters and vt.size() < 30000 and vt.size() > 0) {
-					//SparseDP(vt, chain, smallOpts, LookUpTable);
+				if (opts.mergeClusters and mergedAnchors.size() < 30000 and mergedAnchors.size() > 0) {
+					if (mergedAnchors.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
+						//SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, 5);
+					}
+					else {
+						//SparseDP(mergedAnchors, chain, smallOpts, LookUpTable);
+					}
 				}
 				else if (refinedClusters[r].matches.size() < 30000) {
 					if (refinedClusters[r].matches.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
@@ -1487,12 +1386,24 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				ofstream baseDots(outNameStrm.str().c_str());
 				for (int c = 0; c < chain.size(); c++) {
 					if (opts.mergeClusters) {
-						// chain stores indices which refer to elments in vt
-						baseDots << vt[chain[c]].qStart << "\t" 
-								 << vt[chain[c]].tStart << "\t" 
-								 << vt[chain[c]].qEnd << "\t" 
-								 << vt[chain[c]].tEnd << "\t"
-								 << r << endl;							
+
+						if (mergedAnchors[chain[c]].strand == 0) {
+							// chain stores indices which refer to elments in vt
+							baseDots << mergedAnchors[chain[c]].qStart << "\t" 
+									 << mergedAnchors[chain[c]].tStart << "\t" 
+									 << mergedAnchors[chain[c]].qEnd << "\t" 
+									 << mergedAnchors[chain[c]].tEnd << "\t"
+									 << r << "\t"
+									 << mergedAnchors[chain[c]].strand << endl;									
+						}		
+						else {
+							baseDots << mergedAnchors[chain[c]].qStart << "\t" 
+									 << mergedAnchors[chain[c]].tEnd << "\t" 
+									 << mergedAnchors[chain[c]].qEnd << "\t" 
+									 << mergedAnchors[chain[c]].tStart << "\t"
+									 << r << "\t"
+									 << mergedAnchors[chain[c]].strand << endl;								
+						}			
 					}
 					else {
 						// chain stores indices which refer to elements in refinedClusters[r].matches
@@ -1514,9 +1425,9 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 						}					
 					}	
 					//TODO(Jingwen): delete the following code later
-					if (c != chain.size() - 1) {
-						assert(refinedClusters[r].matches[chain[c]].first.pos < refinedClusters[r].matches[chain[c+1]].first.pos);
-					}	
+					//if (c != chain.size() - 1) {
+						//assert(refinedClusters[r].matches[chain[c]].first.pos < refinedClusters[r].matches[chain[c+1]].first.pos);
+					//}	
 				}
 				baseDots.close();
 			}
@@ -1528,7 +1439,11 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			//GenomePos chainReadStart = refinedClusters[r].matches[chain[0]].first.pos;
 			//GenomePos chainReadEnd = refinedClusters[r].matches[chain[0]].first.pos + smallOpts.globalK;
 
-			if (opts.mergeClusters and vt.size() > 0) {
+			// TODO(Jingwen): 
+			// Need to reverse the rev-anchors 
+			// And then check fist-sdp-clean.dots
+			//  
+			if (opts.mergeClusters and mergedAnchors.size() > 0) {
 				//
 				// Add small anchors to tupChain. (Use greedy algorithm to make small anchors not overlap with each other)
 				//
@@ -1537,36 +1452,42 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					//cerr << "ch: "<< ch<< endl;
 					//cerr << "chain[" << ch <<"]   " << chain[ch] << endl; 
 
-					unsigned int fprev = vt[chain[ch]].start;
-					unsigned int fcur = vt[chain[ch]].start;
-					tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[fcur].first.pos), 
+					unsigned int fprev = mergedAnchors[chain[ch]].start;
+					unsigned int fcur = mergedAnchors[chain[ch]].start;
+					if (mergedAnchors[chain[ch]].strand == 0) {
+						tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[fcur].first.pos), 
 																				GenomeTuple(0, refinedClusters[r].matches[fcur].second.pos)));	
+					}
+					else {
+						tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[fcur].first.pos), 
+																				GenomeTuple(0, refinedClusters[r].matches[fcur].second.pos)));	
+					}
+					
 					
 					//cerr << "tupChain[" << tupChain.size() << "]     push_back: " << "first: " << refinedClusters[r].matches[fcur].first.pos<<"  " << refinedClusters[r].matches[fcur].first.pos + smallOpts.globalK 
 					//<< "   second: " << refinedClusters[r].matches[fcur].second.pos << " "<< refinedClusters[r].matches[fcur].second.pos + smallOpts.globalK - 1 <<endl;
 					
-
 					++fcur;					
-					while (fcur < vt[chain[ch]].end) {
-						while (fcur < vt[chain[ch]].end && (refinedClusters[r].matches[fcur].first.pos < refinedClusters[r].matches[fprev].first.pos + smallOpts.globalK ||
+					while (fcur < mergedAnchors[chain[ch]].end) {
+						while (fcur < mergedAnchors[chain[ch]].end && (refinedClusters[r].matches[fcur].first.pos < refinedClusters[r].matches[fprev].first.pos + smallOpts.globalK ||
 													refinedClusters[r].matches[fcur].second.pos < refinedClusters[r].matches[fprev].second.pos + smallOpts.globalK)) {
 							++fcur;
 						}
-						if (fcur != vt[chain[ch]].end) {
+						if (fcur != mergedAnchors[chain[ch]].end) {
 							tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[fcur].first.pos), 
 																	GenomeTuple(0, refinedClusters[r].matches[fcur].second.pos)));	
 					
 							//cerr << "tupChain[" << tupChain.size() << "]     push_back: " << "first: " << refinedClusters[r].matches[fcur].first.pos<<"  " << refinedClusters[r].matches[fcur].first.pos + smallOpts.globalK 
 							//<< "   second: " << refinedClusters[r].matches[fcur].second.pos << " "<< refinedClusters[r].matches[fcur].second.pos + smallOpts.globalK - 1 <<endl;
 					
-							assert(refinedClusters[r].matches[fcur].first.pos >= refinedClusters[r].matches[fprev].first.pos + smallOpts.globalK );
-							assert(refinedClusters[r].matches[fcur].second.pos >= refinedClusters[r].matches[fprev].second.pos + smallOpts.globalK );								
+							//assert(refinedClusters[r].matches[fcur].first.pos >= refinedClusters[r].matches[fprev].first.pos + smallOpts.globalK );
+							//assert(refinedClusters[r].matches[fcur].second.pos >= refinedClusters[r].matches[fprev].second.pos + smallOpts.globalK );								
 						}
 						fprev = fcur;
 						++fcur;
 					}
 				}
-				vt.clear();
+				mergedAnchors.clear();
 			}
 			else {
 				// chain stores indices which refer to elements in refinedClusters[r].matches
@@ -1638,9 +1559,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 						}
 					}
 				}
-
-
-
 
 				for (int c = 0; c < tupChain.size(); c++) {
 					// chain stores indices which refer to elments in vt
@@ -1881,6 +1799,12 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 													genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex);
 
 				alignments[r].SegAlignment.push_back(alignment);
+				if (refinedLogClusters[r].ISsecondary == 0) alignments[r].secondary = refinedLogClusters[r].secondary;
+				else {
+					alignments[r].ISsecondary = refinedLogClusters[r].ISsecondary;
+					alignments[r].primary = refinedLogClusters[r].primary;					
+				}
+
 				for (int c = tupChainClusters[s].start; chainLength > 0 and c < tupChainClusters[s].end - 1; c++) {
 					//
 					// Chain is with respect to full sequence
@@ -2017,7 +1941,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					alignments[cm].SegAlignment[b]->CalculateStatistics(alignments[cm].SegAlignment.size(), b);	
 				}
 				alignments[cm].SetBoundariesFromSegAlignmentAndnm(read);
-
 				cm++;
 			} 
 		}

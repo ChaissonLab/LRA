@@ -440,11 +440,22 @@ public:
 	GenomePos qStart, qEnd, tStart, tEnd;
 	unsigned char mapqv;
 	int nm;
-	SegAlignmentGroup () {};
+ 	bool ISsecondary; // ISsecondary == 1 means this is a secondary chain. Otherwise it's a primary chain
+ 	int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
+ 	vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains	
+	SegAlignmentGroup () {
+		qStart = 0;
+		qEnd = 0;
+		tStart = 0;
+		tEnd = 0;
+		nm = -1;
+ 		ISsecondary = 0;
+ 		primary = -1;
+ 		nm = 0;
+	};
 	~SegAlignmentGroup () {};
 
 	void SetBoundariesFromSegAlignmentAndnm (Read & read) {
-		qStart = 0, qEnd = 0, tStart = 0, tEnd = 0, nm = 0;
 		for (int s = 0; s < SegAlignment.size(); s++) {
 			if (SegAlignment[s]->strand == 0) {
 				qStart = min(qStart, SegAlignment[s]->qStart);
@@ -460,7 +471,6 @@ public:
 			}
 			nm += SegAlignment[s]->nm;
 		}
-
 	}
 
 	bool Overlaps(const SegAlignmentGroup &b, float frac) const {
