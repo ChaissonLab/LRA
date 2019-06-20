@@ -16,6 +16,7 @@ public:
 	int maxDiag;
 	int cleanMaxDiag;
 	int minClusterSize;
+	int minClusterLength;
 	int window;
 	bool dotPlot;
 	bool mergeClusters;
@@ -65,6 +66,7 @@ public:
 		cleanMaxDiag=100; // used to be 50
 		minDiagCluster=20;
 		minClusterSize = 10; // used to be 10
+		minClusterLength = 100;
 		minRefinedClusterSize = 40;
 		window=100;
 		mergeGapped=false;
