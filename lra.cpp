@@ -65,6 +65,7 @@ void HelpMap() {
 		     << "   -t n(int)   Use n threads (1)" << endl
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
+			 << "	-d 	(flag)  Enable dotPlot" << endl
 			 << "   -aa (flag)  use Merge.h" << endl;
 }
 		
