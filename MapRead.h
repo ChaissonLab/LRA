@@ -380,19 +380,31 @@ void RefineSubstrings(char *read, GenomePos readSubStart, GenomePos readSubEnd, 
 
 void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<pair<GenomeTuple, GenomeTuple> > &allMatches,  vector<pair<GenomeTuple, GenomeTuple> > &forMatches,
 								vector<pair<GenomeTuple, GenomeTuple> > &revMatches) {
-	vector<bool> strand(allMatches.size());
+	//
+	// A value of 0 implies forward strand match.
+	//
+	vector<bool> strand(allMatches.size(), 0);
 	int nForward=0;
 	for (int i=0; i < allMatches.size(); i++) {
 		int readPos = allMatches[i].first.pos;
 		uint64_t refPos = allMatches[i].second.pos;
 		char *genomePtr=genome.GlobalIndexToSeq(refPos);
+		//
+		// Read and genome are identical, the match is in the forward strand
 		if (strncmp(&read.seq[readPos], genomePtr, k) == 0) {
 			nForward++;
 		}
 		else {
+			//
+			// The k-mers are not identical, but a match was stored between
+			// readPos and *genomePtr, therefore the match must be reverse.
+			//
 			strand[i] = true;
 		}
 	}
+	//
+	// Populate two lists, one for forward matches one for reverse.
+	//
 	forMatches.resize(nForward);
 	revMatches.resize(allMatches.size()-nForward);
 	int i=0,r=0,f=0;
@@ -1546,7 +1558,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					//chainReadEnd = max(chainReadEnd, refinedClusters[r].matches[chain[ch]].first.pos + smallOpts.globalK);
 
 				}
-				while (ce < chain.size()) {
+				while (ce < chain.size() and cs < chain.size()) {
 					if (refinedClusters[r].strands[chain[cs]] == refinedClusters[r].strands[chain[ce]]) ce++;
 					else {
 						tupChainClusters.push_back(Cluster(cs, ce, refinedClusters[r].strands[chain[cs]]));
@@ -1554,7 +1566,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 						cs = ce;
 					}
 				}
-				if (ce == chain.size()) {
+				if (ce == chain.size() and cs < chain.size()) {
 						tupChainClusters.push_back(Cluster(cs, ce, refinedClusters[r].strands[chain[cs]]));
 				}
 			}
