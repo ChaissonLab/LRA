@@ -491,8 +491,7 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 	if (rough == false) { maxGap = opts.maxGapBtwnAnchors;}
 	else { maxDiag = opts.maxDiag;} 
 	int i;
-	int cs = s, ce =e;
-	cs = s;
+	int cs = s, ce = e;
 	int64_t dd,absdd;
 	
 	while (cs < e) {
@@ -504,7 +503,8 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 		int diff=0;
 
 		// (TODO)Jingwen: Delete (opts.maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < opts.maxGap) in the below
-		while (ce < e and (abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) < opts.maxDiag or maxDiag == -1) and (maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < maxGap)) {
+		while (ce < e and (abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) < opts.maxDiag or maxDiag == -1) 
+					  and (maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < maxGap)) {
 
 			qStart = min(qStart, matches[ce].first.pos);
 			qEnd   = max(qEnd, matches[ce].first.pos + opts.globalK);
