@@ -252,7 +252,7 @@ TraceBack_ForwardOnly (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, c
 }
 
 
-// The input for this function is GenomePairs which is from gapPairs
+// The input for this function is GenomePairs which is from gapPairs (from snd SDP)
 // Each fragment has the same length
 // TODO(Jingwen): create a simpler version of ProcessPoint for this SparseDP. (only forward strand)
 int SparseDP_ForwardOnly (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Options &opts, const std::vector<float> &LookUpTable, int rate = 1) {

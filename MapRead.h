@@ -421,23 +421,23 @@ void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<pair<Geno
 }
 
 
-void traceback(vector<int> & clusterchain, int & i, vector<int> & clusters_predecessor, vector<bool> & used, int & m) {
+void traceback(vector<int> &clusterchain, int &i, vector<int> &clusters_predecessor, vector<bool> &used) {
 
-	clusterchain.push_back(i);
-	used[i] = 1;
-	//cerr << "push back " << i << endl;
-
-	if (clusters_predecessor[i] != -1) {
-		if (used[clusters_predecessor[i]] != 1) {
-			traceback(clusterchain, clusters_predecessor[i], clusters_predecessor, used, m);			
-		}
-		else {
-			for (int lr = 0; lr < clusterchain.size(); ++lr) {
-				used[clusterchain[lr]] = 0;
-			}			
+	if (used[i] == 0) {
+		clusterchain.push_back(i);	
+		used[i] = 1;	
+		if (clusters_predecessor[i] != -1) {
+			if (used[clusters_predecessor[i]] == 0) {
+				traceback(clusterchain, clusters_predecessor[i], clusters_predecessor, used);			
+			}
+			else {
+				for (int lr = 0; lr < clusterchain.size(); ++lr) {
+					used[clusterchain[lr]] = 0;
+				}	
+				clusterchain.clear();		
+			}
 		}
 	}
-	else ++m;
 }
 
 // TODO(Jingwen): determine which traceback should be used
@@ -660,63 +660,63 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 
 		Clusters_valueOrder clusters_valueOrder(&clusters_value); // sort clusters_value in descending order
-
 		//
 		// traceback chains until chains overlap less than 30% on the read
 		// chains that are overlapped over 70% are considered as secondary alignments
 		// chains that are overlapped less than 50% are considered as different primary alignments
 		//
-		//vector<vector<int>> clusterchain;
 		vector<Primary_chain> Primary_chains;
 		Primary_chains.clear();
 		float maxValue = clusters_valueOrder[0];
-		//Clusters_valueOrder clusters_valueOrder(&clusters_value); // sort clusters_value in descending order
+		vector<bool> used(clusters.size(), 0); // used[i] == 1 means clusterOrder[i] has been used
 
 		for (int r = 0; r < clusters_value.size() ; ++r) {
 
 			vector<int> onechain;
-			traceback(onechain, clusters_valueOrder.index[r], clusters_predecessor);
+			traceback(onechain, clusters_valueOrder.index[r], clusters_predecessor, used);
 
-			// Note: onechain store index from the last one to the first one
-			int TrueIndex = clusterOrder.index[onechain[0]];
-			GenomePos qEnd = clusters[TrueIndex].qEnd;
-			GenomePos tEnd = clusters[TrueIndex].tEnd;
+			if (onechain.size() != 0) {
+				// Note: onechain store index from the last one to the first one
+				int TrueIndex = clusterOrder.index[onechain[0]];
+				GenomePos qEnd = clusters[TrueIndex].qEnd;
+				GenomePos tEnd = clusters[TrueIndex].tEnd;
 
-			TrueIndex = clusterOrder.index[onechain.back()];
-			GenomePos qStart = clusters[TrueIndex].qStart;
-			GenomePos tStart = clusters[TrueIndex].tStart;
+				TrueIndex = clusterOrder.index[onechain.back()];
+				GenomePos qStart = clusters[TrueIndex].qStart;
+				GenomePos tStart = clusters[TrueIndex].tStart;
 
-			//
-			// If this chain overlap with read greater than 30%, insert it to clusterchain
-			if (((float)(qEnd - qStart)/read.length) > 0.3) {
 				//
-				// Compare onechain to all the Primary_chains we've found. 
-				// If onechain overlaps with one primary chain over 70% ---> onechain is a secondary chain 
-				// If onechain overlaps with all the primary chains less than 50% ---> onechain is another primary chain
-				if (Primary_chains.size() == 0) {
-					Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
-				} 
-				else {
-					bool newpr = 1, inserted = 0;
-					int p = 0;
-					while (p < Primary_chains.size()) {
-						if (Primary_chains[p].Overlaps(qStart, qEnd, 0.7)) {
-							Primary_chains[p].chains.push_back(onechain);
-							inserted = 1;
-							break;
-						}
-						else if (Primary_chains[p].Overlaps(qStart, qEnd, 0.5)) {
-							newpr = 0;
-						}
-						++p;
-					}			
-					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 1) {
+				// If this chain overlap with read greater than 30%, insert it to clusterchain
+				if (((float)(qEnd - qStart)/read.length) > 0.3) {
+					//
+					// Compare onechain to all the Primary_chains we've found. 
+					// If onechain overlaps with one primary chain over 70% ---> onechain is a secondary chain 
+					// If onechain overlaps with all the primary chains less than 50% ---> onechain is another primary chain
+					if (Primary_chains.size() == 0) {
 						Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
-					}	
-				}
+					} 
+					else {
+						bool newpr = 1, inserted = 0;
+						int p = 0;
+						while (p < Primary_chains.size()) {
+							if (Primary_chains[p].Overlaps(qStart, qEnd, 0.7)) {
+								Primary_chains[p].chains.push_back(onechain);
+								inserted = 1;
+								break;
+							}
+							else if (Primary_chains[p].Overlaps(qStart, qEnd, 0.5)) {
+								newpr = 0;
+							}
+							++p;
+						}			
+						if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 1) {
+							Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
+						}	
+					}
 
+				}
+				else break;				
 			}
-			else break;
 		}
 
 		clusters_value.clear();
@@ -754,8 +754,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			}
 		}
 */
-
-
 
 		// TODO(Jingwen): only for debug and delete this later. Output the 1st every chain subject to the 1st primary chain
 		if (opts.dotPlot) {
@@ -1286,6 +1284,11 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				continue;
 			}
 
+			bool ReverseOnly = 1; // ReverseOnly == 1 means there are only reverse matches
+			for (int m = 0; m < refinedLogClusters[r].SubCluster.size(); ++m) {
+				if (refinedLogClusters[r].SubCluster[m].strand != 1) ReverseOnly = 0;
+			} 
+
 			//
 			// At this point in the code, refinedClusters[r].matches is a list
 			// of k-mer matches between the read and the genome. 
@@ -1416,18 +1419,18 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				chain.clear();
 				if (opts.mergeClusters and mergedAnchors.size() < 30000 and mergedAnchors.size() > 0) {
 					if (mergedAnchors.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
-						SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, 5);
+						SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, ReverseOnly, 5);
 					}
 					else {
-						SparseDP(mergedAnchors, chain, smallOpts, LookUpTable);
+						SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, ReverseOnly);
 					}
 				}
 				else if (refinedClusters[r].matches.size() < 30000) {
 					if (refinedClusters[r].matches.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
-						SparseDP(refinedClusters[r].matches, chain, smallOpts, LookUpTable, refinedLogClusters[r], refinedClusters[r].strands, 5);
+						SparseDP(refinedClusters[r].matches, chain, smallOpts, LookUpTable, refinedLogClusters[r], refinedClusters[r].strands, ReverseOnly, 5);
 					}
 					else {
-						SparseDP(refinedClusters[r].matches, chain, smallOpts, LookUpTable, refinedLogClusters[r], refinedClusters[r].strands);
+						SparseDP(refinedClusters[r].matches, chain, smallOpts, LookUpTable, refinedLogClusters[r], refinedClusters[r].strands, ReverseOnly);
 					}
 				}
 			}
@@ -1668,7 +1671,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 					//chainReadEnd = max(chainReadEnd, refinedClusters[r].matches[chain[ch]].first.pos + smallOpts.globalK);
 
 				}
-				
+
 				int cs = 0, ce = 0;
 				while (ce < chain.size()) {
 					if (refinedClusters[r].strands[chain[cs]] == refinedClusters[r].strands[chain[ce]]) ce++;

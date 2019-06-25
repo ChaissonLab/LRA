@@ -923,7 +923,7 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 
 
 // The input for this function is from Merge_Split step
-int SparseDP (const std::vector<ClusterCoordinates> & FragInput, std::vector<unsigned int> & chain, Options & opts, const std::vector<float> & LookUpTable, int rate = 1) {
+int SparseDP (const std::vector<ClusterCoordinates> & FragInput, std::vector<unsigned int> & chain, Options & opts, const std::vector<float> & LookUpTable, bool ReverseOnly, int rate = 1) {
 
 	std::vector<Point>  H1;
 	// FragInput is vector<ClusterCoordinates>
@@ -952,7 +952,7 @@ int SparseDP (const std::vector<ClusterCoordinates> & FragInput, std::vector<uns
 			H1.back().se.second = FragInput[i].tEnd;	
 			H1.back().orient = 1; // the point comes from a forward oriented anchor				
 		}
-		else {
+		else if (ReverseOnly == 0) {
 			// insert start point s1 into H1
 			Point s1;
 			H1.push_back(s1);
@@ -996,6 +996,28 @@ int SparseDP (const std::vector<ClusterCoordinates> & FragInput, std::vector<uns
 			H1.back().se.second = FragInput[i].tStart;	
 			H1.back().orient = 0; // the point comes from a reverse oriented anchor
 		} 
+		else {
+			// insert start point s2 into H1
+			Point s2;
+			H1.push_back(s2);
+			H1.back().ind = 1; // start
+			H1.back().inv = 0; // backward direction
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qStart; 
+			H1.back().se.second = FragInput[i].tEnd;	
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+
+
+			// insert end point e2 into H1
+			Point e2;
+			H1.push_back(e2);
+			H1.back().ind = 0; // end
+			H1.back().inv = 0; // backward direction		
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qEnd;
+			H1.back().se.second = FragInput[i].tStart;	
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor			
+		}
 	}
 
 	clock_t begin = std::clock();
@@ -1164,9 +1186,9 @@ int SparseDP (const std::vector<ClusterCoordinates> & FragInput, std::vector<uns
 
 
 
-// The input for this function is GenomePairs which is not from Merge_Split step
+// The input for this function is GenomePairs which is NOT from Merge_Split step
 // Each fragment has the same length
-int SparseDP (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Options &opts, const std::vector<float> &LookUpTable, LogCluster &logcluster, vector<int> &strands, int rate = 1) {
+int SparseDP (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Options &opts, const std::vector<float> &LookUpTable, LogCluster &logcluster, vector<int> &strands, bool ReverseOnly, int rate = 1) {
 
 	if (FragInput.size() == 0) return 0;
 
@@ -1203,7 +1225,7 @@ int SparseDP (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Op
 				H1.back().se.second = FragInput[i].second.pos + opts.globalK;	
 				H1.back().orient = 1; // the point comes from a forward oriented anchor				
 			}
-			else {
+			else if (ReverseOnly == 0) { // ReverseOnly == 0 means for this chain, there are forward and reverse matches
 				strands[i] = 1;
 				// insert start point s1 into H1
 				Point s1;
@@ -1248,6 +1270,28 @@ int SparseDP (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Op
 				H1.back().se.second = FragInput[i].second.pos;	
 				H1.back().orient = 0; // the point comes from a reverse oriented anchor
 			} 
+			else { // ReverseOnly == 1 means there are only reverse matches
+				// insert start point s2 into H1
+				Point s2;
+				H1.push_back(s2);
+				H1.back().ind = 1; // start
+				H1.back().inv = 0; // backward direction
+				H1.back().frag_num = i;
+				H1.back().se.first = FragInput[i].first.pos; 
+				H1.back().se.second = FragInput[i].second.pos + opts.globalK ;	
+				H1.back().orient = 0; // the point comes from a reverse oriented anchor
+
+
+				// insert end point e2 into H1
+				Point e2;
+				H1.push_back(e2);
+				H1.back().ind = 0; // end
+				H1.back().inv = 0; // backward direction		
+				H1.back().frag_num = i;
+				H1.back().se.first = FragInput[i].first.pos + opts.globalK;
+				H1.back().se.second = FragInput[i].second.pos;	
+				H1.back().orient = 0; // the point comes from a reverse oriented anchor				
+			}
 		}
 	}
 
