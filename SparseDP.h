@@ -1094,17 +1094,20 @@ int SparseDP (const std::vector<ClusterCoordinates> & FragInput, std::vector<uns
 			else if (H1[tt].ind == 0 and H1[tt].inv == 1) { // H1[tt] is an end point (e1)
 				Value[ii].SS_A_R1 = Row[t].SS_A1;
 				Value[ii].counter_A_R1 = Row[t].SS_A1.size();
-				//Value[ii].val = (opts.globalK); // TODO(Jingwen): make sure that this is redundant
+				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].orient = H1[tt].orient;
 			}
 			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
 				Value[ii].SS_B_R2 = Row[t].SS_B2;
 				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
-				//Value[ii].val = (opts.globalK);
+				Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				Value[ii].orient = H1[tt].orient;
 			}
 			else { // H1[tt] is an end point (e2)
 				Value[ii].SS_A_R2 = Row[t].SS_A2;
 				Value[ii].counter_A_R2 = Row[t].SS_A2.size();
-				//Value[ii].val = (opts.globalK);				
+				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].orient = H1[tt].orient;				
 			}
 		}
 	}
@@ -1119,23 +1122,26 @@ int SparseDP (const std::vector<ClusterCoordinates> & FragInput, std::vector<uns
 			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
 				Value[ii].SS_B_C1 = Col[t].SS_B1;
 				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
-				//Value[ii].val = opts.globalK * rate;
-				//Value[ii].orient = H1[tt].orient;
+				Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				Value[ii].orient = H1[H2[tt]].orient;
 			}
 			else if (H1[H2[tt]].ind == 0 and H1[H2[tt]].inv == 1) { // H1[H2[tt]] is an end point (e1)
 				Value[ii].SS_A_C1 = Col[t].SS_A1;
 				Value[ii].counter_A_C1 = Col[t].SS_A1.size();
-				//Value[ii].val = (opts.globalK);
+				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].orient = H1[H2[tt]].orient;
 			}
 			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
 				Value[ii].SS_B_C2 = Col[t].SS_B2;
 				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
-				//Value[ii].val = (opts.globalK);				
+				Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				Value[ii].orient = H1[H2[tt]].orient;				
 			}
 			else { // H1[H2[tt]] is an end point (e2)
 				Value[ii].SS_A_C2 = Col[t].SS_A2;
 				Value[ii].counter_A_C2 = Col[t].SS_A2.size();
-				//Value[ii].val = (opts.globalK);				
+				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].orient = H1[H2[tt]].orient;			
 			}
 
 		}
@@ -1271,6 +1277,7 @@ int SparseDP (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Op
 				H1.back().orient = 0; // the point comes from a reverse oriented anchor
 			} 
 			else { // ReverseOnly == 1 means there are only reverse matches
+				strands[i] = 1;
 				// insert start point s2 into H1
 				Point s2;
 				H1.push_back(s2);
@@ -1365,8 +1372,9 @@ int SparseDP (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Op
 	std::vector<Fragment_Info> Value(FragInput.size());
 	for (unsigned int t = 0; t < Row.size(); ++t) {
 		for (unsigned int tt = Row[t].pstart; tt < Row[t].pend; ++tt) {
-
+			//cerr << "Row H tt: " << tt << endl;
 			unsigned int ii = H1[tt].frag_num;
+			//cerr << "Row Value ii: " << ii << endl<< endl;
 
 			if (H1[tt].ind == 1 and H1[tt].inv == 1) { //H1[tt] is a start point (s1)
 				Value[ii].SS_B_R1 = Row[t].SS_B1;
@@ -1377,17 +1385,20 @@ int SparseDP (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Op
 			else if (H1[tt].ind == 0 and H1[tt].inv == 1) { // H1[tt] is an end point (e1)
 				Value[ii].SS_A_R1 = Row[t].SS_A1;
 				Value[ii].counter_A_R1 = Row[t].SS_A1.size();
-				//Value[ii].val = (opts.globalK); // TODO(Jingwen): make sure that this is redundant
+				//Value[ii].val = opts.globalK * rate; 
+				//Value[ii].orient = H1[tt].orient;
 			}
 			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
 				Value[ii].SS_B_R2 = Row[t].SS_B2;
 				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
-				//Value[ii].val = (opts.globalK);
+				Value[ii].val = opts.globalK * rate; //This is not redundant, because not every match has four points, some may have only two (s2, e2)
+				Value[ii].orient = H1[tt].orient;
 			}
 			else { // H1[tt] is an end point (e2)
 				Value[ii].SS_A_R2 = Row[t].SS_A2;
 				Value[ii].counter_A_R2 = Row[t].SS_A2.size();
-				//Value[ii].val = (opts.globalK);				
+				//Value[ii].val = opts.globalK * rate;
+				//Value[ii].orient = H1[tt].orient;			
 			}
 		}
 	}
@@ -1402,23 +1413,26 @@ int SparseDP (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Op
 			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
 				Value[ii].SS_B_C1 = Col[t].SS_B1;
 				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
-				//Value[ii].val = opts.globalK * rate;
-				//Value[ii].orient = H1[tt].orient;
+				Value[ii].val = opts.globalK * rate;
+				Value[ii].orient = H1[H2[tt]].orient;
 			}
 			else if (H1[H2[tt]].ind == 0 and H1[H2[tt]].inv == 1) { // H1[H2[tt]] is an end point (e1)
 				Value[ii].SS_A_C1 = Col[t].SS_A1;
 				Value[ii].counter_A_C1 = Col[t].SS_A1.size();
-				//Value[ii].val = (opts.globalK);
+				//Value[ii].val = opts.globalK * rate;
+				//Value[ii].orient = H1[H2[tt]].orient;
 			}
 			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
 				Value[ii].SS_B_C2 = Col[t].SS_B2;
 				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
-				//Value[ii].val = (opts.globalK);				
+				Value[ii].val = opts.globalK * rate;
+				Value[ii].orient = H1[H2[tt]].orient;				
 			}
 			else { // H1[H2[tt]] is an end point (e2)
 				Value[ii].SS_A_C2 = Col[t].SS_A2;
 				Value[ii].counter_A_C2 = Col[t].SS_A2.size();
-				//Value[ii].val = (opts.globalK);				
+				//Value[ii].val = opts.globalK * rate;
+				//Value[ii].orient = H1[H2[tt]].orient;			
 			}
 
 		}
@@ -1451,7 +1465,7 @@ int SparseDP (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Op
 	// Trace back to get the FinalChain
 	// store the index of points
 	chain.clear();
-	TraceBack(SubR1, SubC1, SubR2,SubC2, Value, max_pos, chain);
+	TraceBack(SubR1, SubC1, SubR2, SubC2, Value, max_pos, chain);
 	std::reverse(chain.begin(), chain.end());
 
 	// Clear SubR and SubC

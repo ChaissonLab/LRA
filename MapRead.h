@@ -1463,6 +1463,11 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 									 << mergedAnchors[chain[c]].tStart << "\t"
 									 << r << "\t"
 									 << mergedAnchors[chain[c]].strand << endl;								
+						}	
+						//TODO(Jingwen): delete the following code later
+						if (c != chain.size() - 1) {
+							assert(mergedAnchors[chain[c]].qStart < mergedAnchors[chain[c+1]].qStart);
+							//assert(refinedClusters[r].matches[chain[c]].second.pos >= refinedClusters[r].matches[chain[c+1]].second.pos + smallOpts.globalK);
 						}			
 					}
 					else {
@@ -1482,12 +1487,13 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 									 << refinedClusters[r].matches[chain[c]].second.pos << "\t"
 									 << r << "\t"
 									 << refinedClusters[r].strands[chain[c]] << endl;	
-						}					
+						}		
+						//TODO(Jingwen): delete the following code later
+						if (c != chain.size() - 1) {
+							assert(refinedClusters[r].matches[chain[c]].first.pos < refinedClusters[r].matches[chain[c+1]].first.pos);
+							//assert(refinedClusters[r].matches[chain[c]].second.pos >= refinedClusters[r].matches[chain[c+1]].second.pos + smallOpts.globalK);
+						}				
 					}	
-					//TODO(Jingwen): delete the following code later
-					//if (c != chain.size() - 1) {
-						//assert(refinedClusters[r].matches[chain[c]].first.pos < refinedClusters[r].matches[chain[c+1]].first.pos);
-					//}	
 				}
 				baseDots.close();
 			}
@@ -1715,8 +1721,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 						//TODO(Jingwe): the following code is only for debug
 						if (tupChainClusters[m].strand == 1 and c != tupChainClusters[m].end - 1) {
 							assert(tupChain[c].first.pos > tupChain[c+1].first.pos);
-							assert(tupChain[c].second.pos > tupChain[c+1].second.pos);
-							if (!(tupChain[c].first.pos > tupChain[c+1].first.pos) or !(tupChain[c].second.pos > tupChain[c+1].second.pos)) cerr << "m: " << m  << endl;
+							assert(tupChain[c].second.pos >= tupChain[c+1].second.pos + smallOpts.globalK);
 						}
 					}
 				}

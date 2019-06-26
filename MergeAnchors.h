@@ -181,6 +181,14 @@ MergeAnchors (Options & opts, vector<Cluster> &refinedClusters, vector<LogCluste
 			if (s < refinedLogClusters[r].SubCluster[l].end) { // This IF condition is aimed at anchor s that fails at the previous while condition
 				// insert
 				mergedAnchors.push_back(ClusterCoordinates(s, s+1, qStart, qEnd, tStart, tEnd, refinedLogClusters[r].SubCluster[l].strand));
+				if (refinedLogClusters[r].SubCluster[l].strand == 0) {
+					lastQ = qEnd;
+					lastT = tEnd;
+				}
+				else {
+					lastQ = qEnd;
+					lastT = tStart - 1; // make lastT exclusive
+				}				
 				//cerr << "3   s: " << s << " s+1: " << s+1 << " qStart: " << qStart << "  qEnd: " << qEnd << "  tStart: " << tStart << "  tEnd: " << tEnd << endl;
 				
 				++s;
