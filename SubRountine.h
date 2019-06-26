@@ -84,7 +84,7 @@ UPPERbound (std::vector<LPair>::iterator first, std::vector<LPair>::iterator las
 
 // TODO(Jingwen): Change this to first get Ev for all the points. Only use "lower_bound" to retrieve the index
 void
-FindValueInBlock (long int ForwardDiag, std::stack<LPair> S_1, std::vector<long int> & Ei, std::vector<LPair> & Block, unsigned int & i1, unsigned int & i2) {
+FindValueInBlock (long int ForwardDiag, std::stack<LPair> & S_1, std::vector<long int> & Ei, std::vector<LPair> & Block, unsigned int & i1, unsigned int & i2) {
 
 	if (i1 >= Block.back().second and i1 < S_1.top().second) {
 		i2 = S_1.top().first;
