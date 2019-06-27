@@ -37,6 +37,7 @@ HEADERS=MinCount.h \
   AffineOneGapAlign.h \
   GlobalChain.h \
   NaiveDP.h \
+  Read.h \
   SparseDP.h
 
 CXX=g++

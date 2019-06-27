@@ -141,10 +141,10 @@ class Input {
 		return true;
 	}
 
-	bool GetNext(Read &read, bool top=true) {
+	bool GetNext(Read &read, bool overrideSemaphore=false, bool top=true) {
 		read.Clear();
 
-		if (top == true) {
+		if (overrideSemaphore == false and top == true) {
 			pthread_mutex_lock(&semaphore);
 		}
 		++nReads;
@@ -169,6 +169,7 @@ class Input {
 					read.seq = new char[ks->seq.l];
 					read.length=ks->seq.l;
 					memcpy(read.seq, ks->seq.s,read.length);
+					for (int i=0;i<ks->seq.l;i++) { read.seq[i] = toupper(ks->seq.s[i]);}
 					read.name=string(ks->name.s);
 					if (ks->qual.s != NULL) {
 						read.qual = new char[ks->seq.l];
@@ -203,23 +204,34 @@ class Input {
 			if (readOne == false and top == true ) {
 				++curFile;
 				doInit=true;
-				readOne=GetNext(read, false);
+				readOne=GetNext(read, overrideSemaphore, false);
 			}
 			basesRead += read.length;
 			totalRead += read.length;
-			if (basesRead > 100000000) {
-				clock_t cur = clock();		
-				cerr << "lra processed " << totalRead << " bases (" << std::setprecision(4) <<  ((float)(cur - timestamp))/CLOCKS_PER_SEC  << "s)." << endl;
-				timestamp=cur;
-				basesRead = 0;
-			}
 		}
 
-		if (top == true) {
+		if (overrideSemaphore== false and top == true) {
 			pthread_mutex_unlock(&semaphore);
 		}
 		return readOne;
 	}
+	bool BufferedRead(vector<Read> &reads, int maxBufferSize) {
+		int totalSize=0;
+
+		pthread_mutex_lock(&semaphore);
+		Read read;
+		while(totalSize < maxBufferSize and GetNext(read, true, true)) {
+			reads.resize(reads.size()+1);
+			reads[reads.size()-1]=read;
+			totalSize += read.length;
+			read.Clear();
+		}
+
+		pthread_mutex_unlock(&semaphore);
+
+		return reads.size();
+	}
+
 
 };
 

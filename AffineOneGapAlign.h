@@ -143,7 +143,7 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 	//	cerr << "Aligning " << endl << qSeq << endl << tSeq << endl;
 	int qLen = qSeq.size();
 	int tLen = tSeq.size();
-	int diag = min(qLen, tLen);
+	int diag = max(1,min(qLen, tLen));
 	int doneAr=0;
 	int leftAr=1;
 	int downAr=2;

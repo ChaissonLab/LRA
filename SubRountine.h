@@ -57,6 +57,47 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts
 }  
 
 
+
+typedef std::pair<unsigned int, unsigned int> Pair;
+typedef std::pair<long int, long int> LPair;
+
+
+// Find the first LPair s in [first, last) with s.second > val 
+std::vector<LPair>::iterator
+UPPERbound (std::vector<LPair>::iterator first, std::vector<LPair>::iterator last, unsigned int val) {
+	
+	std::vector<LPair>::iterator it;
+	unsigned int count, step;
+	count = std::distance(first, last);
+	while (count > 0) {
+		it = first; step = count/2; std::advance(it, step);
+		if (val >= it->second) {
+			first = ++it;
+			count -= step + 1;
+		}
+		else count = step;
+	}
+	return first;
+}
+
+
+
+// TODO(Jingwen): Change this to first get Ev for all the points. Only use "lower_bound" to retrieve the index
+void
+FindValueInBlock (long int ForwardDiag, std::stack<LPair> & S_1, std::vector<long int> & Ei, std::vector<LPair> & Block, unsigned int & i1, unsigned int & i2) {
+
+	if (i1 >= Block.back().second and i1 < S_1.top().second) {
+		i2 = S_1.top().first;
+	}
+	else {
+		std::vector<LPair>::iterator it2 = UPPERbound(Block.begin(), Block.end(), i1); // Find the best candidate index for point Ei[i1]
+		i2 = it2->first;
+	}
+}
+
+
+
+
 // Using Binary search to find the first index in [first, last) that a is worse than b
 unsigned int
 FindBoundary (unsigned int first, unsigned int last, unsigned int a, unsigned int b, std::vector<long int> & Di, std::vector<float> & Dv, std::vector<long int> & Ei, 

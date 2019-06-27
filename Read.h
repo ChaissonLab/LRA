@@ -38,6 +38,31 @@ class Read {
 		passthrough=NULL;
 		name=_name;
 	}
+	Read& operator=(const Read& rhs) {
+
+		length=rhs.length;
+		seq = NULL;
+		qual= NULL;
+
+		if (rhs.length > 0) {
+			if (rhs.seq != NULL) {
+				seq = new char[length];
+				memcpy(seq, rhs.seq, length);
+			}
+			
+			if (rhs.qual != NULL) {
+				qual = new char[length];
+				memcpy(qual, rhs.qual, length);
+			}
+		}
+		if (rhs.passthrough != NULL) {
+			passthrough=new char[strlen(rhs.passthrough)];
+			memcpy(passthrough, rhs.passthrough, strlen(rhs.passthrough));
+		}
+
+		name=rhs.name;
+		return *this;
+	}
 };
 
 #endif

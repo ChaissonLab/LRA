@@ -16,6 +16,7 @@ public:
 	int maxDiag;
 	int cleanMaxDiag;
 	int minClusterSize;
+	int minClusterLength;
 	int window;
 	bool dotPlot;
 	bool mergeClusters;
@@ -44,6 +45,7 @@ public:
  	int localMismatch;
 	int localIndel;
 	int localBand;
+	int MergeSplit;
 
 	Options() {
 		localMatch=4;
@@ -64,6 +66,7 @@ public:
 		cleanMaxDiag=100; // used to be 50
 		minDiagCluster=20;
 		minClusterSize = 10;
+		minClusterLength = 100;
 		minRefinedClusterSize = 40;
 		window=100;
 		mergeGapped=false;
@@ -77,12 +80,13 @@ public:
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
 		maxGap=10000;
-		maxGapBtwnAnchors = 2000; // no larger than 2000 // used to be 2000
+		maxGapBtwnAnchors = 1500; // no larger than 2000 // used to be 2000
 		mergeClusters=false;
 		NaiveDP = false;
 		seqan=false;
 		SparseDP=true;
 		LookUpTable=true;
+		MergeSplit=true;
     
 	}
 };

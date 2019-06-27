@@ -2,7 +2,7 @@
 #include "htslib/kseq.h"
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <math.h>
 
 #include <thread>
 #include <string>
@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <zlib.h>
 #include <vector>
+
 #include "htslib/kseq.h"
 #include "htslib/sam.h"
 #include "Input.h"
@@ -20,15 +21,14 @@
 #include "TupleOps.h"
 #include "MinCount.h"
 #include "MapRead.h"
-using namespace std;
 #include <algorithm>
 #include "SeqUtils.h"
 #include "Options.h"
 #include "Alignment.h"
 #include "LogLookUpTable.h"
 
-#include <math.h>
 
+using namespace std;
 
 
 const char* version="0.1-alpha";
@@ -62,9 +62,11 @@ void HelpMap() {
 			 << "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
 			 << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
 			 << "	-T 	(flag)  Use log LookUpTable when gap length is larger than 501." << endl
-		         << "   -t n(int)   Use n threads (1)" << endl
+		     << "   -t n(int)   Use n threads (1)" << endl
 			 << "   --start  (int)   Start aligning at this read." << endl
-			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl;
+			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
+			 << "	-d 	(flag)  Enable dotPlot" << endl
+			 << "   -aa (flag)  use Merge.h" << endl;
 }
 		
 class MapInfo {
@@ -80,19 +82,66 @@ public:
 	int thread;
 	int numThreads;
 	pthread_mutex_t *semaphore;
+	int *numAligned;
+	int *numRead;
 };
 
 void MapReads(MapInfo *mapInfo) {
 	Read read;
-	while (mapInfo->reader->GetNext(read)) {
+	stringstream strm;
+	vector<Read> reads;
+	while (mapInfo->reader->BufferedRead(reads,10000000)) {
 		if (mapInfo->opts->readStride != 1 and
 				mapInfo->reader->nReads % mapInfo->opts->readStride != mapInfo->opts->readStart ) {
 			continue;
 		}
 		else {
-			MapRead(*mapInfo->LookUpTable, read, *mapInfo->genome, *mapInfo->genomemm, *mapInfo->glIndex, *mapInfo->opts, mapInfo->out, mapInfo->semaphore);
+			for (int i = 0; i< reads.size(); i++) {
+				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm, *mapInfo->glIndex, *mapInfo->opts, &strm, mapInfo->semaphore);
+				reads[i].Clear();
+			}
+			reads.clear();
+			
+			if (mapInfo->reader->basesRead > 100000000) {
+				if (mapInfo->semaphore != NULL) {
+					pthread_mutex_lock(mapInfo->semaphore);
+				}
+				// Check to see if another thread hit this spot at the same time
+				if (mapInfo->reader->basesRead > 100000000) {
+					
+					clock_t cur = clock();		
+					cerr << "lra aligned " << *mapInfo->numAligned << " from " << mapInfo->reader->nReads << ", " << mapInfo->reader->totalRead /1000000<< "M bases (" << std::setprecision(4) <<  ((float)(cur - mapInfo->reader->timestamp))/CLOCKS_PER_SEC  << "s)." << endl;
+					mapInfo->reader->timestamp=cur;
+					mapInfo->reader->basesRead = 0;
+				}
+			
+				if (mapInfo->semaphore != NULL) {
+					pthread_mutex_unlock(mapInfo->semaphore);
+				}
+			}
+			if (strm.str().size() > 1000000) {
+				if (mapInfo->semaphore != NULL) {
+					pthread_mutex_lock(mapInfo->semaphore);
+				}
+				*mapInfo->out << strm.str();
+				if (mapInfo->semaphore != NULL) {
+					pthread_mutex_unlock(mapInfo->semaphore);
+				}
+				strm.str("");
+				strm.clear();
+
+			}
+				
 		}
 	}
+	if (mapInfo->semaphore != NULL) {
+		pthread_mutex_lock(mapInfo->semaphore);
+	}
+	*mapInfo->out << strm.str();
+	if (mapInfo->semaphore != NULL) {
+		pthread_mutex_unlock(mapInfo->semaphore);
+	}
+
 	pthread_exit(NULL);
 }
 
@@ -178,6 +227,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;
 		}
+		else if (ArgIs(argv[argi], "-aa")) {
+			opts.MergeSplit = false;
+		}		
 
 		else if (ArgIs(argv[argi], "--locMatch")) {
 			opts.localMatch=atoi(GetArgv(argv,argc,argi));
@@ -268,6 +320,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		
 		pthread_mutex_t semaphore;		
 		pthread_mutex_init(&semaphore, NULL);
+		int numAligned=0;
 		for (int procIndex = 0; procIndex < opts.nproc; procIndex++ ){ 
 			mapInfo[procIndex].LookUpTable = &LookUpTable;
 			mapInfo[procIndex].genome = &genome;
@@ -278,6 +331,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			mapInfo[procIndex].out = outPtr;
 			mapInfo[procIndex].thread=procIndex;
 			mapInfo[procIndex].semaphore=&semaphore;
+			mapInfo[procIndex].numAligned=&numAligned;
 			pthread_create(&threads[procIndex], &threadAttr[procIndex], (void* (*)(void*))MapReads, &mapInfo[procIndex]);
 		}
 
@@ -357,7 +411,6 @@ void RunStoreLocal(int argc, const char* argv[],
 		}
 		else {
 			genome = argv[argi];
-			cerr << "genome " << genome << endl;
 		}
 		++argi;
 	}
@@ -421,7 +474,6 @@ void RunStoreGlobal(int argc, const char* argv[],
 		}
 		else {
 			genome = argv[argi];
-			cerr << "genome " << genome << endl;
 		}
 		++argi;
 	}
@@ -449,7 +501,19 @@ void RunStoreIndex(int argc, const char* argv[]) {
 	Options opts;
 
 	RunStoreGlobal(argc, argv, minimizers, header, opts);
-  RunStoreLocal(argc, argv, glIndex, opts);
+
+
+	// save the minimizers in a file
+	// TODO(Jingwen): delete this later
+/*
+	ofstream clust("minimizers.dots");
+	for (int m=0; m < minimizers.size(); m++) {
+		clust << minimizers[m].pos << "\t" << minimizers[m].pos + opts.globalK - 1 <<endl;
+	}
+	clust.close();
+*/
+
+    RunStoreLocal(argc, argv, glIndex, opts);
 }
 
 
@@ -485,7 +549,7 @@ int main(int argc, const char *argv[]) {
 		}
 		else if (ArgIs(argv[argi], "global")) {
 			argc -=2;
-      RunStoreGlobal(argc,  &argv[2], minimizers, header, opts);		
+      		RunStoreGlobal(argc,  &argv[2], minimizers, header, opts);		
 			exit(0);
 		}
 		else if (ArgIs(argv[argi], "local")) {
