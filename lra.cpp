@@ -30,7 +30,7 @@
 
 using namespace std;
 
-
+int IO_BUFFER_SIZE=10000000;
 const char* version="0.1-alpha";
 
 bool ArgIs(const char* a, const char* b) {
@@ -90,7 +90,7 @@ void MapReads(MapInfo *mapInfo) {
 	Read read;
 	stringstream strm;
 	vector<Read> reads;
-	while (mapInfo->reader->BufferedRead(reads,10000000)) {
+	while (mapInfo->reader->BufferedRead(reads,IO_BUFFER_SIZE)) {
 		if (mapInfo->opts->readStride != 1 and
 				mapInfo->reader->nReads % mapInfo->opts->readStride != mapInfo->opts->readStart ) {
 			continue;
@@ -119,7 +119,7 @@ void MapReads(MapInfo *mapInfo) {
 					pthread_mutex_unlock(mapInfo->semaphore);
 				}
 			}
-			if (strm.str().size() > 1000000) {
+			if (strm.str().size() > IO_BUFFER_SIZE) {
 				if (mapInfo->semaphore != NULL) {
 					pthread_mutex_lock(mapInfo->semaphore);
 				}

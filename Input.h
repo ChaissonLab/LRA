@@ -91,8 +91,14 @@ class Input {
 				kseq_destroy(ks);
 				gzclose(fastaFile);
 			}
-			fastaFile = gzopen(filename.c_str(), "r");
-			ks = kseq_init(fastaFile);
+			if (filename == "-" or filename == "/dev/stdin" or filename == "stdin") {
+				gzFile fp = gzdopen(fileno(stdin), "r");
+				ks = kseq_init(fp);
+			}
+			else {
+				fastaFile = gzopen(filename.c_str(), "r");
+				ks = kseq_init(fastaFile);
+			}
 			return true;
 		}
 		else {
@@ -220,6 +226,7 @@ class Input {
 
 		pthread_mutex_lock(&semaphore);
 		Read read;
+
 		while(totalSize < maxBufferSize and GetNext(read, true, true)) {
 			reads.resize(reads.size()+1);
 			reads[reads.size()-1]=read;
