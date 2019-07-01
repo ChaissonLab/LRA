@@ -39,9 +39,10 @@ gapdifference (int &e, GenomePairs &matches, int &strand) {
 // TODO(Jingwen): check all the inequility
 void 
 MergeAnchors (Options & opts, vector<Cluster> &refinedClusters, vector<LogCluster> &refinedLogClusters, 
-					int r, vector<ClusterCoordinates> &mergedAnchors) {
+					int r, vector<ClusterCoordinates> &mergedAnchors, const bool &WholeReverseDirection) {
 
-	GenomePos qBoundary_s = 0, qBoundary_e = 0, tBoundary_s = 0, tBoundary_e = 0, next_qBoundary_s = 0, next_tBoundary_s = 0;
+	GenomePos qBoundary_s = 0, qBoundary_e = 0, tBoundary_s = 0, tBoundary_e = 0, next_qBoundary_s = 0, next_tBoundary_s = 0,
+				next_qBoundary_e = 0, next_tBoundary_e = 0;
 
 
 	for (int l = refinedLogClusters[r].SubCluster.size() - 1; l >= 0; --l) {
@@ -52,34 +53,67 @@ MergeAnchors (Options & opts, vector<Cluster> &refinedClusters, vector<LogCluste
 			GenomePos cur_tStart = refinedLogClusters[r].SubCluster[l].tStart;
 			GenomePos cur_tEnd = refinedLogClusters[r].SubCluster[l].tEnd;
 
-			if ( l > 0) {
-				GenomePos next_qStart = refinedLogClusters[r].SubCluster[l-1].qStart;
-				GenomePos next_qEnd = refinedLogClusters[r].SubCluster[l-1].qEnd;
-				GenomePos next_tStart = refinedLogClusters[r].SubCluster[l-1].tStart;
-				GenomePos next_tEnd = refinedLogClusters[r].SubCluster[l-1].tEnd;
+			if (WholeReverseDirection == 0 ) {
+				if ( l > 0) {
+					GenomePos next_qStart = refinedLogClusters[r].SubCluster[l-1].qStart;
+					GenomePos next_qEnd = refinedLogClusters[r].SubCluster[l-1].qEnd;
+					GenomePos next_tStart = refinedLogClusters[r].SubCluster[l-1].tStart;
+					GenomePos next_tEnd = refinedLogClusters[r].SubCluster[l-1].tEnd;
 
 
-				if (next_qStart < cur_qEnd) {
-					qBoundary_e = next_qStart; // qBoundary_e is inclusive
-					next_qBoundary_s = cur_qEnd; // qBoundary_s is exclusive
+					if (next_qStart < cur_qEnd) {
+						qBoundary_e = next_qStart; // qBoundary_e is inclusive
+						next_qBoundary_s = cur_qEnd; // qBoundary_s is exclusive
+					}
+					else {
+						qBoundary_e = 0;
+						next_qBoundary_s = 0;
+					}
+
+					if (next_tStart < cur_tEnd) {
+						tBoundary_e = next_tStart;
+						next_tBoundary_s = cur_tEnd;
+					}
+					else {
+						tBoundary_e = 0;
+						next_tBoundary_s = 0;
+					}				
 				}
 				else {
 					qBoundary_e = 0;
-					next_qBoundary_s = 0;
+					tBoundary_e	= 0;			
 				}
-
-				if (next_tStart < cur_tEnd) {
-					tBoundary_e = next_tStart;
-					next_tBoundary_s = cur_tEnd;
-				}
-				else {
-					tBoundary_e = 0;
-					next_tBoundary_s = 0;
-				}				
 			}
 			else {
-				qBoundary_e = 0;
-				tBoundary_e	= 0;			
+
+				if ( l > 0) {
+					GenomePos next_qStart = refinedLogClusters[r].SubCluster[l-1].qStart;
+					GenomePos next_qEnd = refinedLogClusters[r].SubCluster[l-1].qEnd;
+					GenomePos next_tStart = refinedLogClusters[r].SubCluster[l-1].tStart;
+					GenomePos next_tEnd = refinedLogClusters[r].SubCluster[l-1].tEnd;
+
+					if (next_qEnd > cur_qStart) {
+						qBoundary_s = next_qEnd;  // qBoundary_s is exclusive
+						next_qBoundary_e = cur_qStart; // qBoundary_e is inclusive
+					}
+					else {
+						qBoundary_s = 0;
+						next_qBoundary_e = 0;
+					}
+
+					if (next_tStart < cur_tEnd) {
+						tBoundary_e = next_tStart;
+						next_tBoundary_s = cur_tEnd;
+					}
+					else {
+						tBoundary_e = 0;
+						next_tBoundary_s = 0;
+					}				
+				}
+				else {
+					qBoundary_s = 0;
+					tBoundary_e	= 0;			
+				}
 			}
 		}
 		//cerr << "qBoundary_s: " << qBoundary_s << "  tBoundary_s: " << tBoundary_s << "     qBoundary_e: " << qBoundary_e << "  tBoundary_e: " << tBoundary_e << endl;
@@ -194,10 +228,21 @@ MergeAnchors (Options & opts, vector<Cluster> &refinedClusters, vector<LogCluste
 				++s;
 			}
 		}
-		//}
-		qBoundary_s = next_qBoundary_s;
-		tBoundary_s = next_tBoundary_s;
-	}		
+		
+
+
+		if (WholeReverseDirection == 0) {
+			qBoundary_s = next_qBoundary_s;
+			tBoundary_s = next_tBoundary_s;				
+		}
+		else {
+			qBoundary_e = next_qBoundary_e;
+			tBoundary_s = next_tBoundary_s;				
+		}
+
+	}			
+
+
 
 }
 
