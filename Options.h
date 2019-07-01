@@ -46,7 +46,7 @@ public:
 	int localIndel;
 	int localBand;
 	int MergeSplit;
-
+	int flagRemove;
 	Options() {
 		localMatch=4;
 		localMismatch=-3;
@@ -87,7 +87,7 @@ public:
 		SparseDP=true;
 		LookUpTable=true;
 		MergeSplit=true;
-    
+    flagRemove=0;
 	}
 };
 #endif

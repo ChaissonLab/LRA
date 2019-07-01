@@ -1801,7 +1801,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 
 			for (int s = 0; s < tupChainClusters.size(); s++) {
-
+				if (tupChainClusters[s].end == tupChainClusters[s].start) {
+					continue;
+				}
 				if (tupChainClusters[s].strand == 1) reverse(tupChain.begin() + tupChainClusters[s].start, tupChain.begin() + tupChainClusters[s].end);
 				vector<GenomeTuple> gapReadTup, gapGenomeTup;
 				GenomePairs gapPairs;

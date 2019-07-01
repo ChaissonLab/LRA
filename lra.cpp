@@ -52,6 +52,7 @@ void HelpMap() {
 	cout << "Options:" << endl
 			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam 'p' pair ." << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
+       << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
 			 << "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
 			 << "   -m  m(int)  Do not align clusters with fewer than m refined"<< endl
 			 << "               matches (40). Typically m > 3*M" << endl
@@ -175,6 +176,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}		
+		else if (ArgIs(argv[argi], "-F")) {
+			opts.flagRemove=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
 		else if (ArgIs(argv[argi], "-K")) {
 			opts.globalK=atoi(GetArgv(argv, argc, argi));
 			++argi;
@@ -284,6 +289,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 
 	Input reader;
 	reader.Initialize(allreads);
+	reader.flagRemove = opts.flagRemove;
 	int offset=0;
 	Read read;
 	ostream *outPtr;

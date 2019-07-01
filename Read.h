@@ -8,6 +8,7 @@ class Read {
 	int  length;
 	char *passthrough;
 	string name;
+	int flags;
 	void Clear() {
 		if (seq != NULL) {
 			delete[] seq;
@@ -30,6 +31,7 @@ class Read {
 		qual=NULL;
 		name="";
 		passthrough=NULL;
+		flags=0;
 	}
 	Read(char* _sq, int _len, string _name, char*_qual=NULL) {
 		seq=_sq;

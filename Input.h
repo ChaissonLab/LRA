@@ -30,10 +30,12 @@ class Input {
 	long totalRead;
 	bool done;
 	int nReads;
+	int flagRemove;
 	clock_t timestamp;
 
 	vector<string> allReads;
 	Input() {
+		flagRemove=0;
 		doInit = true;
 		curFile = 0;
 		basesRead = 0;
@@ -190,20 +192,36 @@ class Input {
 				int res;
 				bam1_t *b = bam_init1();
 				res= sam_read1(htsfp, samHeader, b);
-				if (res > 0) {
+				while (res > 0 and readOne == false) {
+					if (res > 0) {
+						if ((b->core.flag & flagRemove) == 0) {							
+							read.length = b->core.l_qseq;			
+							read.seq = new char[read.length];
+							read.name = string(bam_get_qname(b));
+							read.flags = b->core.flag;
+							uint8_t *q = bam_get_seq(b);
+							for (int i=0; i < read.length; i++) {read.seq[i]=seq_nt16_str[bam_seqi(q,i)];	}
+							read.qual = NULL;
 				
-					read.length = b->core.l_qseq;			
-					read.seq = new char[read.length];
-					read.name = string(bam_get_qname(b));
-					uint8_t *q = bam_get_seq(b);
-					for (int i=0; i < read.length; i++) {read.seq[i]=seq_nt16_str[bam_seqi(q,i)];	}
-					read.qual = NULL;
-				
-					// 
-					// Eventually this will store the passthrough data
-					//
-					bam_destroy1(b);
-					readOne=true;
+							// 
+							// Eventually this will store the passthrough data
+							//
+							readOne=true;
+							bam_destroy1(b);
+							//							bam1_t *b = bam_init1();
+						}
+						else {
+							bam_destroy1(b);
+							b = bam_init1();
+							res= sam_read1(htsfp, samHeader, b);
+						}
+					}
+				}
+				if (res == 0) {	
+					if (b != NULL) {
+						bam_destroy1(b);
+						readOne = false;
+					}
 				}
 			}
 
