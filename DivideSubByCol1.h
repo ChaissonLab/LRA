@@ -1,5 +1,5 @@
-#ifndef DIVIDE_SUB_BY_COL_H_
-#define DIVIDE_SUB_BY_COL_H_
+#ifndef DIVIDE_SUB_BY_COL1_H_
+#define DIVIDE_SUB_BY_COL1_H_
 
 
 #include <iostream>
@@ -54,7 +54,7 @@ GetColInfo (std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector
 /*
 // This function works for E array
 void 
-ScanPoints_Col(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector<long int> & Bi, unsigned int & s, unsigned int & e) {
+ScanPoints_Col1(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector<long int> & Bi, unsigned int & s, unsigned int & e) {
 
 
 	std::map<long int, unsigned int> fmap; // <forward diagonal, number of points which have forward diagonal <= the current forward diagonal>
@@ -80,7 +80,7 @@ ScanPoints_Col(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsig
 /*
 // This function works for D array
 void 
-ScanPoints_Col(std::vector<info> & V, std::vector<Pair> & H1, std::vector<unsigned int> & H2, std::vector<long int> & Bi, std::vector<unsigned int> & counter_D, unsigned int & s, unsigned int & e) {
+ScanPoints_Col1(std::vector<info> & V, std::vector<Pair> & H1, std::vector<unsigned int> & H2, std::vector<long int> & Bi, std::vector<unsigned int> & counter_D, unsigned int & s, unsigned int & e) {
 
 
 	std::map<long int, unsigned int> fmap; // <forward diagonal, number of points which have forward diagonal <= the current forward diagonal>
@@ -108,16 +108,16 @@ ScanPoints_Col(std::vector<info> & V, std::vector<Pair> & H1, std::vector<unsign
 */
 
 
-//ScanPoints_col find Di and Ei array
+//ScanPoints_col find Di and Ei array for non-leaf cases
 //Note this function didn't count the number of points which have forward diagonal <= the current forward diagonal>
 void 
-ScanPoints_Col(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector<long int> & Bi, unsigned int & s, unsigned int & e,  bool & DE, unsigned int & n) {
-	
+ScanPoints_Col1(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector<long int> & Bi, unsigned int & s, unsigned int & e,  bool & DE, unsigned int & n) {
+	// elements in set are unique and follow an increasing order
 	std::set<long int> ForwardIndex;
 	for (unsigned int i = s; i < e; ++i) {
 		unsigned int count = 0;
 		for (unsigned int j = V[i].pstart; j < V[i].pend; ++j) {
-			if (H1[H2[j]].ind == DE) {
+			if (H1[H2[j]].ind == DE and H1[H2[j]].inv == 1) {
 				long int l = static_cast<long int>(H1[H2[j]].se.second) - static_cast<long int>(H1[H2[j]].se.first);
 				ForwardIndex.insert(l);		
 				++count;		
@@ -125,22 +125,22 @@ ScanPoints_Col(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsig
 		}
 
 		if (count != 0) {
-			if (DE == 1) V[i].SS_B.push_back(n);
-			else V[i].SS_A.push_back(n);
+			if (DE == 1) V[i].SS_B1.push_back(n);
+			else V[i].SS_A1.push_back(n);
 		}
 	}	
-
-	for (std::set<long int>::reverse_iterator it = ForwardIndex.rbegin(); it != ForwardIndex.rend(); ++it) { // elements in D array are in the decreasing order
+	// elements in D array are in the decreasing order
+	for (std::set<long int>::reverse_iterator it = ForwardIndex.rbegin(); it != ForwardIndex.rend(); ++it) { 
 		Bi.push_back(*it);
 	}
 }
 
 
 
-//ScanPoints_col find Di and Ei array
+//ScanPoints_col find Di and Ei array for leaf cases
 //Note this function didn't count the number of points which have forward diagonal <= the current forward diagonal>
 void 
-ScanPoints_Col(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector<long int> & Bi,  std::vector<long int> & Ci, 
+ScanPoints_Col1(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector<long int> & Bi,  std::vector<long int> & Ci, 
 						unsigned int & s, unsigned int & e, unsigned int & n) {
 	
 	std::set<long int> ForwardIndex1;
@@ -150,12 +150,12 @@ ScanPoints_Col(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsig
 		unsigned int count1 = 0;
 		unsigned int count2 = 0;
 		for (unsigned int j = V[i].pstart; j < V[i].pend; ++j) {
-			if (H1[H2[j]].ind == 1) {
+			if (H1[H2[j]].ind == 1 and H1[H2[j]].inv == 1) {
 				long int l = static_cast<long int>(H1[H2[j]].se.second) - static_cast<long int>(H1[H2[j]].se.first);
 				ForwardIndex1.insert(l);		
 				++count1;		
 			}
-			else {
+			else if (H1[H2[j]].ind == 0 and H1[H2[j]].inv == 1) {
 				long int r = static_cast<long int>(H1[H2[j]].se.second) - static_cast<long int>(H1[H2[j]].se.first);
 				ForwardIndex2.insert(r);		
 				++count2;		
@@ -163,8 +163,8 @@ ScanPoints_Col(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsig
 		}
 
 		if (count1 != 0 and count2 != 0) {
-			V[i].SS_B.push_back(n);
-			V[i].SS_A.push_back(n);				
+			V[i].SS_B1.push_back(n);
+			V[i].SS_A1.push_back(n);				
 		}
 	}	
 
@@ -178,16 +178,19 @@ ScanPoints_Col(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsig
 
 
 void
-Decide_Eb_Db_C (std::vector<long int> & Di, std::vector<long int> & Ei, std::vector<long int> & Db, std::vector<long int> & Eb, std::vector<unsigned int> & E) {
+Decide_Eb_Db_C1 (std::vector<long int> & Di, std::vector<long int> & Ei, std::vector<long int> & Db, std::vector<long int> & Eb, std::vector<unsigned int> & E) {
 
 	for (unsigned int s = 0; s < Di.size(); ++s) {
-		std::vector<unsigned int>::reverse_iterator t = Lower_Bound<std::vector<unsigned int>::reverse_iterator,long int>(E.rbegin(), E.rend(), Di[s], Ei);
+		// find the index *t that Ei[*t] is the first element which is >= Di[s]
+		// Note: here we compare from the right (reverse_iterator)
+		//
+		std::vector<unsigned int>::reverse_iterator t = Lower_Bound<std::vector<unsigned int>::reverse_iterator,long int>(E.rbegin(), E.rend(), Di[s], Ei); 
 		if (t == E.rbegin()) {
 			break;
 		}
 		else{
 			//std::prev(t);
-			--t; 
+			--t; // move to right by one step
 			Db[s] = *t;
 			Eb[*t] = s;
 		}
@@ -212,7 +215,7 @@ Decide_Eb_Db_C (std::vector<long int> & Di, std::vector<long int> & Ei, std::vec
 
 
 void
-DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector<info> & V, unsigned int start, unsigned int end, 
+DivideSubProbByCol1 (std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector<info> & V, unsigned int start, unsigned int end, 
 							unsigned int & n, StackOfSubProblems & Sub, int & eeC) { // [start, end) is a half open interval
 
 	if (end == start + 1) { // subproblem A is empty, while B contains only one row. This is a leaf case.
@@ -220,7 +223,7 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 		Subproblem ss = Subproblem(n);
 		Sub.Push_Back(eeC, ss); // ss is a subproblem which Di and Ei coming from one row
 		++eeC;
-		ScanPoints_Col(V, H1, H2, Sub[eeC - 1].Ei, Sub[eeC - 1].Di, start, end, n);	
+		ScanPoints_Col1(V, H1, H2, Sub[eeC - 1].Ei, Sub[eeC - 1].Di, start, end, n);	
 
 		if (!Sub[eeC - 1].Ei.empty() and !Sub[eeC - 1].Di.empty()) { 
 	
@@ -232,7 +235,7 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 			std::iota(Sub[eeC - 1].E.begin(), Sub[eeC - 1].E.end(), 0);
 			Sub[eeC - 1].Eb.assign(h, -1);
 			Sub[eeC - 1].Db.assign(l, -1); 
-			Decide_Eb_Db_C(Sub[eeC - 1].Di, Sub[eeC - 1].Ei, Sub[eeC - 1].Db, Sub[eeC - 1].Eb, Sub[eeC - 1].E);
+			Decide_Eb_Db_C1(Sub[eeC - 1].Di, Sub[eeC - 1].Ei, Sub[eeC - 1].Db, Sub[eeC - 1].Eb, Sub[eeC - 1].E);
 
 			// initialize other attributes of this subproblem
 			Sub[eeC - 1].Dv.assign(l, 0);
@@ -262,11 +265,11 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 		// scan the points to determine Di 
 		unsigned int med = std::floor((start + end)/2);
 		bool DE = 0; // DE == 0 means scan points to determin Di (find for end points); 
-		ScanPoints_Col(V, H1, H2, Sub[eeC-1].Di, start, med, DE, n);
+		ScanPoints_Col1(V, H1, H2, Sub[eeC-1].Di, start, med, DE, n);
 
 		// scan the points to determine Ei
 		DE = 1;
-		ScanPoints_Col(V, H1, H2, Sub[eeC-1].Ei, med, end, DE, n);
+		ScanPoints_Col1(V, H1, H2, Sub[eeC-1].Ei, med, end, DE, n);
 
 		if (Sub[eeC-1].Ei.empty() and Sub[eeC-1].Di.empty()) { // Di is empty and Ei is empty 
 			Sub.ClearSingle(eeC);
@@ -275,11 +278,11 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 		}
 		else if (Sub[eeC-1].Ei.empty() and !Sub[eeC-1].Di.empty()) { // Di is non-empty and Ei is empty
 			++n;
-			DivideSubProbByCol(H1, H2, V, start, std::floor((start + end)/2), n, Sub, eeC);			
+			DivideSubProbByCol1(H1, H2, V, start, std::floor((start + end)/2), n, Sub, eeC);			
 		}
 		else if (!Sub[eeC-1].Ei.empty() and Sub[eeC-1].Di.empty()) { 
 			++n;
-			DivideSubProbByCol(H1, H2, V, std::floor((start + end)/2), end, n, Sub, eeC);
+			DivideSubProbByCol1(H1, H2, V, std::floor((start + end)/2), end, n, Sub, eeC);
 		}
 		else { // non-leaf case
 
@@ -295,7 +298,7 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 			std::iota(Sub[eeC-1].E.begin(), Sub[eeC-1].E.end(), 0);
 			Sub[eeC-1].Eb.assign(h, -1); 
 			Sub[eeC-1].Db.assign(l, -1);
-			Decide_Eb_Db_C(Sub[eeC-1].Di, Sub[eeC-1].Ei, Sub[eeC-1].Db, Sub[eeC-1].Eb, Sub[eeC-1].E);
+			Decide_Eb_Db_C1(Sub[eeC-1].Di, Sub[eeC-1].Ei, Sub[eeC-1].Db, Sub[eeC-1].Eb, Sub[eeC-1].E);
 
 			// initialize other attributes of this subproblem
 			//std::vector<float> v(l, 0);
@@ -311,9 +314,9 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 			std::pair<long int, long int> dummy_pair = std::make_pair(-1, h+1);
 			Sub[eeC-1].S_1.push(dummy_pair); 
 			++n;
-			DivideSubProbByCol(H1, H2, V, start, std::floor((start + end)/2), n, Sub, eeC);
+			DivideSubProbByCol1(H1, H2, V, start, std::floor((start + end)/2), n, Sub, eeC);
 			++n;
-			DivideSubProbByCol(H1, H2, V, std::floor((start + end)/2), end, n, Sub, eeC);
+			DivideSubProbByCol1(H1, H2, V, std::floor((start + end)/2), end, n, Sub, eeC);
 		}
 	}
 }
@@ -322,7 +325,7 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 
 /*
 void
-DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector<info> & V, unsigned int start, unsigned int end, 
+DivideSubProbByCol1 (std::vector<Point> & H1, std::vector<unsigned int> & H2, std::vector<info> & V, unsigned int start, unsigned int end, 
 							unsigned int & n, StackOfSubProblems & Sub, int & eeC) { // [start, end) is a half open interval
 
 	if (end == start + 1) { // subproblem A is empty, while B contains only one row. This is a leaf case.
@@ -332,7 +335,7 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 		++eeC;
 
 		// scan the points to determine Ei and Di
-		ScanPoints_Col(V, H1, H2, Sub[eeC - 1].Ei, Sub[eeC - 1].Di, start, end, n);	
+		ScanPoints_Col1(V, H1, H2, Sub[eeC - 1].Ei, Sub[eeC - 1].Di, start, end, n);	
 
 
 		if (!Sub[eeC - 1].Ei.empty() and !Sub[eeC - 1].Di.empty()) { 
@@ -345,7 +348,7 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 			std::iota(Sub[eeC - 1].E.begin(), Sub[eeC - 1].E.end(), 0);
 			Sub[eeC - 1].Eb.assign(h, -1);
 			Sub[eeC - 1].Db.assign(l, -1);
-			Decide_Eb_Db_C(Sub[eeC - 1].Di, Sub[eeC - 1].Ei, Sub[eeC - 1].Db, Sub[eeC - 1].Eb, Sub[eeC - 1].E);
+			Decide_Eb_Db_C1(Sub[eeC - 1].Di, Sub[eeC - 1].Ei, Sub[eeC - 1].Db, Sub[eeC - 1].Eb, Sub[eeC - 1].E);
 
 			// initialize other attributes of this subproblem
 			Sub[eeC - 1].Dv.assign(l, 0); 
@@ -375,11 +378,11 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 		// scan the points to determine Di 
 		unsigned int med = std::floor((start + end)/2);
 		bool DE = 0; // DE == 0 means scan points to determin Di (find for end points); 
-		ScanPoints_Col(V, H1, H2, Sub[eeC - 1].Di, start, med, DE, n);
+		ScanPoints_Col1(V, H1, H2, Sub[eeC - 1].Di, start, med, DE, n);
 
 		// scan the points to determine Ei
 		DE = 1;
-		ScanPoints_Col(V, H1, H2, Sub[eeC - 1].Ei, med, end, DE, n);
+		ScanPoints_Col1(V, H1, H2, Sub[eeC - 1].Ei, med, end, DE, n);
 
 		if (Sub[eeC - 1].Ei.empty() and Sub[eeC - 1].Di.empty()) { // Di is empty and Ei is empty 
 			Sub.ClearSingle(eeC);
@@ -389,12 +392,12 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 		else if (Sub[eeC - 1].Ei.empty() and !Sub[eeC - 1].Di.empty()) { // Di is non-empty and Ei is empty
 			Sub.ClearSingle(eeC);
 			--eeC;
-			DivideSubProbByCol(H1, H2, V, start, std::floor((start + end)/2), n, Sub, eeC);
+			DivideSubProbByCol1(H1, H2, V, start, std::floor((start + end)/2), n, Sub, eeC);
 		}
 		else if (!Sub[eeC - 1].Ei.empty() and Sub[eeC - 1].Di.empty()) { 
 			Sub.ClearSingle(eeC);
 			--eeC;
-			DivideSubProbByCol(H1, H2, V, std::floor((start + end)/2), end, n, Sub, eeC);
+			DivideSubProbByCol1(H1, H2, V, std::floor((start + end)/2), end, n, Sub, eeC);
 		}
 		else { // non-leaf case
 
@@ -407,7 +410,7 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 			std::iota(Sub[eeC - 1].E.begin(), Sub[eeC - 1].E.end(), 0);
 			Sub[eeC - 1].Eb.assign(h, -1);
 			Sub[eeC - 1].Db.assign(l, -1);
-			Decide_Eb_Db_C(Sub[eeC - 1].Di, Sub[eeC - 1].Ei, Sub[eeC - 1].Db, Sub[eeC - 1].Eb, Sub[eeC - 1].E);
+			Decide_Eb_Db_C1(Sub[eeC - 1].Di, Sub[eeC - 1].Ei, Sub[eeC - 1].Db, Sub[eeC - 1].Eb, Sub[eeC - 1].E);
 
 			// initialize other attributes of this subproblem
 			Sub[eeC - 1].Dv.assign(l, 0);
@@ -421,9 +424,9 @@ DivideSubProbByCol (std::vector<Point> & H1, std::vector<unsigned int> & H2, std
 			Sub[eeC - 1].S_1.push(dummy_pair); 
 
 			++n;
-			DivideSubProbByCol(H1, H2, V, start, std::floor((start + end)/2), n, Sub, eeC);
+			DivideSubProbByCol1(H1, H2, V, start, std::floor((start + end)/2), n, Sub, eeC);
 			++n;
-			DivideSubProbByCol(H1, H2, V, std::floor((start + end)/2), end, n, Sub, eeC);
+			DivideSubProbByCol1(H1, H2, V, std::floor((start + end)/2), end, n, Sub, eeC);
 
 		}
 

@@ -12,6 +12,7 @@
 int PreToIndex(int i, int j, int k, int band) {
 	int d=i-j;
 	// The extra + 1 is because of the rail on the side of each k-band
+	assert(j*band+d+k-1 >= 0);
 	return j*band+d+k+1;
 }
 
@@ -142,7 +143,7 @@ int AffineOneGapAlign(string &qSeq, string &tSeq, int m, int mm, int indel, int 
 	//	cerr << "Aligning " << endl << qSeq << endl << tSeq << endl;
 	int qLen = qSeq.size();
 	int tLen = tSeq.size();
-	int diag = min(qLen, tLen);
+	int diag = max(1,min(qLen, tLen));
 	int doneAr=0;
 	int leftAr=1;
 	int downAr=2;

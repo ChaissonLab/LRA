@@ -30,10 +30,12 @@ class Input {
 	long totalRead;
 	bool done;
 	int nReads;
+	int flagRemove;
 	clock_t timestamp;
 
 	vector<string> allReads;
 	Input() {
+		flagRemove=0;
 		doInit = true;
 		curFile = 0;
 		basesRead = 0;
@@ -91,8 +93,14 @@ class Input {
 				kseq_destroy(ks);
 				gzclose(fastaFile);
 			}
-			fastaFile = gzopen(filename.c_str(), "r");
-			ks = kseq_init(fastaFile);
+			if (filename == "-" or filename == "/dev/stdin" or filename == "stdin") {
+				gzFile fp = gzdopen(fileno(stdin), "r");
+				ks = kseq_init(fp);
+			}
+			else {
+				fastaFile = gzopen(filename.c_str(), "r");
+				ks = kseq_init(fastaFile);
+			}
 			return true;
 		}
 		else {
@@ -141,10 +149,10 @@ class Input {
 		return true;
 	}
 
-	bool GetNext(Read &read, bool top=true) {
+	bool GetNext(Read &read, bool overrideSemaphore=false, bool top=true) {
 		read.Clear();
 
-		if (top == true) {
+		if (overrideSemaphore == false and top == true) {
 			pthread_mutex_lock(&semaphore);
 		}
 		++nReads;
@@ -169,6 +177,7 @@ class Input {
 					read.seq = new char[ks->seq.l];
 					read.length=ks->seq.l;
 					memcpy(read.seq, ks->seq.s,read.length);
+					for (int i=0;i<ks->seq.l;i++) { read.seq[i] = toupper(ks->seq.s[i]);}
 					read.name=string(ks->name.s);
 					if (ks->qual.s != NULL) {
 						read.qual = new char[ks->seq.l];
@@ -183,43 +192,71 @@ class Input {
 				int res;
 				bam1_t *b = bam_init1();
 				res= sam_read1(htsfp, samHeader, b);
-				if (res > 0) {
+				while (res > 0 and readOne == false) {
+					if (res > 0) {
+						if ((b->core.flag & flagRemove) == 0) {							
+							read.length = b->core.l_qseq;			
+							read.seq = new char[read.length];
+							read.name = string(bam_get_qname(b));
+							read.flags = b->core.flag;
+							uint8_t *q = bam_get_seq(b);
+							for (int i=0; i < read.length; i++) {read.seq[i]=seq_nt16_str[bam_seqi(q,i)];	}
+							read.qual = NULL;
 				
-					read.length = b->core.l_qseq;			
-					read.seq = new char[read.length];
-					read.name = string(bam_get_qname(b));
-					uint8_t *q = bam_get_seq(b);
-					for (int i=0; i < read.length; i++) {read.seq[i]=seq_nt16_str[bam_seqi(q,i)];	}
-					read.qual = NULL;
-				
-					// 
-					// Eventually this will store the passthrough data
-					//
-					bam_destroy1(b);
-					readOne=true;
+							// 
+							// Eventually this will store the passthrough data
+							//
+							readOne=true;
+							bam_destroy1(b);
+							//							bam1_t *b = bam_init1();
+						}
+						else {
+							bam_destroy1(b);
+							b = bam_init1();
+							res= sam_read1(htsfp, samHeader, b);
+						}
+					}
+				}
+				if (res == 0) {	
+					if (b != NULL) {
+						bam_destroy1(b);
+						readOne = false;
+					}
 				}
 			}
 
 			if (readOne == false and top == true ) {
 				++curFile;
 				doInit=true;
-				readOne=GetNext(read, false);
+				readOne=GetNext(read, overrideSemaphore, false);
 			}
 			basesRead += read.length;
 			totalRead += read.length;
-			if (basesRead > 100000000) {
-				clock_t cur = clock();		
-				cerr << "lra processed " << totalRead << " bases (" << std::setprecision(4) <<  ((float)(cur - timestamp))/CLOCKS_PER_SEC  << "s)." << endl;
-				timestamp=cur;
-				basesRead = 0;
-			}
 		}
 
-		if (top == true) {
+		if (overrideSemaphore== false and top == true) {
 			pthread_mutex_unlock(&semaphore);
 		}
 		return readOne;
 	}
+	bool BufferedRead(vector<Read> &reads, int maxBufferSize) {
+		int totalSize=0;
+
+		pthread_mutex_lock(&semaphore);
+		Read read;
+
+		while(totalSize < maxBufferSize and GetNext(read, true, true)) {
+			reads.resize(reads.size()+1);
+			reads[reads.size()-1]=read;
+			totalSize += read.length;
+			read.Clear();
+		}
+
+		pthread_mutex_unlock(&semaphore);
+
+		return reads.size();
+	}
+
 
 };
 
