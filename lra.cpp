@@ -30,7 +30,7 @@
 
 using namespace std;
 
-
+int IO_BUFFER_SIZE=10000000;
 const char* version="0.1-alpha";
 
 bool ArgIs(const char* a, const char* b) {
@@ -52,6 +52,7 @@ void HelpMap() {
 	cout << "Options:" << endl
 			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam 'p' pair ." << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
+       << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
 			 << "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
 			 << "   -m  m(int)  Do not align clusters with fewer than m refined"<< endl
 			 << "               matches (40). Typically m > 3*M" << endl
@@ -82,19 +83,66 @@ public:
 	int thread;
 	int numThreads;
 	pthread_mutex_t *semaphore;
+	int *numAligned;
+	int *numRead;
 };
 
 void MapReads(MapInfo *mapInfo) {
 	Read read;
-	while (mapInfo->reader->GetNext(read)) {
+	stringstream strm;
+	vector<Read> reads;
+	while (mapInfo->reader->BufferedRead(reads,IO_BUFFER_SIZE)) {
 		if (mapInfo->opts->readStride != 1 and
 				mapInfo->reader->nReads % mapInfo->opts->readStride != mapInfo->opts->readStart ) {
 			continue;
 		}
 		else {
-			MapRead(*mapInfo->LookUpTable, read, *mapInfo->genome, *mapInfo->genomemm, *mapInfo->glIndex, *mapInfo->opts, mapInfo->out, mapInfo->semaphore);
+			for (int i = 0; i< reads.size(); i++) {
+				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm, *mapInfo->glIndex, *mapInfo->opts, &strm, mapInfo->semaphore);
+				reads[i].Clear();
+			}
+			reads.clear();
+			
+			if (mapInfo->reader->basesRead > 100000000) {
+				if (mapInfo->semaphore != NULL) {
+					pthread_mutex_lock(mapInfo->semaphore);
+				}
+				// Check to see if another thread hit this spot at the same time
+				if (mapInfo->reader->basesRead > 100000000) {
+					
+					clock_t cur = clock();		
+					cerr << "lra aligned " << *mapInfo->numAligned << " from " << mapInfo->reader->nReads << ", " << mapInfo->reader->totalRead /1000000<< "M bases (" << std::setprecision(4) <<  ((float)(cur - mapInfo->reader->timestamp))/CLOCKS_PER_SEC  << "s)." << endl;
+					mapInfo->reader->timestamp=cur;
+					mapInfo->reader->basesRead = 0;
+				}
+			
+				if (mapInfo->semaphore != NULL) {
+					pthread_mutex_unlock(mapInfo->semaphore);
+				}
+			}
+			if (strm.str().size() > IO_BUFFER_SIZE) {
+				if (mapInfo->semaphore != NULL) {
+					pthread_mutex_lock(mapInfo->semaphore);
+				}
+				*mapInfo->out << strm.str();
+				if (mapInfo->semaphore != NULL) {
+					pthread_mutex_unlock(mapInfo->semaphore);
+				}
+				strm.str("");
+				strm.clear();
+
+			}
+				
 		}
 	}
+	if (mapInfo->semaphore != NULL) {
+		pthread_mutex_lock(mapInfo->semaphore);
+	}
+	*mapInfo->out << strm.str();
+	if (mapInfo->semaphore != NULL) {
+		pthread_mutex_unlock(mapInfo->semaphore);
+	}
+
 	pthread_exit(NULL);
 }
 
@@ -128,6 +176,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}		
+		else if (ArgIs(argv[argi], "-F")) {
+			opts.flagRemove=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
 		else if (ArgIs(argv[argi], "-K")) {
 			opts.globalK=atoi(GetArgv(argv, argc, argi));
 			++argi;
@@ -155,10 +207,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "--stride")) {
 			opts.readStride=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}
-		else if (ArgIs(argv[argi], "--seqan")) {
-			opts.seqan=true;
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--start")) {
@@ -241,6 +289,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 
 	Input reader;
 	reader.Initialize(allreads);
+	reader.flagRemove = opts.flagRemove;
 	int offset=0;
 	Read read;
 	ostream *outPtr;
@@ -277,6 +326,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		
 		pthread_mutex_t semaphore;		
 		pthread_mutex_init(&semaphore, NULL);
+		int numAligned=0;
 		for (int procIndex = 0; procIndex < opts.nproc; procIndex++ ){ 
 			mapInfo[procIndex].LookUpTable = &LookUpTable;
 			mapInfo[procIndex].genome = &genome;
@@ -287,6 +337,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			mapInfo[procIndex].out = outPtr;
 			mapInfo[procIndex].thread=procIndex;
 			mapInfo[procIndex].semaphore=&semaphore;
+			mapInfo[procIndex].numAligned=&numAligned;
 			pthread_create(&threads[procIndex], &threadAttr[procIndex], (void* (*)(void*))MapReads, &mapInfo[procIndex]);
 		}
 
@@ -366,7 +417,6 @@ void RunStoreLocal(int argc, const char* argv[],
 		}
 		else {
 			genome = argv[argi];
-			cerr << "genome " << genome << endl;
 		}
 		++argi;
 	}
@@ -430,7 +480,6 @@ void RunStoreGlobal(int argc, const char* argv[],
 		}
 		else {
 			genome = argv[argi];
-			cerr << "genome " << genome << endl;
 		}
 		++argi;
 	}

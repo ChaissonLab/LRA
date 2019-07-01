@@ -47,6 +47,7 @@ public:
 	int localBand;
 	int MergeSplit;
 	int mintupChainClustersize;
+	int flagRemove;
 
 	Options() {
 		localMatch=4;
@@ -63,10 +64,10 @@ public:
 		bestn=1;
 		globalMaxFreq=20;
 		localMaxFreq=30;
-		maxDiag=500; // We want maxDiag to be a small number // used to be 500
+		maxDiag=500;
 		cleanMaxDiag=100; // used to be 50
 		minDiagCluster=20;
-		minClusterSize = 10; // used to be 10
+		minClusterSize = 10;
 		minClusterLength = 100;
 		minRefinedClusterSize = 40;
 		window=100;
@@ -89,7 +90,7 @@ public:
 		LookUpTable=true;
 		MergeSplit=true;
 		mintupChainClustersize = 10;
-    
+   		flagRemove=0;
 	}
 };
 #endif

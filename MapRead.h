@@ -21,7 +21,7 @@
 #include <thread>
 
 #include "AffineOneGapAlign.h"
-//#include "NaiveDP.h"
+#include "MergeSplit.h"
 #include "GlobalChain.h"
 #include "TupleOps.h"
 #include "SparseDP.h"
@@ -450,7 +450,7 @@ void traceback (vector<int> &onechain, int &i, vector<int> &clusters_predecessor
 }
 
 
-void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, pthread_mutex_t *semaphore=NULL) {
+int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, pthread_mutex_t *semaphore=NULL) {
 	
 	string baseName = read.name;
 
@@ -739,7 +739,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				stringstream outNameStrm;
 				outNameStrm << "clusters-sdp." << c << ".dots";
 				ofstream baseDots(outNameStrm.str().c_str());
-
 				for (int s = 0; s < Primary_chains[c].chains[0].size(); ++s) {
 					for (int m = 0; m < clusters[Primary_chains[c].chains[0][s]].matches.size(); ++m) {
 						baseDots << clusters[Primary_chains[c].chains[0][s]].matches[m].first.pos << "\t" 
@@ -1333,12 +1332,14 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors);
 
 				if (refinedClusters[r].matches.size() != 0) {
+					/*
 					stringstream outNameStrm;
 					outNameStrm << "AnchorEfficiency.tab";
 					ofstream baseDots;
 					baseDots.open(outNameStrm.str().c_str(), std::ios::app);
 					baseDots << mergedAnchors.size() << "\t" << refinedClusters[r].matches.size() << endl;
 					baseDots.close();					
+					*/
 				}
 
 				// TODO(Jingwen): only for debug the new MergeAnchors function from MergeAnchors.h
@@ -1371,7 +1372,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				}
 
 
-
 				/*
 				//TODO(Jingwen): Only for debug
 				if (opts.dotPlot ) {
@@ -1383,7 +1383,7 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 								 << vt[m].tStart << "\t" 
 								 << vt[m].qEnd << "\t" 
 								 << vt[m].tEnd << "\t" 
-								 << r << endl;
+								 << m << endl;
 					}
 					baseDots.close();
 				}
@@ -1752,7 +1752,9 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 
 			for (int s = 0; s < tupChainClusters.size(); s++) {
-
+				if (tupChainClusters[s].end == tupChainClusters[s].start) {
+					continue;
+				}
 				if (tupChainClusters[s].strand == 1) reverse(tupChain.begin() + tupChainClusters[s].start, tupChain.begin() + tupChainClusters[s].end);
 				vector<GenomeTuple> gapReadTup, gapGenomeTup;
 				GenomePairs gapPairs;
@@ -2059,10 +2061,6 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 		SimpleMapQV(alignments);
 
-		if (semaphore != NULL) {
-			pthread_mutex_lock(semaphore);
-		}
-
 
 
 		if (opts.dotPlot ) {
@@ -2107,7 +2105,14 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		}
 
 
-
+		//
+		// Lock for output.
+		//
+		/*
+		if (semaphore != NULL) {
+			pthread_mutex_lock(semaphore);
+		}
+		*/
 
 		for (int a=0; a < min(opts.bestn, (int) alignments.size()); a++){
 
@@ -2125,10 +2130,11 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 			}
 		}
 
-
+		/*
 		if (semaphore != NULL ) {
 			pthread_mutex_unlock(semaphore);
 		}
+		*/
 
 		//
 		// Done with one read. Clean memory.
@@ -2139,7 +2145,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				delete alignments[a].SegAlignment[s];
 			}
 		}
-		read.Clear();
+		
+		//read.Clear();
 
 		/*
 		// get the time for the program
@@ -2147,7 +2154,14 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 		double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 		cerr << "Time: " << elapsed_secs << endl;
 		*/
+		if (alignments.size() > 0 ) {
+			return 1;
+		}
+		else {
+			return 0;
+		}
 	}
+	return 0;
 }
 
 #endif
