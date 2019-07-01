@@ -46,6 +46,7 @@ public:
 	int localIndel;
 	int localBand;
 	int MergeSplit;
+	int mintupChainClustersize;
 
 	Options() {
 		localMatch=4;
@@ -87,6 +88,7 @@ public:
 		SparseDP=true;
 		LookUpTable=true;
 		MergeSplit=true;
+		mintupChainClustersize = 10;
     
 	}
 };

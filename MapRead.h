@@ -1500,6 +1500,8 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 
 			GenomePairs tupChain;
 			vector<Cluster> tupChainClusters;
+			tupChain.clear();
+			tupChainClusters.clear();
 			//GenomePos chainGenomeStart = refinedClusters[r].matches[chain[0]].second.pos;
 			//GenomePos chainGenomeEnd = refinedClusters[r].matches[chain[0]].second.pos + smallOpts.globalK;
 			//GenomePos chainReadStart = refinedClusters[r].matches[chain[0]].first.pos;
@@ -1606,55 +1608,13 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 				while (ce < tupChainStrand.size()) {
 					if (tupChainStrand[cs] == tupChainStrand[ce]) ce++;
 					else {
-						tupChainClusters.push_back(Cluster(cs, ce, tupChainStrand[cs]));
-						ce++;
+						if (ce - cs >= smallOpts.mintupChainClustersize) tupChainClusters.push_back(Cluster(cs, ce, tupChainStrand[cs]));
 						cs = ce;
 					}
 				}
-				if (ce == tupChainStrand.size()) {
+				if (ce == tupChainStrand.size() and cs < chain.size() and ce - cs >= smallOpts.mintupChainClustersize) {
 						tupChainClusters.push_back(Cluster(cs, ce, tupChainStrand[cs]));
 				}
-
-
-		/*
-					unsigned int fprev = mergedAnchors[chain[ch]].start;
-					unsigned int fcur = mergedAnchors[chain[ch]].start;
-					if (mergedAnchors[chain[ch]].strand == 0) {
-						tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[fcur].first.pos), 
-																				GenomeTuple(0, refinedClusters[r].matches[fcur].second.pos)));	
-					}
-					else {
-						tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[fcur].first.pos), 
-																				GenomeTuple(0, refinedClusters[r].matches[fcur].second.pos)));	
-					}
-					
-					
-					//cerr << "tupChain[" << tupChain.size() << "]     push_back: " << "first: " << refinedClusters[r].matches[fcur].first.pos<<"  " << refinedClusters[r].matches[fcur].first.pos + smallOpts.globalK 
-					//<< "   second: " << refinedClusters[r].matches[fcur].second.pos << " "<< refinedClusters[r].matches[fcur].second.pos + smallOpts.globalK - 1 <<endl;
-					
-					++fcur;					
-					while (fcur < mergedAnchors[chain[ch]].end) {
-						while (fcur < mergedAnchors[chain[ch]].end && (refinedClusters[r].matches[fcur].first.pos < refinedClusters[r].matches[fprev].first.pos + smallOpts.globalK ||
-													refinedClusters[r].matches[fcur].second.pos < refinedClusters[r].matches[fprev].second.pos + smallOpts.globalK)) {
-							++fcur;
-						}
-						if (fcur != mergedAnchors[chain[ch]].end) {
-							tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[fcur].first.pos), 
-																	GenomeTuple(0, refinedClusters[r].matches[fcur].second.pos)));	
-					
-							//cerr << "tupChain[" << tupChain.size() << "]     push_back: " << "first: " << refinedClusters[r].matches[fcur].first.pos<<"  " << refinedClusters[r].matches[fcur].first.pos + smallOpts.globalK 
-							//<< "   second: " << refinedClusters[r].matches[fcur].second.pos << " "<< refinedClusters[r].matches[fcur].second.pos + smallOpts.globalK - 1 <<endl;
-					
-							//assert(refinedClusters[r].matches[fcur].first.pos >= refinedClusters[r].matches[fprev].first.pos + smallOpts.globalK );
-							//assert(refinedClusters[r].matches[fcur].second.pos >= refinedClusters[r].matches[fprev].second.pos + smallOpts.globalK );								
-						}
-						fprev = fcur;
-						++fcur;
-					}
-				}
-				mergedAnchors.clear();
-	*/
-
 			}
 			else {
 				// chain stores indices which refer to elements in refinedClusters[r].matches
@@ -1670,24 +1630,17 @@ void MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vect
 						tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[chain[ch]].first.pos), 
 															GenomeTuple(0, refinedClusters[r].matches[chain[ch]].second.pos)));						
 					}
-
-					//chainGenomeStart = min(chainGenomeStart, refinedClusters[r].matches[chain[ch]].second.pos);
-					//chainGenomeEnd = max(chainGenomeEnd, refinedClusters[r].matches[chain[ch]].second.pos + smallOpts.globalK);
-					//chainReadStart = min(chainReadStart, refinedClusters[r].matches[chain[ch]].first.pos);
-					//chainReadEnd = max(chainReadEnd, refinedClusters[r].matches[chain[ch]].first.pos + smallOpts.globalK);
-
 				}
 
 				int cs = 0, ce = 0;
 				while (ce < chain.size()) {
 					if (refinedClusters[r].strands[chain[cs]] == refinedClusters[r].strands[chain[ce]]) ce++;
 					else {
-						tupChainClusters.push_back(Cluster(cs, ce, refinedClusters[r].strands[chain[cs]]));
-						ce++;
+						if (ce - cs >= smallOpts.mintupChainClustersize) tupChainClusters.push_back(Cluster(cs, ce, refinedClusters[r].strands[chain[cs]]));
 						cs = ce;
 					}
 				}
-				if (ce == chain.size() and cs < chain.size()) {
+				if (ce == chain.size() and cs < chain.size() and ce - cs >= smallOpts.mintupChainClustersize) {
 						tupChainClusters.push_back(Cluster(cs, ce, refinedClusters[r].strands[chain[cs]]));
 				}
 			}
