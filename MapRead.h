@@ -625,12 +625,22 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 				for (int s = 0; s <= c - 1; ++s) {
 
-					int gap = abs((int)(clusterOrder[c].qStart - clusterOrder[c].tStart) - (int)(clusterOrder[s].qEnd - clusterOrder[s].tEnd));
+					int gap = 0;
+					//int gap = abs((int)(clusterOrder[c].qStart - clusterOrder[c].tStart) - (int)(clusterOrder[s].qEnd - clusterOrder[s].tEnd));
 					int ReverseStrand = -1;
-					if (clusterOrder[c].strand == clusterOrder[s].strand and clusterOrder[c].strand == 0) {ReverseStrand = 1;}
-					else if (clusterOrder[c].strand == clusterOrder[s].strand and clusterOrder[c].strand == 1) {ReverseStrand = -1;}
-					else { ReverseStrand = 1;}
-				
+					//if (clusterOrder[c].strand == clusterOrder[s].strand and clusterOrder[c].strand == 0) {ReverseStrand = 1;}
+					//else if (clusterOrder[c].strand == clusterOrder[s].strand and clusterOrder[c].strand == 1) {ReverseStrand = -1;}
+					//else { ReverseStrand = 1;}
+
+					if (clusterOrder[c].strand == clusterOrder[s].strand and clusterOrder[c].strand == 1) {
+						ReverseStrand = -1;
+						gap = abs((int)(clusterOrder[c].qEnd + clusterOrder[c].tStart) - (int)(clusterOrder[s].qStart + clusterOrder[s].tEnd));
+					}
+					else {
+						ReverseStrand = 1;
+						gap = abs((int)(clusterOrder[c].qStart - clusterOrder[c].tStart) - (int)(clusterOrder[s].qEnd - clusterOrder[s].tEnd));
+					}
+
 					if ( ((clusterOrder[s].qEnd - ((clusterOrder[s].qEnd - clusterOrder[s].qStart)/3)*2) < clusterOrder[c].qStart or ReverseStrand == -1)
 							and  ((clusterOrder[s].tEnd - ((clusterOrder[s].tEnd - clusterOrder[s].tStart)/3)*2) < clusterOrder[c].tStart or ReverseStrand == -1)
 							and ((!clusterOrder[c].Encompasses(clusterOrder[s], 0.7) and !clusterOrder[s].Encompasses(clusterOrder[c], 0.4)) or 
@@ -1286,6 +1296,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}
 
 			bool ReverseOnly = 1; // ReverseOnly == 1 means there are only reverse matches
+								  // If ReverseOnly == 1, then only inserting two points s2, e2 for every reversed match in 1-st SDP.
 			for (int m = 0; m < refinedLogClusters[r].SubCluster.size(); ++m) {
 				if (refinedLogClusters[r].SubCluster[m].strand != 1) ReverseOnly = 0;
 			} 
@@ -1329,9 +1340,21 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				vt.clear();
 				mergedAnchors.clear();
 
+				bool WholeReverseDirection = 1; // WholeReverseDirection == 1 means the read is reversely mapped to reference;
+												// This is important when deciding the boundary in MergeAnchor function
+				GenomePos prev_qEnd = 0, cur_qEnd = 0;
+				for (int m = 0; m < refinedLogClusters[r].SubCluster.size(); ++m) {
+
+					if (m == 0) prev_qEnd = refinedLogClusters[r].SubCluster[m].qEnd;
+					else {
+						cur_qEnd = refinedLogClusters[r].SubCluster[m].qEnd;
+						if (prev_qEnd >= cur_qEnd) WholeReverseDirection = 0;
+					}
+				}
+
 				//MergeClusters(smallOpts, refinedClusters, vt, r);
 				//mergeClusters (smallOpts, refinedClusters[r].matches, vt, r, baseName);
-				MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors);
+				MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors, WholeReverseDirection);
 
 				if (refinedClusters[r].matches.size() != 0) {
 					/*
