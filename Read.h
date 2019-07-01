@@ -1,5 +1,7 @@
 #ifndef READ_H_
 #define READ_H_
+
+#include <cstring>
 using namespace std;
 class Read {
  public:
