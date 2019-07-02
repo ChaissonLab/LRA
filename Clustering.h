@@ -574,7 +574,7 @@ void RemovePairedIndels(GenomePos qAlnStart, GenomePos tAlnStart, GenomePos qAln
 		int nextGap = (int)(nextQStart - qEnd) - (int)(nextTStart - tEnd);
 
 		if (sign(prevGap) != sign(nextGap) and
-				abs(prevGap) + abs(nextGap) >  abs(prevGap + nextGap)  ) { //(matches[c].end +opts.k - matches[c].start)) {
+				abs(prevGap) + abs(nextGap) >  abs(prevGap + nextGap)  ) {
 			remove[c] = true;
 		} 
 	}	
@@ -609,7 +609,7 @@ void RemovePairedIndels(vector<pair<Tup, Tup>> & matches, vector<Cluster> & clus
 		int nextGap = (int)(nextQStart - qEnd) - (int)(nextTStart - tEnd);
 
 		if (sign(prevGap) != sign(nextGap) and
-				abs(prevGap) + abs(nextGap) >  abs(prevGap + nextGap)  ) { //(clusters[c].end +opts.k - clusters[c].start)) {
+				abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)  ) { //(clusters[c].end +opts.k - clusters[c].start)) {
 			remove[c] = true;
 			for (int ci=clusters[c].start; ci < clusters[c].end; ci++) {
 				matches[ci].first.pos = -1;
@@ -627,5 +627,91 @@ void RemovePairedIndels(vector<pair<Tup, Tup>> & matches, vector<Cluster> & clus
 	matches.resize(m);
 }
 
- 
+
+void RemovePairedIndels (vector<unsigned int> &chain, vector<ClusterCoordinates> &V, Options &opts) {
+	if (chain.size() < 3) return;
+	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
+
+	for (int c = 1; c < chain.size() - 1; c++) {
+
+		GenomePos prevQEnd = V[chain[c-1]].qEnd;
+		GenomePos prevTEnd = V[chain[c-1]].tEnd;
+
+		GenomePos qStart = V[chain[c]].qStart;
+		GenomePos tStart = V[chain[c]].tStart;
+		GenomePos qEnd = V[chain[c]].qEnd;
+		GenomePos tEnd = V[chain[c]].tEnd;
+
+		GenomePos nextQStart = V[chain[c+1]].qStart;
+		GenomePos nextTStart = V[chain[c+1]].tStart;	
+
+		if (V[chain[c-1]].strand == V[chain[c]].strand 
+			and V[chain[c]].strand == V[chain[c+1]].strand) {
+			int prevGap = 0, nextGap = 0;
+			int length = max(V[chain[c]].qEnd - V[chain[c]].qStart, V[chain[c]].tEnd - V[chain[c]].tStart);
+
+			if (V[chain[c-1]].strand == 0) { // forward strand --> use forward diagonal(second.pos - first.pos) to calculate gap length
+				prevGap = (int)(prevTEnd - prevQEnd) - (int)(tStart - qStart);
+				nextGap = (int)(tEnd - qEnd) - (int)(nextTStart - nextQStart);
+			}
+			else { // reverse strand --> use backdiagonal(second.pos + first.pos) to calculate gap length
+				prevGap = (int)(prevTEnd + prevQEnd) - (int)(tStart + qStart);
+				nextGap = (int)(tEnd + qEnd) - (int)(nextTStart + nextQStart);
+			}
+
+			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap) and length < opts.minRemovePairedIndelsLength) { // the second condition filter out when prevGap == 0 or nextGap == 0
+				remove[c] = true;
+			}
+		}	
+	}
+
+	int m = 0;
+
+	for (int i = 0; i < chain.size(); i++) {
+		if (remove[i] == false) {
+			chain[m] = chain[i];
+			m++;
+		}
+	}
+	chain.resize(m);
+}
+
+
+void RemovePairedIndels (vector<unsigned int> &chain, GenomePairs &V, Options &opts) {
+	if (chain.size() < 3) return;
+	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
+
+	for (int c = 1; c < chain.size() - 1; c++) {
+
+		GenomePos prevQEnd = V[chain[c-1]].first.pos + opts.globalK;  
+		GenomePos prevTEnd = V[chain[c-1]].second.pos + opts.globalK;  
+
+		GenomePos qStart = V[chain[c]].first.pos;
+		GenomePos tStart = V[chain[c]].second.pos;
+		GenomePos qEnd = V[chain[c]].first.pos + opts.globalK;
+		GenomePos tEnd = V[chain[c]].second.pos + opts.globalK;
+
+		GenomePos nextQStart = V[chain[c+1]].first.pos;
+		GenomePos nextTStart = V[chain[c+1]].second.pos;	
+
+		int prevGap = (int)(prevTEnd - prevQEnd) - (int)(tStart - qStart);
+		int nextGap = (int)(tEnd - qEnd) - (int)(nextTStart - nextQStart);
+		
+		if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)) { // the second condition filter out when prevGap == 0 or nextGap == 0
+			remove[c] = true;
+		}	
+	}
+
+	int m = 0;
+
+	for (int i = 0; i < chain.size(); i++) {
+		if (remove[i] == false) {
+			chain[m] = chain[i];
+			m++;
+		}
+	}
+	chain.resize(m);
+}
+
+
 #endif

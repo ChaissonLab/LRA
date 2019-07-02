@@ -48,6 +48,8 @@ public:
 	int MergeSplit;
 	int mintupChainClustersize;
 	int flagRemove;
+	int minRemovePairedIndelsLength; // if an anchor's length is larger than this parameter, 
+									// then even if it has paired indels before and after it, we do not delete this anchor.
 
 	Options() {
 		localMatch=4;
@@ -91,6 +93,7 @@ public:
 		MergeSplit=true;
 		mintupChainClustersize = 10;
    		flagRemove=0;
+   		minRemovePairedIndelsLength=500;
 	}
 };
 #endif
