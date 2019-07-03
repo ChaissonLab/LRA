@@ -659,7 +659,8 @@ void RemovePairedIndels (vector<unsigned int> &chain, vector<ClusterCoordinates>
 				nextGap = (int)(tEnd + qEnd) - (int)(nextTStart + nextQStart);
 			}
 
-			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap) and length < opts.minRemovePairedIndelsLength) { // the second condition filter out when prevGap == 0 or nextGap == 0
+			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap) 
+						and length < opts.minRemovePairedIndelsLength) { // the second condition filter out when prevGap == 0 or nextGap == 0
 				remove[c] = true;
 			}
 		}	

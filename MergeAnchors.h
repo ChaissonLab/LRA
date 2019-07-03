@@ -169,7 +169,7 @@ MergeAnchors (Options & opts, vector<Cluster> &refinedClusters, vector<LogCluste
 					and (qBoundary_s == 0 or refinedClusters[r].matches[e].first.pos >= qBoundary_s) // qBoundary_s is exclusive
 					and (tBoundary_s == 0 or refinedClusters[r].matches[e].second.pos >= tBoundary_s)
 					and gapdifference(e, refinedClusters[r].matches, refinedLogClusters[r].SubCluster[l].strand) < opts.maxDiag 
-					and std::max(std::abs(rgap), std::abs(ggap)) <= opts.maxGap	) {
+					and std::max(std::abs(rgap), std::abs(ggap)) <= opts.maxGapBtwnAnchors	) {
 
 					qStart = min(qStart, refinedClusters[r].matches[e].first.pos);
 					qEnd = max(qEnd, refinedClusters[r].matches[e].first.pos + opts.globalK);

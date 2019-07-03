@@ -440,13 +440,128 @@ void traceback(vector<int> &clusterchain, int &i, vector<int> &clusters_predeces
 	}
 }
 
-// TODO(Jingwen): determine which traceback should be used
+// TODO(Jingwen): delete this function
 void traceback (vector<int> &onechain, int &i, vector<int> &clusters_predecessor) {
 
 	onechain.push_back(i);
 	if (clusters_predecessor[i] != -1) {
 		traceback(onechain, clusters_predecessor[i], clusters_predecessor);
 	}
+}
+
+
+// This function removes spurious MERGED anchors in chain after 1st SDP
+void RemoveSpuriousAnchors (vector<unsigned int> &chain, Options &opts, const vector<ClusterCoordinates> &Anchors) {
+	int cs = 0, ce = 1;
+	vector<bool> remove(chain.size(), false);
+
+	while (ce < chain.size()) {
+
+		int dist = 0;
+		int diffstrand = 0;
+		if (Anchors[chain[ce-1]].strand == Anchors[chain[ce]].strand and Anchors[chain[ce-1]].strand == 0) { // forward stranded
+			dist = max((int)Anchors[chain[ce]].qStart - Anchors[chain[ce-1]].qEnd, (int)Anchors[chain[ce]].tStart - Anchors[chain[ce-1]].tEnd);
+		}
+		else if (Anchors[chain[ce-1]].strand == Anchors[chain[ce]].strand and Anchors[chain[ce-1]].strand == 1) { // reverse stranded
+			dist = max((int)Anchors[chain[ce]].qStart - Anchors[chain[ce-1]].qEnd, (int)Anchors[chain[ce-1]].tStart - Anchors[chain[ce]].tEnd);
+		}
+		else diffstrand = 1;
+
+		//cerr << "ce-1: " << ce-1 << "  ce: " << ce << "  dist: " << dist << endl;
+		if (diffstrand = 1 and abs(dist) <= opts.maxRemoveSpuriousAnchorsDist) ce++;
+		else {
+			int anchorNum = 0, Length = 0;
+			for (int i = cs; i < ce; i++) {
+				anchorNum += Anchors[chain[i]].end - Anchors[chain[i]].start;
+			}
+			Length = min((int)Anchors[chain[ce - 1]].qEnd - Anchors[chain[cs]].qStart, (int)Anchors[chain[ce - 1]].tEnd - Anchors[chain[cs]].tStart);
+			if (anchorNum < opts.minRemoveSpuriousAnchorsNum or abs(Length) < opts.minRemoveSpuriousAnchorsLength) {
+				//cerr << "cs: " << cs << "  ce: " << ce << endl;
+				//cerr << "anchorNum: " << anchorNum << " Length: " << Length << endl;
+				//cerr << "ce - cs < min" << endl;
+				for (int i = cs; i < ce; i++) {
+					remove[i] = true;
+				}
+			}
+			cs = ce;
+			ce++;
+		}
+	}
+	if (ce == chain.size() and cs < chain.size()) {
+		int anchorNum = 0, Length = 0;
+		for (int i = cs; i < ce; i++) {
+			anchorNum += Anchors[chain[i]].end - Anchors[chain[i]].start;
+		}
+		Length = min((int)Anchors[chain[ce - 1]].qEnd - Anchors[chain[cs]].qStart, (int)Anchors[chain[ce - 1]].tEnd - Anchors[chain[cs]].tStart);
+		if (anchorNum < opts.minRemoveSpuriousAnchorsNum or abs(Length) < opts.minRemoveSpuriousAnchorsLength) {
+			for (int i = cs; i < ce; i++) {
+				remove[i] = true;
+			}
+		}		
+	}
+
+	int m = 0;
+	for (int s = 0; s < chain.size(); s++) {
+		if (remove[s] == false) {
+			chain[m] = chain[s];
+			m++;
+		}
+	}
+	chain.resize(m);
+}
+
+
+
+// This function removes spurious UNMERGED anchors in chain after 1st SDP
+void RemoveSpuriousAnchors (vector<unsigned int> &chain, Options &opts, const Cluster &Anchors) {
+	int cs = 0, ce = 1;
+	vector<bool> remove(chain.size(), false);
+
+	while (ce < chain.size()) {
+
+		int dist = 0;
+		int diffstrand = 0;
+		if (Anchors.strands[chain[ce-1]] == Anchors.strands[chain[ce]] and Anchors.strands[chain[ce-1]] == 0) { // forward stranded
+			dist = max((int)Anchors.matches[chain[ce]].first.pos - Anchors.matches[chain[ce-1]].first.pos - opts.globalK, 
+					   (int)Anchors.matches[chain[ce]].second.pos - Anchors.matches[chain[ce-1]].second.pos - opts.globalK);
+		}
+		else if (Anchors.strands[chain[ce-1]] == Anchors.strands[chain[ce]] and Anchors.strands[chain[ce-1]] == 1) { // reverse stranded
+			dist = max((int)Anchors.matches[chain[ce]].first.pos - Anchors.matches[chain[ce-1]].first.pos - opts.globalK, 
+				       (int)Anchors.matches[chain[ce-1]].second.pos - Anchors.matches[chain[ce]].second.pos - opts.globalK);
+		}
+		else diffstrand = 1;
+
+		//cerr << "ce-1: " << ce-1 << "  ce: " << ce << "  dist: " << dist << endl;
+		if (diffstrand = 1 and abs(dist) <= opts.maxRemoveSpuriousAnchorsDist) ce++;
+		else {
+			if (ce - cs < opts.minRemoveSpuriousAnchorsNum) {
+				//cerr << "cs: " << cs << "  ce: " << ce << endl;
+				//cerr << "anchorNum: " << anchorNum << " Length: " << Length << endl;
+				//cerr << "ce - cs < min" << endl;
+				for (int i = cs; i < ce; i++) {
+					remove[i] = true;
+				}
+			}
+			cs = ce;
+			ce++;
+		}
+	}
+	if (ce == chain.size() and cs < chain.size()) {
+		if (ce - cs < opts.minRemoveSpuriousAnchorsNum) {
+			for (int i = cs; i < ce; i++) {
+				remove[i] = true;
+			}
+		}		
+	}
+
+	int m = 0;
+	for (int s = 0; s < chain.size(); s++) {
+		if (remove[s] == false) {
+			chain[m] = chain[s];
+			m++;
+		}
+	}
+	chain.resize(m);
 }
 
 
@@ -986,7 +1101,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		smallOpts.globalMaxFreq=6;
 		smallOpts.cleanMaxDiag=25;
 		smallOpts.maxDiag=25;
-		smallOpts.maxGap=300;
+		smallOpts.maxGap=200;
 		smallOpts.minDiagCluster=3;
 
 		Options tinyOpts = smallOpts;
@@ -1441,7 +1556,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				chain.clear();
 				if (opts.mergeClusters and mergedAnchors.size() < 30000 and mergedAnchors.size() > 0) {
 					if (mergedAnchors.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
-						SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, ReverseOnly, 5);
+						SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, ReverseOnly, 5); 
 					}
 					else {
 						SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, ReverseOnly);
@@ -1529,8 +1644,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 			if (opts.mergeClusters and mergedAnchors.size() > 0) {
 				//
-				// Remove paired indels
 				RemovePairedIndels(chain, mergedAnchors, opts);	
+
+				//
+				RemoveSpuriousAnchors(chain, opts, mergedAnchors);
 
 				//
 				// Add small anchors to tupChain. (Use greedy algorithm to make small anchors not overlap with each other)
@@ -1642,6 +1759,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				// Remove paired indels
 				RemovePairedIndels(chain, refinedClusters[r].matches, smallOpts);
 
+				//
+				RemoveSpuriousAnchors(chain, smallOpts, refinedClusters[r]);
 				//
 				// chain stores indices which refer to elements in refinedClusters[r].matches
 				for (int ch=0; ch < chain.size(); ch++) {
@@ -1878,7 +1997,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 							}
 
 							RemovePairedIndels(curReadEnd, curGenomeEnd, nextReadStart, nextGenomeStart, gapChain, gapPairs, tinyOpts);
-							if (gapChain.size()/((float)min(subreadLength, subgenomeLength)) < 0.15) gapChain.clear();
+							//cerr << "gapChain.size()/((float)min(subreadLength, subgenomeLength)): " << gapChain.size()/((float)min(subreadLength, subgenomeLength)) << endl;
+							if (gapChain.size()/((float)min(subreadLength, subgenomeLength)) < 0.02) gapChain.clear();
 
 							if (opts.dotPlot ) {
 								stringstream outNameStrm;
