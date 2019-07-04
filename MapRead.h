@@ -1672,7 +1672,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						tupChainStrand.push_back(mergedAnchors[chain[ch]].strand);
 
 						GenomePos qEnd = refinedClusters[r].matches[id].first.pos + smallOpts.globalK;
-						GenomePos tEnd = refinedClusters[r].matches[id].second.pos - 1;// TODO(Jingwen): make sure here we should -1
+						GenomePos tEnd = refinedClusters[r].matches[id].second.pos; // should not use -1 here, because refinedClusters[r].matches[id].second.pos might be 0
 
 						//cerr << "qEnd: " << qEnd << endl;
 						//cerr << "tEnd: " << tEnd << endl;
@@ -1680,7 +1680,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						while (ce < mergedAnchors[chain[ch]].end) {
 
 							while (ce < mergedAnchors[chain[ch]].end and 
-										(refinedClusters[r].matches[ce].first.pos < qEnd or refinedClusters[r].matches[ce].second.pos + smallOpts.globalK > tEnd)) {
+										(refinedClusters[r].matches[ce].first.pos < qEnd or refinedClusters[r].matches[ce].second.pos + smallOpts.globalK >= tEnd)) {
 								++ce;
 							}
 							if (ce < mergedAnchors[chain[ch]].end) {
@@ -1696,7 +1696,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 								id = ce;
 								qEnd = refinedClusters[r].matches[id].first.pos + smallOpts.globalK;
-								tEnd = refinedClusters[r].matches[id].second.pos - 1; // TODO(Jingwen): make sure here we should -1	
+								tEnd = refinedClusters[r].matches[id].second.pos;
 								++ce;
 							}
 						}
