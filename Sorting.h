@@ -26,9 +26,8 @@ class DiagonalSortOp {
 	}
 };
 
-
 template<typename Tup>
-void DiagonalSort(typename vector<pair<Tup, Tup> >::iterator  begin, typename vector<pair<Tup, Tup> >::iterator  end) {
+void DiagonalSort(typename vector<pair<Tup, Tup> >::iterator begin, typename vector<pair<Tup, Tup> >::iterator end) {
 	sort(begin, end, DiagonalSortOp<Tup>());
 }
 template<typename Tup>

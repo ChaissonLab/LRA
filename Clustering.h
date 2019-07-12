@@ -25,8 +25,10 @@ int64_t GapDifference(Tup &a, Tup &b) {
 }
 
 template<typename Tup>
-int DiagonalDrift(int curDiag, Tup &t) {
-	int drift= abs(curDiag - ((int)t.first.pos - (int)t.second.pos));
+int DiagonalDrift(int curDiag, Tup &t, int strand=0) {
+	int drift;
+	if (strand == 0) drift= abs(curDiag - ((int)t.first.pos - (int)t.second.pos));
+	else drift= abs(curDiag - ((int)t.first.pos + (int)t.second.pos));
 	return drift;
 }
 
@@ -39,13 +41,13 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 	vector<bool> onDiag(matches.size(), false);
 	
 	if (matches.size() > 1 and abs(DiagonalDifference(matches[0], matches[1], strand)) < opts.cleanMaxDiag and 
-				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[0]) < diagDrift )) { // TODO(Jingwen): Change DiagonalDrift to include cases where strand=1
+				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[0], strand) < diagDrift )) { 
 		onDiag[0] = true;
 	}
 	int m;
 	for (int i = 1; i < matches.size() ; i++) {
 		if (abs(DiagonalDifference(matches[i], matches[i-1], strand)) < opts.cleanMaxDiag and 
-				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i]) < diagDrift )) {	
+				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift )) {	
 			onDiag[i] = true;
 		}
 	}
@@ -114,13 +116,13 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int start, int end, Opti
 	vector<bool> onDiag(end - start, false);
 	
 	if (end - start > 1 and abs(DiagonalDifference(matches[start], matches[start + 1], strand)) < opts.cleanMaxDiag and 
-				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[start]) < diagDrift )) { // TODO(Jingwen): Maybe change DiagonalDrift to include cases where strand=1
+				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[start], strand) < diagDrift )) {
 		onDiag[0] = true;
 	}
 	int m;
 	for (int i = start + 1; i < end ; i++) {
 		if (abs(DiagonalDifference(matches[i], matches[i-1], strand)) < opts.cleanMaxDiag and 
-				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i]) < diagDrift )) {	
+				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i], strand) < diagDrift )) {	
 			onDiag[i - start] = true;
 		}
 	}
