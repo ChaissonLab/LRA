@@ -154,6 +154,7 @@ MergeAnchors (Options & opts, vector<Cluster> &refinedClusters, vector<LogCluste
 				assert(s < refinedLogClusters[r].SubCluster[l].end);
 				++e;
 				int rgap, ggap;
+
 				if (refinedLogClusters[r].SubCluster[l].strand == 0) {
 					rgap = refinedClusters[r].matches[e].first.pos - refinedClusters[r].matches[e-1].first.pos - opts.globalK;
 					ggap = refinedClusters[r].matches[e].second.pos - refinedClusters[r].matches[e-1].second.pos - opts.globalK;
@@ -169,25 +170,36 @@ MergeAnchors (Options & opts, vector<Cluster> &refinedClusters, vector<LogCluste
 					and (qBoundary_s == 0 or refinedClusters[r].matches[e].first.pos >= qBoundary_s) // qBoundary_s is exclusive
 					and (tBoundary_s == 0 or refinedClusters[r].matches[e].second.pos >= tBoundary_s)
 					and gapdifference(e, refinedClusters[r].matches, refinedLogClusters[r].SubCluster[l].strand) < opts.maxDiag 
-					and std::max(std::abs(rgap), std::abs(ggap)) <= opts.maxGapBtwnAnchors	) {
+					and std::max(std::abs(rgap), std::abs(ggap)) <= opts.maxGapBtwnAnchors ) {
+
+					//cerr << "gap: " << std::max(std::abs(rgap), std::abs(ggap)) << endl;
 
 					qStart = min(qStart, refinedClusters[r].matches[e].first.pos);
 					qEnd = max(qEnd, refinedClusters[r].matches[e].first.pos + opts.globalK);
 					tStart = min(tStart, refinedClusters[r].matches[e].second.pos);
 					tEnd = max(tEnd, refinedClusters[r].matches[e].second.pos + opts.globalK);
 					++e;
+
+					if (refinedLogClusters[r].SubCluster[l].strand == 0 and e < e < refinedLogClusters[r].SubCluster[l].end) {
+						rgap = refinedClusters[r].matches[e].first.pos - refinedClusters[r].matches[e-1].first.pos - opts.globalK;
+						ggap = refinedClusters[r].matches[e].second.pos - refinedClusters[r].matches[e-1].second.pos - opts.globalK;
+					}
+					else if (refinedLogClusters[r].SubCluster[l].strand == 1 and e < e < refinedLogClusters[r].SubCluster[l].end) {
+						rgap = refinedClusters[r].matches[e].first.pos - refinedClusters[r].matches[e-1].first.pos - opts.globalK;
+						ggap = refinedClusters[r].matches[e - 1].second.pos - refinedClusters[r].matches[e].second.pos - opts.globalK;								
+					}
 				}
 
 				if (e == refinedLogClusters[r].SubCluster[l].end) {
 					// insert
-					mergedAnchors.push_back(ClusterCoordinates(s, e, qStart, qEnd, tStart, tEnd, refinedLogClusters[r].SubCluster[l].strand));
+					mergedAnchors.push_back(ClusterCoordinates(s, e, qStart, qEnd, tStart, tEnd, refinedLogClusters[r].SubCluster[l].strand, l));
 					//cerr << "1   s: " << s << " e: " << e << " qStart: " << qStart << "  qEnd: " << qEnd << "  tStart: " << tStart << "  tEnd: " << tEnd << endl;
 					s = e;
 					break; 
 				}
 				else {
 					// insert
-					mergedAnchors.push_back(ClusterCoordinates(s, e, qStart, qEnd, tStart, tEnd, refinedLogClusters[r].SubCluster[l].strand));
+					mergedAnchors.push_back(ClusterCoordinates(s, e, qStart, qEnd, tStart, tEnd, refinedLogClusters[r].SubCluster[l].strand, l));
 					//cerr << "2   s: " << s << " e: " << e << " qStart: " << qStart << "  qEnd: " << qEnd << "  tStart: " << tStart << "  tEnd: " << tEnd << endl;
 
 					if (refinedLogClusters[r].SubCluster[l].strand == 0) {
@@ -214,7 +226,7 @@ MergeAnchors (Options & opts, vector<Cluster> &refinedClusters, vector<LogCluste
 		*/
 			if (s < refinedLogClusters[r].SubCluster[l].end) { // This IF condition is aimed at anchor s that fails at the previous while condition
 				// insert
-				mergedAnchors.push_back(ClusterCoordinates(s, s+1, qStart, qEnd, tStart, tEnd, refinedLogClusters[r].SubCluster[l].strand));
+				mergedAnchors.push_back(ClusterCoordinates(s, s+1, qStart, qEnd, tStart, tEnd, refinedLogClusters[r].SubCluster[l].strand, l));
 				if (refinedLogClusters[r].SubCluster[l].strand == 0) {
 					lastQ = qEnd;
 					lastT = tEnd;

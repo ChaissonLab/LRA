@@ -46,7 +46,6 @@ public:
 	int localIndel;
 	int localBand;
 	int MergeSplit;
-	int mintupChainClustersize;
 	int flagRemove;
 	int minRemovePairedIndelsLength; // if an anchor's length is larger than this parameter, 
 									// then even if it has paired indels before and after it, we do not delete this anchor.
@@ -69,11 +68,11 @@ public:
 		bestn=1;
 		globalMaxFreq=20;
 		localMaxFreq=30;
-		maxDiag=500; // We want maxDiag to be a small number // used to be 500
+		maxDiag=500; // We want maxDiag to be a small number 
 		cleanMaxDiag=100; // used to be 50
-		minDiagCluster=20;
-		minClusterSize=10;
-		minClusterLength=100;
+		minDiagCluster=20; // This parameter is used in CleanOffDiagonal function; It's better not to set it to a single value.
+		minClusterSize=10; // This parameter is used in StoreDiagonalClusters function; change to step function 
+		minClusterLength=100;  // This parameter is used in StoreDiagonalClusters function; change to step function 
 		minRefinedClusterSize=40;
 		window=100;
 		mergeGapped=false;
@@ -87,18 +86,17 @@ public:
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
 		maxGap=10000; 
-		maxGapBtwnAnchors=1500; // no larger than 2000 // used to be 2000
+		maxGapBtwnAnchors=1500; // no larger than 2000 
 		mergeClusters=false;
 		NaiveDP=false;
 		seqan=false;
 		SparseDP=true;
 		LookUpTable=true;
 		MergeSplit=true;
-		mintupChainClustersize=10;
    		flagRemove=0;
-   		minRemovePairedIndelsLength=400;
+   		minRemovePairedIndelsLength=100;
    		maxRemoveSpuriousAnchorsDist=500;
-   		minRemoveSpuriousAnchorsNum=20;
+   		minRemoveSpuriousAnchorsNum=15;
    		minRemoveSpuriousAnchorsLength=100;
 	}
 };

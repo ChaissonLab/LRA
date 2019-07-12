@@ -31,7 +31,7 @@ int DiagonalDrift(int curDiag, Tup &t) {
 }
 
 template<typename Tup>
-void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
+void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minDiagCluster, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (matches.size() == 0) {
 		return;
 	}
@@ -39,7 +39,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int stran
 	vector<bool> onDiag(matches.size(), false);
 	
 	if (matches.size() > 1 and abs(DiagonalDifference(matches[0], matches[1], strand)) < opts.cleanMaxDiag and 
-				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[0]) < diagDrift )) { // TODO(Jingwen): Maybe change DiagonalDrift to include cases where strand=1
+				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[0]) < diagDrift )) { // TODO(Jingwen): Change DiagonalDrift to include cases where strand=1
 		onDiag[0] = true;
 	}
 	int m;
@@ -51,12 +51,39 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int stran
 	}
 	bool prevOnDiag = false;
 	int  diagStart;
+	int  Largest_ClusterNum = 0;
+
 	for (int i = 0; i < matches.size(); i++) {
 		if (prevOnDiag == false and onDiag[i] == true) {
 			diagStart = i;
 		}
 		if (prevOnDiag == true and onDiag[i] == false) {
-			if (i - diagStart < opts.minDiagCluster) {
+			Largest_ClusterNum = max(Largest_ClusterNum, i - diagStart);
+		}
+		prevOnDiag = onDiag[i];
+	}
+
+	// Set the parameter minDiagCluster according to the value of Largest_ClusterNum
+	// In this way, we won't lose small inversion.
+	if (Largest_ClusterNum < 300) {
+		minDiagCluster = 3;
+	}
+	else if (Largest_ClusterNum < 600) {
+		minDiagCluster = 7;
+	}
+	else if (Largest_ClusterNum < 1000) {
+		minDiagCluster = 12;
+	}
+	else {
+		minDiagCluster = 20;
+	}
+
+	for (int i = 0; i < matches.size(); i++) {
+		if (prevOnDiag == false and onDiag[i] == true) {
+			diagStart = i;
+		}
+		if (prevOnDiag == true and onDiag[i] == false) {
+			if (i - diagStart < minDiagCluster) {
 				for (int j = diagStart; j < i; j++) {
 					onDiag[j] = false;
 				}
@@ -133,6 +160,7 @@ class ClusterCoordinates {
 	char *seq;
 	GenomePos qStart, qEnd, tStart, tEnd;
 	int chromIndex;	
+	int coarseSubCluster;
 	ClusterCoordinates() {
 		qStart=-1;
 		qEnd=0;
@@ -143,9 +171,10 @@ class ClusterCoordinates {
 		start=0;
 		end=0;
 		strand=-1;
+		coarseSubCluster = -1;
 	}
 
-	bool Encompasses(const ClusterCoordinates &b, float frac) const {
+	bool Encompasses(const ClusterCoordinates &b, const float frac) const {
 		int qovp=0;
 		if (b.qStart >= qStart and b.qStart < qEnd) {
 			qovp=min(qEnd, b.qEnd)-b.qStart;
@@ -166,7 +195,7 @@ class ClusterCoordinates {
 		else if (b.tStart <= tStart and b.tEnd > tEnd) {
 			tovp=tEnd-tStart;
 		}
-		return (((float)qovp)/(qEnd-qStart) > frac) or ((float)tovp / (tEnd-tStart) > frac);
+		return ((float)qovp/(qEnd-qStart) > frac) or ((float)tovp/(tEnd-tStart) > frac);
 	}
 
 	bool Overlaps(const ClusterCoordinates &b, float frac) const {
@@ -242,12 +271,20 @@ class ClusterCoordinates {
 		chromIndex=-1;
 		seq=NULL;
 	}
+  ClusterCoordinates(int s, int e, 
+					GenomePos qs, GenomePos qe,
+					GenomePos ts, GenomePos te, 
+					int st, int coarseSC) : start(s), end(e), strand(st), qStart(qs), qEnd(qe), tStart(ts), tEnd(te), coarseSubCluster(coarseSC) {
+		chromIndex=-1;
+		seq=NULL;
+	}
 };
 
 class Cluster : public ClusterCoordinates {
  public:
 	GenomePairs matches;
 	vector<int> strands; // stores the strand of every GenomePair in matches
+	vector<int> coarseSubCluster; // coarseSubCluster[i] means GenomePair i is from  the SubCluster[coarseSubCluster] 
 	int coarse;
 	Cluster() {}
   Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=0;}
@@ -308,14 +345,14 @@ class Cluster : public ClusterCoordinates {
 		}
 	}
 
-	void SetClusterBoundariesFromMatches(Options &opts) {
+	void SetClusterBoundariesFromMatches (Options &opts) {
 		for (int i=0; i < matches.size(); i++) {
 			tEnd = max(tEnd, matches[i].second.pos + opts.globalK);
 			tStart = min(tStart, matches[i].second.pos );
 			qEnd = max(qEnd, matches[i].first.pos + opts.globalK);
 			qStart = min(qStart, matches[i].first.pos);
 		}
-	}				
+	}		
 };
 
 class OrderClusterBySize {
@@ -413,7 +450,7 @@ class LogCluster {
  	bool ISsecondary; // ISsecondary == 1 means this is a secondary chain. Otherwise it's a primary chain
  	int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
  	vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains
- 	int coarse; 
+ 	int coarse; // coarse means this LogCluster stores information about refinedCluster[coarse]
  	LogCluster () {
  		ISsecondary = 0;
  		primary = -1;
@@ -486,7 +523,29 @@ void PrintDiagonal(vector<pair<Tup, Tup> > &matches, int strand=0) {
 		
 
 template<typename Tup>
-void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, bool rough, bool lite, int strand=0) {
+void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, bool rough, bool lite, 
+						int minDiagCluster, int strand=0) {
+
+	// Set parameters , according to the value of minDiagCluster used in CleanOffDiagonal function
+	int minClusterSize;
+	int minClusterLength;
+	if (minDiagCluster == 3) {
+		minClusterSize = 3;
+		minClusterLength = 20;
+	}
+	else if (minDiagCluster == 7) {
+		minClusterSize = 7;
+		minClusterLength = 50;
+	}
+	else if (minDiagCluster == 12) {
+		minClusterSize = 12;
+		minClusterLength = 100;
+	}
+	else {
+		minClusterSize = 10;
+		minClusterLength = 200;
+	}
+
 	int maxGap = -1, maxDiag = -1;
 	if (rough == false) { maxGap = opts.maxGapBtwnAnchors;}
 	else { maxDiag = opts.maxDiag;} 
@@ -503,7 +562,7 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 		int diff=0;
 
 		// (TODO)Jingwen: Delete (opts.maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < opts.maxGap) in the below
-		while (ce < e and (abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) < opts.maxDiag or maxDiag == -1) 
+		while (ce < e and (abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) < maxDiag or maxDiag == -1) 
 					  and (maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < maxGap)) {
 
 			qStart = min(qStart, matches[ce].first.pos);
@@ -513,7 +572,7 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 			ce++;
 		}	
 
-		if (ce - cs >= opts.minClusterSize and qEnd - qStart >= opts.minClusterLength and tEnd - tStart >= opts.minClusterLength) {
+		if (ce - cs >= minClusterSize and qEnd - qStart >= minClusterLength and tEnd - tStart >= minClusterLength) {
 			if (rough == true) {
 				clusters.push_back(Cluster(cs, ce));
 			}
@@ -589,11 +648,12 @@ void RemovePairedIndels(GenomePos qAlnStart, GenomePos tAlnStart, GenomePos qAln
 	matches.resize(m);
 }
 
-
+// TODO(Jingwen): delete this later
 template<typename Tup>
 void RemovePairedIndels(vector<pair<Tup, Tup>> & matches, vector<Cluster> & clusters, Options & opts) {
 	if (clusters.size() < 3) { return;}
 	vector<bool> remove(clusters.size(), false);
+
 	for (int c = 1; c < clusters.size() - 1; c++) {
 		GenomePos prevQEnd = clusters[c-1].qEnd;
 		GenomePos prevTEnd = clusters[c-1].tEnd;
@@ -605,7 +665,7 @@ void RemovePairedIndels(vector<pair<Tup, Tup>> & matches, vector<Cluster> & clus
 		GenomePos nextQStart = clusters[c+1].qStart;
 		GenomePos nextTStart = clusters[c+1].tStart;
 
-		int prevGap = (int)(qStart-prevQEnd) - (int)(tStart-prevTEnd);
+		int prevGap = (int)(qStart - prevQEnd) - (int)(tStart - prevTEnd);
 		int nextGap = (int)(nextQStart - qEnd) - (int)(nextTStart - tEnd);
 
 		if (sign(prevGap) != sign(nextGap) and
@@ -659,6 +719,8 @@ void RemovePairedIndels (vector<unsigned int> &chain, vector<ClusterCoordinates>
 				nextGap = (int)(tEnd + qEnd) - (int)(nextTStart + nextQStart);
 			}
 
+			//cerr << "c: " << c << endl;
+			//cerr << "prevGap: " << prevGap << "  nextGap: " << nextGap << "  length: " << length << endl;
 			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap) 
 						and length < opts.minRemovePairedIndelsLength) { // the second condition filter out when prevGap == 0 or nextGap == 0
 				remove[c] = true;
@@ -714,5 +776,21 @@ void RemovePairedIndels (vector<unsigned int> &chain, GenomePairs &V, Options &o
 	chain.resize(m);
 }
 
+void SetClusterBoundariesFromSubCluster(Cluster &cluster, Options &opts, LogCluster &logCluster) {
+	for (int i = 0; i < logCluster.SubCluster.size(); ++i) {
+		cluster.tEnd = max(cluster.tEnd, logCluster.SubCluster[i].tEnd);
+		cluster.tStart = min(cluster.tStart, logCluster.SubCluster[i].tStart);
+		cluster.qEnd = max(cluster.qEnd, logCluster.SubCluster[i].qEnd);
+		cluster.qStart = min(cluster.qStart, logCluster.SubCluster[i].qStart);			
+	}
+}
+
+void SetCoarseFromSubClusters (Cluster & cluster, const LogCluster &logCluster) {
+	for (int i = 0; i < logCluster.SubCluster.size(); ++i) {
+		for (int j = logCluster.SubCluster[i].start; j < logCluster.SubCluster[i].end; ++j) {
+			cluster.coarseSubCluster[j] = i;
+		}
+	}
+}
 
 #endif
