@@ -72,7 +72,7 @@ public:
 		cleanMaxDiag=50; // used to be 50
 		minDiagCluster=20; // This parameter is used in CleanOffDiagonal function; It's better not to set it to a single value. 
 							// This parameter is used in another CleanOFFDiagonal function
-		
+
 		minClusterSize=10; // This parameter is used in StoreDiagonalClusters function; change to step function 
 		minClusterLength=100;  // This parameter is used in StoreDiagonalClusters function; change to step function 
 		minRefinedClusterSize=40;
@@ -96,8 +96,8 @@ public:
 		LookUpTable=true;
 		MergeSplit=true;
    		flagRemove=0;
-   		minRemovePairedIndelsLength=100;
-   		maxRemoveSpuriousAnchorsDist=500;
+   		minRemovePairedIndelsLength=50;
+   		maxRemoveSpuriousAnchorsDist=200;
    		minRemoveSpuriousAnchorsNum=15;
    		minRemoveSpuriousAnchorsLength=100;
 	}

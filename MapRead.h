@@ -469,7 +469,6 @@ void RemoveSpuriousAnchors (vector<unsigned int> &chain, Options &opts, const ve
 			}
 			Length = min((int)Anchors[chain[ce - 1]].qEnd - Anchors[chain[cs]].qStart, (int)Anchors[chain[ce - 1]].tEnd - Anchors[chain[cs]].tStart);
 			int coarse = Anchors[chain[ce-1]].coarseSubCluster; // Assume chain[cs]... chain[ce-1] are in the same SubCluster
-
 			if ((anchorNum < opts.minRemoveSpuriousAnchorsNum or abs(Length) < opts.minRemoveSpuriousAnchorsLength) and 
 				       (float)anchorNum/(logcluster.SubCluster[coarse].end - logcluster.SubCluster[coarse].start) < 0.05) { 
 				//
@@ -641,7 +640,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	DiagonalSort<GenomeTuple>(allMatches); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
 
 	// TODO(Jinwen): delete this after debug
-	if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+	if (opts.dotPlot) {
 		ofstream clust("all-matches.dots");
 		for (int m=0; m < allMatches.size(); m++) {
 			clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos << "\t" << allMatches[m].first.pos+ opts.globalK << "\t" 
@@ -655,7 +654,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 
 	// TODO(Jingwen): only for debug, delete later
-	if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+	if (opts.dotPlot) {
 		ofstream clust("for-matches0.dots");
 		for (int m=0; m < forMatches.size(); m++) {
 			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"
@@ -693,7 +692,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	CleanOffDiagonal(revMatches, opts, minDiagCluster, 1);
 
 	// TODO(JIngwen): Only for debug
-	if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+	if (opts.dotPlot) {
 		ofstream rclust("rev-matches1.dots");
 		for (int m=0; m < revMatches.size(); m++) {			
 			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[m].first.pos << "\t"
@@ -711,7 +710,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, minDiagCluster, reverseStrand);
 	}
 
-	if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+	if (opts.dotPlot) {
 		ofstream clust("for-matches.dots");
 		for (int m=0; m < forMatches.size(); m++) {
 			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"
@@ -760,7 +759,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 	if (clusters.size() != 0) {
 
-		if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+		if (opts.dotPlot) {
 			ofstream clust("clusters-pre-merge.tab");
 			for (int c =0; c < clusters.size(); c++) {
 
@@ -841,7 +840,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 						if (ReverseStrand == -1) {
 							objective = (float)(max(clusterOrder[c].qEnd - clusterOrder[c].qStart, clusterOrder[c].tEnd - clusterOrder[c].tStart)) +
-										clusters_value_rev[s] - 0.5*((float)gap) - 2*rate*((float)overlap);
+										clusters_value_rev[s] - 0.2*((float)gap) - 2*rate*((float)overlap);
 							if (objective >= clusters_value[c]) {
 								clusters_value_rev[c] = objective;
 								clusters_predecessor_rev[c] = s;
@@ -849,7 +848,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						}
 						else if (ReverseStrand == 1) {
 							objective = (float)(max(clusterOrder[c].qEnd - clusterOrder[c].qStart, clusterOrder[c].tEnd - clusterOrder[c].tStart)) +
-										clusters_value_ford[s] - 0.5*((float)gap) - 2*rate*((float)overlap);
+										clusters_value_ford[s] - 0.2*((float)gap) - 2*rate*((float)overlap);
 							if (objective >= clusters_value[c]) {
 								clusters_value_ford[c] = objective;
 								clusters_predecessor_ford[c] = s;
@@ -954,7 +953,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		}
 /*
 		// Output the primary chains
-		if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072" {
+		if (opts.dotPlot {
 			for (int c = 0; c < Primary_chains.size(); c++) {
 				stringstream outNameStrm;
 				outNameStrm << "clusters-sdp." << c << ".dots";
@@ -975,7 +974,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 */
 
 		// TODO(Jingwen): only for debug and delete this later. Output the 1st every chain subject to the 1st primary chain
-		if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+		if (opts.dotPlot) {
 			for (int c = 0; c < Primary_chains.size(); c++) {
 
 				for (int ss = 0; ss < Primary_chains[c].chains.size(); ++ss) {
@@ -988,7 +987,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 									 << clusters[Primary_chains[c].chains[ss][s]].matches[m].second.pos << "\t" 
 									 << clusters[Primary_chains[c].chains[ss][s]].matches[m].first.pos + opts.globalK << "\t"
 									 << clusters[Primary_chains[c].chains[ss][s]].matches[m].second.pos + opts.globalK << "\t"
-									 << ss << "\t" 
+									 << s << "\t" 
 									 << clusters[Primary_chains[c].chains[ss][s]].strand << endl;					
 						}				
 					}					
@@ -1112,7 +1111,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		//sort(clusters.begin(), clusters.end(), OrderClusterBySize()); // clusters are sorted in descending order
 		
 
-		if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+		if (opts.dotPlot) {
 			ofstream matchfile("long_matches.tab");
 			for (int m =0; m < matches.size(); m++) {
 				matchfile << matches[m].first.pos << "\t" << matches[m].second.pos << "\t" << opts.globalK << "\t0\t0" << endl;
@@ -1178,7 +1177,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		smallOpts.globalMaxFreq=6;
 		smallOpts.cleanMaxDiag=25;
 		smallOpts.maxDiag=50;
-		smallOpts.maxGapBtwnAnchors=200;
+		smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large
 		smallOpts.minDiagCluster=3;
 
 		Options tinyOpts = smallOpts;
@@ -1200,7 +1199,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				continue;
 			}			
 
-			if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+			if (opts.dotPlot) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << c << ".clust.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
@@ -1393,10 +1392,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				if (refinedClusters[c].size() == 0) break;
 				DiagonalSort<GenomeTuple>(refinedClusters[c].matches.begin() + rfCsize, refinedClusters[c].matches.begin() + refinedClusters[c].matches.size());
 				int median = floor((refinedClusters[c].matches.size() - rfCsize)/2) + rfCsize;
-				int diagOrigin;
-				if (logClusters[c].SubCluster[sc].strand == 0) diagOrigin = refinedClusters[c].matches[median].first.pos - refinedClusters[c].matches[median].second.pos;
-				else diagOrigin = refinedClusters[c].matches[median].first.pos + refinedClusters[c].matches[median].second.pos;
-				CleanOffDiagonal(refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size(), smallOpts, logClusters[c].SubCluster[sc].strand, diagOrigin, 800);
+				int diagOrigin = diagOrigin = refinedClusters[c].matches[median].first.pos - refinedClusters[c].matches[median].second.pos;
+				CleanOffDiagonal(refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size(), smallOpts, 0, diagOrigin, 600);
 
 				refinedLogClusters[c].SubCluster.push_back(Cluster(rfCsize, refinedClusters[c].matches.size(), logClusters[c].SubCluster[sc].strand));
 				if (logClusters[c].SubCluster[sc].strand == 1) SwapStrand(read, smallOpts, refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size());	
@@ -1418,7 +1415,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			SetCoarseFromSubClusters(refinedClusters[c], refinedLogClusters[c]);
 			// refinedClusters[c].strands keeps track of the strand direction of every anchors in refinedClusters[c].matches
 
-			if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+			if (opts.dotPlot) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << c << ".orig.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
@@ -1460,7 +1457,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 			ofstream dotFile;
 
-			if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+			if (opts.dotPlot) {
 				stringstream outName;
 				outName << baseName << "." << r << ".dots";
 				dotFile.open(outName.str().c_str());
@@ -1475,7 +1472,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			CleanOffDiagonal(refinedClusters[r].matches, smallOpts);
 			*/
 
-			if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+			if (opts.dotPlot) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << r << ".clean.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
@@ -1554,6 +1551,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				//MergeClusters(smallOpts, refinedClusters, vt, r);
 				//mergeClusters (smallOpts, refinedClusters[r].matches, vt, r, baseName);
 				MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors, WholeReverseDirection);
+				int MergeAnchorsNum = 0;
+				for (int m = 0; m < mergedAnchors.size(); m++) {
+					MergeAnchorsNum += mergedAnchors[m].end - mergedAnchors[m].start;
+				}
+
 
 				//
 				// Output the anchor efficiency file
@@ -1570,7 +1572,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				*/
 
 				// TODO(Jingwen): only for debug the new MergeAnchors function from MergeAnchors.h
-				if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+				if (opts.dotPlot) {
 					stringstream outNameStrm;
 					outNameStrm << baseName + "." << r << ".merged.dots";
 					ofstream baseDots(outNameStrm.str().c_str());
@@ -1601,7 +1603,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 				/*
 				//TODO(Jingwen): Only for debug
-				if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+				if (opts.dotPlot) {
 					stringstream outNameStrm;
 					outNameStrm << baseName + "." << r << ".merged.dots";
 					ofstream baseDots(outNameStrm.str().c_str());
@@ -1616,7 +1618,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				}
 				*/
 				/*
-				if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+				if (opts.dotPlot) {
 					stringstream outNameStrm;
 					outNameStrm << baseName + "." << r << ".merged.real.dots";
 					ofstream baseDots(outNameStrm.str().c_str());
@@ -1645,7 +1647,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			if (opts.SparseDP) {
 				chain.clear();
 				if (opts.mergeClusters and mergedAnchors.size() < 30000 and mergedAnchors.size() > 0) {
-					if (mergedAnchors.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
+					if (refinedClusters[r].matches.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
 						SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, ReverseOnly, 5); 
 					}
 					else {
@@ -1670,7 +1672,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 
 			// TODO(Jingwen): Only for debug
-			if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+			if (opts.dotPlot) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << r << ".first-sdp.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
@@ -1886,7 +1888,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 
 			//(TODO)Jingwen: For Debug(remove this later)
-			if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+			if (opts.dotPlot) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << r << ".first-sdp-clean.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
@@ -1940,7 +1942,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			//RemovePairedIndels(curReadEnd, curGenomeEnd, nextReadStart, nextGenomeStart, tupChain, refinedClusters[r].matches, smallOpts);
 
 			//(TODO)Jingwen: For Debug(remove this later)
-			if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+			if (opts.dotPlot) {
 				stringstream outNameStrm;
 				outNameStrm << baseName + "." << r << ".first-sdp-clean-removeIndel.dots";
 				ofstream baseDots(outNameStrm.str().c_str());
@@ -2093,9 +2095,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 							RemovePairedIndels(curReadEnd, curGenomeEnd, nextReadStart, nextGenomeStart, gapChain, gapPairs, tinyOpts);
 							RemoveSpuriousAnchors(gapChain, tinyOpts, gapPairs);
 							//cerr << "gapChain.size()/((float)min(subreadLength, subgenomeLength)): " << gapChain.size()/((float)min(subreadLength, subgenomeLength)) << endl;
-							if (gapChain.size()/((float)min(subreadLength, subgenomeLength)) < 0.02) gapChain.clear();
+							if (gapChain.size()/((float)max(subreadLength, subgenomeLength)) < 0.02) gapChain.clear();
 
-							if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+							if (opts.dotPlot) {
 								stringstream outNameStrm;
 								outNameStrm << baseName + "." << r << ".second-sdp.dots";
 								ofstream baseDots;
@@ -2170,7 +2172,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					int nextRefinedReadStart   = nextReadStart;
 					int nextRefinedGenomeStart = nextGenomeStart;
 
-					if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+					if (opts.dotPlot) {
 						if (tupChainClusters[s].strand == 0) {
 							dotFile << tupChain[c].first.pos << "\t" 
 									<< tupChain[c].second.pos << "\t" 
@@ -2206,7 +2208,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						nextRefinedReadStart = refinedChains[c - tupChainClusters[s].start][cs].first.pos;
 						nextRefinedGenomeStart = refinedChains[c - tupChainClusters[s].start][cs].second.pos;
 						
-						if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+						if (opts.dotPlot) {
 							if (tupChainClusters[s].strand == 0) {
 								dotFile << refinedChains[c - tupChainClusters[s].start][cs].first.pos << "\t" 
 										<< refinedChains[c - tupChainClusters[s].start][cs].second.pos << "\t" 
@@ -2279,7 +2281,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					nm+= alignment->blocks[b].length;
 				}
 				alignment->nblocks = tupChainClusters[s].end - tupChainClusters[s].start;
-				if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+				if (opts.dotPlot) {
 					dotFile.close();
 				}
 			}
@@ -2305,7 +2307,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 
 
-		if (opts.dotPlot and read.name=="m54015_171222_004930/9568593/0_22072/0_22072") {
+		if (opts.dotPlot) {
 			stringstream outNameStrm;
 			//outNameStrm << baseName + "." << a << ".alignment.dots";
 			ofstream baseDots;

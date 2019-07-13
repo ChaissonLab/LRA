@@ -34,23 +34,23 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts
 
 	if (opts.LookUpTable) {
 		if (x < 501) {
-	    	return - 9*std::log(x) - 1;   
+	    	return - 6*std::log(x) - 1;   
 		}
 		else if (x <= 10001){
 			// check LookUpTable
 			// TODO(Jingwen): finish the code here
 			float f = std::floor((x-501)/5);
 			int a = static_cast<int> (f);
-			return - 9*LookUpTable[a] - 1;
+			return - 6*LookUpTable[a] - 1;
 		}
 		else {return -10000;}		
 	}
 	else {
 		if (x < 501) {
-			return - 9*std::log(x) - 1;  
+			return - 6*std::log(x) - 1;  
 		}
 		else if (x <= 10001) {
-			return - 9*std::log(x) - 1;  
+			return - 6*std::log(x) - 1;  
 		}
 		else {return - 10000;}
 	}

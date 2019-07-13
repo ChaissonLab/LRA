@@ -68,10 +68,10 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 	// Set the parameter minDiagCluster according to the value of Largest_ClusterNum
 	// In this way, we won't lose small inversion.
 	if (Largest_ClusterNum < 300) {
-		minDiagCluster = 3;
+		minDiagCluster = 5;
 	}
 	else if (Largest_ClusterNum < 600) {
-		minDiagCluster = 7;
+		minDiagCluster = 9;
 	}
 	else if (Largest_ClusterNum < 1000) {
 		minDiagCluster = 12;
@@ -531,12 +531,12 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 	// Set parameters , according to the value of minDiagCluster used in CleanOffDiagonal function
 	int minClusterSize;
 	int minClusterLength;
-	if (minDiagCluster == 3) {
-		minClusterSize = 3;
+	if (minDiagCluster == 5) {
+		minClusterSize = 5;
 		minClusterLength = 20;
 	}
-	else if (minDiagCluster == 7) {
-		minClusterSize = 7;
+	else if (minDiagCluster == 9) {
+		minClusterSize = 9;
 		minClusterLength = 50;
 	}
 	else if (minDiagCluster == 12) {
