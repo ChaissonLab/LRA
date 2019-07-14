@@ -69,7 +69,7 @@ public:
 		globalMaxFreq=20;
 		localMaxFreq=30;
 		maxDiag=500; // We want maxDiag to be a small number 
-		cleanMaxDiag=50; // used to be 50
+		cleanMaxDiag=10; // used to be 50
 		minDiagCluster=20; // This parameter is used in CleanOffDiagonal function; It's better not to set it to a single value. 
 							// This parameter is used in another CleanOFFDiagonal function
 
@@ -96,7 +96,7 @@ public:
 		LookUpTable=true;
 		MergeSplit=true;
    		flagRemove=0;
-   		minRemovePairedIndelsLength=50;
+   		minRemovePairedIndelsLength=50; // used to be 50
    		maxRemoveSpuriousAnchorsDist=200;
    		minRemoveSpuriousAnchorsNum=15;
    		minRemoveSpuriousAnchorsLength=100;

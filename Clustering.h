@@ -67,18 +67,19 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 
 	// Set the parameter minDiagCluster according to the value of Largest_ClusterNum
 	// In this way, we won't lose small inversion.
-	if (Largest_ClusterNum < 300) {
-		minDiagCluster = 5;
+	if (Largest_ClusterNum < 50) {
+		minDiagCluster = 3;
+	} 
+	else if (Largest_ClusterNum < 100) {
+		minDiagCluster = 6;
 	}
-	else if (Largest_ClusterNum < 600) {
-		minDiagCluster = 9;
+	else if (Largest_ClusterNum < 250) {
+		minDiagCluster = 10;
 	}
-	else if (Largest_ClusterNum < 1000) {
-		minDiagCluster = 12;
-	}
-	else {
+	else { // Largest_clusterNum >= 250 show obvious clusters
 		minDiagCluster = 20;
 	}
+	//cerr << "Largest_ClusterNum: " << Largest_ClusterNum << " minDiagCluster: " << minDiagCluster << endl;
 
 	for (int i = 0; i < matches.size(); i++) {
 		if (prevOnDiag == false and onDiag[i] == true) {
@@ -531,20 +532,20 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 	// Set parameters , according to the value of minDiagCluster used in CleanOffDiagonal function
 	int minClusterSize;
 	int minClusterLength;
-	if (minDiagCluster == 5) {
-		minClusterSize = 5;
+	if (minDiagCluster == 3) {
+		minClusterSize = 3;
 		minClusterLength = 20;
 	}
-	else if (minDiagCluster == 9) {
-		minClusterSize = 9;
+	else if (minDiagCluster == 6) {
+		minClusterSize = 6;
 		minClusterLength = 50;
 	}
-	else if (minDiagCluster == 12) {
-		minClusterSize = 12;
+	else if (minDiagCluster == 10) {
+		minClusterSize = 10;
 		minClusterLength = 100;
 	}
 	else {
-		minClusterSize = 10;
+		minClusterSize = 20;
 		minClusterLength = 200;
 	}
 
@@ -564,7 +565,7 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 		int diff=0;
 
 		// (TODO)Jingwen: Delete (opts.maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < opts.maxGap) in the below
-		while (ce < e and (abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) < maxDiag or maxDiag == -1) 
+		while (ce < e and (abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) < opts.maxDiag or maxDiag == -1) 
 					  and (maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < maxGap)) {
 
 			qStart = min(qStart, matches[ce].first.pos);
@@ -739,6 +740,52 @@ void RemovePairedIndels (vector<unsigned int> &chain, vector<ClusterCoordinates>
 		}
 	}
 	chain.resize(m);
+}
+
+// Remove paired indels for each merged fragment
+void RemovePairedIndels (GenomePairs &V, vector<int> &strands, Options &opts) {
+	if (V.size() < 3) return;
+	vector<bool> remove(V.size(), false); // If remove[i] == true, then remove chain[i] and strands[i]
+
+	for (int c = 1; c < V.size() - 1; c++) {
+
+		GenomePos prevQEnd = V[c-1].first.pos + opts.globalK; 
+		GenomePos prevTEnd = V[c-1].second.pos + opts.globalK;
+
+		GenomePos qStart = V[c].first.pos;    
+		GenomePos tStart = V[c].second.pos; 
+		GenomePos qEnd = V[c].first.pos + opts.globalK;
+		GenomePos tEnd = V[c].second.pos + opts.globalK;
+
+		GenomePos nextQStart = V[c+1].first.pos;  
+		GenomePos nextTStart = V[c+1].second.pos;  
+
+		if (strands[c-1] == strands[c] and strands[c] == strands[c+1]) {
+			int prevGap = 0, nextGap = 0;
+
+			// tupChain are all in forward direction
+			// forward strand --> use forward diagonal(second.pos - first.pos) to calculate gap length
+			prevGap = (int)(prevTEnd - prevQEnd) - (int)(tStart - qStart);
+			nextGap = (int)(tEnd - qEnd) - (int)(nextTStart - nextQStart);
+
+			//cerr << "c: " << c << endl;
+			//cerr << "prevGap: " << prevGap << "  nextGap: " << nextGap << endl;
+			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)) { // the second condition filter out when prevGap == 0 or nextGap == 0
+				remove[c] = true;
+			}
+		}	
+	}
+
+	int m = 0;
+	for (int i = 0; i < V.size(); i++) {
+		if (remove[i] == false) {
+			V[m] = V[i];
+			strands[m] = strands[i];
+			m++;
+		}
+	}
+	V.resize(m);
+	strands.resize(m);
 }
 
 

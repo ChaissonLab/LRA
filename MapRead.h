@@ -1175,7 +1175,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		smallOpts.globalK=glIndex.k;
 		smallOpts.globalW=glIndex.w;
 		smallOpts.globalMaxFreq=6;
-		smallOpts.cleanMaxDiag=25;
+		smallOpts.cleanMaxDiag=10;// used to be 25
 		smallOpts.maxDiag=50;
 		smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large
 		smallOpts.minDiagCluster=3;
@@ -1756,6 +1756,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					//
 					// Use greedy algorithm to make small anchors not overlap with each other
 					int id = mergedAnchors[chain[ch]].start;
+					int c = 0;
 					//cerr << "ch: " << ch << endl;
 					//cerr << "id: " << id << endl;
 					//cerr << "mergedAnchors[chain[ch]].strand: " << mergedAnchors[chain[ch]].strand << endl;
@@ -1764,23 +1765,40 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						tupChain.push_back(GenomePair(GenomeTuple(0, read.length - (refinedClusters[r].matches[id].first.pos + smallOpts.globalK)), 
 												GenomeTuple(0, refinedClusters[r].matches[id].second.pos)));	
 						tupChainStrand.push_back(mergedAnchors[chain[ch]].strand);
+						c++;
 
 						GenomePos qEnd = refinedClusters[r].matches[id].first.pos + smallOpts.globalK;
 						GenomePos tEnd = refinedClusters[r].matches[id].second.pos; // should not use -1 here, because refinedClusters[r].matches[id].second.pos might be 0
-
 						//cerr << "qEnd: " << qEnd << endl;
 						//cerr << "tEnd: " << tEnd << endl;
 						int ce = id + 1;
 						while (ce < mergedAnchors[chain[ch]].end) {
 
 							while (ce < mergedAnchors[chain[ch]].end and 
-										(refinedClusters[r].matches[ce].first.pos < qEnd or refinedClusters[r].matches[ce].second.pos + smallOpts.globalK >= tEnd)) {
+									(refinedClusters[r].matches[ce].first.pos < qEnd or refinedClusters[r].matches[ce].second.pos + smallOpts.globalK >= tEnd)) { 
 								++ce;
 							}
 							if (ce < mergedAnchors[chain[ch]].end) {
+
+								// The following if condition aims to remove paired indel inside each merged fragment
+							/*	if (c >= 3) {
+									int si = tupChain.size() - 1;
+									int prevGap = (int)(tupChain[si].second.pos - tupChain[si].first.pos) - 
+											  (int)(tupChain[si-1].second.pos - tupChain[si-1].first.pos);
+									int nextGap = (int)(refinedClusters[r].matches[ce].second.pos - read.length 
+														+ (refinedClusters[r].matches[ce].first.pos + smallOpts.globalK)) - 
+									              (int)(tupChain[si].second.pos - tupChain[si].first.pos);
+									if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)) {
+										tupChain.pop_back();
+										tupChainStrand.pop_back();
+										c--;
+									}
+								}
+							*/
 								tupChain.push_back(GenomePair(GenomeTuple(0, read.length - (refinedClusters[r].matches[ce].first.pos + smallOpts.globalK)), 
 														GenomeTuple(0, refinedClusters[r].matches[ce].second.pos)));
 								tupChainStrand.push_back(mergedAnchors[chain[ch]].strand);	
+								c++;
 
 								//
 								// TODO(Jingwen): only for deubg and delete later
@@ -1800,6 +1818,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[id].first.pos), 
 													GenomeTuple(0, refinedClusters[r].matches[id].second.pos)));	
 						tupChainStrand.push_back(mergedAnchors[chain[ch]].strand);
+						c++;
 						//cerr << "push back: (" << refinedClusters[r].matches[id].first.pos << ", " <<  refinedClusters[r].matches[id].second.pos << ")" << endl;
 						//cerr << "id: " << id << endl;
 
@@ -1808,15 +1827,32 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 						int ce = id + 1;
 						while (ce < mergedAnchors[chain[ch]].end) {
-
+							
 							while (ce < mergedAnchors[chain[ch]].end and 
-										(refinedClusters[r].matches[ce].first.pos < qEnd or refinedClusters[r].matches[ce].second.pos < tEnd)) {
+									(refinedClusters[r].matches[ce].first.pos < qEnd or refinedClusters[r].matches[ce].second.pos < tEnd)) { 
 								++ce;
 							}
 							if (ce < mergedAnchors[chain[ch]].end) {
+
+								// The following if condition aims to remove paired indel inside each merged fragment
+							/*	if (c >= 3) {
+									int si = tupChain.size() - 1;
+									int prevGap = (int)(tupChain[si].second.pos - tupChain[si].first.pos) - 
+											  (int)(tupChain[si-1].second.pos - tupChain[si-1].first.pos);
+									int nextGap = (int)(refinedClusters[r].matches[ce].second.pos - 
+														refinedClusters[r].matches[ce].first.pos) - 
+									              (int)(tupChain[si].second.pos - tupChain[si].first.pos);
+									if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)) {
+										tupChain.pop_back();
+										tupChainStrand.pop_back();
+										c--;
+									}
+								}
+							*/
 								tupChain.push_back(GenomePair(GenomeTuple(0, refinedClusters[r].matches[ce].first.pos), 
 														GenomeTuple(0, refinedClusters[r].matches[ce].second.pos)));
 								tupChainStrand.push_back(mergedAnchors[chain[ch]].strand);
+								c++;
 								//cerr << "push back: (" << refinedClusters[r].matches[ce].first.pos << ", " <<  refinedClusters[r].matches[ce].second.pos << ")" << endl;
 								//cerr << "ce: " << ce << endl;
 
@@ -1836,6 +1872,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				}
 
 				assert(tupChain.size() == tupChainStrand.size());// TODO(Jingwen): only for debug and delete this later
+				// Remove paired indels in merged fragments
+				RemovePairedIndels(tupChain, tupChainStrand, smallOpts);
+
 				int cs = 0, ce = 0;
 				while (ce < tupChainStrand.size()) {
 					if (tupChainStrand[cs] == tupChainStrand[ce]) ce++;
