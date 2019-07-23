@@ -67,8 +67,9 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 
 	// Set the parameter minDiagCluster according to the value of Largest_ClusterNum
 	// In this way, we won't lose small inversion.
-	if (Largest_ClusterNum < 50) {
-		minDiagCluster = 3;
+	
+	if (Largest_ClusterNum < 20) {
+		minDiagCluster = 5;
 	} 
 	else if (Largest_ClusterNum < 100) {
 		minDiagCluster = 6;
@@ -79,6 +80,8 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 	else { // Largest_clusterNum >= 250 show obvious clusters
 		minDiagCluster = 20;
 	}
+
+	//minDiagCluster = (int) floor(Largest_ClusterNum/10);
 	//cerr << "Largest_ClusterNum: " << Largest_ClusterNum << " minDiagCluster: " << minDiagCluster << endl;
 
 	for (int i = 0; i < matches.size(); i++) {
@@ -468,9 +471,9 @@ class LogCluster {
  		coarse = SubCluster[0].coarse;
  	}
 
- 	void SetSubClusterBoundariesFromMatches (Options &opts, int i) {
+ 	void SetSubClusterBoundariesFromMatches (Options &opts) {
 		// set the boundaries for SubCluster[i]
-
+ 		int i = SubCluster.size() - 1; // the last one in SubCluster
 		for (int is = SubCluster[i].start; is < SubCluster[i].end; ++is) {
 
 			if (is == SubCluster[i].start) {
@@ -526,28 +529,8 @@ void PrintDiagonal(vector<pair<Tup, Tup> > &matches, int strand=0) {
 		
 
 template<typename Tup>
-void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, bool rough, bool lite, 
-						int minDiagCluster, int strand=0) {
-
-	// Set parameters , according to the value of minDiagCluster used in CleanOffDiagonal function
-	int minClusterSize;
-	int minClusterLength;
-	if (minDiagCluster == 3) {
-		minClusterSize = 3;
-		minClusterLength = 20;
-	}
-	else if (minDiagCluster == 6) {
-		minClusterSize = 6;
-		minClusterLength = 50;
-	}
-	else if (minDiagCluster == 10) {
-		minClusterSize = 10;
-		minClusterLength = 100;
-	}
-	else {
-		minClusterSize = 20;
-		minClusterLength = 200;
-	}
+void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
+								bool rough, bool lite, int strand=0) {
 
 	int maxGap = -1, maxDiag = -1;
 	if (rough == false) { maxGap = opts.maxGapBtwnAnchors;}
@@ -575,7 +558,7 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 			ce++;
 		}	
 
-		if (ce - cs >= minClusterSize and qEnd - qStart >= minClusterLength and tEnd - tStart >= minClusterLength) {
+		if (ce - cs >= opts.minClusterSize and qEnd - qStart >= opts.minClusterLength and tEnd - tStart >= opts.minClusterLength) {
 			if (rough == true) {
 				clusters.push_back(Cluster(cs, ce));
 			}
@@ -599,6 +582,405 @@ bool sign(int val) {
 	return false;
 }
 
+// TODO(Jingwen): delete this later
+template<typename Tup>
+void RemovePairedIndels(vector<pair<Tup, Tup>> & matches, vector<Cluster> & clusters, Options & opts) {
+	if (clusters.size() < 3) { return;}
+	vector<bool> remove(clusters.size(), false);
+
+	for (int c = 1; c < clusters.size() - 1; c++) {
+		GenomePos prevQEnd = clusters[c-1].qEnd;
+		GenomePos prevTEnd = clusters[c-1].tEnd;
+		GenomePos qStart = clusters[c].qStart;
+		GenomePos tStart = clusters[c].tStart;
+		GenomePos qEnd = clusters[c].qEnd;
+		GenomePos tEnd = clusters[c].tEnd;
+
+		GenomePos nextQStart = clusters[c+1].qStart;
+		GenomePos nextTStart = clusters[c+1].tStart;
+
+		int prevGap = (int)(qStart - prevQEnd) - (int)(tStart - prevTEnd);
+		int nextGap = (int)(nextQStart - qEnd) - (int)(nextTStart - tEnd);
+
+		if (sign(prevGap) != sign(nextGap) and
+				abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)  ) { //(clusters[c].end +opts.k - clusters[c].start)) {
+			remove[c] = true;
+			for (int ci=clusters[c].start; ci < clusters[c].end; ci++) {
+				matches[ci].first.pos = -1;
+			}
+		} 
+	}	
+	int m=0;
+
+	for (int i=0; i < matches.size(); i++) {
+		if (matches[i].first.pos != -1) {
+			matches[m] = matches[i];
+			m++;
+		}
+	}
+	matches.resize(m);
+}
+
+
+//
+// This function removes paired indels in the (MERGED) chain after 1st SDP 
+void RemovePairedIndels (vector<unsigned int> &chain, vector<ClusterCoordinates> &V, Options &opts) {
+	if (chain.size() < 3) return;
+	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
+
+	for (int c = 1; c < chain.size() - 1; c++) {
+
+		GenomePos prevQEnd = V[chain[c-1]].qEnd;
+		GenomePos prevTEnd = V[chain[c-1]].tEnd;
+
+		GenomePos qStart = V[chain[c]].qStart;
+		GenomePos tStart = V[chain[c]].tStart;
+		GenomePos qEnd = V[chain[c]].qEnd;
+		GenomePos tEnd = V[chain[c]].tEnd;
+
+		GenomePos nextQStart = V[chain[c+1]].qStart;
+		GenomePos nextTStart = V[chain[c+1]].tStart;	
+
+		if (V[chain[c-1]].strand == V[chain[c]].strand 
+			and V[chain[c]].strand == V[chain[c+1]].strand) {
+			int prevGap = 0, nextGap = 0;
+			int length = max(V[chain[c]].qEnd - V[chain[c]].qStart, V[chain[c]].tEnd - V[chain[c]].tStart);
+
+			if (V[chain[c-1]].strand == 0) { // forward strand --> use forward diagonal(second.pos - first.pos) to calculate gap length
+				prevGap = (int)(prevTEnd - prevQEnd) - (int)(tStart - qStart);
+				nextGap = (int)(tEnd - qEnd) - (int)(nextTStart - nextQStart);
+			}
+			else { // reverse strand --> use backdiagonal(second.pos + first.pos) to calculate gap length
+				prevGap = (int)(prevTEnd + prevQEnd) - (int)(tStart + qStart);
+				nextGap = (int)(tEnd + qEnd) - (int)(nextTStart + nextQStart);
+			}
+
+			//cerr << "c: " << c << endl;
+			//cerr << "prevGap: " << prevGap << "  nextGap: " << nextGap << "  length: " << length << endl;
+			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap) 
+						and length < opts.minRemovePairedIndelsLength) { // the second condition filter out when prevGap == 0 or nextGap == 0
+				remove[c] = true;
+			}
+		}	
+	}
+
+	int m = 0;
+
+	for (int i = 0; i < chain.size(); i++) {
+		if (remove[i] == false) {
+			chain[m] = chain[i];
+			m++;
+		}
+	}
+	chain.resize(m);
+}
+
+//
+// This function removes paired indels in the (UNMERGED) chain after 1st SDP 
+// Also removes spurious anchors of different strand inside tupChainClusters[i]
+void RemovePairedIndels (vector<unsigned int> &V, vector<int> &strands, GenomePairs &matches, Options &opts) {
+	if (V.size() < 3) return;
+	vector<bool> remove(V.size(), false); // If remove[i] == true, then remove chain[i]
+
+	for (int c = 1; c < V.size() - 1; c++) {
+
+		GenomePos prevQEnd = matches[V[c-1]].first.pos + opts.globalK;  
+		GenomePos prevTEnd = matches[V[c-1]].second.pos + opts.globalK;  
+
+		GenomePos qStart = matches[V[c]].first.pos;
+		GenomePos tStart = matches[V[c]].second.pos;
+		GenomePos qEnd = matches[V[c]].first.pos + opts.globalK;
+		GenomePos tEnd = matches[V[c]].second.pos + opts.globalK;
+
+		GenomePos nextQStart = matches[V[c+1]].first.pos;
+		GenomePos nextTStart = matches[V[c+1]].second.pos;	
+
+		int prevGap = (int)(prevTEnd - prevQEnd) - (int)(tStart - qStart);
+		int nextGap = (int)(tEnd - qEnd) - (int)(nextTStart - nextQStart);
+		
+		if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)) { // the second condition filter out when prevGap == 0 or nextGap == 0
+			remove[c] = true;
+		}	
+	}
+
+	// Remove spurious anchors of different strand inside tupChainClusters[i]
+	int ts = 0, te = 1;
+	while (te < remove.size()) {
+		if (strands[te] == strands[ts] and strands[te] == 0) { // forward stranded
+
+			if (matches[V[te]].first.pos >= matches[V[ts]].first.pos + opts.globalK and
+				matches[V[te]].second.pos >= matches[V[ts]].second.pos + opts.globalK) {
+				ts = te;
+				++te;
+			}
+			else {
+				remove[te] = true;
+				++te;
+			}
+		}
+		else if (strands[te] == strands[ts] and strands[te] == 1) { // rev stranded
+
+			if (matches[V[te]].first.pos >= matches[V[ts]].first.pos + opts.globalK and
+				matches[V[te]].second.pos + opts.globalK <= matches[V[ts]].second.pos) {
+				ts = te;
+				++te;
+			}
+			else {
+				remove[te] = true;
+				++te;
+			}
+		}
+		else { // different stranded
+			ts = te;
+			++te;
+		}
+	}
+
+	int m = 0;
+	for (int i = 0; i < V.size(); i++) {
+		if (remove[i] == false) {
+			V[m] = V[i];
+			m++;
+		}
+	}
+	V.resize(m);
+}
+
+
+//
+// This function removes paired indels in the (UNMERGED) chain after 1st SDP 
+// Also removes spurious anchors of different strand inside tupChainClusters[i]
+void RemovePairedIndels (vector<unsigned int> &V, vector<int> &strands, GenomePairs &matches, int ReadLength, Options &opts) {
+	if (V.size() < 3) return;
+	vector<bool> remove(V.size(), false); // If remove[i] == true, then remove chain[i] and strands[i]
+
+	for (int c = 1; c < V.size() - 1; c++) {
+
+		if (strands[V[c-1]] == strands[V[c]] and strands[V[c]] == strands[V[c+1]]) {
+
+			GenomePos prevQEnd = 0, prevTEnd = 0, 
+					  qStart = 0, tStart = 0, qEnd = 0, tEnd = 0, 
+					  nextQStart = 0, nextTStart = 0;
+
+			if (strands[V[c]] == 0) {
+				GenomePos prevQEnd = matches[V[c-1]].first.pos + opts.globalK;
+				GenomePos prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
+
+				GenomePos qStart = matches[V[c]].first.pos;    
+				GenomePos tStart = matches[V[c]].second.pos; 
+				GenomePos qEnd = matches[V[c]].first.pos + opts.globalK;
+				GenomePos tEnd = matches[V[c]].second.pos + opts.globalK;
+
+				GenomePos nextQStart = matches[V[c+1]].first.pos;  
+				GenomePos nextTStart = matches[V[c+1]].second.pos; 			
+			}
+			else {
+				GenomePos prevQEnd = ReadLength - matches[V[c-1]].first.pos;
+				GenomePos prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
+
+				GenomePos qStart = ReadLength - (matches[V[c]].first.pos + opts.globalK);    
+				GenomePos tStart = matches[V[c]].second.pos; 
+				GenomePos qEnd = ReadLength - matches[V[c]].first.pos;
+				GenomePos tEnd = matches[V[c]].second.pos + opts.globalK;
+
+				GenomePos nextQStart = ReadLength - (matches[V[c+1]].first.pos + opts.globalK);  
+				GenomePos nextTStart = matches[V[c+1]].second.pos; 				
+			}
+
+			int prevGap = 0, nextGap = 0;
+
+			// Tupchain are all in forward direction
+			// forward strand --> use forward diagonal(second.pos - first.pos) to calculate gap length
+			prevGap = (int)(prevTEnd - prevQEnd) - (int)(tStart - qStart);
+			nextGap = (int)(tEnd - qEnd) - (int)(nextTStart - nextQStart);
+
+			//cerr << "c: " << c << endl;
+			//cerr << "prevGap: " << prevGap << "  nextGap: " << nextGap << endl;
+
+			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)) { 
+				// the second condition filter out when prevGap == 0 or nextGap == 0
+				remove[c] = true;
+			}
+		}	
+	}
+
+	// Remove spurious anchors of different strand inside tupChainClusters[i]
+	int ts = 0, te = 1;
+	while (te < remove.size()) {
+		if (remove[ts] == false and remove[te] == false) {
+
+			if (strands[V[te]] == strands[V[ts]] and strands[V[te]] == 0) { // forward stranded
+
+				if (matches[V[te]].first.pos >= matches[V[ts]].first.pos + opts.globalK and
+					matches[V[te]].second.pos >= matches[V[ts]].second.pos + opts.globalK) {
+					ts = te;
+					++te;
+				}
+				else {
+					remove[te] = true;
+					++te;
+				}
+			}
+			else if (strands[V[te]] == strands[V[ts]] and strands[V[te]] == 1) { // rev stranded
+
+				if (matches[V[te]].first.pos >= matches[V[ts]].first.pos + opts.globalK and
+					matches[V[te]].second.pos + opts.globalK <= matches[V[ts]].second.pos) {
+					ts = te;
+					++te;
+				}
+				else {
+					remove[te] = true;
+					++te;
+				}
+			}
+			else { // different stranded
+				ts = te;
+				++te;
+			}
+
+		}
+		else if (remove[ts] == false and remove[te] == true) ++te;
+		else if (remove[ts] == true and remove[te] == false) {
+			ts = te;
+			++te;
+		}
+		else {
+			++te;
+			ts = te;
+			++te;
+		}
+	}
+
+	int m = 0;
+	for (int i = 0; i < V.size(); i++) {
+		if (remove[i] == false) {
+			V[m] = V[i];
+			m++;
+		}
+	}
+	V.resize(m);		
+}
+
+
+// This function removes paired indels on Tupchain after 1st SDP
+// Also remove spurious anchors inside tupChainClusters[i]
+template<typename Tup>
+void RemovePairedIndels (vector<Tup> &V, vector<int> &strands, GenomePairs &matches, int ReadLength, Options &opts) {
+	if (V.size() < 3) return;
+	vector<bool> remove(V.size(), false); // If remove[i] == true, then remove chain[i] and strands[i]
+
+	for (int c = 1; c < V.size() - 1; c++) {
+
+		if (strands[c-1] == strands[c] and strands[c] == strands[c+1]) {
+
+			GenomePos prevQEnd = 0, prevTEnd = 0, 
+					  qStart = 0, tStart = 0, qEnd = 0, tEnd = 0, 
+					  nextQStart = 0, nextTStart = 0;
+
+			if (strands[c] == 0) {
+				GenomePos prevQEnd = matches[V[c-1]].first.pos + opts.globalK;
+				GenomePos prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
+
+				GenomePos qStart = matches[V[c]].first.pos;    
+				GenomePos tStart = matches[V[c]].second.pos; 
+				GenomePos qEnd = matches[V[c]].first.pos + opts.globalK;
+				GenomePos tEnd = matches[V[c]].second.pos + opts.globalK;
+
+				GenomePos nextQStart = matches[V[c+1]].first.pos;  
+				GenomePos nextTStart = matches[V[c+1]].second.pos; 			
+			}
+			else {
+				GenomePos prevQEnd = ReadLength - matches[V[c-1]].first.pos;
+				GenomePos prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
+
+				GenomePos qStart = ReadLength - (matches[V[c]].first.pos + opts.globalK);    
+				GenomePos tStart = matches[V[c]].second.pos; 
+				GenomePos qEnd = ReadLength - matches[V[c]].first.pos;
+				GenomePos tEnd = matches[V[c]].second.pos + opts.globalK;
+
+				GenomePos nextQStart = ReadLength - (matches[V[c+1]].first.pos + opts.globalK);  
+				GenomePos nextTStart = matches[V[c+1]].second.pos; 				
+			}
+
+			int prevGap = 0, nextGap = 0;
+
+			// Tupchain are all in forward direction
+			// forward strand --> use forward diagonal(second.pos - first.pos) to calculate gap length
+			prevGap = (int)(prevTEnd - prevQEnd) - (int)(tStart - qStart);
+			nextGap = (int)(tEnd - qEnd) - (int)(nextTStart - nextQStart);
+
+			//cerr << "c: " << c << endl;
+			//cerr << "prevGap: " << prevGap << "  nextGap: " << nextGap << endl;
+
+			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)) { 
+				// the second condition filter out when prevGap == 0 or nextGap == 0
+				remove[c] = true;
+			}
+		}	
+	}
+
+	// Remove spurious anchors of different strand inside tupChainClusters[i]
+	int ts = 0, te = 1;
+	while (te < remove.size()) {
+		if (remove[ts] == false and remove[te] == false) {
+
+			if (strands[te] == strands[ts] and strands[te] == 0) { // forward stranded
+
+				if (matches[V[te]].first.pos >= matches[V[ts]].first.pos + opts.globalK and
+					matches[V[te]].second.pos >= matches[V[ts]].second.pos + opts.globalK) {
+					ts = te;
+					++te;
+				}
+				else {
+					remove[te] = true;
+					++te;
+				}
+			}
+			else if (strands[te] == strands[ts] and strands[te] == 1) { // rev stranded
+
+				if (matches[V[te]].first.pos >= matches[V[ts]].first.pos + opts.globalK and
+					matches[V[te]].second.pos + opts.globalK <= matches[V[ts]].second.pos) {
+					ts = te;
+					++te;
+				}
+				else {
+					remove[te] = true;
+					++te;
+				}
+			}
+			else { // different stranded
+				ts = te;
+				++te;
+			}
+
+		}
+		else if (remove[ts] == false and remove[te] == true) ++te;
+		else if (remove[ts] == true and remove[te] == false) {
+			ts = te;
+			++te;
+		}
+		else {
+			++te;
+			ts = te;
+			++te;
+		}
+	}
+	
+	int m = 0;
+	for (int i = 0; i < V.size(); i++) {
+		if (remove[i] == false) {
+			V[m] = V[i];
+			strands[m] = strands[i];
+			m++;
+		}
+	}
+	V.resize(m);
+	strands.resize(m);		
+}
+
+
+//
+// This function removes paired indels for chain after 2nd SDP
 void RemovePairedIndels(GenomePos qAlnStart, GenomePos tAlnStart, GenomePos qAlnEnd, GenomePos tAlnEnd, vector<unsigned int> & matches, GenomePairs & Pairs, Options &opts) {
 	unsigned int nMatches = matches.size();
 	if ( nMatches < 3)   { return;}
@@ -651,179 +1033,6 @@ void RemovePairedIndels(GenomePos qAlnStart, GenomePos tAlnStart, GenomePos qAln
 	matches.resize(m);
 }
 
-// TODO(Jingwen): delete this later
-template<typename Tup>
-void RemovePairedIndels(vector<pair<Tup, Tup>> & matches, vector<Cluster> & clusters, Options & opts) {
-	if (clusters.size() < 3) { return;}
-	vector<bool> remove(clusters.size(), false);
-
-	for (int c = 1; c < clusters.size() - 1; c++) {
-		GenomePos prevQEnd = clusters[c-1].qEnd;
-		GenomePos prevTEnd = clusters[c-1].tEnd;
-		GenomePos qStart = clusters[c].qStart;
-		GenomePos tStart = clusters[c].tStart;
-		GenomePos qEnd = clusters[c].qEnd;
-		GenomePos tEnd = clusters[c].tEnd;
-
-		GenomePos nextQStart = clusters[c+1].qStart;
-		GenomePos nextTStart = clusters[c+1].tStart;
-
-		int prevGap = (int)(qStart - prevQEnd) - (int)(tStart - prevTEnd);
-		int nextGap = (int)(nextQStart - qEnd) - (int)(nextTStart - tEnd);
-
-		if (sign(prevGap) != sign(nextGap) and
-				abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)  ) { //(clusters[c].end +opts.k - clusters[c].start)) {
-			remove[c] = true;
-			for (int ci=clusters[c].start; ci < clusters[c].end; ci++) {
-				matches[ci].first.pos = -1;
-			}
-		} 
-	}	
-	int m=0;
-
-	for (int i=0; i < matches.size(); i++) {
-		if (matches[i].first.pos != -1) {
-			matches[m] = matches[i];
-			m++;
-		}
-	}
-	matches.resize(m);
-}
-
-
-void RemovePairedIndels (vector<unsigned int> &chain, vector<ClusterCoordinates> &V, Options &opts) {
-	if (chain.size() < 3) return;
-	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
-
-	for (int c = 1; c < chain.size() - 1; c++) {
-
-		GenomePos prevQEnd = V[chain[c-1]].qEnd;
-		GenomePos prevTEnd = V[chain[c-1]].tEnd;
-
-		GenomePos qStart = V[chain[c]].qStart;
-		GenomePos tStart = V[chain[c]].tStart;
-		GenomePos qEnd = V[chain[c]].qEnd;
-		GenomePos tEnd = V[chain[c]].tEnd;
-
-		GenomePos nextQStart = V[chain[c+1]].qStart;
-		GenomePos nextTStart = V[chain[c+1]].tStart;	
-
-		if (V[chain[c-1]].strand == V[chain[c]].strand 
-			and V[chain[c]].strand == V[chain[c+1]].strand) {
-			int prevGap = 0, nextGap = 0;
-			int length = max(V[chain[c]].qEnd - V[chain[c]].qStart, V[chain[c]].tEnd - V[chain[c]].tStart);
-
-			if (V[chain[c-1]].strand == 0) { // forward strand --> use forward diagonal(second.pos - first.pos) to calculate gap length
-				prevGap = (int)(prevTEnd - prevQEnd) - (int)(tStart - qStart);
-				nextGap = (int)(tEnd - qEnd) - (int)(nextTStart - nextQStart);
-			}
-			else { // reverse strand --> use backdiagonal(second.pos + first.pos) to calculate gap length
-				prevGap = (int)(prevTEnd + prevQEnd) - (int)(tStart + qStart);
-				nextGap = (int)(tEnd + qEnd) - (int)(nextTStart + nextQStart);
-			}
-
-			//cerr << "c: " << c << endl;
-			//cerr << "prevGap: " << prevGap << "  nextGap: " << nextGap << "  length: " << length << endl;
-			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap) 
-						and length < opts.minRemovePairedIndelsLength) { // the second condition filter out when prevGap == 0 or nextGap == 0
-				remove[c] = true;
-			}
-		}	
-	}
-
-	int m = 0;
-
-	for (int i = 0; i < chain.size(); i++) {
-		if (remove[i] == false) {
-			chain[m] = chain[i];
-			m++;
-		}
-	}
-	chain.resize(m);
-}
-
-// Remove paired indels for each merged fragment
-void RemovePairedIndels (GenomePairs &V, vector<int> &strands, Options &opts) {
-	if (V.size() < 3) return;
-	vector<bool> remove(V.size(), false); // If remove[i] == true, then remove chain[i] and strands[i]
-
-	for (int c = 1; c < V.size() - 1; c++) {
-
-		GenomePos prevQEnd = V[c-1].first.pos + opts.globalK; 
-		GenomePos prevTEnd = V[c-1].second.pos + opts.globalK;
-
-		GenomePos qStart = V[c].first.pos;    
-		GenomePos tStart = V[c].second.pos; 
-		GenomePos qEnd = V[c].first.pos + opts.globalK;
-		GenomePos tEnd = V[c].second.pos + opts.globalK;
-
-		GenomePos nextQStart = V[c+1].first.pos;  
-		GenomePos nextTStart = V[c+1].second.pos;  
-
-		if (strands[c-1] == strands[c] and strands[c] == strands[c+1]) {
-			int prevGap = 0, nextGap = 0;
-
-			// tupChain are all in forward direction
-			// forward strand --> use forward diagonal(second.pos - first.pos) to calculate gap length
-			prevGap = (int)(prevTEnd - prevQEnd) - (int)(tStart - qStart);
-			nextGap = (int)(tEnd - qEnd) - (int)(nextTStart - nextQStart);
-
-			//cerr << "c: " << c << endl;
-			//cerr << "prevGap: " << prevGap << "  nextGap: " << nextGap << endl;
-			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)) { // the second condition filter out when prevGap == 0 or nextGap == 0
-				remove[c] = true;
-			}
-		}	
-	}
-
-	int m = 0;
-	for (int i = 0; i < V.size(); i++) {
-		if (remove[i] == false) {
-			V[m] = V[i];
-			strands[m] = strands[i];
-			m++;
-		}
-	}
-	V.resize(m);
-	strands.resize(m);
-}
-
-
-void RemovePairedIndels (vector<unsigned int> &chain, GenomePairs &V, Options &opts) {
-	if (chain.size() < 3) return;
-	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
-
-	for (int c = 1; c < chain.size() - 1; c++) {
-
-		GenomePos prevQEnd = V[chain[c-1]].first.pos + opts.globalK;  
-		GenomePos prevTEnd = V[chain[c-1]].second.pos + opts.globalK;  
-
-		GenomePos qStart = V[chain[c]].first.pos;
-		GenomePos tStart = V[chain[c]].second.pos;
-		GenomePos qEnd = V[chain[c]].first.pos + opts.globalK;
-		GenomePos tEnd = V[chain[c]].second.pos + opts.globalK;
-
-		GenomePos nextQStart = V[chain[c+1]].first.pos;
-		GenomePos nextTStart = V[chain[c+1]].second.pos;	
-
-		int prevGap = (int)(prevTEnd - prevQEnd) - (int)(tStart - qStart);
-		int nextGap = (int)(tEnd - qEnd) - (int)(nextTStart - nextQStart);
-		
-		if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)) { // the second condition filter out when prevGap == 0 or nextGap == 0
-			remove[c] = true;
-		}	
-	}
-
-	int m = 0;
-
-	for (int i = 0; i < chain.size(); i++) {
-		if (remove[i] == false) {
-			chain[m] = chain[i];
-			m++;
-		}
-	}
-	chain.resize(m);
-}
 
 void SetClusterBoundariesFromSubCluster(Cluster &cluster, Options &opts, LogCluster &logCluster) {
 	for (int i = 0; i < logCluster.SubCluster.size(); ++i) {

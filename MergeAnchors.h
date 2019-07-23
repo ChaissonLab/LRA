@@ -44,8 +44,9 @@ MergeAnchors (Options & opts, vector<Cluster> &refinedClusters, vector<LogCluste
 	GenomePos qBoundary_s = 0, qBoundary_e = 0, tBoundary_s = 0, tBoundary_e = 0, next_qBoundary_s = 0, next_tBoundary_s = 0,
 				next_qBoundary_e = 0, next_tBoundary_e = 0;
 
-
-	for (int l = refinedLogClusters[r].SubCluster.size() - 1; l >= 0; --l) {
+	for (int ls = 0; ls < refinedLogClusters[r].SubCluster.size(); ls++) {
+		int l = refinedLogClusters[r].SubCluster.size() - 1 - ls;
+	//for (int l = refinedLogClusters[r].SubCluster.size() - 1; l >= 0; --l) {
 		//cerr << "l " << l << " refinedLogClusters[r].SubCluster[l].strand: " << refinedLogClusters[r].SubCluster[l].strand << endl;
 		if (refinedLogClusters[r].SubCluster.size() != 1) {
 			GenomePos cur_qStart = refinedLogClusters[r].SubCluster[l].qStart;

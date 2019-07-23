@@ -73,8 +73,8 @@ public:
 		minDiagCluster=20; // This parameter is used in CleanOffDiagonal function; It's better not to set it to a single value. 
 							// This parameter is used in another CleanOFFDiagonal function
 
-		minClusterSize=10; // This parameter is used in StoreDiagonalClusters function; change to step function 
-		minClusterLength=100;  // This parameter is used in StoreDiagonalClusters function; change to step function 
+		minClusterSize=5; // used to be 10
+		minClusterLength=50;  // used to be 100
 		minRefinedClusterSize=40;
 		window=100;
 		mergeGapped=false;
