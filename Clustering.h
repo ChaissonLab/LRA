@@ -448,7 +448,6 @@ public:
 };
 */
 
-
 class LogCluster {
  public:
  	vector<Cluster> SubCluster;
@@ -763,28 +762,28 @@ void RemovePairedIndels (vector<unsigned int> &V, vector<int> &strands, GenomePa
 					  nextQStart = 0, nextTStart = 0;
 
 			if (strands[V[c]] == 0) {
-				GenomePos prevQEnd = matches[V[c-1]].first.pos + opts.globalK;
-				GenomePos prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
+				prevQEnd = matches[V[c-1]].first.pos + opts.globalK;
+				prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
 
-				GenomePos qStart = matches[V[c]].first.pos;    
-				GenomePos tStart = matches[V[c]].second.pos; 
-				GenomePos qEnd = matches[V[c]].first.pos + opts.globalK;
-				GenomePos tEnd = matches[V[c]].second.pos + opts.globalK;
+				qStart = matches[V[c]].first.pos;    
+				tStart = matches[V[c]].second.pos; 
+				qEnd = matches[V[c]].first.pos + opts.globalK;
+				tEnd = matches[V[c]].second.pos + opts.globalK;
 
-				GenomePos nextQStart = matches[V[c+1]].first.pos;  
-				GenomePos nextTStart = matches[V[c+1]].second.pos; 			
+				nextQStart = matches[V[c+1]].first.pos;  
+				nextTStart = matches[V[c+1]].second.pos; 			
 			}
 			else {
-				GenomePos prevQEnd = ReadLength - matches[V[c-1]].first.pos;
-				GenomePos prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
+				prevQEnd = ReadLength - matches[V[c-1]].first.pos;
+				prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
 
-				GenomePos qStart = ReadLength - (matches[V[c]].first.pos + opts.globalK);    
-				GenomePos tStart = matches[V[c]].second.pos; 
-				GenomePos qEnd = ReadLength - matches[V[c]].first.pos;
-				GenomePos tEnd = matches[V[c]].second.pos + opts.globalK;
+				qStart = ReadLength - (matches[V[c]].first.pos + opts.globalK);    
+				tStart = matches[V[c]].second.pos; 
+				qEnd = ReadLength - matches[V[c]].first.pos;
+				tEnd = matches[V[c]].second.pos + opts.globalK;
 
-				GenomePos nextQStart = ReadLength - (matches[V[c+1]].first.pos + opts.globalK);  
-				GenomePos nextTStart = matches[V[c+1]].second.pos; 				
+				nextQStart = ReadLength - (matches[V[c+1]].first.pos + opts.globalK);  
+				nextTStart = matches[V[c+1]].second.pos; 				
 			}
 
 			int prevGap = 0, nextGap = 0;
@@ -878,28 +877,28 @@ void RemovePairedIndels (vector<Tup> &V, vector<int> &strands, GenomePairs &matc
 					  nextQStart = 0, nextTStart = 0;
 
 			if (strands[c] == 0) {
-				GenomePos prevQEnd = matches[V[c-1]].first.pos + opts.globalK;
-				GenomePos prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
+				prevQEnd = matches[V[c-1]].first.pos + opts.globalK;
+				prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
 
-				GenomePos qStart = matches[V[c]].first.pos;    
-				GenomePos tStart = matches[V[c]].second.pos; 
-				GenomePos qEnd = matches[V[c]].first.pos + opts.globalK;
-				GenomePos tEnd = matches[V[c]].second.pos + opts.globalK;
+				qStart = matches[V[c]].first.pos;    
+				tStart = matches[V[c]].second.pos; 
+				qEnd = matches[V[c]].first.pos + opts.globalK;
+				tEnd = matches[V[c]].second.pos + opts.globalK;
 
-				GenomePos nextQStart = matches[V[c+1]].first.pos;  
-				GenomePos nextTStart = matches[V[c+1]].second.pos; 			
+				nextQStart = matches[V[c+1]].first.pos;  
+				nextTStart = matches[V[c+1]].second.pos; 			
 			}
 			else {
-				GenomePos prevQEnd = ReadLength - matches[V[c-1]].first.pos;
-				GenomePos prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
+				prevQEnd = ReadLength - matches[V[c-1]].first.pos;
+				prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
 
-				GenomePos qStart = ReadLength - (matches[V[c]].first.pos + opts.globalK);    
-				GenomePos tStart = matches[V[c]].second.pos; 
-				GenomePos qEnd = ReadLength - matches[V[c]].first.pos;
-				GenomePos tEnd = matches[V[c]].second.pos + opts.globalK;
+				qStart = ReadLength - (matches[V[c]].first.pos + opts.globalK);    
+				tStart = matches[V[c]].second.pos; 
+				qEnd = ReadLength - matches[V[c]].first.pos;
+				tEnd = matches[V[c]].second.pos + opts.globalK;
 
-				GenomePos nextQStart = ReadLength - (matches[V[c+1]].first.pos + opts.globalK);  
-				GenomePos nextTStart = matches[V[c+1]].second.pos; 				
+				nextQStart = ReadLength - (matches[V[c+1]].first.pos + opts.globalK);  
+				nextTStart = matches[V[c+1]].second.pos; 				
 			}
 
 			int prevGap = 0, nextGap = 0;
