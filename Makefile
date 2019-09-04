@@ -13,7 +13,7 @@ STATIC=
 ifneq ($(OPT), "")
 #CCOPTS=-g $(CCOPTS_BASE) -lprofiler
 #STATIC=
-STATIC=-g -L $(PROF) -lprofiler
+STATIC=-g -L $(PROF)  -no-omit-frame-pointer -lprofiler
 endif
 
 #-D _TESTING_ -lprofiler 
@@ -83,5 +83,3 @@ iik: IndexInformativeKmers.o bwa/bwa.o bwa/kstring.o bwa/utils.o bwa/kthread.o b
 
 clean:
 	rm -f lra lra.o iik IndexInformativeKmers.o
-
-

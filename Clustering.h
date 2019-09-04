@@ -422,13 +422,14 @@ class Clusters_valueOrder {
 		return (*clusters_value)[i] > (*clusters_value)[j];			
 	}
 
-
 	void Sort() {
 		sort(index.begin(), index.end(), *this);
 	}
+
 	float & operator[](int i) {
 		return (*clusters_value)[index[i]];
 	}
+	
 	int size() {
 		return index.size();
 	}

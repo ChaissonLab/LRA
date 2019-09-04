@@ -550,7 +550,7 @@ int main(int argc, const char *argv[]) {
 	for (argi = 1; argi < argc; ){
 		if (ArgIs(argv[argi], "index")) {
 			argc -=2;
-      RunStoreIndex(argc,  &argv[2]);
+      		RunStoreIndex(argc,  &argv[2]);
 			exit(0);
 		}
 		else if (ArgIs(argv[argi], "global")) {

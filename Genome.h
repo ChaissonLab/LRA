@@ -1,6 +1,6 @@
 #ifndef GENOME_H_
 #define GENOME_H_
-#include "htslib/kseq.h"
+#include "htslib/htslib/kseq.h"
 #include <map>
 #include <vector>
 #include <assert.h>

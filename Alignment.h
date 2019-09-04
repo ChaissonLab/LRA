@@ -146,8 +146,7 @@ class Alignment {
 	}
 	
 
-	void CreateAlignmentStrings(char *query, char* text,
-															string &queryStr, string &alignStr, string &textStr) {
+	void CreateAlignmentStrings(char *query, char* text, string &queryStr, string &alignStr, string &textStr) {
 		GenomePos q = qPos;
 		GenomePos t = tPos;
 		GenomePos qPos, tPos;
