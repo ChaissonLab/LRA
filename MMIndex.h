@@ -345,9 +345,10 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		int ne = n;
 		while (ne < minimizers.size() && minimizers[ne].t == minimizers[n].t) {ne++;}
 		int rz = 1;
-		if (header.pos.back()/200000000 > 1) {rz = header.pos.back()/200000000;}
-		if (ne - n > 800*rz) {
+		if (header.pos.back()/100000000 > 1) {rz = header.pos.back()/100000000;}
+		if (ne - n > 500*rz) { // 500*rz is the rough threshold
 			for (uint32_t i = n; i < ne; i++) {
+				//Freq[i] = ne - n;
 				Remove[i] = 1;
 			}
 		}
@@ -410,7 +411,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	vector<uint32_t> Sortindex(unremoved, 0);
 	CountSort(Freq, RANGE, Remove, Sortindex);
 
-	vector<uint32_t> winCount(sz, 100); // 50 is a parameter that can be changed 
+	vector<uint32_t> winCount(sz, 50); // 50 is a parameter that can be changed 
 
 	for (uint32_t s = 0; s < Sortindex.size(); s++) {
 		uint32_t id = minimizers[Sortindex[s]].pos/winsize;
@@ -421,6 +422,26 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 			Remove[Sortindex[s]] = 1;
 		}
 	}
+
+
+	// TODO(Jingwen) Print out all the minimizer and delete this later
+	if (opts.dotPlot) {
+		stringstream outNameStrm;
+		outNameStrm << "minimizers.txt";
+		ofstream baseDots(outNameStrm.str().c_str());
+		for (int m=0; m < minimizers.size(); m++) {
+			baseDots << minimizers[m].t << "\t"
+					 << minimizers[m].pos << "\t" 
+					 << Freq[m] << "\t" 
+					 << Remove[m] << endl;				
+		}
+		baseDots.close();
+	}
+ 
+
+
+
+
 
 	//
 	// Remove too frequent minimizers;
