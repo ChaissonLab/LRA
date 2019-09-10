@@ -1,5 +1,5 @@
 all:  lra alchemy2 tag tgc iik
-#PROF=/home/cmb-16/mjc/shared/lib/
+PROF=/home/cmb-16/mjc/shared/lib/
 #PROF=/home/cmb-16/mjc/jingwenr/software/lib
 CCOPTS_BASE=
 DEBUG?=""
@@ -13,7 +13,8 @@ STATIC=
 ifneq ($(OPT), "")
 #CCOPTS=-g $(CCOPTS_BASE) -lprofiler
 #STATIC=
-STATIC=-g -L $(PROF)  -no-omit-frame-pointer -lprofiler
+STATIC=-g -L $(PROF) -lprofiler
+CCOPTS=-g
 endif
 
 #-D _TESTING_ -lprofiler 
