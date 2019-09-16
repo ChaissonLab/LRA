@@ -11,6 +11,7 @@ class Primary_chain {
 public:
 	GenomePos qStart, qEnd, tStart, tEnd;
 	vector<chain> chains;
+	vector<bool> direction; 
 	Primary_chain () {
 		qStart = 0;
 		qEnd = 0;
@@ -41,6 +42,5 @@ int Primary_chain::Overlaps (GenomePos &qS, GenomePos &qE, float rate) {
 	if ((float)ovp/(qEnd - qStart) >= rate) {return true;}
 	else {return false;}
 }
-
 
 #endif

@@ -67,10 +67,14 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 
 	// Set the parameter minDiagCluster according to the value of Largest_ClusterNum
 	// In this way, we won't lose small inversion.
+	//cerr << "Largest_ClusterNum: " << Largest_ClusterNum << endl;
 	
 	if (Largest_ClusterNum < 20) {
-		minDiagCluster = 5;
+		minDiagCluster = 2;
 	} 
+	else if (Largest_ClusterNum < 50) {
+		minDiagCluster = 4;
+	}
 	else if (Largest_ClusterNum < 100) {
 		minDiagCluster = 6;
 	}
@@ -80,6 +84,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 	else { // Largest_clusterNum >= 250 show obvious clusters
 		minDiagCluster = 20;
 	}
+	
 
 	//minDiagCluster = (int) floor(Largest_ClusterNum/10);
 	//cerr << "Largest_ClusterNum: " << Largest_ClusterNum << " minDiagCluster: " << minDiagCluster << endl;

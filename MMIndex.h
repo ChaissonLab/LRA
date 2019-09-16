@@ -411,7 +411,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	vector<uint32_t> Sortindex(unremoved, 0);
 	CountSort(Freq, RANGE, Remove, Sortindex);
 
-	vector<uint32_t> winCount(sz, 50); // 50 is a parameter that can be changed 
+	vector<uint32_t> winCount(sz, 70); // 50 is a parameter that can be changed 
 
 	for (uint32_t s = 0; s < Sortindex.size(); s++) {
 		uint32_t id = minimizers[Sortindex[s]].pos/winsize;
