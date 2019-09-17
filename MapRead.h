@@ -1628,6 +1628,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				}
 				if (refinedClusters[c].size() == 0) break;
 				DiagonalSort<GenomeTuple>(refinedClusters[c].matches.begin() + rfCsize, refinedClusters[c].matches.begin() + refinedClusters[c].matches.size());
+				
+
+				/*
 				// TODO(Jingwen): Only for debug, delete later
 				vector<int> diag;
 				double mean = 0;
@@ -1663,6 +1666,100 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 				//TODO(Jingwen): check whether this cleanoffDiagonal function influences the speed
 				CleanOffDiagonal(refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size(), smallOpts, 0, diagOrigin, diagDrift);
+				*/
+	
+
+
+				//
+				// Add new code to clean off diagonal here
+				//
+				// Get the qStart and qEnd for the current Subcluster
+				
+				GenomePos qStart = read.length, qEnd  = 0;
+				for (int sb = rfCsize; sb < refinedClusters[c].matches.size(); sb++) {
+					qStart = min(qStart, refinedClusters[c].matches[sb].first.pos);
+					qEnd = max(qEnd, refinedClusters[c].matches[sb].first.pos + smallOpts.globalK);
+				}
+				// Divide the current Subcluster into groups (each group contains >=1000bp on read)
+				int GroupLength = 2000;
+				int NumGroups = (qEnd - qStart)/GroupLength; // output the floor int
+				if (NumGroups == 0) NumGroups++;
+				cerr << "qEnd - qStart: " << qEnd - qStart << endl;
+				cerr << "NumGroups: " << NumGroups << endl;
+				vector<vector<int>> GroupVec(NumGroups);
+
+				// Go through the matches, assign anchors into different groups
+				for (int sb = rfCsize; sb < refinedClusters[c].matches.size(); sb++) {
+					int a;
+					//cerr << "refinedClusters[c].matches[sb].first.pos + smallOpts.globalK - qStart: " << refinedClusters[c].matches[sb].first.pos + smallOpts.globalK - qStart << endl;
+					if (refinedClusters[c].matches[sb].first.pos + smallOpts.globalK - qStart >= NumGroups*GroupLength) {
+						a = NumGroups - 1;
+					}
+					else {
+						a = (refinedClusters[c].matches[sb].first.pos + smallOpts.globalK - qStart)/GroupLength; 
+					}
+					GroupVec[a].push_back(sb);
+				}
+
+
+				if (opts.dotPlot) {
+					stringstream outNameStrm;
+					outNameStrm << baseName + "." << sc << ".group.dots";
+					ofstream baseDots(outNameStrm.str().c_str());
+					int rjw = 0;
+					for (int m = 0; m < GroupVec.size(); m++) {
+						for (int mm = 0; mm < GroupVec[m].size(); mm++) {
+							int n = GroupVec[m][mm];
+							rjw++;
+
+							if (logClusters[c].SubCluster[sc].strand == 0) {
+								baseDots << refinedClusters[c].matches[n].first.pos << "\t" << refinedClusters[c].matches[n].second.pos << "\t" 
+										<< refinedClusters[c].matches[n].first.pos + smallOpts.globalK << "\t" 
+										<< refinedClusters[c].matches[n].second.pos + smallOpts.globalK << "\t"  
+										<< m << "\t"
+										<< logClusters[c].SubCluster[sc].strand << endl;
+							} 
+							else {
+								baseDots << read.length - refinedClusters[c].matches[n].first.pos - smallOpts.globalK << "\t" << refinedClusters[c].matches[n].second.pos << "\t" 
+										<< read.length - refinedClusters[c].matches[n].first.pos  << "\t" 
+										<< refinedClusters[c].matches[n].second.pos + smallOpts.globalK << "\t"  
+										<< m << "\t"
+										<< logClusters[c].SubCluster[sc].strand << endl;								
+							} 
+						} 
+					}
+					baseDots.close();
+				}
+
+
+				cerr << "sc: " << sc << endl;
+
+				// Apply CleanOffDiagonal to each group to eliminate noisy anchors
+				vector<bool> KeepDiag(refinedClusters[c].matches.size() - rfCsize, false);
+				int hh = 0;
+				for (int sb = 0; sb < NumGroups; sb++) {
+					CleanOffDiagonal(refinedClusters[c].matches, GroupVec[sb], KeepDiag, smallOpts, 0);
+					hh += GroupVec[sb].size();
+				}
+				assert(hh == KeepDiag.size());
+				int m = 0;
+				for (int i = 0; i < KeepDiag.size(); i++) {
+					if (KeepDiag[i]) {
+						refinedClusters[c].matches[rfCsize + m] = refinedClusters[c].matches[rfCsize + i];
+						m++;
+					}
+				}
+				refinedClusters[c].matches.resize(rfCsize + m);
+				KeepDiag.clear();
+				GroupVec.clear();
+				if (m == 0) continue;
+				
+
+
+
+
+
+
 				refinedLogClusters[c].SubCluster.push_back(Cluster(rfCsize, refinedClusters[c].matches.size(), logClusters[c].SubCluster[sc].strand));
 				if (logClusters[c].SubCluster[sc].strand == 1) SwapStrand(read, smallOpts, refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size());	
 				refinedLogClusters[c].SetSubClusterBoundariesFromMatches(smallOpts);
