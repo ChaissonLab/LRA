@@ -1415,7 +1415,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		smallOpts.cleanMaxDiag=10;// used to be 25
 		smallOpts.maxDiag=50;
 		smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large
-		smallOpts.minDiagCluster=3;
+		smallOpts.minDiagCluster=3; // used to be 3
 
 		Options tinyOpts = smallOpts;
 		tinyOpts.globalMaxFreq=3;
@@ -1629,6 +1629,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				if (refinedClusters[c].size() == 0) break;
 				DiagonalSort<GenomeTuple>(refinedClusters[c].matches.begin() + rfCsize, refinedClusters[c].matches.begin() + refinedClusters[c].matches.size());
 				// TODO(Jingwen): Only for debug, delete later
+				
 				vector<int> diag;
 				double mean = 0;
 				for (int rfc = rfCsize; rfc < refinedClusters[c].matches.size(); ++rfc) {
@@ -1663,6 +1664,62 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 				//TODO(Jingwen): check whether this cleanoffDiagonal function influences the speed
 				CleanOffDiagonal(refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size(), smallOpts, 0, diagOrigin, diagDrift);
+				
+				/*
+				//
+				// Add new code to clean off diagonal here
+				//
+				// Get the qStart and qEnd for the current Subcluster
+				
+				GenomePos qStart = read.length, qEnd  = 0;
+				for (int sb = rfCsize; sb < refinedClusters[c].matches.size(); sb++) {
+					qStart = min(qStart, refinedClusters[c].matches[sb].first.pos);
+					qEnd = max(qEnd, refinedClusters[c].matches[sb].first.pos + smallOpts.globalK);
+				}
+
+				// Divide the current Subcluster into groups (each group contains >=1000bp on read)
+				int GroupLength = 1000;
+				int NumGroups = (qEnd - qStart)/GroupLength; // output the floor int
+				cerr << "qEnd - qStart: " << qEnd - qStart << endl;
+				cerr << "NumGroups: " << NumGroups << endl;
+				vector<vector<int>> GroupVec(NumGroups);
+
+				// Go through the matches, assign anchors into different groups
+				for (int sb = rfCsize; sb < refinedClusters[c].matches.size(); sb++) {
+					int a;
+					//cerr << "refinedClusters[c].matches[sb].first.pos + smallOpts.globalK - qStart: " << refinedClusters[c].matches[sb].first.pos + smallOpts.globalK - qStart << endl;
+					if (refinedClusters[c].matches[sb].first.pos + smallOpts.globalK - qStart >= NumGroups*GroupLength) {
+						a = NumGroups - 1;
+					}
+					else {
+						a = (refinedClusters[c].matches[sb].first.pos + smallOpts.globalK - qStart)/GroupLength; 
+					}
+					GroupVec[a].push_back(sb);
+				}
+
+
+				// Apply CleanOffDiagonal to each group to eliminate noisy anchors
+				vector<bool> DiagOn(refinedClusters[c].matches.size() - rfCsize, false);
+				int hh = 0;
+				for (int sb = 0; sb < NumGroups; sb++) {
+					CleanOffDiagonal(refinedClusters[c].matches, GroupVec[sb], DiagOn, smallOpts, 0);
+					hh += GroupVec[sb].size();
+				}
+				assert(hh == DiagOn.size());
+
+				int m = 0;
+				for (int i = 0; i < DiagOn.size(); i++) {
+					if (DiagOn[i]) {
+						refinedClusters[c].matches[rfCsize + m] = refinedClusters[c].matches[rfCsize + i];
+						m++;
+					}
+				}
+				refinedClusters[c].matches.resize(rfCsize + m);
+				DiagOn.clear();
+				GroupVec.clear();
+				//if (m == 0) continue;
+			*/	
+
 				refinedLogClusters[c].SubCluster.push_back(Cluster(rfCsize, refinedClusters[c].matches.size(), logClusters[c].SubCluster[sc].strand));
 				if (logClusters[c].SubCluster[sc].strand == 1) SwapStrand(read, smallOpts, refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size());	
 				refinedLogClusters[c].SetSubClusterBoundariesFromMatches(smallOpts);
@@ -1890,7 +1947,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				}
 				*/
 			}
-
+			if (mergedAnchors.size() == 0) continue;
 
 			// Perform sparse chaining, uses time O(n (log n)^2).
 			//
