@@ -164,7 +164,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int start, int end, Opti
 
 // This function is used to filter out noisy anchors for refined anchors at the refining step
 template<typename Tup>
-void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<int> &G, vector<bool> &D, Options &opts, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
+void CleanOffDiagonal(const vector<pair<Tup, Tup> > &matches, const vector<int> &G, vector<bool> &D, int start, Options &opts, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (G.size() == 0) {
 		return;
 	}
@@ -203,12 +203,11 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<int> &G, vector<b
 			matches[c] = matches[i + start]; c++;
 		}
 	}
-
 	matches.resize(c);
 	end = c;
 */
 	for (int i = 0; i < G.size(); i++) {
-		D[G[i]] = onDiag[i];
+		D[G[i] - start] = onDiag[i];
 	}
 }
 
