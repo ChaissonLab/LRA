@@ -52,6 +52,7 @@ public:
 	int maxRemoveSpuriousAnchorsDist; 
 	int minRemoveSpuriousAnchorsNum;
 	int minRemoveSpuriousAnchorsLength;
+	int SecondaryAln;
 
 	Options() {
 		localMatch=4;
@@ -101,6 +102,7 @@ public:
    		maxRemoveSpuriousAnchorsDist=200;
    		minRemoveSpuriousAnchorsNum=15;
    		minRemoveSpuriousAnchorsLength=100;
+   		SecondaryAln = 0;
 	}
 };
 #endif

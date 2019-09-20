@@ -233,8 +233,8 @@ mergeClusters (Options & opts, GenomePairs & matches, std::vector<Cluster> & v, 
 
 	// -----------------------Merge--------------------------
     Options mergeOpts = opts;
-    mergeOpts.maxGap = 3000;
-    mergeOpts.maxDiag = 50;
+    mergeOpts.maxGap = 3000; // used to be 3000
+    mergeOpts.maxDiag = 100;
 	int cs= 0;
 	int ce = 0;
 	std::vector<std::pair<int, int>> Boundary;
