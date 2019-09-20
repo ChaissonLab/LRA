@@ -1672,10 +1672,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				else if (diagDrift >= 200) diagDrift = 1.5*diagDrift;
 
 				//TODO(Jingwen): check whether this cleanoffDiagonal function influences the speed
-				CleanOffDiagonal(refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size(), smallOpts, 0, diagOrigin, diagDrift);
+				//CleanOffDiagonal(refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size(), smallOpts, 0, diagOrigin, diagDrift);
 				
-				/*
-				//
+
+				// ----- New Code ------------
 				// Add new code to clean off diagonal here
 				//
 				// Get the qStart and qEnd for the current Subcluster
@@ -1685,12 +1685,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					qStart = min(qStart, refinedClusters[c].matches[sb].first.pos);
 					qEnd = max(qEnd, refinedClusters[c].matches[sb].first.pos + smallOpts.globalK);
 				}
-
 				// Divide the current Subcluster into groups (each group contains >=1000bp on read)
-				int GroupLength = 1000;
+				int GroupLength = 2000;
 				int NumGroups = (qEnd - qStart)/GroupLength; // output the floor int
-				cerr << "qEnd - qStart: " << qEnd - qStart << endl;
-				cerr << "NumGroups: " << NumGroups << endl;
+				if (NumGroups == 0) NumGroups++;
 				vector<vector<int>> GroupVec(NumGroups);
 
 				// Go through the matches, assign anchors into different groups
@@ -1707,27 +1705,56 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				}
 
 
+				if (opts.dotPlot) {
+					stringstream outNameStrm;
+					outNameStrm << baseName + "." << sc << ".group.dots";
+					ofstream baseDots(outNameStrm.str().c_str());
+					int rjw = 0;
+					for (int m = 0; m < GroupVec.size(); m++) {
+						for (int mm = 0; mm < GroupVec[m].size(); mm++) {
+							int n = GroupVec[m][mm];
+							rjw++;
+
+							if (logClusters[c].SubCluster[sc].strand == 0) {
+								baseDots << refinedClusters[c].matches[n].first.pos << "\t" << refinedClusters[c].matches[n].second.pos << "\t" 
+										<< refinedClusters[c].matches[n].first.pos + smallOpts.globalK << "\t" 
+										<< refinedClusters[c].matches[n].second.pos + smallOpts.globalK << "\t"  
+										<< m << "\t"
+										<< logClusters[c].SubCluster[sc].strand << endl;
+							} 
+							else {
+								baseDots << read.length - refinedClusters[c].matches[n].first.pos << "\t" << refinedClusters[c].matches[n].second.pos << "\t" 
+										<< read.length - refinedClusters[c].matches[n].first.pos - smallOpts.globalK << "\t" 
+										<< refinedClusters[c].matches[n].second.pos + smallOpts.globalK << "\t"  
+										<< m << "\t"
+										<< logClusters[c].SubCluster[sc].strand << endl;								
+							} 
+						} 
+					}
+					baseDots.close();
+				}
+
+
 				// Apply CleanOffDiagonal to each group to eliminate noisy anchors
-				vector<bool> DiagOn(refinedClusters[c].matches.size() - rfCsize, false);
+				vector<bool> KeepDiag(refinedClusters[c].matches.size() - rfCsize, false);
 				int hh = 0;
 				for (int sb = 0; sb < NumGroups; sb++) {
-					CleanOffDiagonal(refinedClusters[c].matches, GroupVec[sb], DiagOn, smallOpts, 0);
+					CleanOffDiagonal(refinedClusters[c].matches, GroupVec[sb], KeepDiag, rfCsize, smallOpts, 0);
 					hh += GroupVec[sb].size();
 				}
-				assert(hh == DiagOn.size());
-
+				assert(hh == KeepDiag.size());
 				int m = 0;
-				for (int i = 0; i < DiagOn.size(); i++) {
-					if (DiagOn[i]) {
+				for (int i = 0; i < KeepDiag.size(); i++) {
+					if (KeepDiag[i]) {
 						refinedClusters[c].matches[rfCsize + m] = refinedClusters[c].matches[rfCsize + i];
 						m++;
 					}
 				}
 				refinedClusters[c].matches.resize(rfCsize + m);
-				DiagOn.clear();
+				KeepDiag.clear();
 				GroupVec.clear();
-				//if (m == 0) continue;
-			*/	
+				if (m == 0) continue;
+
 
 				refinedLogClusters[c].SubCluster.push_back(Cluster(rfCsize, refinedClusters[c].matches.size(), logClusters[c].SubCluster[sc].strand));
 				if (logClusters[c].SubCluster[sc].strand == 1) SwapStrand(read, smallOpts, refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size());	
@@ -1943,7 +1970,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 				//
 				// Output the anchor efficiency file TODO(Jingwen): delete this later
-				/*
+				
 				if (refinedClusters[r].matches.size() != 0) {
 					
 					stringstream outNameStrm;
@@ -1954,7 +1981,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 								<< read.name << endl;
 					baseDots.close();						
 				}
-				*/
+				
 			}
 			if (mergedAnchors.size() == 0) continue;
 
@@ -2502,9 +2529,23 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 										else { 
 											SparseDP_ForwardOnly(gapPairs, gapChain, tinyOpts, LookUpTable); 
 										}
+										//
+										// Output the input size of second SDP TODO(Jingwen): Delete this later
+										stringstream outNameStrm;
+										outNameStrm << "seSDP.tab";
+										ofstream baseDots;
+										baseDots.open(outNameStrm.str().c_str(), std::ios::app);
+										baseDots << gapPairs.size() << "\t" << gapChain.size() << "\t" 
+													<< read.name << endl;
+										baseDots.close();
+
 									}
 								}
 							}
+
+
+						
+
 
 							RemovePairedIndels(curReadEnd, curGenomeEnd, nextReadStart, nextGenomeStart, gapChain, gapPairs, tinyOpts);
 							RemoveSpuriousAnchors(gapChain, tinyOpts, gapPairs);
