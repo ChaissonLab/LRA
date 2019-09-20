@@ -1144,7 +1144,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					
 					for(int rm=0; rm < EndPairs.size(); rm++) {
 						EndPairs[rm].first.pos  += curReadEnd;
-						EndPairs[rm].second.pos += genome.header.pos[ChromIndex];
+						EndPairs[rm].second.pos += curGenomeEnd;
 						assert(EndPairs[rm].first.pos < read.length);
 					}
 					// TODO(Jingwen): add a clean off diagonal function here to remove noisy anchors
@@ -1186,7 +1186,12 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					clusters[id].qEnd = max(clusters[id].qEnd, qEnd);
 					clusters[id].qStart = min(clusters[id].qStart, qStart);
 					clusters[id].tEnd = max(clusters[id].tEnd, tEnd);
-					clusters[id].tStart = min(clusters[id].tStart, tStart);					
+					clusters[id].tStart = min(clusters[id].tStart, tStart);	
+					logClusters[num].SubCluster.back().qStart = clusters[id].qStart;
+					logClusters[num].SubCluster.back().qEnd = clusters[id].qEnd;
+					logClusters[num].SubCluster.back().tStart = clusters[id].tStart;
+					logClusters[num].SubCluster.back().tEnd = clusters[id].tEnd;
+
 				}
 
 				//
@@ -1270,7 +1275,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					
 					for(int rm=0; rm < EndPairs.size(); rm++) {
 						EndPairs[rm].first.pos  += curReadEnd;
-						EndPairs[rm].second.pos += genome.header.pos[ChromIndex];
+						EndPairs[rm].second.pos += curGenomeEnd;
 						assert(EndPairs[rm].first.pos < read.length);
 					}
 					// TODO(Jingwen): add a clean off diagonal function here to remove noisy anchors
@@ -1290,6 +1295,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						clusters[id].qStart = min(clusters[id].qStart, qStart);
 						clusters[id].tEnd = max(clusters[id].tEnd, tEnd);
 						clusters[id].tStart = min(clusters[id].tStart, tStart);	
+						logClusters[num].SubCluster.back().qStart = clusters[id].qStart;
+						logClusters[num].SubCluster.back().qEnd = clusters[id].qEnd;
+						logClusters[num].SubCluster.back().tStart = clusters[id].tStart;
+						logClusters[num].SubCluster.back().tEnd = clusters[id].tEnd;
 					}
 				}				
 
