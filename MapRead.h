@@ -1970,7 +1970,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 				//
 				// Output the anchor efficiency file TODO(Jingwen): delete this later
-				
+/*				
 				if (refinedClusters[r].matches.size() != 0) {
 					
 					stringstream outNameStrm;
@@ -1981,7 +1981,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 								<< read.name << endl;
 					baseDots.close();						
 				}
-				
+*/				
 			}
 			if (mergedAnchors.size() == 0) continue;
 
@@ -2531,6 +2531,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 										}
 										//
 										// Output the input size of second SDP TODO(Jingwen): Delete this later
+										/*
 										stringstream outNameStrm;
 										outNameStrm << "seSDP.tab";
 										ofstream baseDots;
@@ -2538,6 +2539,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 										baseDots << gapPairs.size() << "\t" << gapChain.size() << "\t" 
 													<< read.name << endl;
 										baseDots.close();
+										*/
 
 									}
 								}
