@@ -947,9 +947,12 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						bool newpr = 1, inserted = 0;
 						int p = 0;
 						while (p < Primary_chains.size()) {
-							if (Primary_chains[p].Overlaps(qStart, qEnd, 0.9)) {
-								Primary_chains[p].chains.push_back(onechain);
-								inserted = 1;
+							if (Primary_chains[p].Overlaps(qStart, qEnd, 0.7)) {
+
+								if (Primary_chains[p].chains.size() < opts.SecondaryAln + 1) {
+									Primary_chains[p].chains.push_back(onechain);
+									inserted = 1;
+								}
 								break;
 							}
 							else if (Primary_chains[p].Overlaps(qStart, qEnd, 0.5)) {
