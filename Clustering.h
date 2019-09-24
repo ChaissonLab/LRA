@@ -371,6 +371,14 @@ class Cluster : public ClusterCoordinates {
 		maxDiagNum=0;
 		minDiagNum=0;
 	}
+  Cluster(GenomePos qs, GenomePos qe, GenomePos ts, GenomePos te, int st, int coa) {
+		qStart = qs;
+		qEnd = qe;
+		tStart = ts;
+		tEnd = te;
+		strand = st;
+		coarse = coa;
+	}
 	
   bool OverlapsPrevious(const Cluster &prev) {
 		//
