@@ -345,6 +345,8 @@ class Cluster : public ClusterCoordinates {
 	GenomePairs matches;
 	vector<int> strands; // stores the strand of every GenomePair in matches
 	vector<int> coarseSubCluster; // coarseSubCluster[i] means GenomePair i is from  the SubCluster[coarseSubCluster] 
+	GenomePos maxDiagNum;
+	GenomePos minDiagNum; // maxDiagNum and minDiagNum defines diagonal band boundary of the current cluster
 	int coarse;
 	Cluster() {}
   Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=0;}
@@ -366,6 +368,8 @@ class Cluster : public ClusterCoordinates {
 					GenomePairs::iterator gpBegin, GenomePairs::iterator gpEnd) : ClusterCoordinates(s,e,qs,qe,ts,te,st) {
 		copy(gpBegin, gpEnd, back_inserter(matches));
 		coarse=0;
+		maxDiagNum=0;
+		minDiagNum=0;
 	}
 	
   bool OverlapsPrevious(const Cluster &prev) {
@@ -489,19 +493,6 @@ class Clusters_valueOrder {
 	}
 };
 
-/*
-class clusterchain {
-public: 
-	vector<int> chain;
-	GenomePos qStart;
-	GenomePos qEnd;
-	GenomePos tStart;
-	GenomePos tEnd;
-	int status; // status == 1 means this chain is a secondary chain;
-				// status == 2 means this chain is a chimeric chain;
-	int primary; // primary stores the index of the primary chain
-};
-*/
 
 class LogCluster {
  public:
@@ -511,10 +502,12 @@ class LogCluster {
  	int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
  	vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains
  	int coarse; // coarse means this LogCluster stores information about refinedCluster[coarse]
+ 	bool direction; // direction means how the read is mapped to the reference
  	LogCluster () {
  		ISsecondary = 0;
  		primary = -1;
  		coarse = -1;
+ 		direction = 0;
  	};
  	~LogCluster() {};
 

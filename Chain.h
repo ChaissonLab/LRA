@@ -4,7 +4,7 @@
 #include <vector>
 #include "Types.h"
 
-typedef vector<int> chain;
+typedef vector<unsigned int> chain;
 
 
 class Primary_chain {
@@ -19,7 +19,7 @@ public:
 		tEnd = 0;
 	};
 	~Primary_chain () {};
-	Primary_chain (GenomePos &qS, GenomePos &qE, GenomePos &tS, GenomePos &tE, vector<int> &onechain) {
+	Primary_chain (GenomePos &qS, GenomePos &qE, GenomePos &tS, GenomePos &tE, vector<unsigned int> &onechain) {
 		qStart = qS;
 		qEnd = qE;
 		tStart = tS;

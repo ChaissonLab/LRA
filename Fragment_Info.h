@@ -60,4 +60,44 @@ std::ostream & operator<<(std::ostream & os, const Fragment_Info & M) {
 }
 
 
+class Fragment_valueOrder {
+ public:
+	vector<float> fragments_value;
+	vector<int> index;
+	
+ 	Fragment_valueOrder(vector<Fragment_Info> *c) {
+ 		//(*fragments_value).clear();
+ 		//(*fragments_value).resize(c->size(), 0);
+ 		vector<float> fv(c->size(), 0);
+ 		for (unsigned int i = 0; i < c->size(); i++) {
+ 			fv[i] = (*c)[i].val;
+ 			//fragments_value.push_back( (*c)[i].val );
+ 		}
+ 		fragments_value = fv;
+ 		assert(fragments_value.size() == c->size());
+		index.resize(c->size());
+		for (unsigned int i = 0;i < index.size(); i++) { index[i] = i;}
+		Sort();
+	}
+
+	int operator()(const int i, const int j) {
+		assert(i < fragments_value.size());
+		assert(j < fragments_value.size());
+		return fragments_value[i] > fragments_value[j];			
+	}
+
+	void Sort() {
+		sort(index.begin(), index.end(), *this);
+	}
+
+	float & operator[](int i) {
+		return fragments_value[index[i]];
+	}
+	
+	int size() {
+		return index.size();
+	}
+};
+
+
 #endif

@@ -34,6 +34,7 @@
 #include "Options.h"
 #include "Clustering.h"
 #include "Read.h"
+#include "Chain.h"
 
 
 using std::cerr;
@@ -220,9 +221,10 @@ PassValueToD2 (unsigned int i, std::vector<Fragment_Info> & Value, const std::ve
 
 //This function is for fragments which are resulting from MergeSplit step. 
 // Each fragment has different length, so we need to pass vector<Cluster> vt to the function
+template<typename Tup>
 void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
 				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, std::vector<Fragment_Info> & Value, Options & opts, 
-				 const std::vector<float> & LookUpTable, const std::vector<ClusterCoordinates> & FragInput, int rate) {
+				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, int rate) { // std::vector<ClusterCoordinates> & FragInput
 
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
@@ -891,6 +893,75 @@ ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubPr
 }
 
 
+//
+// This function is for getting the chains for large anchors
+void 
+TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
+					const std::vector<Fragment_Info> & Value, unsigned int i, std::vector<unsigned int> & onechain, std::vector<bool> & used) {
+
+	long int prev_sub = Value[i].prev_sub;
+	long int prev_ind = Value[i].prev_ind;
+	if (used[i] == 0) {
+		onechain.push_back(i);
+		used[i] = 1;
+	
+		if (prev_sub != -1 and prev_ind != -1) {
+
+			if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
+				unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
+				if (used[SubR1[prev_sub].Dp[ind]] == 0) {
+					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], onechain, used);					
+				}
+				else {
+					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
+						used[onechain[lu]] = 0;
+					}
+					onechain.clear();
+				}
+			}
+			else if (Value[i].prev == 1 and Value[i].inv == 0) { // The previous subproblem is SubR2
+				unsigned int ind = SubR2[prev_sub].Ep[prev_ind];
+				if (used[SubR2[prev_sub].Dp[ind]] == 0) {
+					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR2[prev_sub].Dp[ind], onechain, used);
+				}
+				else {
+					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
+						used[onechain[lu]] = 0;
+					}
+					onechain.clear();					
+				}
+			}
+			else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
+				unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
+				if (used[SubC1[prev_sub].Dp[ind]] == 0) {
+					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], onechain, used);
+				}
+				else {
+					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
+						used[onechain[lu]] = 0;
+					}
+					onechain.clear();						
+				}
+			}		
+			else { // The previous subproblem is SubC2
+				unsigned int ind = SubC2[prev_sub].Ep[prev_ind];
+				if (used[SubC2[prev_sub].Dp[ind]] == 0) {
+					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC2[prev_sub].Dp[ind], onechain, used);
+				}
+				else {
+					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
+						used[onechain[lu]] = 0;
+					}
+					onechain.clear();					
+				}
+			}
+
+		}
+	}
+}
+
+
+
 void 
 TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
 					const std::vector<Fragment_Info> & Value, unsigned int i, std::vector<unsigned int> & FinalChain) {
@@ -922,7 +993,288 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 }
 
 
-// The input for this function is from Merge_Split step
+// The input for this function is for large anchors (Find the primary chains)
+int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain> & Primary_chains, Options & opts, const std::vector<float> & LookUpTable, Read & read,
+				bool ReverseOnly = 0, int rate = 1) {
+
+	std::vector<Point>  H1;
+	// FragInput is vector<ClusterCoordinates>
+	// get points from FragInput and store them in H1		
+
+	for (unsigned int i = 0; i < FragInput.size(); ++i) {
+
+		if (FragInput[i].strand == 0) {
+			// insert start point s1 into H1
+			Point s1;
+			H1.push_back(s1);
+			H1.back().ind = 1; // start
+			H1.back().inv = 1; // forward direction
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qStart;
+			H1.back().se.second = FragInput[i].tStart;	
+			H1.back().orient = 1; // the point comes from a forward oriented anchor
+
+			// insert end point e1 into H1
+			Point e1;
+			H1.push_back(e1);
+			H1.back().ind = 0; // end
+			H1.back().inv = 1; // forward direction		
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qEnd;
+			H1.back().se.second = FragInput[i].tEnd;	
+			H1.back().orient = 1; // the point comes from a forward oriented anchor				
+		}
+		else if (ReverseOnly == 0) {
+			// insert start point s1 into H1
+			Point s1;
+			H1.push_back(s1);
+			H1.back().ind = 1; // start
+			H1.back().inv = 1; // forward direction
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qStart; 
+			H1.back().se.second = FragInput[i].tStart;	
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+
+
+			// insert end point e1 into H1
+			Point e1;
+			H1.push_back(e1);
+			H1.back().ind = 0; // end
+			H1.back().inv = 1; // forward direction		
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qEnd;
+			H1.back().se.second = FragInput[i].tEnd;
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+
+
+			// insert start point s2 into H1
+			Point s2;
+			H1.push_back(s2);
+			H1.back().ind = 1; // start
+			H1.back().inv = 0; // backward direction
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qStart; 
+			H1.back().se.second = FragInput[i].tEnd;	
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+
+
+			// insert end point e2 into H1
+			Point e2;
+			H1.push_back(e2);
+			H1.back().ind = 0; // end
+			H1.back().inv = 0; // backward direction		
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qEnd;
+			H1.back().se.second = FragInput[i].tStart;	
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+		} 
+		else {
+			// insert start point s2 into H1
+			Point s2;
+			H1.push_back(s2);
+			H1.back().ind = 1; // start
+			H1.back().inv = 0; // backward direction
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qStart; 
+			H1.back().se.second = FragInput[i].tEnd;	
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+
+
+			// insert end point e2 into H1
+			Point e2;
+			H1.push_back(e2);
+			H1.back().ind = 0; // end
+			H1.back().inv = 0; // backward direction		
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qEnd;
+			H1.back().se.second = FragInput[i].tStart;	
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor			
+		}
+	}
+
+	//clock_t begin = std::clock();
+
+	//Sort the point by row
+	sort(H1.begin(), H1.end(), SortByRowOp<Point>()); // with same q and t coordinates, end point < start point
+	std::vector<unsigned int> H2(H1.size());
+	iota(H2.begin(), H2.end(), 0);
+	sort(H2.begin(), H2.end(), SortByColOp<Point, unsigned int>(H1));
+
+	
+	std::vector<info> Row;
+	std::vector<info> Col;
+	GetRowInfo(H1, Row);
+	GetColInfo(H1, H2, Col);
+	//cerr << "Row: " << Row << "\n";
+	//cerr << "Col: " << Col << "\n";
+
+	unsigned int n1 = 0;
+	unsigned int m1 = 0;
+	unsigned int n2 = 0;
+	unsigned int m2 = 0;
+
+	StackOfSubProblems SubR1;
+	StackOfSubProblems SubC1;
+	int eeR1 = 0, eeC1 = 0;
+
+	StackOfSubProblems SubR2;
+	StackOfSubProblems SubC2;
+	int eeR2 = 0, eeC2 = 0;
+
+	//cerr << "DivideSubByRow\n";
+	DivideSubProbByRow1(H1, Row, 0, Row.size(), n1, SubR1, eeR1);
+	//cerr << "SubR: " << SubR << endl;
+
+	//cerr << "DivideSubByCol\n";
+	DivideSubProbByCol1(H1, H2, Col, 0, Col.size(), m1, SubC1, eeC1);
+	//cerr << "SubC: " << SubC << endl;
+
+	DivideSubProbByRow2(H1, Row, 0, Row.size(), n2, SubR2, eeR2);	
+	DivideSubProbByCol2(H1, H2, Col, 0, Col.size(), m2, SubC2, eeC2);
+
+
+	// Get SS_A_R1, SS_B_R1, SS_A_R2 and SS_B_R2 for each fragment
+	std::vector<Fragment_Info> Value(FragInput.size());
+	for (unsigned int t = 0; t < Row.size(); ++t) {
+		for (unsigned int tt = Row[t].pstart; tt < Row[t].pend; ++tt) {
+
+			unsigned int ii = H1[tt].frag_num;
+
+			if (H1[tt].ind == 1 and H1[tt].inv == 1) { //H1[tt] is a start point (s1)
+				Value[ii].SS_B_R1 = Row[t].SS_B1;
+				Value[ii].counter_B_R1 = Row[t].SS_B1.size();
+				Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				Value[ii].orient = H1[tt].orient;
+			}
+			else if (H1[tt].ind == 0 and H1[tt].inv == 1) { // H1[tt] is an end point (e1)
+				Value[ii].SS_A_R1 = Row[t].SS_A1;
+				Value[ii].counter_A_R1 = Row[t].SS_A1.size();
+				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].orient = H1[tt].orient;
+			}
+			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
+				Value[ii].SS_B_R2 = Row[t].SS_B2;
+				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
+				Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				Value[ii].orient = H1[tt].orient;
+			}
+			else { // H1[tt] is an end point (e2)
+				Value[ii].SS_A_R2 = Row[t].SS_A2;
+				Value[ii].counter_A_R2 = Row[t].SS_A2.size();
+				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].orient = H1[tt].orient;				
+			}
+		}
+	}
+
+
+	// Get SS_A_C1, SS_B_C1, SS_A_C2 and SS_B_C2 for each fragment
+	for (unsigned int t = 0; t < Col.size(); ++t) {
+		for (unsigned int tt = Col[t].pstart; tt < Col[t].pend; ++tt) { 
+
+			unsigned int ii = H1[H2[tt]].frag_num;
+
+			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
+				Value[ii].SS_B_C1 = Col[t].SS_B1;
+				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
+				Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				Value[ii].orient = H1[H2[tt]].orient;
+			}
+			else if (H1[H2[tt]].ind == 0 and H1[H2[tt]].inv == 1) { // H1[H2[tt]] is an end point (e1)
+				Value[ii].SS_A_C1 = Col[t].SS_A1;
+				Value[ii].counter_A_C1 = Col[t].SS_A1.size();
+				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].orient = H1[H2[tt]].orient;
+			}
+			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
+				Value[ii].SS_B_C2 = Col[t].SS_B2;
+				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
+				Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				Value[ii].orient = H1[H2[tt]].orient;				
+			}
+			else { // H1[H2[tt]] is an end point (e2)
+				Value[ii].SS_A_C2 = Col[t].SS_A2;
+				Value[ii].counter_A_C2 = Col[t].SS_A2.size();
+				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].orient = H1[H2[tt]].orient;			
+			}
+
+		}
+	}
+
+
+	//cerr << "Value: " << Value << endl;
+	//cerr << "ProcessPoint\n";
+	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, rate);		
+
+	std::vector<bool> used(Value.size(), 0);
+	Fragment_valueOrder fragments_valueOrder(&Value);
+
+	for (unsigned int fv = 0; fv < fragments_valueOrder.size(); fv++) {
+		unsigned int d = fragments_valueOrder.index[fv];
+		std::vector<unsigned int> onechain;
+		TraceBack (SubR1, SubC1, SubR2, SubC2, Value, d, onechain, used);
+
+		if (onechain.size() != 0) {
+			// Note: onechain store index from the last one to the first one
+			GenomePos qEnd = FragInput[onechain[0]].qEnd;
+			GenomePos tEnd = FragInput[onechain[0]].tEnd;
+
+			GenomePos qStart = FragInput[onechain.back()].qStart;
+			GenomePos tStart = FragInput[onechain.back()].tStart;		
+
+			//
+			// If this chain overlap with read greater than 20%, insert it to clusterchain
+			if (((float)(qEnd - qStart)/read.length) > 0.2) {
+				//
+				// Compare onechain to all the Primary_chains we've found. 
+				// If onechain overlaps with one primary chain over 70% ---> onechain is a secondary chain 
+				// If onechain overlaps with all the primary chains less than 50% ---> onechain is another primary chain
+				if (Primary_chains.size() == 0) {
+					Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
+				} 
+				else {
+					bool newpr = 1, inserted = 0;
+					unsigned int p = 0;
+					while (p < Primary_chains.size()) {
+						if (Primary_chains[p].Overlaps(qStart, qEnd, 0.7)) {
+							if (Primary_chains[p].chains.size() < opts.SecondaryAln + 1) {
+								Primary_chains[p].chains.push_back(onechain);
+								inserted = 1;								
+							}
+							break;
+						}
+						else if (Primary_chains[p].Overlaps(qStart, qEnd, 0.5)) {
+							newpr = 0;
+						}
+						++p;
+					}			
+					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 1) {
+						Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
+					}	
+				}
+			}
+			else break;				
+		}
+		onechain.clear();
+	}
+
+	// Clear SubR and SubC
+	SubR1.Clear(eeR1);
+	SubC1.Clear(eeC1);
+	SubR2.Clear(eeR2);
+	SubC2.Clear(eeC2);
+
+	// get the time for the program
+	//clock_t end = std::clock();
+	//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+	//cerr << "Time: " << elapsed_secs << endl;
+
+	return 0;
+}
+
+
+// The input for this function is for Merge_Split step
 int SparseDP (const std::vector<ClusterCoordinates> & FragInput, std::vector<unsigned int> & chain, Options & opts, const std::vector<float> & LookUpTable, bool ReverseOnly, int rate = 1) {
 
 	std::vector<Point>  H1;
@@ -1153,7 +1505,7 @@ int SparseDP (const std::vector<ClusterCoordinates> & FragInput, std::vector<uns
 
 	//cerr << "ProcessPoint\n";
 
-	ProcessPoint(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, rate);		
+	ProcessPoint<ClusterCoordinates>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, rate);		
 
 	//cerr << "end\n";
 
@@ -1189,7 +1541,6 @@ int SparseDP (const std::vector<ClusterCoordinates> & FragInput, std::vector<uns
 
 	return 0;
 }
-
 
 
 // The input for this function is GenomePairs which is NOT from Merge_Split step
