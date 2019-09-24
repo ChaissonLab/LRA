@@ -1241,26 +1241,26 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				EndReadTup.clear();
 				EndGenomeTup.clear();
 				EndPairs.clear();
-				id = Primary_chains[c].chains[p].back();
+				int idx = Primary_chains[c].chains[p].back();
 
-				if (clusters[id].strand == 0) {
+				if (clusters[idx].strand == 0) {
 
-					if (clusters[id].tStart > clusters[id].qStart + 300 + genome.header.pos[ChromIndex]) { 
-						curGenomeEnd = clusters[id].tStart - (clusters[id].qStart + 300);
+					if (clusters[idx].tStart > clusters[idx].qStart + 300 + genome.header.pos[ChromIndex]) { 
+						curGenomeEnd = clusters[idx].tStart - (clusters[idx].qStart + 300);
 					}
 					else {curGenomeEnd = genome.header.pos[ChromIndex];}
 					curReadEnd = 0;
-					nextGenomeStart = clusters[id].tStart;
-					nextReadStart = clusters[id].qStart;
+					nextGenomeStart = clusters[idx].tStart;
+					nextReadStart = clusters[idx].qStart;
 				} 
 				else { // the chain is in the reverse direction
-					if (clusters[id].tStart > read.length - clusters[id].qEnd + 300 + genome.header.pos[ChromIndex]) {
-						curGenomeEnd = clusters[id].tStart - (read.length - clusters[id].qEnd + 300);
+					if (clusters[idx].tStart > read.length - clusters[idx].qEnd + 300 + genome.header.pos[ChromIndex]) {
+						curGenomeEnd = clusters[idx].tStart - (read.length - clusters[idx].qEnd + 300);
 					}
 					else {curGenomeEnd = genome.header.pos[ChromIndex];}
 					curReadEnd = 0;
-					nextGenomeStart = clusters[id].tStart; // flip the box into forward direction
-					nextReadStart = read.length - clusters[id].qEnd;
+					nextGenomeStart = clusters[idx].tStart; // flip the box into forward direction
+					nextReadStart = read.length - clusters[idx].qEnd;
 				}							
 
 				subreadLength = nextReadStart - curReadEnd;
@@ -1294,14 +1294,15 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 					if (EndPairs.size() != 0) {
 						clusters[id].matches.insert(clusters[id].matches.end(), EndPairs.begin(), EndPairs.end());
+						logClusters[num].SubCluster.back().end = clusters[id].matches.size();
 						clusters[id].qEnd = max(clusters[id].qEnd, qEnd);
 						clusters[id].qStart = min(clusters[id].qStart, qStart);
 						clusters[id].tEnd = max(clusters[id].tEnd, tEnd);
 						clusters[id].tStart = min(clusters[id].tStart, tStart);	
-						logClusters[num].SubCluster.back().qStart = clusters[id].qStart;
-						logClusters[num].SubCluster.back().qEnd = clusters[id].qEnd;
-						logClusters[num].SubCluster.back().tStart = clusters[id].tStart;
-						logClusters[num].SubCluster.back().tEnd = clusters[id].tEnd;
+						logClusters[num].SubCluster.back().qStart = min(logClusters[num].SubCluster.back().qStart, qStart);                   
+						logClusters[num].SubCluster.back().qEnd = max(logClusters[num].SubCluster.back().qEnd, qEnd);
+						logClusters[num].SubCluster.back().tStart = min(logClusters[num].SubCluster.back().tStart, tStart);
+						logClusters[num].SubCluster.back().tEnd = max(logClusters[num].SubCluster.back().tEnd, tEnd);
 					}
 				}				
 
