@@ -1082,6 +1082,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		// Record every chain's information in logClusters
 		//
 		vector<LogCluster> logClusters(chainNum);
+		vector<bool> Dele(chainNum);
 		vector<int> ind(clusters.size(), 0); // ind[i] == 1 means clusters[ind[i]] should be kept
 		int num = 0;
 		for (int c = 0; c < Primary_chains.size(); ++c) {
@@ -1090,13 +1091,17 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 			for (int p = 0; p < Primary_chains[c].chains.size(); ++p) {
 				
-				GenomePos tPos;
-				int first = Primary_chains[c].chains[p][0];
-				tPos = clusters[first].tStart;
+				int id = Primary_chains[c].chains[p][0];
+				GenomePos tPos = clusters[id].tStart;
+				int firstChromIndex = genome.header.Find(tPos);
+				tPos = clusters[id].tEnd;
+				int lastChromIndex = genome.header.Find(tPos);
+				if (firstChromIndex != lastChromIndex ) {
+					Dele[num] =1;
+					continue;
+				}
 				int ChromIndex = genome.header.Find(tPos); 
 				GenomePos qStart = read.length, qEnd = 0, tStart = genome.header.pos[ChromIndex + 1], tEnd = genome.header.pos[ChromIndex]; // genome.lengths[ChromIndex]
-
-				int id = Primary_chains[c].chains[p][0];
 				ind[id] = 1;
 
 				if (p != 0) {
@@ -1114,6 +1119,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 				if (clusters[id].strand  == 0) { // the first subcluster is in the forward direction
 
+						//clusters[id].tEnd + (read.length - clusters[id].qEnd) + 300 < genome.header.pos[ChromIndex + 1]
 					if (clusters[id].tEnd + read.length + 300 < genome.header.pos[ChromIndex + 1] + clusters[id].qEnd) {	
 						nextGenomeStart = clusters[id].tEnd + (read.length - clusters[id].qEnd) + 300 ;
 					}
@@ -1317,6 +1323,18 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				clustersempty[c] += clustersempty[c-1];
 			}				
 		}
+
+		//
+		// Delete logClusters[i] (the firstChromIndex != lastChromIndex)
+		//
+		int cd = 0;
+		for (int c = 0; c < logClusters.size(); c++) {
+			if (Dele[c] == 0) {
+				logClusters[cd] = logClusters[c];
+				cd++;
+			}
+		}
+		logClusters.resize(cd);
 		//
 		//logClusters[c].coarse store information for anchors in cluster[logClusters[c].coarse]
 		for (int c = 0; c < logClusters.size(); ++c) {
