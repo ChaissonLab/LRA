@@ -1347,10 +1347,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						clusters[id].qStart = min(clusters[id].qStart, qStart);
 						clusters[id].tEnd = max(clusters[id].tEnd, tEnd);
 						clusters[id].tStart = min(clusters[id].tStart, tStart);	
-						logClusters[num].SubCluster.back().qStart = clusters[id].qStart;
-						logClusters[num].SubCluster.back().qEnd = clusters[id].qEnd;
-						logClusters[num].SubCluster.back().tStart = clusters[id].tStart;
-						logClusters[num].SubCluster.back().tEnd = clusters[id].tEnd;
+						logClusters[num].SubCluster.back().qStart = min(logClusters[num].SubCluster.back().qStart, qStart);
+						logClusters[num].SubCluster.back().qEnd = max(logClusters[num].SubCluster.back().qEnd, qEnd);
+						logClusters[num].SubCluster.back().tStart = min(logClusters[num].SubCluster.back().tStart, tStart);
+						logClusters[num].SubCluster.back().tEnd = max(logClusters[num].SubCluster.back().tEnd, tEnd);
 					}
 				}				
 
@@ -1801,6 +1801,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				DiagonalSort<GenomeTuple>(refinedClusters[c].matches.begin() + rfCsize, refinedClusters[c].matches.begin() + refinedClusters[c].matches.size());
 				// TODO(Jingwen): Only for debug, delete later
 				
+				/*
 				vector<int> diag;
 				double mean = 0;
 				for (int rfc = rfCsize; rfc < refinedClusters[c].matches.size(); ++rfc) {
@@ -1834,14 +1835,18 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				else if (diagDrift >= 200) diagDrift = 1.5*diagDrift;
 
 				//TODO(Jingwen): check whether this cleanoffDiagonal function influences the speed
-				//CleanOffDiagonal(refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size(), smallOpts, 0, diagOrigin, diagDrift);
-				
+				CleanOffDiagonal(refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size(), smallOpts, 0, diagOrigin, diagDrift);
+				*/
+
+
+
+
 
 				// ----- New Code ------------
 				// Add new code to clean off diagonal here
 				//
 				// Get the qStart and qEnd for the current Subcluster
-				
+			/*	
 				GenomePos qStart = read.length, qEnd  = 0;
 				for (int sb = rfCsize; sb < refinedClusters[c].matches.size(); sb++) {
 					qStart = min(qStart, refinedClusters[c].matches[sb].first.pos);
@@ -1916,7 +1921,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				KeepDiag.clear();
 				GroupVec.clear();
 				if (m == 0) continue;
-
+			*/
 
 				refinedLogClusters[c].SubCluster.push_back(Cluster(rfCsize, refinedClusters[c].matches.size(), logClusters[c].SubCluster[sc].strand));
 				if (logClusters[c].SubCluster[sc].strand == 1) SwapStrand(read, smallOpts, refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size());	

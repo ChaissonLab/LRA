@@ -67,6 +67,7 @@ void HelpMap() {
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
 			 << "	-d 	(flag)  Enable dotPlot" << endl
+			 << "	-Se (int) Allow at most how many secondary alignments" << endl
 			 << "   -aa (flag)  use Merge.h" << endl;
 }
 		
@@ -213,7 +214,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.readStart=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
-
+		else if (ArgIs(argv[argi], "--Se")) {
+			opts.SecondaryAln=atoi(GetArgv(argv, argc, argi));
+		}
 		else if (ArgIs(argv[argi], "-R")) {
 			opts.mergeClusters=true;
 		}

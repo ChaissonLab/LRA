@@ -78,7 +78,7 @@ public:
 		minClusterSize=5; // used to be 10 
 		minClusterLength=50;  // used to be 100
 		minRefinedClusterSize=40;
-		window=100;
+		window=0;
 		mergeGapped=false;
 		viewPairwise=false;
 		hardClip=false;
