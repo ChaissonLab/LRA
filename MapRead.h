@@ -1098,6 +1098,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				int lastChromIndex = genome.header.Find(tPos);
 				if (firstChromIndex != lastChromIndex ) {
 					Dele[num] =1;
+					++num;
 					continue;
 				}
 				int ChromIndex = genome.header.Find(tPos); 
