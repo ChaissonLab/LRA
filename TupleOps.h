@@ -153,12 +153,12 @@ void AppendValues(GenomePairs &dest, typename List::iterator sourceStart, typena
 
 template<typename List>
 void AppendValues(GenomePairs &dest, typename List::iterator sourceStart, typename List::iterator sourceEnd, GenomePos queryOffset, GenomePos targetOffset,
-					GenomePos maxDiagNum, GenomePos minDiagNum) {
+					long long int maxDiagNum, long long int minDiagNum) {
 	//int i=dest.size();
 	//dest.resize(dest.size() + sourceEnd-sourceStart);
 	typename List::iterator sourceIt=sourceStart;
 	for (; sourceIt < sourceEnd; ++sourceIt) {
-		GenomePos diag = sourceIt->first.pos + queryOffset - (sourceIt->second.pos + targetOffset);
+		long long int diag = (long long int)(sourceIt->first.pos + queryOffset) - (long long int)(sourceIt->second.pos + targetOffset);
 		if (diag >= minDiagNum and diag <= maxDiagNum) {
 			dest.push_back(GenomePair(GenomeTuple(sourceIt->first.t, sourceIt->first.pos+ queryOffset), GenomeTuple(sourceIt->second.t, sourceIt->second.pos + targetOffset)));
 		}

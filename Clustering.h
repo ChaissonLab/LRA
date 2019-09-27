@@ -196,16 +196,7 @@ void CleanOffDiagonal(const vector<pair<Tup, Tup> > &matches, const vector<int> 
 		}
 		prevOnDiag = onDiag[i];
 	}
-/*
-	int c = 0;
-	for (int i=0; i < G.size(); i++) {
-		if (onDiag[i]) {
-			matches[c] = matches[i + start]; c++;
-		}
-	}
-	matches.resize(c);
-	end = c;
-*/
+	
 	for (int i = 0; i < G.size(); i++) {
 		D[G[i] - start] = onDiag[i];
 	}
@@ -345,8 +336,8 @@ class Cluster : public ClusterCoordinates {
 	GenomePairs matches;
 	vector<int> strands; // stores the strand of every GenomePair in matches
 	vector<int> coarseSubCluster; // coarseSubCluster[i] means GenomePair i is from  the SubCluster[coarseSubCluster] 
-	GenomePos maxDiagNum;
-	GenomePos minDiagNum; // maxDiagNum and minDiagNum defines diagonal band boundary of the current cluster
+	long long int maxDiagNum;
+	long long int minDiagNum; // maxDiagNum and minDiagNum defines diagonal band boundary of the current cluster
 	int coarse;
 	Cluster() {}
   Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=0;}

@@ -994,8 +994,8 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 
 
 // The input for this function is for large anchors (Find the primary chains)
-int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain> & Primary_chains, Options & opts, const std::vector<float> & LookUpTable, Read & read,
-				bool ReverseOnly = 0, int rate = 1) {
+// This SDP needs to insert 4 points for any anchors
+int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain> & Primary_chains, Options & opts, const std::vector<float> & LookUpTable, Read & read, int rate = 1) {
 
 	std::vector<Point>  H1;
 	// FragInput is vector<ClusterCoordinates>
@@ -1003,28 +1003,6 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain>
 
 	for (unsigned int i = 0; i < FragInput.size(); ++i) {
 
-		if (FragInput[i].strand == 0) {
-			// insert start point s1 into H1
-			Point s1;
-			H1.push_back(s1);
-			H1.back().ind = 1; // start
-			H1.back().inv = 1; // forward direction
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].qStart;
-			H1.back().se.second = FragInput[i].tStart;	
-			H1.back().orient = 1; // the point comes from a forward oriented anchor
-
-			// insert end point e1 into H1
-			Point e1;
-			H1.push_back(e1);
-			H1.back().ind = 0; // end
-			H1.back().inv = 1; // forward direction		
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].qEnd;
-			H1.back().se.second = FragInput[i].tEnd;	
-			H1.back().orient = 1; // the point comes from a forward oriented anchor				
-		}
-		else if (ReverseOnly == 0) {
 			// insert start point s1 into H1
 			Point s1;
 			H1.push_back(s1);
@@ -1067,29 +1045,6 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain>
 			H1.back().se.first = FragInput[i].qEnd;
 			H1.back().se.second = FragInput[i].tStart;	
 			H1.back().orient = 0; // the point comes from a reverse oriented anchor
-		} 
-		else {
-			// insert start point s2 into H1
-			Point s2;
-			H1.push_back(s2);
-			H1.back().ind = 1; // start
-			H1.back().inv = 0; // backward direction
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].qStart; 
-			H1.back().se.second = FragInput[i].tEnd;	
-			H1.back().orient = 0; // the point comes from a reverse oriented anchor
-
-
-			// insert end point e2 into H1
-			Point e2;
-			H1.push_back(e2);
-			H1.back().ind = 0; // end
-			H1.back().inv = 0; // backward direction		
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].qEnd;
-			H1.back().se.second = FragInput[i].tStart;	
-			H1.back().orient = 0; // the point comes from a reverse oriented anchor			
-		}
 	}
 
 	//clock_t begin = std::clock();
