@@ -809,6 +809,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		if (maxvalue < (float) read.length/6) valuerate = 4; 
 		if (valuerate < 2) valuerate = 2; 
 
+/*
 		//
 		// Split clusters on query coordinates
 		//
@@ -839,12 +840,19 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					map<GenomePos, int>::iterator nt = (++it);
 					--it;
 					if (clusters[cv].strand == 0) { // The reason of +-10 is that we want to avoid any overlap between Splitclusters[i]
-						SplitClusters.push_back(Cluster(it->first, nt->first, (GenomePos)((it->first)*slope + interv + 10), 
-														(GenomePos)((nt->first)*slope + interv - 10), clusters[cv].strand, cv));						
+						if (nt->first - it->first > 2) {
+							SplitClusters.push_back(Cluster(it->first, nt->first - 2, (GenomePos)((it->first)*slope + interv), 
+														(GenomePos)((nt->first - 2)*slope + interv), clusters[cv].strand, cv));							
+						}
+						else {continue;}
+						
 					}
 					else {
-						SplitClusters.push_back(Cluster(it->first, nt->first, (GenomePos)((nt->first)*slope + interv + 10), 
-														(GenomePos)((it->first)*slope + interv - 10), clusters[cv].strand, cv));
+						if (nt->first - it->first > 5) {
+							SplitClusters.push_back(Cluster(it->first, nt->first - 2, (GenomePos)((nt->first - 2)*slope + interv), 
+														(GenomePos)((it->first)*slope + interv), clusters[cv].strand, cv));							
+						}
+						else {continue;}
 					}
 					//clusters[cv].coarse stores the index of the original clusters
 				}
@@ -879,7 +887,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}
 			clust.close();
 		}
-
+*/
 
 		//
 		// Apply SDP on vector<Cluster> clusters to get primary chains
@@ -889,16 +897,17 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		//
 		// This SDP needs to insert 4 points for any anchors. Otherwise SDP cannot pick up inversion when the read is reversedly aligned to reference
 		//
-		SparseDP (SplitClusters, Primary_chains, opts, LookUpTable, read, valuerate);
+		//SparseDP (SplitClusters, Primary_chains, opts, LookUpTable, read, valuerate);
+		SparseDP (clusters, Primary_chains, opts, LookUpTable, read, valuerate);
 
-
+/*
 		// TODO(Jingwen): only for debug and delete this later. Output the 1st every chain subject to the 1st primary chain
 		if (opts.dotPlot) {
 			for (int c = 0; c < Primary_chains.size(); c++) {
 
 				for (int ss = 0; ss < Primary_chains[c].chains.size(); ++ss) {
 					stringstream outNameStrm;
-					outNameStrm << "clusters-Split-dp." << ss << ".dots";
+					outNameStrm << "clusters-Split-dp." << c << ".dots";
 					ofstream baseDots(outNameStrm.str().c_str());
 					for (int p = 0; p < Primary_chains[c].chains[ss].size(); ++p) {
 						int s = Primary_chains[c].chains[ss][p];
@@ -924,8 +933,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				}
 			}
 		}
-
-
 		//
 		// Go back to the actual clusters
 		//
@@ -948,7 +955,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				Primary_chains[cv].chains[sv] = onechain;
 			}
 		}
-
+*/
 
 
 
@@ -1103,9 +1110,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 */
 
-/*
+
 		// Output the primary chains
-		if (opts.dotPlot {
+		if (opts.dotPlot) {
 			for (int c = 0; c < Primary_chains.size(); c++) {
 				stringstream outNameStrm;
 				outNameStrm << "clusters-sdp." << c << ".dots";
@@ -1123,7 +1130,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				baseDots.close();
 			}
 		}
-*/
+
 
 		//
 		// Decide the direction of each chain in Primary_chains
@@ -1211,8 +1218,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			for (int p = 0; p < Primary_chains[c].chains.size(); ++p) {
 			
 				logClusters[num].direction = Primary_chains[c].direction[p];	
-				if (Primary_chains[c].direction[p] == 0) {
-					reverse(Primary_chains[c].chains[p].begin(), Primary_chains[c].chains[p].end()); // If a primary_chain's direction is 0 (reverse), then reverse the chain
+				if (Primary_chains[c].direction[p] == 1) {
+					reverse(Primary_chains[c].chains[p].begin(), Primary_chains[c].chains[p].end()); // If a primary_chain's direction is 1 (reverse), then reverse the chain
 																									// The reason of doing this is that in the step of merging, it requires the order to be from the up to down
 				}
 
@@ -1222,7 +1229,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				tPos = clusters[id].tEnd;
 				int lastChromIndex = genome.header.Find(tPos);
 				if (firstChromIndex != lastChromIndex ) {
-					Dele[num] =1;
+					Dele[num] = 1;
+					num++;
 					continue;
 				}
 				int ChromIndex = genome.header.Find(tPos); 
@@ -1475,7 +1483,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}
 		}
 		clusters.resize(cl);
-		Primary_chains.clear();
+		//Primary_chains.clear();
 
 		/* TODO(Jingwen): I think we don't need Cartesian sort clusters before RemoveOverlappingClusters. 
 		Just sorting them first by forward diag and then by read is okay
@@ -1802,7 +1810,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 					if (logClusters[c].SubCluster[sc].strand != logClusters[c].SubCluster[sc+1].strand or 
 								((logClusters[c].SubCluster[sc].qStart <= logClusters[c].SubCluster[sc + 1].qEnd) or  // two subClusters are overlapped on read/genome
-							            (logClusters[c].SubCluster[sc].tStart <= logClusters[c].SubCluster[sc + 1].tEnd))) {}
+							            (logClusters[c].SubCluster[sc].tStart <= logClusters[c].SubCluster[sc + 1].tEnd))) {
+						//do nothing
+					}
 					else { 
 						//
 						// Decide the diagonal band for this area
@@ -1813,33 +1823,37 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						//
 						// Get shorthand access to alignment boundaries.
 						//
-						GenomePos readStart, readEnd;	
-						smallOpts.window = 800;  // this is for finding anchors that are not overlapped with adjacent SubClusters
+						GenomePos readStart = 0;
+						GenomePos readEnd = 0;	
+						smallOpts.BtnSubClusterswindow = 800;  // this is for finding anchors that are not overlapped with adjacent SubClusters
 												// Too much overlap will influence the efficiency of the merging step
-						if (logClusters[c].SubCluster[sc].qStart > 2*smallOpts.window + logClusters[c].SubCluster[sc + 1].qEnd) {
-							readStart = logClusters[c].SubCluster[sc + 1].qEnd + smallOpts.window;
-							readEnd = logClusters[c].SubCluster[sc].qStart - smallOpts.window;
-						}
-						if (logClusters[c].SubCluster[sc].tStart > 2*smallOpts.window + logClusters[c].SubCluster[sc + 1].tEnd) {
-							genomeClusterSegStart = logClusters[c].SubCluster[sc + 1].tEnd + smallOpts.window;
-							genomeClusterSegEnd = logClusters[c].SubCluster[sc].tStart - smallOpts.window;
+						if (logClusters[c].SubCluster[sc].qStart > 2*smallOpts.BtnSubClusterswindow + logClusters[c].SubCluster[sc + 1].qEnd and 
+							logClusters[c].SubCluster[sc].tStart > 2*smallOpts.BtnSubClusterswindow + logClusters[c].SubCluster[sc + 1].tEnd) {
+
+							readStart = logClusters[c].SubCluster[sc + 1].qEnd + smallOpts.BtnSubClusterswindow;
+							readEnd = logClusters[c].SubCluster[sc].qStart - smallOpts.BtnSubClusterswindow;
+							genomeClusterSegStart = logClusters[c].SubCluster[sc + 1].tEnd + smallOpts.BtnSubClusterswindow;
+							genomeClusterSegEnd = logClusters[c].SubCluster[sc].tStart - smallOpts.BtnSubClusterswindow;
 						}
 
-						if (genomeClusterSegEnd - genomeClusterSegStart > 30*(readEnd - readStart)) {}
+
+						if (genomeClusterSegEnd - genomeClusterSegStart > 30*(readEnd - readStart) and readStart != 0 and readEnd != 0) {
+							// do nothing
+						}
 						else {
 							// Search region starts in window, or beginning of chromosome
-							if (chromOffset + smallOpts.window > genomeClusterSegStart ) {
+							if (chromOffset + smallOpts.BtnSubClusterswindow > genomeClusterSegStart ) {
 								wts = chromOffset;
 							}
 							else {
-								wts = genomeClusterSegStart - smallOpts.window;
+								wts = genomeClusterSegStart - smallOpts.BtnSubClusterswindow;
 							}
 									
-							if (genomeClusterSegEnd + smallOpts.window > chromEndOffset) {
+							if (genomeClusterSegEnd + smallOpts.BtnSubClusterswindow > chromEndOffset) {
 								wte = chromEndOffset-1;
 							}
 							else {
-								wte = genomeClusterSegEnd + smallOpts.window;
+								wte = genomeClusterSegEnd + smallOpts.BtnSubClusterswindow;
 							}
 								
 							ls = glIndex.LookupIndex(wts);

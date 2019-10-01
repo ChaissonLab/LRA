@@ -53,6 +53,8 @@ public:
 	int minRemoveSpuriousAnchorsNum;
 	int minRemoveSpuriousAnchorsLength;
 	int SecondaryAln;
+	int PrimaryAln;
+	int BtnSubClusterswindow;
 
 	Options() {
 		localMatch=4;
@@ -104,6 +106,9 @@ public:
    		minRemoveSpuriousAnchorsNum=15;
    		minRemoveSpuriousAnchorsLength=100;
    		SecondaryAln = 0;
+   		PrimaryAln = 1;
+   		BtnSubClusterswindow = 800;
+
 	}
 };
 #endif

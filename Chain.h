@@ -32,14 +32,27 @@ public:
 int Primary_chain::Overlaps (GenomePos &qS, GenomePos &qE, float rate) {
 
 	int ovp = 0;
+	if (qS >= qStart and qS < qEnd) {
+		ovp = min(qE, qEnd) - qS;
+	}
+	else if (qE > qStart and qE <= qEnd) {
+		ovp = qE - max(qS, qStart);
+	}
+	else if (qS < qStart and qE > qEnd) {
+		ovp = qEnd - qStart;
+	}
+	float denomA = qEnd - qStart;
+	float denomB = qE - qS;
+/*
 	if (qS <= qStart and qE >= qEnd) {
 		ovp = qEnd - qS;
 	}
 	else  if (qS >= qStart and qE <= qEnd) {
 		ovp = qE - qStart;
 	}
-
-	if ((float)ovp/(qEnd - qStart) >= rate) {return true;}
+*/
+	if (max(ovp/denomA, ovp/denomB) >= rate) {return true;}
+	//if ((float)ovp/(qEnd - qStart) >= rate) {return true;}
 	else {return false;}
 }
 

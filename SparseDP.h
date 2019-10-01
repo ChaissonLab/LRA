@@ -1011,7 +1011,12 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain>
 			H1.back().frag_num = i;
 			H1.back().se.first = FragInput[i].qStart; 
 			H1.back().se.second = FragInput[i].tStart;	
-			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+			if (FragInput[i].strand == 0) {
+				H1.back().orient = 1; 
+			}
+			else {
+				H1.back().orient = 0; 				
+			}
 
 
 			// insert end point e1 into H1
@@ -1022,8 +1027,12 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain>
 			H1.back().frag_num = i;
 			H1.back().se.first = FragInput[i].qEnd;
 			H1.back().se.second = FragInput[i].tEnd;
-			H1.back().orient = 0; // the point comes from a reverse oriented anchor
-
+			if (FragInput[i].strand == 0) {
+				H1.back().orient = 1; 
+			}
+			else {
+				H1.back().orient = 0; 				
+			}
 
 			// insert start point s2 into H1
 			Point s2;
@@ -1033,7 +1042,12 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain>
 			H1.back().frag_num = i;
 			H1.back().se.first = FragInput[i].qStart; 
 			H1.back().se.second = FragInput[i].tEnd;	
-			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+			if (FragInput[i].strand == 0) {
+				H1.back().orient = 1; 
+			}
+			else {
+				H1.back().orient = 0; 				
+			}
 
 
 			// insert end point e2 into H1
@@ -1044,7 +1058,13 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain>
 			H1.back().frag_num = i;
 			H1.back().se.first = FragInput[i].qEnd;
 			H1.back().se.second = FragInput[i].tStart;	
-			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+			if (FragInput[i].strand == 0) {
+				H1.back().orient = 1; 
+			}
+			else {
+				H1.back().orient = 0; 				
+			}
+
 	}
 
 	//clock_t begin = std::clock();
@@ -1204,8 +1224,11 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain>
 						}
 						++p;
 					}			
-					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 1) {
-						Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
+					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 1) {		
+						if (Primary_chains.size() < opts.PrimaryAln) {
+							Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
+						}	
+						else {break;}		
 					}	
 				}
 			}
