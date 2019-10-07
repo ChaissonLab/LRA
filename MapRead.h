@@ -1110,7 +1110,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 */
 
-
 		// Output the primary chains
 		if (opts.dotPlot) {
 			for (int c = 0; c < Primary_chains.size(); c++) {
@@ -1131,23 +1130,55 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}
 		}
 
+/*
+		//
+		// Check every chain in Primary_chains. If one chain is mapped to different chromsomes, then split this chain
+		//
+		for (int c = 0; c < Primary_chains.size(); c++) {
+
+				GenomePos tPos = Primary_chains[c].tStart;
+				int firstChromIndex = genome.header.Find(tPos);
+				tPos = Primary_chains[c].tEnd;
+				int lastChromIndex = genome.header.Find(tPos);		
+				if (firstChromIndex != lastChromIndex) {
+				for (int p = 0; p < Primary_chains[c].chains.size(); p++) {
+
+					GenomePos qEnd, tEnd, qStart, tStart;
+					for (int s = 0; s < Primary_chains[c].chains[p].size(); s++) {
+						GenomePos qEnd, tEnd, qStart, tStart;
+						qEnd = max(qEnd, clusters[Primary_chains[c].chains[p][s]].qEnd);
+						tEnd = max(tEnd, clusters[Primary_chains[c].chains[p][s]].tEnd);	
+						qStart = min(qStart, clusters[Primary_chains[c].chains[p][s]].qStart);
+						tStart = min(tStart, clusters[Primary_chains[c].chains[p][s]].tStart);
+
+					}
+					int firstChromIndex = genome.header.Find(tStart);
+					int lastChromIndex = genome.header.Find(tEnd);
+					if (firstChromIndex != lastChromIndex) {
+
+					}						
+
+				}
+					
+		}
+*/
 
 		//
 		// Decide the direction of each chain in Primary_chains
 		//
 		int chainNum = 0;
-		for (int c = 0; c < Primary_chains.size(); ++c) {
+		for (int c = 0; c < Primary_chains.size(); c++) {
 			Primary_chains[c].direction.resize(Primary_chains[c].chains.size(), 0);
 			vector<bool> Remove(Primary_chains[c].chains.size(), 0);
-			for (int p = 0; p < Primary_chains[c].chains.size(); ++p) {
+			for (int p = 0; p < Primary_chains[c].chains.size(); p++) {
 
 				int t = 0;
 				for (int s = 0; s < Primary_chains[c].chains[p].size() - 1; ++s) {
 					int cr = Primary_chains[c].chains[p][s];
 					int pr = Primary_chains[c].chains[p][s + 1];
-					GenomePos curReadStart = clusters[cr].qStart;
-					GenomePos prevReadStart = clusters[pr].qStart;
-					if (prevReadStart < curReadStart) {++t;}
+					GenomePos curGenomeStart = clusters[cr].tStart;
+					GenomePos prevGenomeStart = clusters[pr].tStart;
+					if (prevGenomeStart < curGenomeStart) {++t;}
 				}
 
 				if (Primary_chains[c].chains[p].size() == 1) {
@@ -1825,7 +1856,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						//
 						GenomePos readStart = 0;
 						GenomePos readEnd = 0;	
-						smallOpts.BtnSubClusterswindow = 800;  // this is for finding anchors that are not overlapped with adjacent SubClusters
+						smallOpts.BtnSubClusterswindow = 1000;  // this is for finding anchors that are not overlapped with adjacent SubClusters
 												// Too much overlap will influence the efficiency of the merging step
 						if (logClusters[c].SubCluster[sc].qStart > 2*smallOpts.BtnSubClusterswindow + logClusters[c].SubCluster[sc + 1].qEnd and 
 							logClusters[c].SubCluster[sc].tStart > 2*smallOpts.BtnSubClusterswindow + logClusters[c].SubCluster[sc + 1].tEnd) {

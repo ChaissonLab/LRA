@@ -1194,9 +1194,16 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain>
 			// Note: onechain store index from the last one to the first one
 			GenomePos qEnd = FragInput[onechain[0]].qEnd;
 			GenomePos tEnd = FragInput[onechain[0]].tEnd;
-
 			GenomePos qStart = FragInput[onechain.back()].qStart;
-			GenomePos tStart = FragInput[onechain.back()].tStart;		
+			GenomePos tStart = FragInput[onechain.back()].tStart;	
+
+			// Somethimes not all onechain[i] align to the same chromosom
+			for (int c = 0; c < onechain.size(); c++) {
+				qEnd = max(FragInput[onechain[c]].qEnd, qEnd);
+				tEnd = max(FragInput[onechain[c]].tEnd, tEnd);
+				qStart = min(FragInput[onechain[c]].qStart, qStart);
+				tStart = min(FragInput[onechain[c]].tStart, tStart);
+			}
 
 			//
 			// If this chain overlap with read greater than 20%, insert it to clusterchain
