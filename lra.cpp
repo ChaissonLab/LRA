@@ -52,7 +52,7 @@ void HelpMap() {
 	cout << "Options:" << endl
 			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam 'p' pair ." << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
-       << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
+     		 << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
 			 << "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
 			 << "   -m  m(int)  Do not align clusters with fewer than m refined"<< endl
 			 << "               matches (40). Typically m > 3*M" << endl

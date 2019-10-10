@@ -101,10 +101,13 @@ public:
 		LookUpTable=true;
 		MergeSplit=true;
    		flagRemove=0;
-   		minRemovePairedIndelsLength=50; // used to be 50
-   		maxRemoveSpuriousAnchorsDist=200;
-   		minRemoveSpuriousAnchorsNum=15;
-   		minRemoveSpuriousAnchorsLength=100;
+   		minRemovePairedIndelsLength=400; // used to be 50
+   		//maxRemoveSpuriousAnchorsDist=200;
+   		//minRemoveSpuriousAnchorsNum=15;
+   		//minRemoveSpuriousAnchorsLength=100;
+     	maxRemoveSpuriousAnchorsDist=200;
+   		minRemoveSpuriousAnchorsNum=30;
+   		minRemoveSpuriousAnchorsLength=400;
    		SecondaryAln = 0;
    		PrimaryAln = 1;
    		BtnSubClusterswindow = 800;

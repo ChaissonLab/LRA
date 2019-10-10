@@ -1600,7 +1600,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		smallOpts.cleanMaxDiag=10;// used to be 25
 		//smallOpts.maxDiag=50;
 		//smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large
-		smallOpts.maxDiag=200;
+		smallOpts.maxDiag=50;
 		smallOpts.maxGapBtwnAnchors=2000; // used to be 200 // 200 seems a little bit large
 		smallOpts.minDiagCluster=50; // used to be 3
 
@@ -2832,9 +2832,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 							if (gapPairs.size() > 0) {
 								if (opts.SparseDP) {
 									gapChain.clear();
-									if (gapPairs.size() < 20000) {
+									if (gapPairs.size() < 100000) {
 										if (gapPairs.size()/((float)min(subreadLength, subgenomeLength)) < 0.1) {
-											SparseDP_ForwardOnly(gapPairs, gapChain, tinyOpts, LookUpTable, 10); // TODO(Jingwen): change the rate to customized number
+											SparseDP_ForwardOnly(gapPairs, gapChain, tinyOpts, LookUpTable, 5); // TODO(Jingwen): change the rate to customized number
 										}
 										else { 
 											SparseDP_ForwardOnly(gapPairs, gapChain, tinyOpts, LookUpTable); 
