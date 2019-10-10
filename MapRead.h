@@ -622,7 +622,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	
 	string baseName = read.name;
 
-	for (int i=0; i < baseName.size(); i++) {	if (baseName[i] == '/') baseName[i] = '_';	}
+	for (int i=0; i < baseName.size(); i++) {	
+		if (baseName[i] == '/') baseName[i] = '_';	
+		if (baseName[i] == '|') baseName[i] = '_';
+	}
 
 
 	vector<GenomeTuple> readmm; // readmm stores minimizers
@@ -717,6 +720,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		rclust.close();
 	}
 
+
 	vector<Cluster> revroughClusters;
 	int reverseStrand=1;
 	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), true, false, reverseStrand);
@@ -806,8 +810,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		for (int cv = 0; cv < clusterOrder.size(); cv++) {
 			maxvalue = max(maxvalue, (float) clusterOrder[cv].qEnd - clusterOrder[cv].qStart);
 		}
-		if (maxvalue < (float) read.length/6) valuerate = 4; 
-		if (valuerate < 2) valuerate = 2; 
+		if (maxvalue < (float) read.length/6) valuerate = 2; 
 
 /*
 		//
@@ -1122,7 +1125,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 								 << clusters[Primary_chains[c].chains[0][s]].matches[m].second.pos << "\t" 
 								 << clusters[Primary_chains[c].chains[0][s]].matches[m].first.pos + opts.globalK << "\t"
 								 << clusters[Primary_chains[c].chains[0][s]].matches[m].second.pos + opts.globalK << "\t"
-								 << s << "\t" 
+								 << Primary_chains[c].chains[0][s] << "\t" 
 								 << clusters[Primary_chains[c].chains[0][s]].strand << endl;					
 					}				
 				}
@@ -1595,17 +1598,19 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		smallOpts.globalW=glIndex.w;
 		smallOpts.globalMaxFreq=6;
 		smallOpts.cleanMaxDiag=10;// used to be 25
-		smallOpts.maxDiag=50;
-		smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large
-		smallOpts.minDiagCluster=3; // used to be 3
+		//smallOpts.maxDiag=50;
+		//smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large
+		smallOpts.maxDiag=200;
+		smallOpts.maxGapBtwnAnchors=2000; // used to be 200 // 200 seems a little bit large
+		smallOpts.minDiagCluster=50; // used to be 3
 
 		Options tinyOpts = smallOpts;
 		tinyOpts.globalMaxFreq=3;
 		tinyOpts.maxDiag=5;
-		tinyOpts.minDiagCluster=2;
+		tinyOpts.minDiagCluster=20;
 		tinyOpts.globalK=smallOpts.globalK-3;
-		tinyOpts.minRemoveSpuriousAnchorsNum=5;
-		tinyOpts.maxRemoveSpuriousAnchorsDist=50;
+		tinyOpts.minRemoveSpuriousAnchorsNum=20;
+		tinyOpts.maxRemoveSpuriousAnchorsDist=100;
 
 
 		vector<Cluster> refinedClusters(clusters.size());
@@ -1620,14 +1625,14 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				// Find the digonal band that each logclusters[i].subCluster[j] is in
 				//
 				int st = logClusters[c].SubCluster[sc].start;
-				long long int maxDN = clusters[logClusters[c].coarse].matches[st].first.pos - clusters[logClusters[c].coarse].matches[st].second.pos;
+				long long int maxDN = (long long int)clusters[logClusters[c].coarse].matches[st].first.pos - (long long int)clusters[logClusters[c].coarse].matches[st].second.pos;
 				long long int  minDN = maxDN;
 				for (int db = logClusters[c].SubCluster[sc].start; db < logClusters[c].SubCluster[sc].end; db++) {
 					maxDN = max(maxDN, (long long int)clusters[logClusters[c].coarse].matches[db].first.pos - (long long int)clusters[logClusters[c].coarse].matches[db].second.pos);
 					minDN = min(minDN, (long long int)clusters[logClusters[c].coarse].matches[db].first.pos - (long long int)clusters[logClusters[c].coarse].matches[db].second.pos);
 				}
-				logClusters[c].SubCluster[sc].maxDiagNum = maxDN + 20;
-				logClusters[c].SubCluster[sc].minDiagNum = minDN - 20;
+				logClusters[c].SubCluster[sc].maxDiagNum = maxDN;
+				logClusters[c].SubCluster[sc].minDiagNum = minDN;
 			}		
 		}
 
@@ -1652,13 +1657,13 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						if (logClusters[c].SubCluster[n].strand == 0) {
 							baseDots << clusters[logClusters[c].coarse].matches[m].first.pos << "\t" << clusters[logClusters[c].coarse].matches[m].second.pos << "\t" 
 									<< clusters[logClusters[c].coarse].matches[m].first.pos + opts.globalK << "\t" << clusters[logClusters[c].coarse].matches[m].second.pos + opts.globalK  << "\t" 
-									<<  c << "\t" << logClusters[c].SubCluster[n].strand << endl;
+									<<  n << "\t" << logClusters[c].SubCluster[n].strand << endl;
 						}
 						else {
 							baseDots << read.length - clusters[logClusters[c].coarse].matches[m].first.pos - 1 << "\t" << clusters[logClusters[c].coarse].matches[m].second.pos << "\t" 
 									<< read.length - clusters[logClusters[c].coarse].matches[m].first.pos - 1 - opts.globalK << "\t"
 									<< clusters[logClusters[c].coarse].matches[m].second.pos + opts.globalK << "\t"
-									<<  c << "\t" << logClusters[c].SubCluster[n].strand << endl;
+									<<  n << "\t" << logClusters[c].SubCluster[n].strand << endl;
 						}
 					}
 				}
@@ -1856,7 +1861,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						//
 						GenomePos readStart = 0;
 						GenomePos readEnd = 0;	
-						smallOpts.BtnSubClusterswindow = 1000;  // this is for finding anchors that are not overlapped with adjacent SubClusters
+						smallOpts.BtnSubClusterswindow = 10000;  // this is for finding anchors that are not overlapped with adjacent SubClusters
 												// Too much overlap will influence the efficiency of the merging step
 						if (logClusters[c].SubCluster[sc].qStart > 2*smallOpts.BtnSubClusterswindow + logClusters[c].SubCluster[sc + 1].qEnd and 
 							logClusters[c].SubCluster[sc].tStart > 2*smallOpts.BtnSubClusterswindow + logClusters[c].SubCluster[sc + 1].tEnd) {
@@ -1991,7 +1996,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					qEnd = max(qEnd, refinedClusters[c].matches[sb].first.pos + smallOpts.globalK);
 				}
 				// Divide the current Subcluster into groups (each group contains >=1000bp on read)
-				int GroupLength = 2000;
+				int GroupLength = 2000; // used to be 2000
 				int NumGroups = (qEnd - qStart)/GroupLength; // output the floor int
 				if (NumGroups == 0) NumGroups++;
 				vector<vector<int>> GroupVec(NumGroups);
@@ -2265,14 +2270,41 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				mergedAnchors.clear();
 				//MergeClusters(smallOpts, refinedClusters, vt, r);
 				//mergeClusters (smallOpts, refinedClusters[r].matches, vt, r, baseName);
-				//MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors, WholeReverseDirection);
-				MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors, 0);
+				MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors, WholeReverseDirection);
+				//MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors, 0);
 
 				int MergeAnchorsNum = 0;
 				for (int m = 0; m < mergedAnchors.size(); m++) {
 					MergeAnchorsNum += mergedAnchors[m].end - mergedAnchors[m].start;
 				}
+				// TODO(Jingwen): only for debug the new MergeAnchors function from MergeAnchors.h
+				if (opts.dotPlot) {
+					stringstream outNameStrm;
+					outNameStrm << baseName + "." << r << ".merged.dots";
+					ofstream baseDots(outNameStrm.str().c_str());
+					for (int m=0; m < mergedAnchors.size(); m++) {
 
+						if (mergedAnchors[m].strand == 0) {
+							// chain stores indices which refer to elments in vt
+							baseDots << mergedAnchors[m].qStart << "\t" 
+									 << mergedAnchors[m].tStart << "\t" 
+									 << mergedAnchors[m].qEnd << "\t" 
+									 << mergedAnchors[m].tEnd << "\t"
+									 << r << "\t"
+									 << mergedAnchors[m].strand << endl;									
+						}		
+						else {
+							baseDots << mergedAnchors[m].qStart << "\t" 
+									 << mergedAnchors[m].tEnd << "\t" 
+									 << mergedAnchors[m].qEnd << "\t" 
+									 << mergedAnchors[m].tStart << "\t"
+									 << r << "\t"
+									 << mergedAnchors[m].strand << endl;								
+						}	
+
+					}
+					baseDots.close();
+				}
 				//
 				// Output the anchor efficiency file TODO(Jingwen): delete this later
 				/*				
@@ -2300,7 +2332,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			vector<unsigned int> chain; // chain contains the index of the fragments involved in the result of SparseDP.
 			if (opts.SparseDP) {
 				chain.clear();
-				if (opts.mergeClusters and mergedAnchors.size() < 30000 and mergedAnchors.size() > 0) {
+				if (opts.mergeClusters and mergedAnchors.size() < 1000000 and mergedAnchors.size() > 0) {
 					if (refinedClusters[r].matches.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
 						SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, ReverseOnly, 5); 
 					}
@@ -2308,7 +2340,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, ReverseOnly);
 					}
 				}
-				else if (refinedClusters[r].matches.size() < 30000) {
+				else if (refinedClusters[r].matches.size() < 1000000) {
 					if (refinedClusters[r].matches.size()/((float)(min(refinedClusters[r].qEnd - refinedClusters[r].qStart, refinedClusters[r].tEnd - refinedClusters[r].tStart))) < 0.1) {
 						SparseDP(refinedClusters[r].matches, chain, smallOpts, LookUpTable, refinedLogClusters[r], refinedClusters[r].strands, ReverseOnly, 10);
 					}
@@ -2359,34 +2391,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}
 */
 				
-			// TODO(Jingwen): only for debug the new MergeAnchors function from MergeAnchors.h
-			if (opts.dotPlot and opts.mergeClusters) {
-				stringstream outNameStrm;
-				outNameStrm << baseName + "." << r << ".merged.dots";
-				ofstream baseDots(outNameStrm.str().c_str());
-				for (int m=0; m < mergedAnchors.size(); m++) {
-
-					if (mergedAnchors[m].strand == 0) {
-						// chain stores indices which refer to elments in vt
-						baseDots << mergedAnchors[m].qStart << "\t" 
-								 << mergedAnchors[m].tStart << "\t" 
-								 << mergedAnchors[m].qEnd << "\t" 
-								 << mergedAnchors[m].tEnd << "\t"
-								 << r << "\t"
-								 << mergedAnchors[m].strand << endl;									
-					}		
-					else {
-						baseDots << mergedAnchors[m].qStart << "\t" 
-								 << mergedAnchors[m].tEnd << "\t" 
-								 << mergedAnchors[m].qEnd << "\t" 
-								 << mergedAnchors[m].tStart << "\t"
-								 << r << "\t"
-								 << mergedAnchors[m].strand << endl;								
-					}	
-
-				}
-				baseDots.close();
-			}
 
 			// TODO(Jingwen): Only for debug
 			if (opts.dotPlot) {

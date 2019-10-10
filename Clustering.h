@@ -518,7 +518,7 @@ class LogCluster {
  	}
 
  	void SetSubClusterBoundariesFromMatches (Options &opts) {
-		// set the boundaries for SubCluster[i]
+		// set the boundaries for SubCluster[i] -- the current last one in SubCluster
  		int i = SubCluster.size() - 1; // the last one in SubCluster
 		for (int is = SubCluster[i].start; is < SubCluster[i].end; ++is) {
 
@@ -580,6 +580,7 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 
 	int maxGap = -1, maxDiag = -1;
 	if (rough == false) { maxGap = opts.maxGapBtwnAnchors;}
+
 	else { maxDiag = opts.maxDiag;} 
 	int i;
 	int cs = s, ce = e;
