@@ -1309,7 +1309,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				assert(nextGenomeStart >= curGenomeEnd);
 				
 
-				if (subreadLength > 500) { // TODO(Jingwen): change the way to store minimizers (Allopts) check the begining
+				if (subreadLength > 500 and subreadLength < 1000) { // TODO(Jingwen): change the way to store minimizers (Allopts) check the begining
 					StoreMinimizers<GenomeTuple, Tuple>(genome.seqs[ChromIndex] + (curGenomeEnd - genome.header.pos[ChromIndex]), subgenomeLength, opts.globalK, 1, EndGenomeTup, false);
 					sort(EndGenomeTup.begin(), EndGenomeTup.end());
 					StoreMinimizers<GenomeTuple, Tuple>(strands[clusters[id].strand] + curReadEnd, subreadLength, opts.globalK, 1, EndReadTup, false);
@@ -1439,7 +1439,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				assert(nextGenomeStart >= curGenomeEnd);
 				
 
-				if (subreadLength > 500) { // TODO(Jingwen): change the way to store minimizers (Allopts) check the begining
+				if (subreadLength > 500 and subreadLength < 1000) { // TODO(Jingwen): change the way to store minimizers (Allopts) check the begining
 					StoreMinimizers<GenomeTuple, Tuple>(genome.seqs[ChromIndex] + (curGenomeEnd - genome.header.pos[ChromIndex]), subgenomeLength, opts.globalK, 1, EndGenomeTup, false);
 					sort(EndGenomeTup.begin(), EndGenomeTup.end());
 					StoreMinimizers<GenomeTuple, Tuple>(strands[clusters[idx].strand] + curReadEnd, subreadLength, opts.globalK, 1, EndReadTup, false);
@@ -1594,6 +1594,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 		// Set the parameters for merging anchors and 1st SDP
 		Options smallOpts = opts;
+		/*
 		smallOpts.globalK=glIndex.k;
 		smallOpts.globalW=glIndex.w;
 		smallOpts.globalMaxFreq=6;
@@ -1603,7 +1604,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		smallOpts.maxDiag=50;
 		smallOpts.maxGapBtwnAnchors=2000; // used to be 200 // 200 seems a little bit large
 		smallOpts.minDiagCluster=50; // used to be 3
-
+	 	*/
 		Options tinyOpts = smallOpts;
 		tinyOpts.globalMaxFreq=3;
 		tinyOpts.maxDiag=5;
@@ -1613,9 +1614,57 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		tinyOpts.maxRemoveSpuriousAnchorsDist=100;
 
 
+		//
+		for (int c = 0; c < logClusters.size(); c++) {
+			
+			if (clusters[logClusters[c].coarse].matches.size() == 0) {
+				continue;
+			}			
+
+			//
+			// Get the boundaries of the cluster in genome sequence.
+			//
+			int nMatch = clusters[logClusters[c].coarse].matches.size();
+			GenomePos tPos = clusters[logClusters[c].coarse].tStart;
+			int firstChromIndex = genome.header.Find(tPos);
+			int lastChromIndex;
+			if (nMatch > 1 ) {
+				tPos = clusters[logClusters[c].coarse].tEnd;
+				lastChromIndex = genome.header.Find(tPos);
+			} else { 
+				lastChromIndex = firstChromIndex; 
+			}
+			clusters[logClusters[c].coarse].chromIndex = firstChromIndex;  
+			if (firstChromIndex != lastChromIndex ) {
+				clusters[logClusters[c].coarse].matches.clear();
+				continue;
+			}
+		}
+
+
+
 		vector<Cluster> refinedClusters(clusters.size());
 		vector<LogCluster> refinedLogClusters(clusters.size());
 
+		for (int i = 0; i < clusters.size(); i++) {
+			refinedClusters[i]= clusters[logClusters[i].coarse];
+			refinedLogClusters[i] = logClusters[i];
+		}
+
+
+		for (int c = 0; c < refinedLogClusters.size(); c++) {
+			for (int sc = 0; sc < refinedLogClusters[c].SubCluster.size(); sc++) {
+				for (int m=refinedLogClusters[c].SubCluster[sc].start; m<refinedLogClusters[c].SubCluster[sc].end; m++) {
+					refinedClusters[c].matches[m].first.pos = read.length - (refinedClusters[c].matches[m].first.pos + opts.globalK);
+				}				
+			}
+		}
+
+
+		
+		//////////////////////////////
+		/////////////////////////////
+		/*
 		// 
 		// Decide the diagonal band for every subClusters
 		//
@@ -1942,47 +1991,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 				if (refinedClusters[c].matches.size() == 0) break;
 				DiagonalSort<GenomeTuple>(refinedClusters[c].matches.begin() + rfCsize, refinedClusters[c].matches.begin() + refinedClusters[c].matches.size());
-				// TODO(Jingwen): Only for debug, delete later
 				
-				/*
-				vector<int> diag;
-				double mean = 0;
-				for (int rfc = rfCsize; rfc < refinedClusters[c].matches.size(); ++rfc) {
-					diag.push_back(refinedClusters[c].matches[rfc].first.pos - refinedClusters[c].matches[rfc].second.pos);
-					mean += (double) refinedClusters[c].matches[rfc].first.pos - refinedClusters[c].matches[rfc].second.pos;
-				}
-				int median = floor((refinedClusters[c].matches.size() - rfCsize)/2) + rfCsize;
-				int diagOrigin = refinedClusters[c].matches[median].first.pos - refinedClusters[c].matches[median].second.pos;
-				mean = mean/diag.size();
-				double sqtsum = 0;
-				for (int sd = 0; sd < diag.size(); ++sd) {
-					sqtsum += std::pow((double)diag[sd] - mean, 2); 
-				}
-				int diagDrift = (int) ceil(std::sqrt(sqtsum/(diag.size()-1)));
-				// check whether there is a main diagonal in this subcluster of anchors
-				for (int ab = 0; ab < diag.size(); ++ab) {
-					diag[ab] = abs(diag[ab] - diagOrigin);
-				}
-				sort(diag.begin(), diag.end());
-				int absMedian = floor(diag.size()/2);
-
-				// TODO(Jingwen): add the following parameters to option.h
-				// This threshold 200 indicates whether there is a main diagonal in this subcluster
-				if (diag.size() == 0 or (diag[absMedian] > 200 and diag.size() < 200)) {
-					continue;
-				}
-				//
-				// If standard deviation is large, then the main diagonal alignment may have more than one part 
-				// In this case, we need to give diagDrift a larger value to keep the main diagonal alignment
-				if (diagDrift >= 300) diagDrift = 2*diagDrift;
-				else if (diagDrift >= 200) diagDrift = 1.5*diagDrift;
-
-				//TODO(Jingwen): check whether this cleanoffDiagonal function influences the speed
-				CleanOffDiagonal(refinedClusters[c].matches, rfCsize, refinedClusters[c].matches.size(), smallOpts, 0, diagOrigin, diagDrift);
-				*/
-
-
-
 
 
 				// ----- New Code ------------
@@ -2114,6 +2123,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}
 		}
 
+		*/
+		////////////////////////////////////////////////
+		///////////////////////////////////////////////
+
 
 		//
 		// Remove clusters under some minimal number of anchors. By default this is one. 
@@ -2146,10 +2159,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			if (refinedClusters[r].matches.size() == 0 or refinedLogClusters[r].SubCluster.size() == 0) {
 				continue;
 			}
-			if (refinedClusters[r].matches.size() > read.length or opts.refineLevel & REF_LOC == 0) {
-				refinedClusters[r].matches = clusters[refinedClusters[r].coarse].matches;
-				continue;
-			}
+			//if (refinedClusters[r].matches.size() > read.length or opts.refineLevel & REF_LOC == 0) {
+			//	refinedClusters[r].matches = clusters[refinedClusters[r].coarse].matches;
+			//	continue;
+			//}
 
 			bool ReverseOnly = 1; // ReverseOnly == 1 means there are only reverse matches
 								  // If ReverseOnly == 1, then only inserting two points s2, e2 for every reversed match in 1-st SDP.
@@ -2236,6 +2249,33 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					refinedClusters[r].qStart = read.length - qe;
 					refinedClusters[r].qEnd = read.length - qs;
 				}
+			}
+
+
+			if (opts.dotPlot) {
+				stringstream outNameStrm;
+				outNameStrm << baseName + "." << r << ".orig.dots";
+				ofstream baseDots(outNameStrm.str().c_str());
+				for (int m=0; m<refinedLogClusters[r].SubCluster.size(); ++m) {
+
+					for (int n=refinedLogClusters[r].SubCluster[m].start; n<refinedLogClusters[r].SubCluster[m].end; n++) {
+						if (refinedLogClusters[r].SubCluster[m].strand == 0) {
+							baseDots << refinedClusters[r].matches[n].first.pos << "\t" << refinedClusters[r].matches[n].second.pos << "\t" 
+										<< refinedClusters[r].matches[n].first.pos + smallOpts.globalK << "\t" 
+										<< refinedClusters[r].matches[n].second.pos + smallOpts.globalK << "\t"  
+										<< m << "\t"
+										<< refinedLogClusters[r].SubCluster[m].strand << endl;
+						}
+						else {
+							baseDots << refinedClusters[r].matches[n].first.pos << "\t" << refinedClusters[r].matches[n].second.pos + smallOpts.globalK << "\t"
+										<< refinedClusters[r].matches[n].first.pos + smallOpts.globalK << "\t" 
+										<< refinedClusters[r].matches[n].second.pos  << "\t"  
+										<< m << "\t"
+										<< refinedLogClusters[r].SubCluster[m].strand << endl;							
+						}
+					}
+				}
+				baseDots.close();
 			}
 
 			if (opts.dotPlot) {

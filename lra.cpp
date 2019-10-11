@@ -50,7 +50,7 @@ void HelpMap() {
 	cout << "   The genome should be indexed using the 'lra index' program." << endl
 			 << "   'reads' may be either fasta, sam, or bam, and multiple input files may be given." << endl << endl;
 	cout << "Options:" << endl
-			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam 'p' pair ." << endl
+			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' pair ." << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
      		 << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
 			 << "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
