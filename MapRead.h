@@ -1145,9 +1145,12 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				for (int s = 0; s < Primary_chains[c].chains[p].size() - 1; ++s) {
 					int cr = Primary_chains[c].chains[p][s];
 					int pr = Primary_chains[c].chains[p][s + 1];
-					GenomePos curReadStart = clusters[cr].qStart;
-					GenomePos prevReadStart = clusters[pr].qStart;
-					if (prevReadStart < curReadStart) {++t;}
+					//GenomePos curReadStart = clusters[cr].qStart;
+					//GenomePos prevReadStart = clusters[pr].qStart;
+					//if (prevReadStart < curReadStart) {++t;}
+					GenomePos curGenomeStart = clusters[cr].tStart;
+					GenomePos prevGenomeStart = clusters[pr].tStart;
+					if (prevGenomeStart < curGenomeStart) {++t;}
 				}
 
 				if (Primary_chains[c].chains[p].size() == 1) {
@@ -1580,26 +1583,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		vector<Cluster> refinedClusters(clusters.size());
 		vector<LogCluster> refinedLogClusters(clusters.size());
 
-		// 
-		// Decide the diagonal band for every subClusters
-		//
-		for (int c = 0; c < logClusters.size(); c++) {
-			for (int sc = 0; sc < logClusters[c].SubCluster.size(); sc++) {
-				//
-				// Find the digonal band that each logclusters[i].subCluster[j] is in
-				//
-				int st = logClusters[c].SubCluster[sc].start;
-				long long int maxDN = clusters[logClusters[c].coarse].matches[st].first.pos - clusters[logClusters[c].coarse].matches[st].second.pos;
-				long long int  minDN = maxDN;
-				for (int db = logClusters[c].SubCluster[sc].start; db < logClusters[c].SubCluster[sc].end; db++) {
-					maxDN = max(maxDN, (long long int)clusters[logClusters[c].coarse].matches[db].first.pos - (long long int)clusters[logClusters[c].coarse].matches[db].second.pos);
-					minDN = min(minDN, (long long int)clusters[logClusters[c].coarse].matches[db].first.pos - (long long int)clusters[logClusters[c].coarse].matches[db].second.pos);
-				}
-				logClusters[c].SubCluster[sc].maxDiagNum = maxDN + 20;
-				logClusters[c].SubCluster[sc].minDiagNum = minDN - 20;
-			}		
-		}
-
 
 		//
 		//logClusters[c] stores all anchors from one chain
@@ -1668,6 +1651,24 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			GenomePos chromEndOffset = genome.header.GetNextOffset(GenomeClusterEnd);
 			refinedLogClusters[c].setHp(refinedClusters[c]);
 
+			// 
+			// Decide the diagonal band for every subClusters
+			//
+			for (int sc = 0; sc < logClusters[c].SubCluster.size(); sc++) {
+				//
+				// Find the digonal band that each logclusters[i].subCluster[j] is in; NOTICE: here every diagnoal minus chromOffset, so it's in the same scale with local matches
+				//
+				int st = logClusters[c].SubCluster[sc].start;
+				long long int maxDN = (long long int) clusters[logClusters[c].coarse].matches[st].first.pos - (long long int) clusters[logClusters[c].coarse].matches[st].second.pos;
+				long long int  minDN = maxDN;
+				for (int db = logClusters[c].SubCluster[sc].start; db < logClusters[c].SubCluster[sc].end; db++) {
+					maxDN = max(maxDN, (long long int)clusters[logClusters[c].coarse].matches[db].first.pos - (long long int)clusters[logClusters[c].coarse].matches[db].second.pos);
+					minDN = min(minDN, (long long int)clusters[logClusters[c].coarse].matches[db].first.pos - (long long int)clusters[logClusters[c].coarse].matches[db].second.pos);
+				}
+				logClusters[c].SubCluster[sc].maxDiagNum = maxDN + 20;
+				logClusters[c].SubCluster[sc].minDiagNum = minDN - 20;
+			}		
+		
 
 			for (int sc = 0; sc < logClusters[c].SubCluster.size(); sc++) {
 				//
@@ -1825,7 +1826,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						//
 						GenomePos readStart = 0;
 						GenomePos readEnd = 0;	
-						smallOpts.BtnSubClusterswindow = 800;  // this is for finding anchors that are not overlapped with adjacent SubClusters
+						smallOpts.BtnSubClusterswindow = 1000;  // this is for finding anchors that are not overlapped with adjacent SubClusters
 												// Too much overlap will influence the efficiency of the merging step
 						if (logClusters[c].SubCluster[sc].qStart > 2*smallOpts.BtnSubClusterswindow + logClusters[c].SubCluster[sc + 1].qEnd and 
 							logClusters[c].SubCluster[sc].tStart > 2*smallOpts.BtnSubClusterswindow + logClusters[c].SubCluster[sc + 1].tEnd) {
@@ -2234,8 +2235,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				mergedAnchors.clear();
 				//MergeClusters(smallOpts, refinedClusters, vt, r);
 				//mergeClusters (smallOpts, refinedClusters[r].matches, vt, r, baseName);
-				//MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors, WholeReverseDirection);
-				MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors, 0);
+				MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors, WholeReverseDirection);
+				//MergeAnchors (smallOpts, refinedClusters, refinedLogClusters, r, mergedAnchors, 0);
 
 				int MergeAnchorsNum = 0;
 				for (int m = 0; m < mergedAnchors.size(); m++) {
@@ -2653,8 +2654,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				}
 			}
 
-
-
 			if (tupChain.size() == 0) {
 				refinedClusters[r].matches.clear();
 				continue;
@@ -2672,32 +2671,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			//RemovePairedIndels(tupChain, chainClust, smallOpts);  
 			// TODO(Jingwen): make this work
 			//RemovePairedIndels(curReadEnd, curGenomeEnd, nextReadStart, nextGenomeStart, tupChain, refinedClusters[r].matches, smallOpts);
-
-
-	
-			/*
-			int prevq=0;
-			int prevt=0;
-			
-			//		cout << "Chain is on " << chainClust.size() << " diagonals " << endl;
-
-			for (int cc = 0; cc < chainClust.size(); cc++ ) {
-				if (cc > 0) {
-									cout << (int) (chainClust[cc].qStart - prevq - (chainClust[cc].tStart - prevt)) << "\t" 
-							 << chainClust[cc].qStart - prevq << "\t" << chainClust[cc].qStart << "\t" << chainClust[cc].qEnd << "\tt " 
-							 << chainClust[cc].tStart - prevt << "\t" << chainClust[cc].tStart << "\t" << chainClust[cc].tEnd  << endl;
-				}
-				prevq = chainClust[cc].qEnd;
-				prevt = chainClust[cc].tEnd;
-			}
-			*/
-
-
-			// tupChain stores the fragments from first sdp. the length of fragments in tupChain is smallOpts.globalK
-			//GenomePos chainGenomeStart = tupChain[0].second.pos;
-			//GenomePos chainGenomeEnd   = tupChain[tupChain.size()-1].second.pos + smallOpts.globalK;
-			//GenomePos chainReadStart = tupChain[0].first.pos;
-			//GenomePos chainReadEnd   = tupChain[tupChain.size()-1].first.pos + smallOpts.globalK;
 
 			int chromIndex = refinedClusters[r].chromIndex;
 				
@@ -2819,9 +2792,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 									}
 								}
 							}
-
-
-						
 
 
 							RemovePairedIndels(curReadEnd, curGenomeEnd, nextReadStart, nextGenomeStart, gapChain, gapPairs, tinyOpts);
