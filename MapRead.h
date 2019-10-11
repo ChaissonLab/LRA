@@ -1309,7 +1309,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				assert(nextGenomeStart >= curGenomeEnd);
 				
 
-				if (subreadLength > 500) { // TODO(Jingwen): change the way to store minimizers (Allopts) check the begining
+				if (subreadLength > 500 and subreadLength < 1000) { // TODO(Jingwen): change the way to store minimizers (Allopts) check the begining
 					StoreMinimizers<GenomeTuple, Tuple>(genome.seqs[ChromIndex] + (curGenomeEnd - genome.header.pos[ChromIndex]), subgenomeLength, opts.globalK, 1, EndGenomeTup, false);
 					sort(EndGenomeTup.begin(), EndGenomeTup.end());
 					StoreMinimizers<GenomeTuple, Tuple>(strands[clusters[id].strand] + curReadEnd, subreadLength, opts.globalK, 1, EndReadTup, false);
@@ -1439,7 +1439,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				assert(nextGenomeStart >= curGenomeEnd);
 				
 
-				if (subreadLength > 500) { // TODO(Jingwen): change the way to store minimizers (Allopts) check the begining
+				if (subreadLength > 500 and subreadLength < 1000) { // TODO(Jingwen): change the way to store minimizers (Allopts) check the begining
 					StoreMinimizers<GenomeTuple, Tuple>(genome.seqs[ChromIndex] + (curGenomeEnd - genome.header.pos[ChromIndex]), subgenomeLength, opts.globalK, 1, EndGenomeTup, false);
 					sort(EndGenomeTup.begin(), EndGenomeTup.end());
 					StoreMinimizers<GenomeTuple, Tuple>(strands[clusters[idx].strand] + curReadEnd, subreadLength, opts.globalK, 1, EndReadTup, false);
@@ -1616,26 +1616,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		vector<Cluster> refinedClusters(clusters.size());
 		vector<LogCluster> refinedLogClusters(clusters.size());
 
-		// 
-		// Decide the diagonal band for every subClusters
-		//
-		for (int c = 0; c < logClusters.size(); c++) {
-			for (int sc = 0; sc < logClusters[c].SubCluster.size(); sc++) {
-				//
-				// Find the digonal band that each logclusters[i].subCluster[j] is in
-				//
-				int st = logClusters[c].SubCluster[sc].start;
-				long long int maxDN = (long long int)clusters[logClusters[c].coarse].matches[st].first.pos - (long long int)clusters[logClusters[c].coarse].matches[st].second.pos;
-				long long int  minDN = maxDN;
-				for (int db = logClusters[c].SubCluster[sc].start; db < logClusters[c].SubCluster[sc].end; db++) {
-					maxDN = max(maxDN, (long long int)clusters[logClusters[c].coarse].matches[db].first.pos - (long long int)clusters[logClusters[c].coarse].matches[db].second.pos);
-					minDN = min(minDN, (long long int)clusters[logClusters[c].coarse].matches[db].first.pos - (long long int)clusters[logClusters[c].coarse].matches[db].second.pos);
-				}
-				logClusters[c].SubCluster[sc].maxDiagNum = maxDN;
-				logClusters[c].SubCluster[sc].minDiagNum = minDN;
-			}		
-		}
-
 
 		//
 		//logClusters[c] stores all anchors from one chain
@@ -1703,6 +1683,26 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			GenomePos GenomeClusterEnd = clusters[logClusters[c].coarse].tEnd;
 			GenomePos chromEndOffset = genome.header.GetNextOffset(GenomeClusterEnd);
 			refinedLogClusters[c].setHp(refinedClusters[c]);
+
+
+			// 
+			// Decide the diagonal band for every subClusters
+			//
+			for (int sc = 0; sc < logClusters[c].SubCluster.size(); sc++) {
+				//
+				// Find the digonal band that each logclusters[i].subCluster[j] is in
+				//
+				int st = logClusters[c].SubCluster[sc].start;
+				long long int maxDN = (long long int)clusters[logClusters[c].coarse].matches[st].first.pos - (long long int)clusters[logClusters[c].coarse].matches[st].second.pos;
+				long long int  minDN = maxDN;
+				for (int db = logClusters[c].SubCluster[sc].start; db < logClusters[c].SubCluster[sc].end; db++) {
+					maxDN = max(maxDN, (long long int)clusters[logClusters[c].coarse].matches[db].first.pos - (long long int)clusters[logClusters[c].coarse].matches[db].second.pos);
+					minDN = min(minDN, (long long int)clusters[logClusters[c].coarse].matches[db].first.pos - (long long int)clusters[logClusters[c].coarse].matches[db].second.pos);
+				}
+				logClusters[c].SubCluster[sc].maxDiagNum = maxDN;
+				logClusters[c].SubCluster[sc].minDiagNum = minDN;
+			}		
+
 
 
 			for (int sc = 0; sc < logClusters[c].SubCluster.size(); sc++) {
