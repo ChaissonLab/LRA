@@ -2,8 +2,6 @@
 #define ALIGNMENT_TYPE_H_
 
 #include <vector>
-
-
 #include "AlignmentBlock.h"
 #include "Path.h"
 #include "SeqUtils.h"

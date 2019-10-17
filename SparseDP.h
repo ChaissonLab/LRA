@@ -995,7 +995,7 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 
 // The input for this function is for large anchors (Find the primary chains)
 // This SDP needs to insert 4 points for any anchors
-int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain> & Primary_chains, Options & opts, const std::vector<float> & LookUpTable, Read & read, int rate = 1) {
+int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain> & Primary_chains, Options & opts, const std::vector<float> & LookUpTable, Read & read, float rate = 1) {
 
 	std::vector<Point>  H1;
 	// FragInput is vector<ClusterCoordinates>
