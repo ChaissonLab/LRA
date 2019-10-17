@@ -720,7 +720,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	vector<Cluster> revroughClusters;
 	int reverseStrand=1;
 	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), true, false, reverseStrand);
-
 	for (int c = 0; c < revroughClusters.size(); c++) {
 		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
 		StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
@@ -1138,7 +1137,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		int chainNum = 0;
 		for (int c = 0; c < Primary_chains.size(); ++c) {
 			Primary_chains[c].direction.resize(Primary_chains[c].chains.size(), 0);
-			vector<bool> Remove(Primary_chains[c].chains.size(), 0);
+			//vector<bool> Remove(Primary_chains[c].chains.size(), 0);
 			for (int p = 0; p < Primary_chains[c].chains.size(); ++p) {
 
 				int t = 0;
@@ -1167,10 +1166,23 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				}
 				else {
 					// delete this chain
-					Remove[p] = 1;
+					//Remove[p] = 1;
+					vector<unsigned int> ReplaceChain;
+					int maxPart = 0;
+					GenomePos length = clusters[Primary_chains[c].chains[p][0]].qEnd - clusters[Primary_chains[c].chains[p][0]].qStart;
+					for (int s = 1; s < Primary_chains[c].chains[p].size() - 1; ++s) {
+						if (length < clusters[Primary_chains[c].chains[p][s]].qEnd - clusters[Primary_chains[c].chains[p][s]].qStart) {
+							maxPart = s;
+						}
+					}	
+					Primary_chains[c].direction[p] = clusters[Primary_chains[c].chains[p][maxPart]].strand;
+					ReplaceChain.push_back(Primary_chains[c].chains[p][maxPart]);	
+					Primary_chains[c].chains[p] = ReplaceChain;
+					++chainNum;
 				}
 			}
 
+			/*
 			// Remove chains
 			int cm = 0;
 			for (int cn = 0; cn < Primary_chains[c].chains.size(); ++cn) {
@@ -1180,9 +1192,12 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					++cm;
 				}
 			}
+			
 			Primary_chains[c].chains.resize(cm);
 			Primary_chains[c].direction.resize(cm);
+			*/
 		}
+
 
 		// TODO(Jingwen): only for debug and delete this later. Output the 1st every chain subject to the 1st primary chain
 		if (opts.dotPlot) {
@@ -1278,7 +1293,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				assert(nextGenomeStart >= curGenomeEnd);
 				
 
-				if (subreadLength > 500) { // TODO(Jingwen): change the way to store minimizers (Allopts) check the begining
+				if (subreadLength > 500 and subreadLength < 2000) { // TODO(Jingwen): change the way to store minimizers (Allopts) check the begining
 					StoreMinimizers<GenomeTuple, Tuple>(genome.seqs[ChromIndex] + (curGenomeEnd - genome.header.pos[ChromIndex]), subgenomeLength, opts.globalK, 1, EndGenomeTup, false);
 					sort(EndGenomeTup.begin(), EndGenomeTup.end());
 					StoreMinimizers<GenomeTuple, Tuple>(strands[clusters[id].strand] + curReadEnd, subreadLength, opts.globalK, 1, EndReadTup, false);
@@ -1408,7 +1423,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				assert(nextGenomeStart >= curGenomeEnd);
 				
 
-				if (subreadLength > 500) { // TODO(Jingwen): change the way to store minimizers (Allopts) check the begining
+				if (subreadLength > 500 and subreadLength < 2000) { // TODO(Jingwen): change the way to store minimizers (Allopts) check the begining
 					StoreMinimizers<GenomeTuple, Tuple>(genome.seqs[ChromIndex] + (curGenomeEnd - genome.header.pos[ChromIndex]), subgenomeLength, opts.globalK, 1, EndGenomeTup, false);
 					sort(EndGenomeTup.begin(), EndGenomeTup.end());
 					StoreMinimizers<GenomeTuple, Tuple>(strands[clusters[idx].strand] + curReadEnd, subreadLength, opts.globalK, 1, EndReadTup, false);
