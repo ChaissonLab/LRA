@@ -1206,34 +1206,39 @@ int SparseDP (const std::vector<Cluster> & FragInput, std::vector<Primary_chain>
 			}
 
 			//
-			// If this chain overlap with read greater than 20%, insert it to clusterchain
-			if (((float)(qEnd - qStart)/read.length) > 0.2) {
+			// If this chain overlap with read greater than 10%, insert it to clusterchain
+			if (((float)(qEnd - qStart)/read.length) > 0.1) {
 				//
 				// Compare onechain to all the Primary_chains we've found. 
 				// If onechain overlaps with one primary chain over 70% ---> onechain is a secondary chain 
 				// If onechain overlaps with all the primary chains less than 50% ---> onechain is another primary chain
 				if (Primary_chains.size() == 0) {
-					Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
+					//Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
+					Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain));
+					Primary_chains.push_back(Pc);
 				} 
 				else {
 					bool newpr = 1, inserted = 0;
 					unsigned int p = 0;
 					while (p < Primary_chains.size()) {
-						if (Primary_chains[p].Overlaps(qStart, qEnd, 0.7)) {
+						if (Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.7)) {
 							if (Primary_chains[p].chains.size() < opts.SecondaryAln + 1) {
-								Primary_chains[p].chains.push_back(onechain);
+								//Primary_chains[p].chains.push_back(onechain);
+								Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain));
 								inserted = 1;								
 							}
 							break;
 						}
-						else if (Primary_chains[p].Overlaps(qStart, qEnd, 0.5)) {
+						else if (Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.5)) {
 							newpr = 0;
 						}
 						++p;
 					}			
 					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 1) {		
 						if (Primary_chains.size() < opts.PrimaryAln) {
-							Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
+							//Primary_chains.push_back(Primary_chain(qStart, qEnd, tStart, tEnd, onechain));
+							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain));
+							Primary_chains.push_back(Pc);
 						}	
 						else {break;}		
 					}	

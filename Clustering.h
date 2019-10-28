@@ -68,8 +68,10 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 	// Set the parameter minDiagCluster according to the value of Largest_ClusterNum
 	// In this way, we won't lose small inversion.
 	//cerr << "Largest_ClusterNum: " << Largest_ClusterNum << endl;
-	
-	if (Largest_ClusterNum < 20) {
+	if (Largest_ClusterNum < 10) {
+		minDiagCluster = 1;
+	}
+	else if (Largest_ClusterNum < 20) {
 		minDiagCluster = 2;
 	} 
 	else if (Largest_ClusterNum < 50) {
@@ -502,14 +504,17 @@ class LogCluster {
  	vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains
  	int coarse; // coarse means this LogCluster stores information about refinedCluster[coarse]
  	bool direction; // direction means how the read is mapped to the reference
+ 	bool split; // split == 1 means this chain has been split
+ 	int main; // If a read is splitted, "main" stores the index of the main alignment part
+
  	LogCluster () {
  		ISsecondary = 0;
  		primary = -1;
  		coarse = -1;
  		direction = 0;
+ 		split = 0;
  	};
  	~LogCluster() {};
-
  	void setHp(Cluster & H) {
  		Hp = & H;
  	}; 
@@ -530,37 +535,7 @@ class LogCluster {
 			SubCluster[i].tStart = min(SubCluster[i].tStart, Hp->matches[is].second.pos);
 			SubCluster[i].qEnd   = max(SubCluster[i].qEnd, Hp->matches[is].first.pos + opts.globalK);
 			SubCluster[i].qStart = min(SubCluster[i].qStart, Hp->matches[is].first.pos); 	
-
-			// TODO(Jingwen): delete the following code					
-			/*	
-			if (SubCluster[i].strand == 0) {
-				if (is == SubCluster[i].start) {
-			 		SubCluster[i].tStart = Hp->matches[is].second.pos;
-			 		SubCluster[i].qStart = Hp->matches[is].first.pos;					
-				}
-				SubCluster[i].tEnd   = max(SubCluster[i].tEnd, Hp->matches[is].second.pos + opts.globalK);
-				SubCluster[i].tStart = min(SubCluster[i].tStart, Hp->matches[is].second.pos);
-				SubCluster[i].qEnd   = max(SubCluster[i].qEnd, Hp->matches[is].first.pos + opts.globalK);
-				SubCluster[i].qStart = min(SubCluster[i].qStart, Hp->matches[is].first.pos); 						
-			}
-			else {
-				if (is == SubCluster[i].start) {
-			 		SubCluster[i].tStart = Hp->matches[is].second.pos;
-			 		SubCluster[i].qStart = Hp->matches[is].first.pos;					
-				}
-				SubCluster[i].tEnd   = max(SubCluster[i].tEnd, Hp->matches[is].second.pos + opts.globalK);
-				SubCluster[i].tStart = min(SubCluster[i].tStart, Hp->matches[is].second.pos);
-				SubCluster[i].qEnd   = max(SubCluster[i].qEnd, Hp->matches[is].first.pos + opts.globalK); // because [qStart, qEnd)
-				SubCluster[i].qStart = min(SubCluster[i].qStart, Hp->matches[is].first.pos); 		
-
-				//TODO(Jingwen): delete the following code later
-				//SubCluster[i].qEnd   = max(SubCluster[i].qEnd, Hp->matches[is].first.pos + 1); // because [qStart, qEnd)
-				//SubCluster[i].qStart = min(SubCluster[i].qStart, Hp->matches[is].first.pos - opts.globalK + 1); 		
-			}
-			*/
-		
 		}
-
  	}
 };
 

@@ -196,9 +196,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "--maxDiag")) {
 			opts.maxDiag = atoi(GetArgv(argv, argc, argi));
 		}
-		else if (ArgIs(argv[argi], "-n")) {
-			opts.bestn=atoi(GetArgv(argv, argc, argi));
-		}
 		else if (ArgIs(argv[argi], "-t")) {
 			opts.nproc=atoi(GetArgv(argv, argc, argi));
 			++argi;

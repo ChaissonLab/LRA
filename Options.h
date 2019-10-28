@@ -26,7 +26,7 @@ public:
 	bool viewPairwise;
 	bool hardClip;
 	char printFormat;
-	int bestn;
+	//int bestn;
 	bool storeAll;
 	int nproc;
 	string outfile;
@@ -68,7 +68,7 @@ public:
 		globalW=10; 
 		localK=7;
 		localW=5;
-		bestn=1;
+		//bestn=1;
 		globalMaxFreq=20;
 		localMaxFreq=30;
 		maxDiag=500; // We want maxDiag to be a small number 
@@ -78,7 +78,7 @@ public:
 							// This parameter is used in another CleanOFFDiagonal function
 							// This parameter can be deleted here
 
-		minClusterSize=5; // used to be 10 
+		minClusterSize=2; // used to be 10 
 		minClusterLength=50;  // used to be 100
 		minRefinedClusterSize=40;
 		window=0;
