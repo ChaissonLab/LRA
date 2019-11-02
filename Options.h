@@ -55,6 +55,8 @@ public:
 	int SecondaryAln;
 	int PrimaryAln;
 	int BtnSubClusterswindow;
+	int binLength;
+	int minBinNum;
 
 	Options() {
 		localMatch=4;
@@ -71,7 +73,7 @@ public:
 		//bestn=1;
 		globalMaxFreq=20;
 		localMaxFreq=30;
-		maxDiag=500; // We want maxDiag to be a small number 
+		maxDiag=1000; // We want maxDiag to be a small number  (used to be 500)
 		cleanMaxDiag=50; // used to be 50  
 		minDiagCluster=10; 	// used to be 20
 							// This parameter is used in CleanOffDiagonal function; It's better not to set it to a single value. 
@@ -92,8 +94,8 @@ public:
 		maxCandidates=3;
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
-		maxGap=10000; 
-		maxGapBtwnAnchors=20000; // no larger than 2000 // used to be 1500
+		maxGap=2000; 
+		maxGapBtwnAnchors=5000; // no larger than 2000 // used to be 1500
 		mergeClusters=true;
 		NaiveDP=false;
 		seqan=false;
@@ -111,6 +113,8 @@ public:
    		SecondaryAln = 0;
    		PrimaryAln = 1;
    		BtnSubClusterswindow = 800;
+		binLength = 20000;
+		minBinNum = 3;
 
 	}
 };

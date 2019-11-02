@@ -29,7 +29,8 @@
 #include "SparseDP_Forward.h"
 #include "Chain.h"
 #include "overload.h"
-
+#include "LinearExtend.h"
+#include "SplitClusters.h"
 
 using namespace std;
 
@@ -266,21 +267,7 @@ void MergeAdjacentClusters(ClusterOrder &order, Genome &genome, Options &opts) {
 			//cerr << "(int)(order[cn].tStart - order[cn].qStart): " << (int)(order[cn].tStart - order[cn].qStart) << endl;
 			//cerr << "(int)(order[c].tEnd-order[c].qEnd): " << (int)(order[c].tEnd-order[c].qEnd) << endl;
 			gap = abs((int)((int)(order[cn].tStart - order[cn].qStart) - (int)(order[c].tEnd-order[c].qEnd)));
-			//cerr << "gap: "<< gap << endl;
-			/*
-			for (int ci=0; ci < order[c].matches.size(); ci++) {
-				cerr << c << "\t" 
-						 << order[c].matches[ci].first.pos << "\t" 
-						 << order[c].matches[ci].first.t << "\t" 
-						 << order[c].matches[ci].second.pos << "\t"
-						 << order[c].matches[ci].second.t << endl;
-			}
-			for (int ci=0; ci < order[cn].matches.size(); ci++) {
-				cerr << cn << "\t" << order[cn].matches[ci].first.pos << "\t" 
-						 << order[cn].matches[ci].first.t << "\t" 
-						 << order[cn].matches[ci].second.pos << "\t"
-						 << order[cn].matches[ci].second.t << endl;
-			}*/
+
 			// TODO(Jingwen): (gap < opts.maxDiag or order[c].Encompasses(order[cn],0.5)) or gap < opts.maxDiag???
 			// (gap < opts.maxDiag or order[c].Encompasses(order[cn],0.5)) --> repetitive region will be merged into one cluster
 			if (nextStartChrom == curEndChrom and order[c].strand == order[cn].strand and (gap < opts.maxDiag or order[c].Encompasses(order[cn],0.5))) {
@@ -411,6 +398,30 @@ void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<pair<Geno
 	}
 }
 
+// Revised: output strand for each matches
+void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<pair<GenomeTuple, GenomeTuple> > &allMatches, vector<bool> & strand) {
+	//
+	// A value of 0 implies forward strand match.
+	//
+	int nForward=0;
+	for (int i=0; i < allMatches.size(); i++) {
+		int readPos = allMatches[i].first.pos;
+		uint64_t refPos = allMatches[i].second.pos;
+		char *genomePtr=genome.GlobalIndexToSeq(refPos);
+		//
+		// Read and genome are identical, the match is in the forward strand
+		if (strncmp(&read.seq[readPos], genomePtr, k) == 0) {
+			nForward++;
+		}
+		else {
+			//
+			// The k-mers are not identical, but a match was stored between
+			// readPos and *genomePtr, therefore the match must be reverse.
+			//
+			strand[i] = true;
+		}
+	}
+}
 
 void traceback(vector<int> &clusterchain, int &i, vector<int> &clusters_predecessor, vector<bool> &used) {
 
@@ -646,6 +657,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	CompareLists(readmm, genomemm, allMatches, opts);
 	DiagonalSort<GenomeTuple>(allMatches); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
 
+
 	// TODO(Jinwen): delete this after debug
 	if (opts.dotPlot) {
 		ofstream clust("all-matches.dots");
@@ -764,21 +776,177 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	}
 
 
+
+/*
+	//
+	// Save the top diagonal bands with high number of anchors
+	// 
+	CleanOffDiagonal(allMatches, strands, genome, read, opts);
+	DiagonalSort<GenomeTuple>(allMatches); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
+	
+	vector<bool> strands(allMatches.size(), 0);
+	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, strands);
+	vector<Cluster> clusters;
+	StoreDiagonalClusters(allMatches, clusters, strands, opts);
+
+	*/
+
 	//
 	// Add pointers to seq that make code more readable.
 	//
 	char *readRC;
-
 	CreateRC(read.seq, read.length, readRC);
-	char *strands[2] = { read.seq, readRC };
+	char *strands[2] = {read.seq, readRC};
+
+
+	//
+	// Split clusters on x and y coordinates, vector<Cluster> splitclusters, add a member for each splitcluster to specify the original cluster it comes from
+	//
+	// INPUT: vector<Cluster> clusters   OUTPUT: vector<Cluster> splitclusters with "origin" specify the index of the original cluster splitcluster comes from
+
+	vector<Cluster> splitclusters;
+	SplitClusters(clusters, splitclusters);
+
+
+	if (opts.dotPlot) {
+		ofstream clust("clusters-coarse.tab");
+		for (int m = 0; m < clusters.size(); m++) {
+			if (clusters[m].strand == 0) {
+				clust << clusters[m].qStart << "\t" 
+					  << clusters[m].tStart << "\t"
+					  << clusters[m].qEnd   << "\t"
+					  << clusters[m].tEnd   << "\t"
+					  << m << "\t"
+					  << clusters[m].strand << endl;
+			}
+			else {
+				clust << clusters[m].qStart << "\t" 
+					  << clusters[m].tEnd << "\t"
+					  << clusters[m].qEnd   << "\t"
+					  << clusters[m].tStart   << "\t"
+					  << m << "\t"
+					  << clusters[m].strand << endl;
+			}
+		}
+		clust.close();
+	}
+
+	if (opts.dotPlot) {
+		ofstream clust("splitclusters-coarse.tab");
+		for (int m = 0; m < splitclusters.size(); m++) {
+			if (splitclusters[m].strand == 0) {
+				clust << splitclusters[m].qStart << "\t" 
+					  << splitclusters[m].tStart << "\t"
+					  << splitclusters[m].qEnd   << "\t"
+					  << splitclusters[m].tEnd   << "\t"
+					  << m << "\t"
+					  << splitclusters[m].strand << endl;
+			}
+			else {
+				clust << splitclusters[m].qStart << "\t" 
+					  << splitclusters[m].tEnd << "\t"
+					  << splitclusters[m].qEnd   << "\t"
+					  << splitclusters[m].tStart   << "\t"
+					  << m << "\t"
+					  << splitclusters[m].strand << endl;
+			}
+		}
+		clust.close();
+	}
+
+
+
+	return 0;
+
+
+
+
+
+
+	//
+	// Apply SDP on splitclusters. Based on the chain, clean clusters to make it only contain clusters that are on the chain.   --- vector<Cluster> clusters
+	// class: chains: vector<chain> chain: vector<vector<int>>     Need parameters: PrimaryAlgnNum, SecondaryAlnNum
+	//
+
+	//
+	// Check the two ends and spaces between adjacent clusters. If the spaces are too wide, go to find anchors in the banded region.
+	//
+
+
+	//
+	// Split the path if clusters are aligned to different chromosomes; SplitAlignment is class that vector<* vector<Cluster>>
+	//
+
+
+	//
+	// Refining each cluster if CLR reads are aligned. Otherwise, skip this step
+	//
+
+
+	//
+	// Do linear extension for each anchors and avoid overlapping locations;
+	//
+
+
+	//
+	// Apply SDP on all the anchors to get the final chain; ---- GenomePairs tupChain
+	//
+
+
+	//
+	// If there is an inversion in the path, ---- split in vector<Cluster> Chainclusters with start and end specify the positions in tupChain
+	//
+
+
+	//
+	// Use normal DP to fill in the spaces between anchors on the chain;
+	//
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 	if (clusters.size() != 0) {
 
 		if (opts.dotPlot) {
 			ofstream clust("clusters-pre-merge.tab");
-			for (int c =0; c < clusters.size(); c++) {
-				for (int m=0; m < clusters[c].matches.size(); m++) {
+			for (int c = 0; c < clusters.size(); c++) {
+				for (int m = 0; m < clusters[c].matches.size(); m++) {
 					clust << clusters[c].matches[m].first.pos << "\t" 
 						  << clusters[c].matches[m].second.pos << "\t" 
 						  << clusters[c].matches[m].first.pos + opts.globalK << "\t"
@@ -790,12 +958,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			clust.close();
 		}
 
-		//clusterOrder is not used later! TODO(Jingwen): remember to delete this
-		ClusterOrder clusterOrder(&clusters);  // clusterOrder is sorted first by tStart, then by qStart 
-		//MergeAdjacentClusters(clusterOrder, genome, opts);
-
 
 		// Decide the rate to raise the cluster value 
+		ClusterOrder clusterOrder(&clusters);
 		float valuerate = 1;
 		float maxvalue = 0;
 		for (int cv = 0; cv < clusterOrder.size(); cv++) {
@@ -812,7 +977,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		// This SDP needs to insert 4 points for any anchors. Otherwise SDP cannot pick up inversion when the read is reversedly aligned to reference
 		//
 		//SparseDP (SplitClusters, Primary_chains, opts, LookUpTable, read, valuerate);
-		SparseDP (clusters, Primary_chains, opts, LookUpTable, read, valuerate);
+		//SparseDP (clusters, Primary_chains, opts, LookUpTable, read, valuerate);
 
 
 		// Output the primary chains
@@ -1691,20 +1856,20 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				chain.clear();
 				if (opts.mergeClusters and mergedAnchors.size() < 1000000 and mergedAnchors.size() > 0) {
 					if (clusters[logClusters[r].coarse].matches.size()/((float)(min(clusters[logClusters[r].coarse].qEnd - clusters[logClusters[r].coarse].qStart, clusters[logClusters[r].coarse].tEnd - clusters[logClusters[r].coarse].tStart))) < 0.1) {
-						SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, ReverseOnly, 5); 
+						//SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, ReverseOnly, 5); 
 					}
 					else {
-						SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, ReverseOnly);
+						//SparseDP(mergedAnchors, chain, smallOpts, LookUpTable, ReverseOnly);
 					}
 				}
 				else if (clusters[logClusters[r].coarse].matches.size() < 1000000) {
 					if (clusters[logClusters[r].coarse].matches.size()/((float)(min(clusters[logClusters[r].coarse].qEnd - clusters[logClusters[r].coarse].qStart, clusters[logClusters[r].coarse].tEnd - clusters[logClusters[r].coarse].tStart))) < 0.1) {
-						SparseDP(clusters[logClusters[r].coarse].matches, chain, smallOpts, LookUpTable, logClusters[r], clusters[logClusters[r].coarse].strands, ReverseOnly, 10);
+						//SparseDP(clusters[logClusters[r].coarse].matches, chain, smallOpts, LookUpTable, logClusters[r], clusters[logClusters[r].coarse].strands, ReverseOnly, 10);
 					}
 					else { 
 						// If anchors are unmerged, then we need to give a higher anchor value to every anchor
 						// Since gap cost of chaining is higher.
-						SparseDP(clusters[logClusters[r].coarse].matches, chain, smallOpts, LookUpTable, logClusters[r], clusters[logClusters[r].coarse].strands, ReverseOnly, 5);
+						//SparseDP(clusters[logClusters[r].coarse].matches, chain, smallOpts, LookUpTable, logClusters[r], clusters[logClusters[r].coarse].strands, ReverseOnly, 5);
 					}
 				}
 			}

@@ -32,6 +32,7 @@ int DiagonalDrift(int curDiag, Tup &t, int strand=0) {
 	return drift;
 }
 
+// (KEEP)
 template<typename Tup>
 void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minDiagCluster, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (matches.size() == 0) {
@@ -115,6 +116,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 
 	matches.resize(c);
 }
+
 
 // This function is used to filter out noisy anchors for refined anchors at the refining step
 template<typename Tup>
@@ -340,7 +342,8 @@ class Cluster : public ClusterCoordinates {
 	vector<int> coarseSubCluster; // coarseSubCluster[i] means GenomePair i is from  the SubCluster[coarseSubCluster] 
 	long long int maxDiagNum;
 	long long int minDiagNum; // maxDiagNum and minDiagNum defines diagonal band boundary of the current cluster
-	int coarse;
+	int coarse; 
+	vector<int> matchesLengths; // store the length of each anchor in matches
 	Cluster() {}
   Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=0;}
 
@@ -360,6 +363,16 @@ class Cluster : public ClusterCoordinates {
 					GenomePos ts, GenomePos te, int st,
 					GenomePairs::iterator gpBegin, GenomePairs::iterator gpEnd) : ClusterCoordinates(s,e,qs,qe,ts,te,st) {
 		copy(gpBegin, gpEnd, back_inserter(matches));
+		coarse=0;
+		maxDiagNum=0;
+		minDiagNum=0;
+	}
+  Cluster(int s, int e, 
+					GenomePos qs, GenomePos qe,
+					GenomePos ts, GenomePos te, int st,
+					GenomePairs::iterator gpBegin, GenomePairs::iterator gpEnd, vector<int>::iterator stBegin, vector<int>::iterator stEnd) : ClusterCoordinates(s,e,qs,qe,ts,te,st) {
+		copy(gpBegin, gpEnd, back_inserter(matches));
+		copy(stBegin, stEnd, back_inserter(strands));
 		coarse=0;
 		maxDiagNum=0;
 		minDiagNum=0;
@@ -515,9 +528,10 @@ class LogCluster {
  		split = 0;
  	};
  	~LogCluster() {};
+ 	
  	void setHp(Cluster & H) {
  		Hp = & H;
- 	}; 
+ 	}
  	void SetCoarse () {
  		coarse = SubCluster[0].coarse;
  	}
@@ -644,7 +658,97 @@ void RemovePairedIndels(vector<pair<Tup, Tup>> & matches, vector<Cluster> & clus
 }
 
 
+
+
+
+// (KEEP)
+// This function removes paired indels 
 //
+void RemovePairedIndels (vector<unsigned int> &V, int strand, GenomePairs & matches, int ReadLength, Options &opts) {
+	if (V.size() < 3) return;
+	vector<bool> remove(V.size(), false); // If remove[i] == true, then remove chain[i] and strands[i]
+
+	for (int c = 1; c < V.size() - 1; c++) {
+
+		GenomePos prevQEnd = 0, prevTEnd = 0, 
+				  qStart = 0, tStart = 0, qEnd = 0, tEnd = 0, 
+				  nextQStart = 0, nextTStart = 0;
+
+		if (strand == 0) {
+			prevQEnd = matches[V[c-1]].first.pos + opts.globalK;
+			prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
+
+			qStart = matches[V[c]].first.pos;    
+			tStart = matches[V[c]].second.pos; 
+			qEnd = matches[V[c]].first.pos + opts.globalK;
+			tEnd = matches[V[c]].second.pos + opts.globalK;
+
+			nextQStart = matches[V[c+1]].first.pos;  
+			nextTStart = matches[V[c+1]].second.pos; 			
+		}
+		else {
+			prevQEnd = ReadLength - matches[V[c-1]].first.pos;
+			prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
+
+			qStart = ReadLength - (matches[V[c]].first.pos + opts.globalK);    
+			tStart = matches[V[c]].second.pos; 
+			qEnd = ReadLength - matches[V[c]].first.pos;
+			tEnd = matches[V[c]].second.pos + opts.globalK;
+
+			nextQStart = ReadLength - (matches[V[c+1]].first.pos + opts.globalK);  
+			nextTStart = matches[V[c+1]].second.pos; 				
+		}
+
+		int prevGap = 0, nextGap = 0;
+
+		// Tupchain are all in forward direction
+		// forward strand --> use forward diagonal(second.pos - first.pos) to calculate gap length
+		prevGap = (int)(prevTEnd - prevQEnd) - (int)(tStart - qStart);
+		nextGap = (int)(tEnd - qEnd) - (int)(nextTStart - nextQStart);
+
+		//cerr << "c: " << c << endl;
+		//cerr << "prevGap: " << prevGap << "  nextGap: " << nextGap << endl;
+
+		if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)) { 
+			// the second condition filter out when prevGap == 0 or nextGap == 0
+			remove[c] = true;
+		}
+	}
+
+	int m = 0;
+	for (int i = 0; i < V.size(); i++) {
+		if (remove[i] == false) {
+			V[m] = V[i];
+			m++;
+		}
+	}
+	V.resize(m);		
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 
 // This function removes paired indels in the (MERGED) chain after 1st SDP 
 void RemovePairedIndels (vector<unsigned int> &chain, vector<ClusterCoordinates> &V, Options &opts) {
 	if (chain.size() < 3) return;
@@ -768,120 +872,6 @@ void RemovePairedIndels (vector<unsigned int> &V, vector<int> &strands, GenomePa
 	V.resize(m);
 }
 
-
-//
-// This function removes paired indels in the (UNMERGED) chain after 1st SDP 
-// Also removes spurious anchors of different strand inside tupChainClusters[i]
-void RemovePairedIndels (vector<unsigned int> &V, vector<int> &strands, GenomePairs &matches, int ReadLength, Options &opts) {
-	if (V.size() < 3) return;
-	vector<bool> remove(V.size(), false); // If remove[i] == true, then remove chain[i] and strands[i]
-
-	for (int c = 1; c < V.size() - 1; c++) {
-
-		if (strands[V[c-1]] == strands[V[c]] and strands[V[c]] == strands[V[c+1]]) {
-
-			GenomePos prevQEnd = 0, prevTEnd = 0, 
-					  qStart = 0, tStart = 0, qEnd = 0, tEnd = 0, 
-					  nextQStart = 0, nextTStart = 0;
-
-			if (strands[V[c]] == 0) {
-				prevQEnd = matches[V[c-1]].first.pos + opts.globalK;
-				prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
-
-				qStart = matches[V[c]].first.pos;    
-				tStart = matches[V[c]].second.pos; 
-				qEnd = matches[V[c]].first.pos + opts.globalK;
-				tEnd = matches[V[c]].second.pos + opts.globalK;
-
-				nextQStart = matches[V[c+1]].first.pos;  
-				nextTStart = matches[V[c+1]].second.pos; 			
-			}
-			else {
-				prevQEnd = ReadLength - matches[V[c-1]].first.pos;
-				prevTEnd = matches[V[c-1]].second.pos + opts.globalK;	
-
-				qStart = ReadLength - (matches[V[c]].first.pos + opts.globalK);    
-				tStart = matches[V[c]].second.pos; 
-				qEnd = ReadLength - matches[V[c]].first.pos;
-				tEnd = matches[V[c]].second.pos + opts.globalK;
-
-				nextQStart = ReadLength - (matches[V[c+1]].first.pos + opts.globalK);  
-				nextTStart = matches[V[c+1]].second.pos; 				
-			}
-
-			int prevGap = 0, nextGap = 0;
-
-			// Tupchain are all in forward direction
-			// forward strand --> use forward diagonal(second.pos - first.pos) to calculate gap length
-			prevGap = (int)(prevTEnd - prevQEnd) - (int)(tStart - qStart);
-			nextGap = (int)(tEnd - qEnd) - (int)(nextTStart - nextQStart);
-
-			//cerr << "c: " << c << endl;
-			//cerr << "prevGap: " << prevGap << "  nextGap: " << nextGap << endl;
-
-			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)) { 
-				// the second condition filter out when prevGap == 0 or nextGap == 0
-				remove[c] = true;
-			}
-		}	
-	}
-
-	// Remove spurious anchors of different strand inside tupChainClusters[i]
-	int ts = 0, te = 1;
-	while (te < remove.size()) {
-		if (remove[ts] == false and remove[te] == false) {
-
-			if (strands[V[te]] == strands[V[ts]] and strands[V[te]] == 0) { // forward stranded
-
-				if (matches[V[te]].first.pos >= matches[V[ts]].first.pos + opts.globalK and
-					matches[V[te]].second.pos >= matches[V[ts]].second.pos + opts.globalK) {
-					ts = te;
-					++te;
-				}
-				else {
-					remove[te] = true;
-					++te;
-				}
-			}
-			else if (strands[V[te]] == strands[V[ts]] and strands[V[te]] == 1) { // rev stranded
-
-				if (matches[V[te]].first.pos >= matches[V[ts]].first.pos + opts.globalK and
-					matches[V[te]].second.pos + opts.globalK <= matches[V[ts]].second.pos) {
-					ts = te;
-					++te;
-				}
-				else {
-					remove[te] = true;
-					++te;
-				}
-			}
-			else { // different stranded
-				ts = te;
-				++te;
-			}
-
-		}
-		else if (remove[ts] == false and remove[te] == true) ++te;
-		else if (remove[ts] == true and remove[te] == false) {
-			ts = te;
-			++te;
-		}
-		else {
-			++te;
-			ts = te;
-			++te;
-		}
-	}
-
-	int m = 0;
-	for (int i = 0; i < V.size(); i++) {
-		if (remove[i] == false) {
-			V[m] = V[i];
-			m++;
-		}
-	}
-	V.resize(m);		
-}
 
 
 // This function removes paired indels on Tupchain after 1st SDP
