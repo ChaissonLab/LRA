@@ -35,6 +35,16 @@
 using namespace std;
 
 
+void SwapStrand (Read & read, Options & opts, Cluster & cluster) {
+	for (int m = 0; m < cluster.matches.size(); m++) {
+		cluster.matches[m].first.pos = read.length - (cluster.matches[m].first.pos + opts.globalK);
+	}
+	GenomePos r = cluster.qStart;
+	cluster.qStart = read.length - cluster.qEnd;
+	cluster.qEnd = read.length - r;
+}
+
+
 void SwapStrand(Read &read, Options &opts, GenomePairs &matches) {
 	for (int m=0; m < matches.size(); m++) {
 		matches[m].first.pos = read.length - (matches[m].first.pos + opts.globalK);
@@ -629,6 +639,278 @@ void RemoveSpuriousAnchors(vector<unsigned int> &chain, Options &opts, const Gen
 	chain.resize(m);	
 }
 
+
+//
+// This function switches index in splitclusters back 
+//
+void 
+switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_chains) {
+	for (int p = 0; p < Primary_chains.size(); p++) {
+		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
+			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
+				Primary_chains[p].chains[h].ch[c] = splitclusters[Primary_chains[p].chains[h].ch[c]].coarse;
+			}
+		}
+	}
+
+	// Remove the dupplicates 
+	for (int p = 0; p < Primary_chains.size(); p++) {
+		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
+	  		vector<unsigned int>::iterator itp;
+	  		itp = unique(Primary_chains[p].chains[h].ch.begin(), Primary_chains[p].chains[h].ch.end()); 
+	  		Primary_chains[p].chains[h].ch.resize(distance(Primary_chains[p].chains[h].ch.begin(), itp));			
+		}
+	}
+
+}
+
+
+//
+// This function refines the Clusters in chain and store refined anchors in refinedClusters
+// NOTICE: Inside this function, we need to flip reversed Cluster into forward direction to find refined matches;
+// And flip them back after the refining step;
+//
+void 
+REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Genome & genome, Read & read,  LocalIndex & glIndex, LocalIndex *localIndexes[2], Options & smallOpts, Options & opts) {
+
+
+	for (int ph = 0; ph < clusters.size(); ph++) {
+
+		//
+		// Get the boundaries of the cluster in genome sequence.
+		//
+		if (clusters[ph].matches.size() == 0) continue;
+		if (clusters[ph].refined == 1) continue; // this Cluster has been refined;
+		GenomePos tPos = clusters[ph].tStart;
+		int firstChromIndex = genome.header.Find(tPos);
+		int lastChromIndex;
+		tPos = clusters[ph].tEnd;
+		lastChromIndex = genome.header.Find(tPos);
+		if (firstChromIndex != lastChromIndex ) {
+			clusters[ph].matches.clear();
+			continue;
+		}
+		clusters[ph].chromIndex = firstChromIndex;  
+		refinedclusters[ph].chromIndex = firstChromIndex;
+		clusters[ph].refined = 1;
+
+
+		//
+		// Make the anchors reference this chromosome for easier bookkeeping 
+		// NOTICE: Remember to add chromOffset back in refinedclusters
+		//
+		GenomePos chromOffset = genome.header.pos[firstChromIndex];
+		for (int m = 0; m < clusters[ph].matches.size(); m++) {
+			clusters[ph].matches[m].second.pos -= chromOffset;
+		}
+		GenomePos GenomeClusterEnd = clusters[ph].tEnd;
+		GenomePos chromEndOffset = genome.header.GetNextOffset(GenomeClusterEnd);
+
+
+		//
+		// If the current Cluster is reversed stranded, swap the anchors and GenomePos to forward strand; This is for finding refined anchors;
+		// NOTICE: Need to flip such Cluster back into reversed strand;
+		//
+		if (clusters[ph].strand == 1) SwapStrand(read, opts, clusters[ph]);
+
+		// 
+		// Decide the diagonal band for each clusters[ph]
+		// Find the digonal band that each clusters[ph] is in; NOTICE: here every diagnoal have already subtracted chromOffset, so it's in the same scale with local matches
+		// 
+		long long int maxDN, minDN;
+		maxDN = (long long int) clusters[ph].matches[0].first.pos - (long long int) clusters[ph].matches[0].second.pos;
+		minDN = maxDN;
+		for (int db = 0; db < clusters[ph].matches.size(); db++) {
+			maxDN = max(maxDN, (long long int)clusters[ph].matches[db].first.pos - (long long int)clusters[ph].matches[db].second.pos);
+			minDN = min(minDN, (long long int)clusters[ph].matches[db].first.pos - (long long int)clusters[ph].matches[db].second.pos);
+		}						
+		clusters[ph].maxDiagNum = maxDN + 20;
+		clusters[ph].minDiagNum = minDN - 20;
+
+
+		//
+		// Get shorthand access to alignment boundaries.
+		//
+		CartesianTargetSort<GenomeTuple>(clusters[ph].matches.begin(), clusters[ph].matches.end()); // sorted by second.pos and then first.pos
+		GenomePos genomeClusterSegStart, genomeClusterSegEnd;
+		genomeClusterSegStart = clusters[ph].tStart;
+		genomeClusterSegEnd = clusters[ph].tEnd;
+
+
+		//
+		// Search region starts in window, or beginning of chromosome
+		//
+		int ls, le;
+		GenomePos wts, wte;
+		if (chromOffset + smallOpts.window > genomeClusterSegStart) {
+			wts = chromOffset;
+		}
+		else {
+			wts = genomeClusterSegStart - smallOpts.window;
+		}
+				
+		if (genomeClusterSegEnd + smallOpts.window > chromEndOffset) {
+			wte = chromEndOffset-1;
+		}
+		else {
+			wte = genomeClusterSegEnd + smallOpts.window;
+		}
+			
+		ls = glIndex.LookupIndex(wts);
+		le = glIndex.LookupIndex(wte);
+
+		
+		// 
+		// Get quick access to the local index
+		//
+		LocalIndex *readIndex;
+		readIndex = localIndexes[clusters[ph].strand];
+
+
+		for (int lsi = ls; lsi <= le; lsi++) {
+			//
+			// Find the coordinates in the cluster fragment that start in this local index.
+			//
+			GenomePos genomeLocalIndexStart = glIndex.seqOffsets[lsi]  - chromOffset;
+			GenomePos genomeLocalIndexEnd   = glIndex.seqOffsets[lsi+1] - 1 - chromOffset;
+
+			int matchStart = CartesianTargetLowerBound<GenomeTuple>(clusters[ph].matches.begin(), clusters[ph].matches.end(), genomeLocalIndexStart);
+
+			int matchEnd = CartesianTargetUpperBound<GenomeTuple>(clusters[ph].matches.begin(), clusters[ph].matches.end(), genomeLocalIndexEnd);
+
+			//
+			// If there is no overlap with this cluster
+			if (matchStart >= clusters[ph].end) {
+				continue;
+			}
+			GenomePos readStart = clusters[ph].matches[matchStart].first.pos;
+			if (lsi == ls) {
+				if (readStart < smallOpts.window) {
+					readStart = 0;
+				}
+				else {
+					readStart -= smallOpts.window;
+				}
+			}
+			GenomePos readEnd;
+			if (matchEnd > matchStart) {
+				readEnd = clusters[ph].matches[matchEnd - 1].first.pos;
+			}
+			else {
+				readEnd = clusters[ph].matches[matchStart].first.pos + opts.globalK;
+			}
+
+			//
+			// Expand boundaries of read to match.
+			if (lsi == le) {
+				if (readEnd + smallOpts.window > read.length) {
+					readEnd = read.length; 
+				}
+				else { 
+					readEnd += smallOpts.window;	
+				}
+			}			
+				
+			//
+			// Find the boundaries where in the query the matches should be added.
+			//
+			int queryIndexStart = readIndex->LookupIndex(readStart);
+			int queryIndexEnd = readIndex->LookupIndex(min(readEnd, (GenomePos) read.length-1));
+			assert(queryIndexEnd < readIndex->seqOffsets.size()+1);
+
+			for (int qi = queryIndexStart; qi <= queryIndexEnd; ++qi){ 
+				
+				LocalPairs smallMatches;
+				GenomePos qStartBoundary = readIndex->tupleBoundaries[qi];
+				GenomePos qEndBoundary   = readIndex->tupleBoundaries[qi+1];
+				GenomePos readSegmentStart= readIndex->seqOffsets[qi];
+				GenomePos readSegmentEnd  = readIndex->seqOffsets[qi+1];
+
+				CompareLists<LocalTuple>(readIndex->minimizers.begin() + qStartBoundary, readIndex->minimizers.begin() + qEndBoundary, 
+												glIndex.minimizers.begin()+ glIndex.tupleBoundaries[lsi], glIndex.minimizers.begin()+ glIndex.tupleBoundaries[lsi+1], 
+														smallMatches, smallOpts);
+				//
+				// Add refined anchors if they fall into the diagonal band and cluster box
+				//
+				AppendValues<LocalPairs>(refinedclusters[ph].matches, smallMatches.begin(), smallMatches.end(), readSegmentStart, genomeLocalIndexStart,
+							 clusters[ph].maxDiagNum, clusters[ph].minDiagNum, clusters[ph].qStart, clusters[ph].qEnd, 
+							 		clusters[ph].tStart - chromOffset, clusters[ph].tEnd- chromOffset);
+			}
+		}
+		if (clusters[ph].strand == 1) SwapStrand(read, smallOpts, refinedclusters[ph]);
+		refinedclusters[ph].SetClusterBoundariesFromMatches(smallOpts);
+		refinedclusters[ph].strand = clusters[ph].strand;
+		//refinedclusters[ph].minDiagNum = clusters[ph].minDiagNum;
+		//refinedclusters[ph].maxDiagNum = clusters[ph].maxDiagNum;
+		refinedclusters[ph].coarse = -1;
+		refinedclusters[ph].refinespace = 0;
+	}
+}
+
+
+//
+// This function find anchors btwn two adjacent Clusters;
+//
+int 			
+RefineBtwnSpace(Cluster * cluster, Options & opts, Genome & genome, Read & read, char *strands[2], GenomePos qe, GenomePos qs, 
+							GenomePos te, GenomePos ts, GenomePos st, int cur) {
+
+	int firstChromIndex = genome.header.Find(ts);
+	int lastChromIndex = genome.header.Find(te);
+	if (firstChromIndex != lastChromIndex ) {
+		return 0;
+	}	
+	int ChromIndex = genome.header.Find(ts);
+
+	// 
+	// If st == 1, then we need to flip this Cluster, since the following code of fining matches requiers that;
+	//
+	if (st == 1) {
+		GenomePos t = qs;
+		qs = read.length - qe;
+		qe = read.length - t;
+	}
+
+	//
+	// Decide the diagonal band for this space
+	//
+	long long int minDiagNum, maxDiagNum; 
+	long long int diag1, diag2;
+	diag1 = 0;
+	diag2 = (long long int) (qe - qs) - (long long int) (te - ts); // scale diag1 and diag2 to the local coordinates
+	minDiagNum = min(diag1, diag2) - 50;
+	maxDiagNum = max(diag1, diag2) + 50;
+ 
+	//
+	// Find matches in read and reference 
+	//
+	vector<GenomeTuple> EndReadTup, EndGenomeTup;
+	GenomePairs EndPairs;
+	StoreMinimizers<GenomeTuple, Tuple>(genome.seqs[ChromIndex] + ts , te - ts, opts.globalK, opts.globalW, EndGenomeTup, false);
+	sort(EndGenomeTup.begin(), EndGenomeTup.end());
+	StoreMinimizers<GenomeTuple, Tuple>(strands[st] + qs, qe - qs, opts.globalK, opts.globalW, EndReadTup, false);
+	sort(EndReadTup.begin(), EndReadTup.end());
+	CompareLists(EndReadTup.begin(), EndReadTup.end(), EndGenomeTup.begin(), EndGenomeTup.end(), EndPairs, opts, maxDiagNum, minDiagNum); // By passing maxDiagNum and minDiagNum, this function 																															// filters out anchors that are outside the diagonal band;
+
+	for (int rm = 0; rm < EndPairs.size(); rm++) {
+		EndPairs[rm].first.pos  += qs;
+		EndPairs[rm].second.pos += ts;
+		assert(EndPairs[rm].first.pos < read.length);
+		if (st == 1) EndPairs[rm].first.pos  = read.length - EndPairs[rm].first.pos;
+		
+	}	
+
+	if (EndPairs.size() > 0) {
+		cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end());  // TODO(Jingwen): Time consuming???????
+		cluster->SetClusterBoundariesFromMatches(opts);
+		cluster->refinespace = 1;
+	}
+
+	return 0;
+}
+
+
+
 int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, pthread_mutex_t *semaphore=NULL) {
 	
 	string baseName = read.name;
@@ -792,17 +1074,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	*/
 
 	//
-	// Add pointers to seq that make code more readable.
-	//
-	char *readRC;
-	CreateRC(read.seq, read.length, readRC);
-	char *strands[2] = {read.seq, readRC};
-
-
-	//
 	// Split clusters on x and y coordinates, vector<Cluster> splitclusters, add a member for each splitcluster to specify the original cluster it comes from
 	//
-	// INPUT: vector<Cluster> clusters   OUTPUT: vector<Cluster> splitclusters with "origin" specify the index of the original cluster splitcluster comes from
+	// INPUT: vector<Cluster> clusters   OUTPUT: vector<Cluster> splitclusters with member--"coarse" specify the index of the original cluster splitcluster comes from
 
 	vector<Cluster> splitclusters;
 	SplitClusters(clusters, splitclusters);
@@ -856,40 +1130,353 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 
 
-	return 0;
-
-
-
-
-
-
 	//
 	// Apply SDP on splitclusters. Based on the chain, clean clusters to make it only contain clusters that are on the chain.   --- vector<Cluster> clusters
 	// class: chains: vector<chain> chain: vector<vector<int>>     Need parameters: PrimaryAlgnNum, SecondaryAlnNum
+	// NOTICE: chains in Primary_chains do not overlap on Cluster
 	//
 
+	////// TODO(Jingwen): customize a rate fro SparseDP
+	vector<Primary_chain> Primary_chains;
+	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read);
+	switchindex(splitclusters, Primary_chains);
+
 	//
-	// Check the two ends and spaces between adjacent clusters. If the spaces are too wide, go to find anchors in the banded region.
+	// Remove Clusters in "clusters" that are not on the chains;
 	//
+	int ChainNum = 0;
+	for (int p = 0; p < Primary_chains.size(); p++) {
+		ChainNum += Primary_chains[p].chains.size();
+	}
+
+	vector<bool> Remove(clusters.size(), 1);
+	for (int p = 0; p < Primary_chains.size(); p++) {
+		for (int h = 0; h < Primary_chains[p].chains.size(); h++){
+			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
+				Remove[Primary_chains[p].chains[h].ch[c]] = 0;
+			}
+		}
+	}
+
+	int lm = 0;
+	for (int s = 0; s < clusters.size(); s++) {
+		if (Remove[s] == 0) {
+			clusters[lm] = clusters[s];
+			lm++;
+		}
+	}
+	clusters.resize(lm);	
+
+
+	//
+	// Change the index stored in Primary_chains, since we remove some Clusters in "clusters";
+	//
+	vector<int> NumOfZeros(Remove.size(), 0);
+	int num = 0;
+	for (int s = 0; s < Remove.size(); s++) {
+		if (Remove[s] == 0) {
+			num++;
+			NumOfZeros[s] = num;
+		}
+	}
+
+	for (int p = 0; p < Primary_chains.size(); p++) {
+		for (int h = 0; h < Primary_chains[p].chains.size(); h++){
+			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
+				Primary_chains[p].chains[h].ch[c] = NumOfZeros[Primary_chains[p].chains[h].ch[c]] - 1;
+			}
+		}
+	}
+
+
+	if (opts.dotPlot) {
+		ofstream clust("CoarseChains.tab");
+
+		for (int p = 0; p < Primary_chains.size(); p++) {
+			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
+				for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
+					int ph = Primary_chains[p].chains[h].ch[c];
+					if (clusters[ph].strand == 0) {
+						clust << clusters[ph].qStart << "\t" 
+							  << clusters[ph].tStart << "\t"
+							  << clusters[ph].qEnd   << "\t"
+							  << clusters[ph].tEnd   << "\t"
+							  << p << "\t"
+							  << h << "\t"
+							  << Primary_chains[p].chains[h].ch[c] << "\t"
+							  << clusters[ph].strand << endl;
+					} 
+					else {
+						clust << clusters[ph].qStart << "\t" 
+							  << clusters[ph].tEnd << "\t"
+							  << clusters[ph].qEnd   << "\t"
+							  << clusters[ph].tStart  << "\t"
+							  << p << "\t"
+							  << h << "\t"
+							  << Primary_chains[p].chains[h].ch[c] << "\t"
+							  << clusters[ph].strand << endl;
+					}
+				}
+			}
+
+		}
+		clust.close();
+	}	
+
+
+	//
+	// Add pointers to seq that make code more readable.
+	//
+	char *readRC;
+	CreateRC(read.seq, read.length, readRC);
+	char *strands[2] = { read.seq, readRC };
+
+
+	//
+	// Build local index for refining alignments.
+	//
+	LocalIndex forwardIndex(glIndex);
+	LocalIndex reverseIndex(glIndex);
+
+	LocalIndex *localIndexes[2] = {&forwardIndex, &reverseIndex};
+	forwardIndex.IndexSeq(read.seq, read.length);
+	reverseIndex.IndexSeq(readRC, read.length); 
+
+
+	// Set the parameters for merging anchors and 1st SDP
+	Options smallOpts = opts;
+	Options tinyOpts = smallOpts;
+	tinyOpts.globalMaxFreq=3;
+	tinyOpts.maxDiag=5;
+	tinyOpts.minDiagCluster=2;
+	tinyOpts.globalK=smallOpts.globalK-3;
+	tinyOpts.minRemoveSpuriousAnchorsNum=5;
+	tinyOpts.maxRemoveSpuriousAnchorsDist=50;
+
+
+	//
+	// Refining each cluster in "clusters" needed if CLR reads are aligned. Otherwise, skip this step
+	// After this step, the t coordinates in clusters and refinedclusters have been substract chromOffSet. 
+	//
+	vector<Cluster> refinedclusters(clusters.size());
+ 	vector<Cluster*> RefinedClusters(clusters.size());
+
+	if (opts.HighlyAccurate == false) {
+			
+		smallOpts.globalK=glIndex.k;
+		smallOpts.globalW=glIndex.w;
+		smallOpts.globalMaxFreq=6;
+		smallOpts.cleanMaxDiag=10;// used to be 25
+		smallOpts.maxDiag=50;
+		smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large
+		smallOpts.minDiagCluster=3; // used to be 3
+
+		REFINEclusters(clusters, refinedclusters, genome, read,  glIndex, localIndexes, smallOpts, opts);
+		// refinedclusters have GenomePos, chromIndex, coarse, matches, strand, refinespace;
+		for (int s = 0; s < clusters.size(); s++) {
+			RefinedClusters[s] = &refinedclusters[s];
+		}
+		clusters.clear();
+	}
+	else {
+
+		//// TODO(Jingwen): write a function to determine the chromIndex and subtract chromOffSet from t coord.
+		for (int s = 0; s < clusters.size(); s++) {	
+			//
+			// Find the chromIndex for each Cluster
+			//
+			GenomePos tPos = clusters[s].tStart;
+			int firstChromIndex = genome.header.Find(tPos);
+			int lastChromIndex;
+			tPos = clusters[s].tEnd;
+			lastChromIndex = genome.header.Find(tPos);
+			if (firstChromIndex != lastChromIndex ) {
+				clusters[s].matches.clear();
+				continue;
+			}
+			clusters[s].chromIndex = firstChromIndex;  
+			RefinedClusters[s] = &clusters[s];
+		}
+	}
+
+
+	if (opts.dotPlot) {
+		ofstream clust("RefinedClusters.tab");
+
+		for (int p = 0; p < RefinedClusters.size(); p++) {
+
+			for (int h = 0; h < RefinedClusters[p]->matches.size(); h++) {
+
+				if (RefinedClusters[p]->strand == 0) {
+					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos << "\t"
+						  << RefinedClusters[p]->matches[h].first.pos + smallOpts.globalK << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos + smallOpts.globalK << "\t"
+						  << p << "\t"
+						  << RefinedClusters[p]->strand << endl;
+				}
+				else {
+					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos + smallOpts.globalK << "\t"
+						  << RefinedClusters[p]->matches[h].first.pos + smallOpts.globalK << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos<< "\t"
+						  << p << "\t"
+						  << RefinedClusters[p]->strand << endl;					
+				}
+			}
+		}
+		clust.close();
+	}	
+
+
+	//
+	// For each chain, check the two ends and spaces between adjacent clusters. If the spaces are too wide, go to find anchors in the banded region.
+	// For each chain, we have vector<Cluster> btwnClusters to store anchors;
+	//
+	for (int p = 0; p < Primary_chains.size(); p++) {
+		
+		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
+		
+			//
+			// Find matches btwn every two adjacent Clusters;
+			//
+			int c = 1;
+			GenomePos qe, qs, te, ts;
+			bool st; GenomePos SpaceLength;
+			while (c < Primary_chains[p].chains[h].ch.size()) {
+
+				int cur = Primary_chains[p].chains[h].ch[c];
+				int prev = Primary_chains[p].chains[h].ch[c - 1];
+
+				//
+				// Decide the boudaries of space and strand direction btwn RefinedClusters[cur] and RefinedClusters[prev]
+				//
+				qs = RefinedClusters[cur]->qEnd; 
+				qe = RefinedClusters[prev]->qStart;
+
+				if (RefinedClusters[cur]->tEnd <= RefinedClusters[prev]->tStart) {
+					ts = RefinedClusters[cur]->tEnd;
+					te = RefinedClusters[prev]->tStart;
+					st = 0;
+				}
+				else if (RefinedClusters[cur]->tStart > RefinedClusters[prev]->tEnd) {
+					ts = RefinedClusters[prev]->tEnd;
+					te = RefinedClusters[cur]->tStart;
+					st = 1;
+				}
+
+				if (qe > qs and te > ts) {
+					SpaceLength = min(qe - qs, te - ts);
+					if (SpaceLength > 1000 and SpaceLength < 10000) {
+						// btwnClusters have GenomePos, st, matches, coarse
+						// This function also set the "coarse" flag for RefinedClusters[cur]
+						RefineBtwnSpace(RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te, ts, st, cur);
+					}
+				}
+				c++;
+
+			}
+
+			//
+			// Find matches at the right end;
+			//
+			int rh = Primary_chains[p].chains[h].ch[0];
+			st = RefinedClusters[rh]->strand;
+			qs = RefinedClusters[rh]->qEnd;
+			qe = read.length;
+			if (st == 0) {
+				ts = RefinedClusters[rh]->tEnd;
+				te = ts + qe - qs;				
+			}
+			else {
+				te = RefinedClusters[rh]->tStart;
+				if (te > qe - qs) ts = te - (qe - qs);
+				else te = 0;
+			}
+			if (qe > qs and te > ts) {
+				SpaceLength = min(qe - qs, te - ts); 
+				if (SpaceLength > 500 and SpaceLength < 2000) {
+					RefineBtwnSpace(RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, rh);
+				}				
+			}
+
+
+			//
+			// Find matches at the left end
+			//		
+			int lh = Primary_chains[p].chains[h].ch.back();
+			qs = 0;
+			qe = RefinedClusters[lh]->qStart;
+			st = RefinedClusters[lh]->strand;
+			if (st == 0) {
+				te = RefinedClusters[lh]->tStart;
+				if (te > qe - qs) ts = te - (qe - qs);
+				else ts = 0;
+			}
+			else {
+				ts = RefinedClusters[lh]->tEnd;
+				te = ts + (qe - qs);
+			}
+			if (qe > qs and te > ts) {
+				SpaceLength = min(qe - qs, te - ts);
+				if (SpaceLength > 500 and SpaceLength < 2000) {
+					RefineBtwnSpace(RefinedClusters[lh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lh);
+				}				
+			}
+
+
+			//
+			// Do linear extension for each anchors and avoid overlapping locations;
+			// INPUT: RefinedClusters; OUTPUT: ExtendClusters;
+			// NOTICE: ExtendClusters have members: strand, matches, matchesLengths, GenomePos;
+			//
+			vector<Cluster> ExtendClusters(Primary_chains[p].chains[h].ch.size());
+			LinearExtend(RefinedClusters, ExtendClusters, Primary_chains[p].chains[h].ch, smallOpts, genome, read);
+
+
+			if (opts.dotPlot) {
+				ofstream clust("ExtendClusters.tab");
+
+				for (int p = 0; p < ExtendClusters.size(); p++) {
+
+					for (int h = 0; h < ExtendClusters[p].matches.size(); h++) {
+						
+						if (ExtendClusters[p].strand == 0) {
+							clust << ExtendClusters[p].matches[h].first.pos << "\t"
+								  << ExtendClusters[p].matches[h].second.pos << "\t"
+								  << ExtendClusters[p].matches[h].first.pos + ExtendClusters[p].matchesLengths[h] << "\t"
+								  << ExtendClusters[p].matches[h].second.pos + ExtendClusters[p].matchesLengths[h] << "\t"
+								  << p << "\t"
+								  << ExtendClusters[p].strand << endl;
+						}
+						else {
+							clust << ExtendClusters[p].matches[h].first.pos << "\t"
+								  << ExtendClusters[p].matches[h].second.pos + ExtendClusters[p].matchesLengths[h] << "\t"
+								  << ExtendClusters[p].matches[h].first.pos + ExtendClusters[p].matchesLengths[h] << "\t"
+								  << ExtendClusters[p].matches[h].second.pos<< "\t"
+								  << p << "\t"
+								  << ExtendClusters[p].strand << endl;					
+						}
+					}
+				}
+				clust.close();
+			}	
+
+
+			return 0;
+
+		}
+	}	
 
 
 	//
 	// Split the path if clusters are aligned to different chromosomes; SplitAlignment is class that vector<* vector<Cluster>>
-	//
+	// INPUT: vector<Cluster> ExtendClusters; OUTPUT:  vector<vector<int>>
 
-
-	//
-	// Refining each cluster if CLR reads are aligned. Otherwise, skip this step
-	//
 
 
 	//
-	// Do linear extension for each anchors and avoid overlapping locations;
-	//
-
-
-	//
-	// Apply SDP on all the anchors to get the final chain; ---- GenomePairs tupChain
+	// Apply SDP on all the anchors to get the final chain; ---- GenomePairs tupChain   vector<Cluster>tupClusters for different strands
 	//
 
 

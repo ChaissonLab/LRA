@@ -69,7 +69,8 @@ void HelpMap() {
 			 << "	-d 	(flag)  Enable dotPlot" << endl
 			 << "	-Se (int) Allow at most how many secondary alignments" << endl
 			 << "   -Pr (int) Allow at most how many primary alignments" << endl
-			 << "   -aa (flag)  use Merge.h" << endl;
+			 << "   -aa (flag)  use Merge.h" << endl
+			 << "	-A (flag) Align highly accurate reads" << endl;
 }
 		
 class MapInfo {
@@ -226,6 +227,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "-S")) {
 			opts.SparseDP = true;
+		}
+		else if (ArgIs(argv[argi], "-A")) {
+			opts.HighlyAccurate = true;
 		}
 		else if (ArgIs(argv[argi], "-T")) {
 			opts.LookUpTable = true;

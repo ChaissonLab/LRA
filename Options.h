@@ -57,6 +57,7 @@ public:
 	int BtnSubClusterswindow;
 	int binLength;
 	int minBinNum;
+	bool HighlyAccurate;
 
 	Options() {
 		localMatch=4;
@@ -115,6 +116,7 @@ public:
    		BtnSubClusterswindow = 800;
 		binLength = 20000;
 		minBinNum = 3;
+		HighlyAccurate = false;
 
 	}
 };

@@ -343,16 +343,18 @@ class Cluster : public ClusterCoordinates {
 	long long int maxDiagNum;
 	long long int minDiagNum; // maxDiagNum and minDiagNum defines diagonal band boundary of the current cluster
 	int coarse; 
-	vector<int> matchesLengths; // store the length of each anchor in matches
+	vector<int> matchesLengths; // store the length of each anchor 
+	bool refined; // refined == 0 means this Cluster has not been refined yet
+	bool refinespace; // refinespace == 0 means this Cluster has not been add anchors in the step of RefineBtwnSpace;
 	Cluster() {}
-  Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=0;}
+  Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1;}
 
-  Cluster(int s, int e, int st) : ClusterCoordinates(s,e,st) { coarse=0;}
+  Cluster(int s, int e, int st) : ClusterCoordinates(s,e,st) { coarse=-1;}
 
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
 					GenomePos ts, GenomePos te, 
-					int st) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=0;} 
+					int st) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=-1;} 
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
 					GenomePos ts, GenomePos te, 
@@ -363,9 +365,11 @@ class Cluster : public ClusterCoordinates {
 					GenomePos ts, GenomePos te, int st,
 					GenomePairs::iterator gpBegin, GenomePairs::iterator gpEnd) : ClusterCoordinates(s,e,qs,qe,ts,te,st) {
 		copy(gpBegin, gpEnd, back_inserter(matches));
-		coarse=0;
+		coarse=-1;
 		maxDiagNum=0;
 		minDiagNum=0;
+		refined = 0;
+		refinespace = 0;
 	}
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
@@ -373,7 +377,7 @@ class Cluster : public ClusterCoordinates {
 					GenomePairs::iterator gpBegin, GenomePairs::iterator gpEnd, vector<int>::iterator stBegin, vector<int>::iterator stEnd) : ClusterCoordinates(s,e,qs,qe,ts,te,st) {
 		copy(gpBegin, gpEnd, back_inserter(matches));
 		copy(stBegin, stEnd, back_inserter(strands));
-		coarse=0;
+		coarse=-1;
 		maxDiagNum=0;
 		minDiagNum=0;
 	}
@@ -385,6 +389,10 @@ class Cluster : public ClusterCoordinates {
 		strand = st;
 		coarse = coa;
 	}
+  Cluster(int st, GenomePairs::iterator gpBegin, GenomePairs::iterator gpEnd, vector<int>::iterator stBegin, vector<int>::iterator stEnd) {
+  		strand = st;
+		copy(gpBegin, gpEnd, back_inserter(matches));
+  }
 	
   bool OverlapsPrevious(const Cluster &prev) {
 		//
@@ -424,9 +432,13 @@ class Cluster : public ClusterCoordinates {
 	}
 
 	void SetClusterBoundariesFromMatches (Options &opts) {
-		for (int i=0; i < matches.size(); i++) {
+		qStart = matches[0].first.pos;
+		qEnd = qStart + opts.globalK;
+		tStart = matches[0].second.pos;
+		tEnd = tStart + opts.globalK;
+		for (int i = 1; i < matches.size(); i++) {
 			tEnd = max(tEnd, matches[i].second.pos + opts.globalK);
-			tStart = min(tStart, matches[i].second.pos );
+			tStart = min(tStart, matches[i].second.pos);
 			qEnd = max(qEnd, matches[i].first.pos + opts.globalK);
 			qStart = min(qStart, matches[i].first.pos);
 		}
