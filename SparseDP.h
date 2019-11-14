@@ -44,6 +44,18 @@ using std::iota;
 
 
 void 
+ComputeMatchStart(vector<unsigned int> & MatchNum, const vector<Cluster> & FragInput, const vector<unsigned int> & inputChain){
+	for (int c = 1; c < inputChain.size(); c++) {
+		MatchNum[c] = FragInput[inputChain[c - 1]].matches.size();
+	}
+
+	for (int c = 1; c < MatchNum.size(); c++) {
+		MatchNum[c] = MatchNum[c-1] + MatchNum[c]; 
+	}
+}
+
+
+void 
 PassValueToD1 (unsigned int i, std::vector<Fragment_Info> & Value, const std::vector<Point> & H1, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, long int & ForwardDiag) {
 
 	// If all the subproblems B which contain the point H1[i] have been processed, then we can pass the value of the point H1[i] to the D array for every subproblem A
@@ -991,7 +1003,6 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 }
 
 
-
 void 
 DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
 					const std::vector<Fragment_Info> & Value, vector<Primary_chain> &Primary_chains, Read & read, Options & opts) {
@@ -1064,7 +1075,6 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 		onechain.clear();
 	}
 }
-
 
 
 // (KEEPKEEP)
@@ -1344,17 +1354,383 @@ int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Option
 	clock_t end = std::clock();
 	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	//cerr << "Time: " << elapsed_secs << endl;
+	return 0;
+}
 
-/*	// print out the final chain
-	cerr << "FinalChain: (";
-	for (unsigned int i = 0; i < FinalChain.size(); i++) {
-		cerr << A[FinalChain[i]] << ", ";
+
+//
+// The input for this function is splitchains[st] and ExtendClusters
+// Tackle with fragments of different lengths;
+// This SDP needs to insert 4 points for only anchors in the overlapping region between Clusters;
+// This SDP needs to increase the cost for linking 2 anchors of different directions;
+//
+int SparseDP(const vector<unsigned int> & inputChain, vector<Cluster> & FragInput, vector<unsigned int> & outputChain, Options & opts, const vector<float> & LookUpTable, Read & read, float rate = 1) {
+
+	//
+	// Input: vector<Cluster> & FragInput and vector<unsigned int> inputChain;
+	// Generally input 2 points for each anchor; s1 and e1 for forward anchor, while s2 and e2 for reversed anchor;
+	// For anchors in the overlapping region between Clusters, we need to insert 4 points for them;
+	//
+
+	// Compute the matches start in each Cluster;
+	//
+	vector<unsigned int> MatchStart(inputChain.size(), 0);
+	ComputeMatchStart(MatchStart, FragInput, inputChain);
+
+	// get points from FragInput and store them in H1;
+	//
+	std::vector<Point>  H1;		
+	int next, prev;
+	for (int c = 0; c < inputChain.size(); c++) {
+
+		int cm = inputChain[c];
+		prev = c - 1;
+		next = c + 1;
+
+		// qsb, qeb, tsb, teb form the unoverlapping region in the current Cluster;
+		GenomePos qsb = FragInput[cm].qStart;
+		GenomePos qeb = FragInput[cm].qEnd;
+		GenomePos tsb = FragInput[cm].tStart;
+		GenomePos teb = FragInput[cm].tEnd;
+
+		//
+		// Check the previous Cluster to get the overlapping boundary;
+		//
+		if (prev != -1) {
+			GenomePos q1 = FragInput[inputChain[prev]].qStart;
+			if (q1 > qsb and q1 < qeb) qeb = q1;
+			GenomePos t1 = FragInput[inputChain[prev]].tStart;
+			GenomePos t2 = FragInput[inputChain[prev]].tEnd;
+			if (t1 > tsb and t1 < teb) { // prev is on the upper right corner of the current Cluster;
+				teb = t1;
+			}
+			else if (t1 <= tsb and t2 > tsb and t2 <= teb) {
+				tsb = t2;
+			}
+
+		}
+
+		//
+		// Check the next Cluster to get the overlapping region;
+		//
+		if (next < inputChain.size()) {
+			GenomePos q2 = FragInput[inputChain[next]].qEnd; 
+			if (q2 > qsb and q2 < qeb) qsb = q2;
+			GenomePos t1 = FragInput[inputChain[next]].tStart;
+			GenomePos t2 = FragInput[inputChain[next]].tEnd;
+			if (t1 > tsb and t1 < teb) { // next is on the upper left corner of the current Cluster;
+				teb = t1;
+			}
+			else if (t1 <= tsb and t2 > tsb and t2 <= teb) {
+				tsb = t2;
+			}			
+		}
+
+
+		//
+		// Insert points into H1;
+		//
+		for (unsigned int i = 0; i < FragInput[cm].matches.size(); i++) {
+
+			// If the current anchor is inside the non-overlapping region, then insert two points for it;
+			//
+			// If it is forward stranded, then insert s1 and s2 for it;
+			//
+			if (FragInput[cm].strand == 0) { 
+
+				// insert start point s1 into H1
+				Point s1;
+				H1.push_back(s1);
+				H1.back().ind = 1; // start
+				H1.back().inv = 1; // forward direction
+				H1.back().frag_num = i + MatchStart[c];
+				H1.back().se.first = FragInput[cm].matches[i].first.pos;
+				H1.back().se.second = FragInput[cm].matches[i].second.pos;										
+				H1.back().orient = 1; // forward strand
+
+
+				// insert end point e1 into H1
+				Point e1;
+				H1.push_back(e1);
+				H1.back().ind = 0; // end
+				H1.back().inv = 1; // forward direction		
+				H1.back().frag_num = i + MatchStart[c];
+				H1.back().se.first = FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i];
+				H1.back().se.second = FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i];
+				H1.back().orient = 1; 				
+			}
+			else { 
+				// insert start point s2 into H1
+				Point s2;
+				H1.push_back(s2);
+				H1.back().ind = 1; // start
+				H1.back().inv = 0; // backward direction
+				H1.back().frag_num = i + MatchStart[c];
+				H1.back().se.first = FragInput[cm].matches[i].first.pos; 
+				H1.back().se.second = FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i] - 1; //// TODO(Jingwen): fix this "-1" in the other SparseDP
+				H1.back().orient = 0; // reversed strand			
+
+
+				// insert end point e2 into H1
+				Point e2;
+				H1.push_back(e2);
+				H1.back().ind = 0; // end
+				H1.back().inv = 0; // backward direction		
+				H1.back().frag_num = i + MatchStart[c];
+				H1.back().se.first = FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i];
+				assert(FragInput[cm].matches[i].second.pos == 0); // IF this happens, just delete all the "-1" in the section of inserting points;
+				H1.back().se.second = FragInput[cm].matches[i].second.pos - 1;
+				H1.back().orient = 0; 				
+			}
+
+			// If the anchor is in the overlapping region, then insert the rest 2 points
+			//
+			if (!(FragInput[cm].matches[i].first.pos >= qsb and FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i] <= qeb
+					and FragInput[cm].matches[i].second.pos >= tsb and FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i] < teb)) {
+
+				//
+				// If it is forward stranded, then insert s2 and e2 for it;
+				if (FragInput[cm].strand == 0) {
+					// insert start point s2 into H1
+					Point s2;
+					H1.push_back(s2);
+					H1.back().ind = 1; // start
+					H1.back().inv = 0; // backward direction
+					H1.back().frag_num = i + MatchStart[c];
+					H1.back().se.first = FragInput[cm].matches[i].first.pos; 
+					H1.back().se.second = FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i] - 1; //// TODO(Jingwen): fix this "-1" in the other SparseDP
+					H1.back().orient = 1; // forward strand			
+
+
+					// insert end point e2 into H1
+					Point e2;
+					H1.push_back(e2);
+					H1.back().ind = 0; // end
+					H1.back().inv = 0; // backward direction		
+					H1.back().frag_num = i + MatchStart[c];
+					H1.back().se.first = FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i];
+					H1.back().se.second = FragInput[cm].matches[i].second.pos - 1;
+					H1.back().orient = 1; 			
+				}
+
+			}
+
+			
+		}
+
 	}
-	cerr << ")" << endl;
-*/
+
+
+
+
+
+
+
+
+	for (unsigned int i = 0; i < FragInput.size(); i++) {
+
+			// insert start point s1 into H1
+			Point s1;
+			H1.push_back(s1);
+			H1.back().ind = 1; // start
+			H1.back().inv = 1; // forward direction
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qStart; 
+			H1.back().se.second = FragInput[i].tStart;	
+			if (FragInput[i].strand == 0) {
+				H1.back().orient = 1; 
+			}
+			else {
+				H1.back().orient = 0; 				
+			}
+
+
+			// insert end point e1 into H1
+			Point e1;
+			H1.push_back(e1);
+			H1.back().ind = 0; // end
+			H1.back().inv = 1; // forward direction		
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qEnd;
+			H1.back().se.second = FragInput[i].tEnd;
+			if (FragInput[i].strand == 0) {
+				H1.back().orient = 1; 
+			}
+			else {
+				H1.back().orient = 0; 				
+			}
+
+			// insert start point s2 into H1
+			Point s2;
+			H1.push_back(s2);
+			H1.back().ind = 1; // start
+			H1.back().inv = 0; // backward direction
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qStart; 
+			H1.back().se.second = FragInput[i].tEnd;	
+			if (FragInput[i].strand == 0) {
+				H1.back().orient = 1; 
+			}
+			else {
+				H1.back().orient = 0; 				
+			}
+
+
+			// insert end point e2 into H1
+			Point e2;
+			H1.push_back(e2);
+			H1.back().ind = 0; // end
+			H1.back().inv = 0; // backward direction		
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput[i].qEnd;
+			H1.back().se.second = FragInput[i].tStart;	
+			if (FragInput[i].strand == 0) {
+				H1.back().orient = 1; 
+			}
+			else {
+				H1.back().orient = 0; 				
+			}
+
+	}
+
+	//clock_t begin = std::clock();
+
+	//Sort the point by row
+	sort(H1.begin(), H1.end(), SortByRowOp<Point>()); // with same q and t coordinates, end point < start point
+	std::vector<unsigned int> H2(H1.size());
+	iota(H2.begin(), H2.end(), 0);
+	sort(H2.begin(), H2.end(), SortByColOp<Point, unsigned int>(H1));
+
+	
+	vector<info> Row;
+	vector<info> Col;
+	GetRowInfo(H1, Row);
+	GetColInfo(H1, H2, Col);
+	//cerr << "Row: " << Row << "\n";
+	//cerr << "Col: " << Col << "\n";
+
+	unsigned int n1 = 0;
+	unsigned int m1 = 0;
+	unsigned int n2 = 0;
+	unsigned int m2 = 0;
+
+	StackOfSubProblems SubR1;
+	StackOfSubProblems SubC1;
+	int eeR1 = 0, eeC1 = 0;
+
+	StackOfSubProblems SubR2;
+	StackOfSubProblems SubC2;
+	int eeR2 = 0, eeC2 = 0;
+
+	//cerr << "DivideSubByRow\n";
+	DivideSubProbByRow1(H1, Row, 0, Row.size(), n1, SubR1, eeR1);
+	//cerr << "SubR: " << SubR << endl;
+
+	//cerr << "DivideSubByCol\n";
+	DivideSubProbByCol1(H1, H2, Col, 0, Col.size(), m1, SubC1, eeC1);
+	//cerr << "SubC: " << SubC << endl;
+
+	DivideSubProbByRow2(H1, Row, 0, Row.size(), n2, SubR2, eeR2);	
+	DivideSubProbByCol2(H1, H2, Col, 0, Col.size(), m2, SubC2, eeC2);
+
+	//
+	// Get SS_A_R1, SS_B_R1, SS_A_R2 and SS_B_R2 for each fragment
+	//
+	std::vector<Fragment_Info> Value(FragInput.size());
+	for (unsigned int t = 0; t < Row.size(); ++t) {
+
+		for (unsigned int tt = Row[t].pstart; tt < Row[t].pend; ++tt) {
+
+			unsigned int ii = H1[tt].frag_num;
+
+			if (H1[tt].ind == 1 and H1[tt].inv == 1) { //H1[tt] is a start point (s1)
+				Value[ii].SS_B_R1 = Row[t].SS_B1;
+				Value[ii].counter_B_R1 = Row[t].SS_B1.size();
+				Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
+				Value[ii].orient = H1[tt].orient;
+			}
+			else if (H1[tt].ind == 0 and H1[tt].inv == 1) { // H1[tt] is an end point (e1)
+				Value[ii].SS_A_R1 = Row[t].SS_A1;
+				Value[ii].counter_A_R1 = Row[t].SS_A1.size();
+				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].orient = H1[tt].orient;
+			}
+			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
+				Value[ii].SS_B_R2 = Row[t].SS_B2;
+				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
+				Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
+				Value[ii].orient = H1[tt].orient;
+			}
+			else { // H1[tt] is an end point (e2)
+				Value[ii].SS_A_R2 = Row[t].SS_A2;
+				Value[ii].counter_A_R2 = Row[t].SS_A2.size();
+				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].orient = H1[tt].orient;				
+			}
+		}
+	}
+
+	//
+	// Get SS_A_C1, SS_B_C1, SS_A_C2 and SS_B_C2 for each fragment
+	//
+	for (unsigned int t = 0; t < Col.size(); ++t) {
+		for (unsigned int tt = Col[t].pstart; tt < Col[t].pend; ++tt) { 
+
+			unsigned int ii = H1[H2[tt]].frag_num;
+
+			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
+				Value[ii].SS_B_C1 = Col[t].SS_B1;
+				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
+				Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
+				Value[ii].orient = H1[H2[tt]].orient;
+			}
+			else if (H1[H2[tt]].ind == 0 and H1[H2[tt]].inv == 1) { // H1[H2[tt]] is an end point (e1)
+				Value[ii].SS_A_C1 = Col[t].SS_A1;
+				Value[ii].counter_A_C1 = Col[t].SS_A1.size();
+				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].orient = H1[H2[tt]].orient;
+			}
+			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
+				Value[ii].SS_B_C2 = Col[t].SS_B2;
+				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
+				Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
+				Value[ii].orient = H1[H2[tt]].orient;				
+			}
+			else { // H1[H2[tt]] is an end point (e2)
+				Value[ii].SS_A_C2 = Col[t].SS_A2;
+				Value[ii].counter_A_C2 = Col[t].SS_A2.size();
+				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].orient = H1[H2[tt]].orient;			
+			}
+
+		}
+	}
+
+
+	//cerr << "Value: " << Value << endl;
+	//cerr << "ProcessPoint\n";
+	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, rate);	
+
+	//
+	// Trace back chains; There are two parameters: PrimaryAln, SecondaryAln
+	//
+	DecidePrimaryChains(FragInput, SubR1, SubC1, SubR2, SubC2, Value, Primary_chains, read, opts);
+
+	// Clear SubR and SubC
+	SubR1.Clear(eeR1);
+	SubC1.Clear(eeC1);
+	SubR2.Clear(eeR2);
+	SubC2.Clear(eeC2);
+
+	// get the time for the program
+	//clock_t end = std::clock();
+	//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+	//cerr << "Time: " << elapsed_secs << endl;
 
 	return 0;
 }
+
+
 
 
 //
@@ -1570,6 +1946,12 @@ int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary
 
 	return 0;
 }
+
+
+
+
+
+
 
 
 #endif

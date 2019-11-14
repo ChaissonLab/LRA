@@ -666,6 +666,25 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 
 
 //
+// This function decide the chromIndex
+//
+int
+CHROMIndex(Cluster & cluster, Genome & genome) {
+
+	GenomePos tPos = cluster.tStart;
+	int firstChromIndex = genome.header.Find(tPos);
+	int lastChromIndex;
+	tPos = cluster.tEnd;
+	lastChromIndex = genome.header.Find(tPos);
+	if (firstChromIndex != lastChromIndex ) {
+		return 1;
+	}
+	cluster.chromIndex = firstChromIndex;  
+	return 0;
+}
+
+
+//
 // This function refines the Clusters in chain and store refined anchors in refinedClusters
 // NOTICE: Inside this function, we need to flip reversed Cluster into forward direction to find refined matches;
 // And flip them back after the refining step;
@@ -681,17 +700,13 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 		//
 		if (clusters[ph].matches.size() == 0) continue;
 		if (clusters[ph].refined == 1) continue; // this Cluster has been refined;
-		GenomePos tPos = clusters[ph].tStart;
-		int firstChromIndex = genome.header.Find(tPos);
-		int lastChromIndex;
-		tPos = clusters[ph].tEnd;
-		lastChromIndex = genome.header.Find(tPos);
-		if (firstChromIndex != lastChromIndex ) {
+
+		int pass = CHROMIndex(clusters[ph], genome);
+		if (pass == 1) {
 			clusters[ph].matches.clear();
-			continue;
+			continue;			
 		}
-		clusters[ph].chromIndex = firstChromIndex;  
-		refinedclusters[ph].chromIndex = firstChromIndex;
+		refinedclusters[ph].chromIndex = clusters[ph].chromIndex;
 		clusters[ph].refined = 1;
 
 
@@ -699,7 +714,7 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 		// Make the anchors reference this chromosome for easier bookkeeping 
 		// NOTICE: Remember to add chromOffset back in refinedclusters
 		//
-		GenomePos chromOffset = genome.header.pos[firstChromIndex];
+		GenomePos chromOffset = genome.header.pos[clusters[ph].chromIndex];
 		for (int m = 0; m < clusters[ph].matches.size(); m++) {
 			clusters[ph].matches[m].second.pos -= chromOffset;
 		}
@@ -855,12 +870,7 @@ int
 RefineBtwnSpace(Cluster * cluster, Options & opts, Genome & genome, Read & read, char *strands[2], GenomePos qe, GenomePos qs, 
 							GenomePos te, GenomePos ts, GenomePos st, int cur) {
 
-	int firstChromIndex = genome.header.Find(ts);
-	int lastChromIndex = genome.header.Find(te);
-	if (firstChromIndex != lastChromIndex ) {
-		return 0;
-	}	
-	int ChromIndex = genome.header.Find(ts);
+	int ChromIndex = cluster->chromIndex;
 
 	// 
 	// If st == 1, then we need to flip this Cluster, since the following code of fining matches requiers that;
@@ -909,6 +919,51 @@ RefineBtwnSpace(Cluster * cluster, Options & opts, Genome & genome, Read & read,
 	return 0;
 }
 
+
+//
+// This function splits the chain if Clusters on the chain are mapped to different chromosomes;
+//
+void
+SPLITChain(CHain & chain, vector<Cluster*> RefinedClusters, vector<vector<unsigned int>> & splitchains) {
+
+	vector<int> Index; // Index stores the chromIndex of Clusters on chain
+	vector<int> chainIndex(chain.ch.size(), 0); // chainIndex[i] means Cluster(chain.ch[i]) has chromIndex Index[chainIndex[i]];
+
+	//
+	// Get Index and chainIndex;
+	//
+	for (int im = 0; im < chain.ch.size(); im++) {
+
+		int curChromIndex = RefinedClusters[chain.ch[im]]->chromIndex;
+		if (Index.empty()) {
+			Index.push_back(curChromIndex);
+			chainIndex[im] = Index.size() - 1;
+		}
+		else {
+			int ex = 0;
+			while (ex < Index.size()) {
+				if (Index[ex] == curChromIndex) {
+					chainIndex[im] = ex;
+					break;
+				}
+				ex++;
+			}
+			if (ex == Index.size()) {
+				Index.push_back(curChromIndex);
+				chainIndex[im] = Index.size() - 1;
+			}
+		}
+	}
+
+	//
+	// Get sptchain based on Index and chainIndex;
+	//
+	vector<vector<unsigned int>> sptchain(Index.size()); //// TODO(Jingwen): make sure this initialization is right!
+	for (int im = 0; im < chainIndex.size(); im++) {
+		sptchain[chainIndex[im]].push_back(chain.ch[im]);
+	}
+	splitchain = sptchain;
+}
 
 
 int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, pthread_mutex_t *semaphore=NULL) {
@@ -1282,29 +1337,32 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 		//// TODO(Jingwen): write a function to determine the chromIndex and subtract chromOffSet from t coord.
 		for (int s = 0; s < clusters.size(); s++) {	
-			//
-			// Find the chromIndex for each Cluster
-			//
-			GenomePos tPos = clusters[s].tStart;
-			int firstChromIndex = genome.header.Find(tPos);
-			int lastChromIndex;
-			tPos = clusters[s].tEnd;
-			lastChromIndex = genome.header.Find(tPos);
-			if (firstChromIndex != lastChromIndex ) {
+
+			// Determine the chromIndex of each Cluster;
+			int pass = CHROMIndex(clusters[s], genome);
+			if (pass == 1) {
 				clusters[s].matches.clear();
-				continue;
+				continue;				
 			}
-			clusters[s].chromIndex = firstChromIndex;  
+
+			// Subtract chromOffSet from t coord.
+			GenomePos chromOffset = genome.header.pos[clusters[s].chromIndex];
+			for (int m = 0; m < clusters[s].matches.size(); m++) {
+				clusters[s].matches[m].second.pos -= chromOffset;
+			}
+			clusters[s].tStart -= chromOffset;
+			clusters[s].tEnd -= chromOffset;
 			RefinedClusters[s] = &clusters[s];
 		}
 	}
 
-
+	int SizeRefinedClusters = 0;
 	if (opts.dotPlot) {
 		ofstream clust("RefinedClusters.tab");
 
 		for (int p = 0; p < RefinedClusters.size(); p++) {
 
+			SizeRefinedClusters += RefinedClusters[p]->matches.size();
 			for (int h = 0; h < RefinedClusters[p]->matches.size(); h++) {
 
 				if (RefinedClusters[p]->strand == 0) {
@@ -1367,7 +1425,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 				if (qe > qs and te > ts) {
 					SpaceLength = min(qe - qs, te - ts);
-					if (SpaceLength > 1000 and SpaceLength < 10000) {
+					if (SpaceLength > 1000 and SpaceLength < 10000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
 						// btwnClusters have GenomePos, st, matches, coarse
 						// This function also set the "coarse" flag for RefinedClusters[cur]
 						RefineBtwnSpace(RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te, ts, st, cur);
@@ -1395,7 +1453,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}
 			if (qe > qs and te > ts) {
 				SpaceLength = min(qe - qs, te - ts); 
-				if (SpaceLength > 500 and SpaceLength < 2000) {
+				if (SpaceLength > 500 and SpaceLength < 2000 and te < genome.lengths[RefinedClusters[rh]->chromIndex]) {
 					RefineBtwnSpace(RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, rh);
 				}				
 			}
@@ -1419,7 +1477,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}
 			if (qe > qs and te > ts) {
 				SpaceLength = min(qe - qs, te - ts);
-				if (SpaceLength > 500 and SpaceLength < 2000) {
+				if (SpaceLength > 500 and SpaceLength < 2000 and te < genome.lengths[RefinedClusters[lh]->chromIndex]) {
 					RefineBtwnSpace(RefinedClusters[lh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lh);
 				}				
 			}
@@ -1428,17 +1486,19 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			//
 			// Do linear extension for each anchors and avoid overlapping locations;
 			// INPUT: RefinedClusters; OUTPUT: ExtendClusters;
-			// NOTICE: ExtendClusters have members: strand, matches, matchesLengths, GenomePos;
+			// NOTICE: ExtendClusters have members: strand, matches, matchesLengths, GenomePos, chromIndex;
 			//
 			vector<Cluster> ExtendClusters(Primary_chains[p].chains[h].ch.size());
 			LinearExtend(RefinedClusters, ExtendClusters, Primary_chains[p].chains[h].ch, smallOpts, genome, read);
 
 
+			int SizeExtendClusters = 0;
 			if (opts.dotPlot) {
 				ofstream clust("ExtendClusters.tab");
 
 				for (int p = 0; p < ExtendClusters.size(); p++) {
 
+					SizeExtendClusters += ExtendClusters[p].matches.size();
 					for (int h = 0; h < ExtendClusters[p].matches.size(); h++) {
 						
 						if (ExtendClusters[p].strand == 0) {
@@ -1462,16 +1522,38 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				clust.close();
 			}	
 
+			cerr << "LinearExtend efficiency: " << (float)SizeExtendClusters/(float)SizeRefinedClusters << endl;
+
+
+			//
+			// Split the chain Primary_chains[p].chains[h] if clusters are aligned to different chromosomes; SplitAlignment is class that vector<* vector<Cluster>>
+			// INPUT: vector<Cluster> ExtendClusters; OUTPUT:  vector<vector<unsigned int>> splitchain;
+			//
+			vector<vector<unsigned int>> splitchains;
+			SPLITChain(Primary_chains[p].chains[h], ExtendClusters, splitchains);
+
+
+			//
+			// Apply SDP on all splitchains to get the final rough alignment path;
+			// store the result in GenomePairs tupChain; We need vector<Cluster> tupClusters for tackling anchors of different strands
+			//
+			// NOTICE: should we insert 4 points only for reversed anchors? 
+			//
+			for (int st = 0; st < splitchains.size(); st++) {
+
+				SparseDP(splitchains[st], ExtendClusters, smallOpts, LookUpTable, read, rate);
+
+			}
+
+
+
+
+
 
 			return 0;
 
 		}
 	}	
-
-
-	//
-	// Split the path if clusters are aligned to different chromosomes; SplitAlignment is class that vector<* vector<Cluster>>
-	// INPUT: vector<Cluster> ExtendClusters; OUTPUT:  vector<vector<int>>
 
 
 
