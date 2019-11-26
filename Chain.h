@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "Types.h"
+#include "Clustering.h"
 
 
 class CHain {
@@ -72,6 +73,54 @@ public:
 	~Primary_chain () {};
 	Primary_chain (CHain chain) {
 		chains.push_back(chain);
+	}
+};
+
+
+class FinalChain {
+public: 
+	vector<Cluster> *ExtendClusters;
+	vector<unsigned int> chain;
+	vector<unsigned int> MatchStart;
+	vector<int> ClusterIndex; // ClusterIndex[i] stores the index of the Cluster that anchor i comes from;
+	vector<int> StartIndex; // StartIndex[i] stores the index of the start for Cluster inputchain[i];
+
+	FinalChain (vector<Cluster> *clusters) {
+		ExtendClusters = clusters;
+	}
+
+	void InitializeOtherParts (vector<unsigned int> & matchstart, int & totalMatch, vector<Fragment_Info> & Value) {
+		MatchStart = matchstart;
+		ClusterIndex.resize(totalMatch);
+		StartIndex.resize(totalMatch);
+		assert(ClusterIndex.size() == totalMatch);
+
+		for (int v = 0; v < Value.size(); v ++) {
+			ClusterIndex[v] = Value[v].clusterNum;
+			StartIndex[v] = Value[v].matchstartNum;
+		}
+	}
+
+	bool strand (int i) {
+		return (*ExtendClusters)[ClusterIndex[chain[i]]].strand;
+	}
+
+	int ClusterNum (int i) {
+		return ClusterIndex[chain[i]];
+	}
+
+	GenomePair & operator[](int i) {
+		int clusterNum = ClusterIndex[chain[i]];
+		int matchstartNum = StartIndex[chain[i]];
+		assert(chain[i] - MatchStart[matchstartNum] < (*ExtendClusters)[clusterNum].matches.size());
+		return (*ExtendClusters)[clusterNum].matches[chain[i] - MatchStart[matchstartNum]];
+	}
+
+	int length (int i) {
+		int clusterNum = ClusterIndex[chain[i]];
+		int matchstartNum = StartIndex[chain[i]];		
+		assert(chain[i] - MatchStart[matchstartNum] < (*ExtendClusters)[clusterNum].matchesLengths.size());
+		return (*ExtendClusters)[clusterNum].matchesLengths[chain[i] - MatchStart[matchstartNum]];		
 	}
 };
 

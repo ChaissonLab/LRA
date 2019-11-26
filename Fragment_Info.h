@@ -10,6 +10,8 @@ class Fragment_Info
 {
 public:
 	float val;
+	int clusterNum; // store the index of the Cluster which the current anchor comes from;
+	int matchstartNum;
 	long int prev_sub; // the previous subproblem's number
 	long int prev_ind; // the index in the Ev of the previous subproblem
 	bool prev; //if prev == TRUE then the previous subproblem is row subproblem. Else it's col subproblem 
