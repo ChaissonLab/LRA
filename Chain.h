@@ -9,6 +9,7 @@
 class CHain {
 public:
 	vector<unsigned int> ch;
+	vector<bool> link;
 	int direction;
 	GenomePos qStart, qEnd, tStart, tEnd;
 	int main; // If one chain is aligned to several chromosomes, then we need to split this chain. main refers to the index of the main alignment in vector chain
@@ -25,13 +26,14 @@ public:
 		ch = onechain;
 		main = -1;
 	}	
-	CHain (GenomePos &qS, GenomePos &qE, GenomePos &tS, GenomePos &tE, vector<unsigned int> &onechain) {
+	CHain (GenomePos &qS, GenomePos &qE, GenomePos &tS, GenomePos &tE, vector<unsigned int> &onechain, vector<bool> &lk) {
 		qStart = qS;
 		qEnd = qE;
 		tStart = tS;
 		tEnd = tE;
 		ch = onechain;
 		main = -1;
+		link = lk;
 	}
 	CHain (GenomePos &qS, GenomePos &qE, GenomePos &tS, GenomePos &tE, vector<unsigned int> &onechain, int idx) {
 		qStart = qS;
@@ -109,6 +111,14 @@ public:
 		return ClusterIndex[chain[i]];
 	}
 
+	int size () {
+		return chain.size();
+	}
+
+	void resize(int & m) {
+		chain.resize(m);
+	}
+
 	GenomePair & operator[](int i) {
 		int clusterNum = ClusterIndex[chain[i]];
 		int matchstartNum = StartIndex[chain[i]];
@@ -125,4 +135,22 @@ public:
 };
 
 
+class SplitChain {
+public:
+	vector<unsigned int> sptc;
+	vector<bool> link;
+
+	SplitChain (vector<unsigned int> &sp, vector<bool> &lk) {
+		sptc = sp;
+		link = lk;
+	}
+
+	int size() const {
+		return sptc.size();
+	}
+
+	unsigned int & operator[] (int i) {
+		return sptc[i];
+	}
+};
 #endif

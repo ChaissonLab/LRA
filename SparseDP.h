@@ -44,7 +44,7 @@ using std::iota;
 
 
 void 
-ComputeMatchStart(vector<unsigned int> & MatchNum, int & totalMatch, const vector<Cluster> & FragInput, const vector<unsigned int> & inputChain){
+ComputeMatchStart(vector<unsigned int> & MatchNum, int & totalMatch, const vector<Cluster> & FragInput, SplitChain & inputChain){
 	totalMatch = FragInput[inputChain[0]].matches.size();
 	for (int c = 1; c < inputChain.size(); c++) {
 		totalMatch += FragInput[inputChain[c]].matches.size();
@@ -54,6 +54,68 @@ ComputeMatchStart(vector<unsigned int> & MatchNum, int & totalMatch, const vecto
 	for (int c = 1; c < MatchNum.size(); c++) {
 		MatchNum[c] = MatchNum[c-1] + MatchNum[c]; 
 	}
+}
+
+
+void
+insertPointsPair(const vector<Cluster> & FragInput, vector<Point> & H1, unsigned int frag_num, GenomePos & qs, GenomePos & ts, 
+									int & length, int & clusterNum, int & matchstartNum, int Pair, int strand) {
+	if (Pair == 0) {
+		// 
+		// Insert pair s1 and e1;
+		//
+		Point s1;
+		H1.push_back(s1);
+		H1.back().ind = 1; // start
+		H1.back().inv = 1; // forward direction
+		H1.back().frag_num = frag_num;
+		H1.back().se.first = qs;
+		H1.back().se.second = ts;										
+		H1.back().orient = strand; // forward strand
+		H1.back().clusterNum = clusterNum; 
+		H1.back().matchstartNum = matchstartNum;
+
+		// insert end point e1 into H1
+		Point e1;
+		H1.push_back(e1);
+		H1.back().ind = 0; // end
+		H1.back().inv = 1; // forward direction		
+		H1.back().frag_num = frag_num;
+		H1.back().se.first = qs + length;
+		H1.back().se.second = ts + length;
+		H1.back().orient = strand; 	
+		H1.back().clusterNum = clusterNum; 
+		H1.back().matchstartNum = matchstartNum;		
+	}
+	else {
+		// 
+		// Insert pair s2 and e2;
+		//
+		Point s2;
+		H1.push_back(s2);
+		H1.back().ind = 1; // start
+		H1.back().inv = 0; // backward direction
+		H1.back().frag_num = frag_num;
+		H1.back().se.first = qs; 
+		H1.back().se.second = ts + length - 1; //// TODO(Jingwen): fix this "-1" in the other SparseDP
+		H1.back().orient = strand; // reversed strand			
+		H1.back().clusterNum = clusterNum; 
+		H1.back().matchstartNum = matchstartNum;	
+
+		// insert end point e2 into H1
+		Point e2;
+		H1.push_back(e2);
+		H1.back().ind = 0; // end
+		H1.back().inv = 0; // backward direction		
+		H1.back().frag_num = frag_num;
+		H1.back().se.first = qs + length;
+		assert(ts != 0); // IF this happens, just delete all the "-1" in the section of inserting points;
+		H1.back().se.second = ts - 1;
+		H1.back().orient = strand; // reversed strand			
+		H1.back().clusterNum = clusterNum; 
+		H1.back().matchstartNum = matchstartNum;		
+	}
+
 }
 
 
@@ -576,7 +638,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 template<typename Tup>
 void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
 				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, std::vector<Fragment_Info> & Value, Options & opts, 
-				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, float rate) { // std::vector<ClusterCoordinates> & FragInput
+				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, float & rate) { // std::vector<ClusterCoordinates> & FragInput
 
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
@@ -603,6 +665,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				// If subproblem SubR1[j] is a leaf case, then 
 				if (SubR1[j].Di.empty()) {
 					//cerr << "SubR1[" << j << "] is a leaf case or non-leaf case but Di is empty" << "\n";
+					assert(Value[ii].counter_B_R1 != 0);
 					--Value[ii].counter_B_R1;
 					continue;
 				}
@@ -615,6 +678,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 					if (SubR1[j].Eb[*t] == -1) {
 						//cerr << "SubR1[" << j << "] is a non-leaf case but there is no forward diag smaller than the current in D array" << endl;
+						assert(Value[ii].counter_B_R1 != 0);
 						--Value[ii].counter_B_R1;
 						continue;
 					}
@@ -662,6 +726,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 								//", Value[ii].prev: " << Value[ii].prev << endl;
 							}			
 						//}	
+						assert(Value[ii].counter_B_R1 != 0);
 						--Value[ii].counter_B_R1;	
 						//cerr << "Do not update the value of this point\n";
 					}
@@ -678,8 +743,8 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 				// If subproblem SubC1[j] is a leaf case, then 
 				if (SubC1[j].Di.empty()) {
-
 					//cerr << "SubC1[" << j << "] is a leaf case or it's a non-leaf case with an empty Di" << "\n";
+					assert(Value[ii].counter_B_C1 != 0);
 					--Value[ii].counter_B_C1;
 					continue;
 				}
@@ -693,6 +758,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 					if (SubC1[j].Eb[*t] == -1) {
 						//cerr << "SubC1[" << j << "] is a non-leaf case but there is no forward diag larger than the current\n ";
+						assert(Value[ii].counter_B_C1 != 0);
 						--Value[ii].counter_B_C1;
 						continue;
 					}
@@ -742,6 +808,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 								//", Value[ii].prev: " << Value[ii].prev << endl;
 							}	
 						//}
+						assert(Value[ii].counter_B_C1 != 0);
 						--Value[ii].counter_B_C1;	
 						//cerr << "Do not update the value of this point\n";
 					}
@@ -762,6 +829,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				// If subproblem SubR2[j] is a leaf case, then 
 				if (SubR2[j].Di.empty()) {
 					//cerr << "SubR2[" << j << "] is a leaf case or non-leaf case but Di is empty" << "\n";
+					assert(Value[ii].counter_B_R2 != 0);
 					--Value[ii].counter_B_R2;
 					continue;
 				}
@@ -774,6 +842,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 					if (SubR2[j].Eb[*t] == -1) {
 						//cerr << "SubR2[" << j << "] is a non-leaf case but there is no back diag larger than the current" << endl;
+						assert(Value[ii].counter_B_R2 != 0);
 						--Value[ii].counter_B_R2;
 						continue;
 					}
@@ -811,6 +880,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 							//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
 							//", Value[ii].prev: " << Value[ii].prev << endl;
 						}			
+						assert(Value[ii].counter_B_R2 != 0);
 						--Value[ii].counter_B_R2;	
 						//cerr << "Do not update the value of this point\n";
 					}
@@ -829,8 +899,8 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 				// If subproblem SubC2[j] is a leaf case, then 
 				if (SubC2[j].Di.empty()) {
-
 					//cerr << "SubC2[" << j << "] is a leaf case or it's a non-leaf case with an empty Di" << "\n";
+					assert(Value[ii].counter_B_C2 != 0);
 					--Value[ii].counter_B_C2;
 					continue;
 				}
@@ -844,6 +914,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 					if (SubC2[j].Eb[*t] == -1) {
 						//cerr << "SubC2[" << j << "] is a non-leaf case but there is no forward diag larger than the current\n ";
+						assert(Value[ii].counter_B_C2 != 0);
 						--Value[ii].counter_B_C2;
 						continue;
 					}
@@ -881,7 +952,8 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 							//cerr << "update the value of this point\n";
 							//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
 							//", Value[ii].prev: " << Value[ii].prev << endl;
-						}			
+						}		
+						assert(Value[ii].counter_B_C2 != 0);	
 						--Value[ii].counter_B_C2;	
 						//cerr << "Do not update the value of this point\n";
 					}
@@ -915,7 +987,8 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 template<typename Tup>
 void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
 				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, std::vector<Fragment_Info> & Value, Options & opts, 
-				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, const vector<unsigned int> & inputChain, const vector<unsigned int> & MatchStart, float rate) { // std::vector<ClusterCoordinates> & FragInput
+				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, SplitChain & inputChain, 
+				 	const vector<unsigned int> & MatchStart, float & rate) { // std::vector<ClusterCoordinates> & FragInput
 
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
@@ -943,6 +1016,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				// If subproblem SubR1[j] is a leaf case, then 
 				if (SubR1[j].Di.empty()) {
 					//cerr << "SubR1[" << j << "] is a leaf case or non-leaf case but Di is empty" << "\n";
+					assert(Value[ii].counter_B_R1 != 0);
 					--Value[ii].counter_B_R1;
 					continue;
 				}
@@ -955,6 +1029,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 					if (SubR1[j].Eb[*t] == -1) {
 						//cerr << "SubR1[" << j << "] is a non-leaf case but there is no forward diag smaller than the current in D array" << endl;
+						assert(Value[ii].counter_B_R1 != 0);
 						--Value[ii].counter_B_R1;
 						continue;
 					}
@@ -975,7 +1050,8 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 						
 
-						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts) + rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
+						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts) + 
+																rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
 																//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR1[j].Ep[i1] = i2;							
 
@@ -1002,6 +1078,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 								//", Value[ii].prev: " << Value[ii].prev << endl;
 							}			
 						//}	
+						assert(Value[ii].counter_B_R1 != 0);
 						--Value[ii].counter_B_R1;	
 						//cerr << "Do not update the value of this point\n";
 					}
@@ -1018,8 +1095,8 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 				// If subproblem SubC1[j] is a leaf case, then 
 				if (SubC1[j].Di.empty()) {
-
 					//cerr << "SubC1[" << j << "] is a leaf case or it's a non-leaf case with an empty Di" << "\n";
+					assert(Value[ii].counter_B_C1 != 0);
 					--Value[ii].counter_B_C1;
 					continue;
 				}
@@ -1033,6 +1110,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 					if (SubC1[j].Eb[*t] == -1) {
 						//cerr << "SubC1[" << j << "] is a non-leaf case but there is no forward diag larger than the current\n ";
+						assert(Value[ii].counter_B_C1 != 0);
 						--Value[ii].counter_B_C1;
 						continue;
 					}
@@ -1056,7 +1134,8 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 	//					SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK; 
 	//					SubC1[j].Ep[i1] = i2;							
 
-						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
+						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + 
+													rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
 																//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC1[j].Ep[i1] = i2;							
 
@@ -1082,6 +1161,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 								//", Value[ii].prev: " << Value[ii].prev << endl;
 							}	
 						//}
+						assert(Value[ii].counter_B_C1 != 0);
 						--Value[ii].counter_B_C1;	
 						//cerr << "Do not update the value of this point\n";
 					}
@@ -1102,6 +1182,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				// If subproblem SubR2[j] is a leaf case, then 
 				if (SubR2[j].Di.empty()) {
 					//cerr << "SubR2[" << j << "] is a leaf case or non-leaf case but Di is empty" << "\n";
+					assert(Value[ii].counter_B_R2 > 0);
 					--Value[ii].counter_B_R2;
 					continue;
 				}
@@ -1114,6 +1195,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 					if (SubR2[j].Eb[*t] == -1) {
 						//cerr << "SubR2[" << j << "] is a non-leaf case but there is no back diag larger than the current" << endl;
+						assert(Value[ii].counter_B_R2 > 0);
 						--Value[ii].counter_B_R2;
 						continue;
 					}
@@ -1133,7 +1215,8 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Ei that BackDiag is in----i1: " << i1 << "\n";
 						//cerr << "the index in Di which is the best candidate for BackDiag ---- i2: " << i2 << "\n";
 
-						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts) +  rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
+						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts) + 
+														rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
 																	//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR2[j].Ep[i1] = i2;							
 
@@ -1151,6 +1234,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 							//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
 							//", Value[ii].prev: " << Value[ii].prev << endl;
 						}			
+						assert(Value[ii].counter_B_R2 > 0);
 						--Value[ii].counter_B_R2;	
 						//cerr << "Do not update the value of this point\n";
 					}
@@ -1169,8 +1253,8 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 				// If subproblem SubC2[j] is a leaf case, then 
 				if (SubC2[j].Di.empty()) {
-
 					//cerr << "SubC2[" << j << "] is a leaf case or it's a non-leaf case with an empty Di" << "\n";
+					assert(Value[ii].counter_B_C2 > 0);
 					--Value[ii].counter_B_C2;
 					continue;
 				}
@@ -1184,6 +1268,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 					if (SubC2[j].Eb[*t] == -1) {
 						//cerr << "SubC2[" << j << "] is a non-leaf case but there is no forward diag larger than the current\n ";
+						assert(Value[ii].counter_B_C2 > 0);
 						--Value[ii].counter_B_C2;
 						continue;
 					}
@@ -1205,7 +1290,8 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 					
 
-						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts) + rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
+						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts) + 
+														rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
 																	//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC2[j].Ep[i1] = i2;							
 
@@ -1222,6 +1308,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 							//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
 							//", Value[ii].prev: " << Value[ii].prev << endl;
 						}			
+						assert(Value[ii].counter_B_C2 > 0);
 						--Value[ii].counter_B_C2;	
 						//cerr << "Do not update the value of this point\n";
 					}
@@ -1253,7 +1340,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 //
 void 
 TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
-					const std::vector<Fragment_Info> & Value, unsigned int i, std::vector<unsigned int> & onechain, std::vector<bool> & used) {
+					const vector<Fragment_Info> & Value, unsigned int & i, vector<unsigned int> & onechain, vector<bool> & link, vector<bool> & used) {
 
 	long int prev_sub = Value[i].prev_sub;
 	long int prev_ind = Value[i].prev_ind;
@@ -1266,49 +1353,57 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 			if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
 				unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
 				if (used[SubR1[prev_sub].Dp[ind]] == 0) {
-					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], onechain, used);					
+					link.push_back(0);
+					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], onechain, link, used);					
 				}
 				else {
 					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
 						used[onechain[lu]] = 0;
 					}
 					onechain.clear();
+					link.clear();
 				}
 			}
 			else if (Value[i].prev == 1 and Value[i].inv == 0) { // The previous subproblem is SubR2
 				unsigned int ind = SubR2[prev_sub].Ep[prev_ind];
 				if (used[SubR2[prev_sub].Dp[ind]] == 0) {
-					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR2[prev_sub].Dp[ind], onechain, used);
+					link.push_back(1);
+					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR2[prev_sub].Dp[ind], onechain, link, used);
 				}
 				else {
 					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
 						used[onechain[lu]] = 0;
 					}
-					onechain.clear();					
+					onechain.clear();	
+					link.clear();				
 				}
 			}
 			else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
 				unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
 				if (used[SubC1[prev_sub].Dp[ind]] == 0) {
-					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], onechain, used);
+					link.push_back(0);
+					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], onechain, link, used);
 				}
 				else {
 					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
 						used[onechain[lu]] = 0;
 					}
-					onechain.clear();						
+					onechain.clear();	
+					link.clear();					
 				}
 			}		
 			else { // The previous subproblem is SubC2
 				unsigned int ind = SubC2[prev_sub].Ep[prev_ind];
 				if (used[SubC2[prev_sub].Dp[ind]] == 0) {
-					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC2[prev_sub].Dp[ind], onechain, used);
+					link.push_back(1);
+					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC2[prev_sub].Dp[ind], onechain, link, used);
 				}
 				else {
 					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
 						used[onechain[lu]] = 0;
 					}
-					onechain.clear();					
+					onechain.clear();	
+					link.clear();				
 				}
 			}
 
@@ -1321,29 +1416,30 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 //
 void 
 TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
-					const std::vector<Fragment_Info> & Value, unsigned int i, std::vector<unsigned int> & FinalChain) {
+					const vector<Fragment_Info> & Value, unsigned int & i, vector<unsigned int> & Chain) {
 
 	long int prev_sub = Value[i].prev_sub;
 	long int prev_ind = Value[i].prev_ind;
-	FinalChain.push_back(i);
+	Chain.push_back(i);
 
 	if (prev_sub != -1 and prev_ind != -1) {
 		
 		if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
 			unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
-			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], FinalChain);
+			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], Chain);
 		}
 		else if (Value[i].prev == 1 and Value[i].inv == 0) { // The previous subproblem is SubR2
 			unsigned int ind = SubR2[prev_sub].Ep[prev_ind];
-			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR2[prev_sub].Dp[ind], FinalChain);
+			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR2[prev_sub].Dp[ind], Chain);
 		}
 		else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
 			unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
-			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], FinalChain);
+			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], Chain);
 		}		
 		else { // The previous subproblem is SubC2
+			assert(prev_sub <= SubC2.StackSub.size());
 			unsigned int ind = SubC2[prev_sub].Ep[prev_ind];
-			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC2[prev_sub].Dp[ind], FinalChain);
+			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC2[prev_sub].Dp[ind], Chain);
 		}
 
 	}
@@ -1363,8 +1459,9 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 
 		unsigned int d = fragments_valueOrder.index[fv];
 
-		std::vector<unsigned int> onechain;
-		TraceBack(SubR1, SubC1, SubR2, SubC2, Value, d, onechain, used);
+		vector<unsigned int> onechain;
+		vector<bool> link;
+		TraceBack(SubR1, SubC1, SubR2, SubC2, Value, d, onechain, link, used);
 
 		if (onechain.size() != 0) {
 			// Note: onechain store index from the last one to the first one
@@ -1391,7 +1488,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 				// If onechain overlaps with all the primary chains less than 50% ---> onechain is another primary chain
 				//
 				if (Primary_chains.size() == 0) {
-					Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain));
+					Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
 					Primary_chains.push_back(Pc);
 				} 
 				else {
@@ -1400,7 +1497,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					while (p < Primary_chains.size()) {
 						if (Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.7)) {
 							if (Primary_chains[p].chains.size() < opts.SecondaryAln + 1) {
-								Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain));
+								Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
 								inserted = 1;								
 							}
 							break;
@@ -1412,7 +1509,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					}			
 					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 1) {		
 						if (Primary_chains.size() < opts.PrimaryAln) {
-							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain));
+							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
 							Primary_chains.push_back(Pc);
 						}	
 						else break;		
@@ -1422,6 +1519,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 			else break;				
 		}
 		onechain.clear();
+		link.clear();
 	}
 }
 
@@ -1699,7 +1797,7 @@ int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Option
 // This SDP needs to insert 4 points for only anchors in the overlapping region between Clusters;
 // This SDP needs to increase the cost for linking 2 anchors of different directions;
 //
-int SparseDP (const vector<unsigned int> & inputChain, vector<Cluster> & FragInput, FinalChain & finalchain, Options & opts, const vector<float> & LookUpTable, Read & read) {
+int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain & finalchain, Options & opts, const vector<float> & LookUpTable, Read & read) {
 
 	//
 	// Input: vector<Cluster> & FragInput and vector<unsigned int> inputChain;
@@ -1716,17 +1814,19 @@ int SparseDP (const vector<unsigned int> & inputChain, vector<Cluster> & FragInp
 	// Decide the rate;
 	//
 	float rate = 1;
-	if ((float)totalMatch / (float) read.length < 0.1) rate = 3;
+	//if ((float)totalMatch / (float) read.length < 0.1) rate = 3;
 
 	// get points from FragInput and store them in H1;
 	//
-	std::vector<Point>  H1;		
+	std::vector<Point> H1;		
 	int next, prev;
 	for (int c = 0; c < inputChain.size(); c++) {
 
 		int cm = inputChain[c];
 		prev = c - 1;
 		next = c + 1;
+		int curstrand = FragInput[cm].strand;
+		int prevstrand, nextstrand;
 
 		// qsb, qeb, tsb, teb form the unoverlapping region in the current Cluster;
 		GenomePos qsb = FragInput[cm].qStart;
@@ -1734,10 +1834,44 @@ int SparseDP (const vector<unsigned int> & inputChain, vector<Cluster> & FragInp
 		GenomePos tsb = FragInput[cm].tStart;
 		GenomePos teb = FragInput[cm].tEnd;
 
+		if (prev != -1) {
+			prevstrand = FragInput[inputChain[prev]].strand;
+			GenomePos q1 = FragInput[inputChain[prev]].qStart;
+			if (q1 > qsb and q1 < qeb) qeb = q1;
+
+			if (inputChain.link[prev] == 0) { // prev is on the upper right corner of the current Cluster;
+				GenomePos t1 = FragInput[inputChain[prev]].tStart;
+				if (t1 > tsb and t1 < teb) teb = t1;				
+			}
+			else {
+				GenomePos t2 = FragInput[inputChain[prev]].tEnd;
+				if (t2 > tsb and t2 < teb) tsb = t2;
+			}
+		}
+
+		if (next < inputChain.size()) {
+ 			nextstrand = FragInput[inputChain[next]].strand;
+			GenomePos q2 = FragInput[inputChain[next]].qEnd; 
+			if (q2 > qsb and q2 < qeb) qsb = q2;
+
+			if (inputChain.link[cm] == 0) { // next is on the lower left corner of the current Cluster;
+				GenomePos t2 = FragInput[inputChain[next]].tEnd;
+				if (t2 > tsb and t2 < teb) tsb = t2;
+			}
+			else {
+				GenomePos t1 = FragInput[inputChain[next]].tStart;
+				if (t1 > tsb and t1 < teb) teb = t1;
+
+			}
+		}
+		assert(qsb <= qeb);
+		assert(tsb <= teb);
+/*
 		//
 		// Check the previous Cluster to get the overlapping boundary;
 		//
 		if (prev != -1) {
+			prevstrand = FragInput[inputChain[prev]].strand;
 			GenomePos q1 = FragInput[inputChain[prev]].qStart;
 			if (q1 > qsb and q1 < qeb) qeb = q1;
 			GenomePos t1 = FragInput[inputChain[prev]].tStart;
@@ -1745,28 +1879,28 @@ int SparseDP (const vector<unsigned int> & inputChain, vector<Cluster> & FragInp
 			if (t1 > tsb and t1 < teb) { // prev is on the upper right corner of the current Cluster;
 				teb = t1;
 			}
-			else if (t1 <= tsb and t2 > tsb and t2 <= teb) {
+			else if (t2 > tsb and t2 <= teb) { // prev is on the lower right corner of the current Cluster; //t1 <= tsb and t2 > tsb and t2 <= teb
 				tsb = t2;
 			}
-
 		}
 
 		//
 		// Check the next Cluster to get the overlapping region;
 		//
 		if (next < inputChain.size()) {
+ 			nextstrand = FragInput[inputChain[next]].strand;
 			GenomePos q2 = FragInput[inputChain[next]].qEnd; 
 			if (q2 > qsb and q2 < qeb) qsb = q2;
 			GenomePos t1 = FragInput[inputChain[next]].tStart;
 			GenomePos t2 = FragInput[inputChain[next]].tEnd;
-			if (t1 > tsb and t1 < teb) { // next is on the upper left corner of the current Cluster;
+			if (t2 > teb and t1 > tsb and t1 < teb) { // next is on the upper left corner of the current Cluster;
 				teb = t1;
 			}
-			else if (t1 <= tsb and t2 > tsb and t2 <= teb) {
+			else if (t1 < tsb and t2 > tsb and t2 <= teb) { // next is on the lower left corner of the current Cluster;
 				tsb = t2;
 			}			
 		}
-
+*/
 		//
 		// Insert points into H1;
 		//
@@ -1776,9 +1910,12 @@ int SparseDP (const vector<unsigned int> & inputChain, vector<Cluster> & FragInp
 			//
 			// If it is forward stranded, then insert s1 and s2 for it;
 			//
-			if (FragInput[cm].strand == 0) { 
+			if (curstrand == 0) { 
 
 				// insert start point s1 into H1
+				insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+											FragInput[cm].matchesLengths[i], cm, c, 0, 1);
+			/*
 				Point s1;
 				H1.push_back(s1);
 				H1.back().ind = 1; // start
@@ -1800,10 +1937,14 @@ int SparseDP (const vector<unsigned int> & inputChain, vector<Cluster> & FragInp
 				H1.back().se.second = FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i];
 				H1.back().orient = 1; 	
 				H1.back().clusterNum = cm; 
-				H1.back().matchstartNum = c;			
+				H1.back().matchstartNum = c;
+			*/			
 			}
 			else { 
 				// insert start point s2 into H1
+				insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+											FragInput[cm].matchesLengths[i], cm, c, 1, 0);
+			/*
 				Point s2;
 				H1.push_back(s2);
 				H1.back().ind = 1; // start
@@ -1824,76 +1965,90 @@ int SparseDP (const vector<unsigned int> & inputChain, vector<Cluster> & FragInp
 				H1.back().se.first = FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i];
 				assert(FragInput[cm].matches[i].second.pos != 0); // IF this happens, just delete all the "-1" in the section of inserting points;
 				H1.back().se.second = FragInput[cm].matches[i].second.pos - 1;
+				H1.back().orient = 0; // reversed strand			
 				H1.back().clusterNum = cm; 
-				H1.back().matchstartNum = c;				
+				H1.back().matchstartNum = c;
+			*/				
 			}
 
+		/*
 			//
 			// If the anchor is in the overlapping region, then insert the rest 2 points;
 			if (!(FragInput[cm].matches[i].first.pos >= qsb and FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i] <= qeb
-					and FragInput[cm].matches[i].second.pos >= tsb and FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i] < teb)) {
+					and FragInput[cm].matches[i].second.pos >= tsb and FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i] <= teb)) {
 
 				//
 				// If it is forward stranded, then insert s2 and e2 for it;
 				if (FragInput[cm].strand == 0) {
 					// insert start point s2 into H1
-					Point s2;
-					H1.push_back(s2);
-					H1.back().ind = 1; // start
-					H1.back().inv = 0; // backward direction
-					H1.back().frag_num = i + MatchStart[c];
-					H1.back().se.first = FragInput[cm].matches[i].first.pos; 
-					H1.back().se.second = FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i] - 1; //// TODO(Jingwen): fix this "-1" in the other SparseDP
-					H1.back().orient = 1; // forward strand	
-					H1.back().clusterNum = cm; 
-					H1.back().matchstartNum = c;	
-
-
-					// insert end point e2 into H1
-					Point e2;
-					H1.push_back(e2);
-					H1.back().ind = 0; // end
-					H1.back().inv = 0; // backward direction		
-					H1.back().frag_num = i + MatchStart[c];
-					H1.back().se.first = FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i];
-					assert(FragInput[cm].matches[i].second.pos != 0);
-					H1.back().se.second = FragInput[cm].matches[i].second.pos - 1;
-					H1.back().orient = 1; 	
-					H1.back().clusterNum = cm; 
-					H1.back().matchstartNum = c;	
+					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+												FragInput[cm].matchesLengths[i], cm, c, 1, 1);
 				}
 				else {
 					// 
 					// If it is reversed stranded, then insert s1 and e1 for it;
 					// insert start point s1 into H1
-					Point s1;
-					H1.push_back(s1);
-					H1.back().ind = 1; // start
-					H1.back().inv = 1; // forward direction
-					H1.back().frag_num = i + MatchStart[c];
-					H1.back().se.first = FragInput[cm].matches[i].first.pos; 
-					H1.back().se.second = FragInput[cm].matches[i].second.pos;	
-					H1.back().orient = 0; 	
-					H1.back().clusterNum = cm; 
-					H1.back().matchstartNum = c;	
-
-
-					// insert end point e1 into H1
-					Point e1;
-					H1.push_back(e1);
-					H1.back().ind = 0; // end
-					H1.back().inv = 1; // forward direction		
-					H1.back().frag_num = i + MatchStart[c];
-					H1.back().se.first = FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i];
-					H1.back().se.second = FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i];
-					H1.back().orient = 0; 	
-					H1.back().clusterNum = cm; 
-					H1.back().matchstartNum = c;	 			
+					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+												FragInput[cm].matchesLengths[i], cm, c, 0, 0);
 				}
-
 			}
-		}
+		*/
+			
+			//
+			// If 1. the anchor is in the left overlapping region, 2. curstrand != prevstrand, insert the rest 2 points;
+			// If 1. the anchor is in the right overlapping region, 2. curstrand != nextstrand, insert the rest 2 points;
+			//
+			// The left overlapping region;
+			//
+			int add = 0;
+			if (prev != -1 and curstrand != prevstrand) {
+				if (curstrand == 0 and 
+					(FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i] > qeb or
+					 FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i] > teb)) {
+					//
+					// If it is forward stranded, then insert s2 and e2 for it;					
+					// insert start point s2 into H1
+					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+												FragInput[cm].matchesLengths[i], cm, c, 1, 1);
+					add++;
+				}
+				else if (curstrand == 1 and 
+					(FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i] > qeb or 
+					 FragInput[cm].matches[i].second.pos < tsb)) {
+					// 
+					// If it is reversed stranded, then insert s1 and e1 for it;
+					// insert start point s1 into H1
+					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+												FragInput[cm].matchesLengths[i], cm, c, 0, 0);
+					add++;
+				}
+			}
 
+			//
+			// The right overlapping region;
+			//
+			if (next < inputChain.size() and curstrand != nextstrand) {
+
+				if (curstrand == 0 and (FragInput[cm].matches[i].first.pos < qsb or FragInput[cm].matches[i].second.pos < tsb)) {
+					//
+					// If it is forward stranded, then insert s2 and e2 for it;					
+					// insert start point s2 into H1
+					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+												FragInput[cm].matchesLengths[i], cm, c, 1, 1);	
+					add++;			
+				}
+				else if (curstrand == 1 and (FragInput[cm].matches[i].first.pos < qsb or 
+							FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i] > teb)) {
+					// 
+					// If it is reversed stranded, then insert s1 and e1 for it;
+					// insert start point s1 into H1
+					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+												FragInput[cm].matchesLengths[i], cm, c, 0, 0);
+					add++;
+				}				
+			}
+			assert(add <= 1);
+		}
 	}
 
 	//clock_t begin = std::clock();
@@ -2073,7 +2228,7 @@ int SparseDP (const vector<unsigned int> & inputChain, vector<Cluster> & FragInp
 // fragments of different lengths
 // This SDP needs to insert 4 points for any anchors
 //
-int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, Options & opts, const vector<float> & LookUpTable, Read & read, float rate = 1) {
+int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, Options & opts, const vector<float> & LookUpTable, Read & read, float & rate) {
 
 	std::vector<Point>  H1;
 	// FragInput is vector<Cluster>

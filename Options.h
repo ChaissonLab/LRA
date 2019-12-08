@@ -58,6 +58,8 @@ public:
 	int binLength;
 	int minBinNum;
 	bool HighlyAccurate;
+	int splitdist;
+	float coefficient;
 
 	Options() {
 		localMatch=4;
@@ -74,15 +76,15 @@ public:
 		//bestn=1;
 		globalMaxFreq=20;
 		localMaxFreq=30;
-		maxDiag=1000; // We want maxDiag to be a small number  (used to be 500)
+		maxDiag=500; // We want maxDiag to be a small number  (used to be 500) //// For CCS, need to be smaller!!!
 		cleanMaxDiag=50; // used to be 50  
 		minDiagCluster=10; 	// used to be 20
 							// This parameter is used in CleanOffDiagonal function; It's better not to set it to a single value. 
 							// This parameter is used in another CleanOFFDiagonal function
 							// This parameter can be deleted here
 
-		minClusterSize=2; // used to be 10 
-		minClusterLength=50;  // used to be 100
+		minClusterSize=20; // For CCS, need to be larger!
+		minClusterLength=200;  // For CCS, need to be larger!
 		minRefinedClusterSize=40;
 		window=0;
 		mergeGapped=false;
@@ -104,20 +106,20 @@ public:
 		LookUpTable=true;
 		MergeSplit=true;
    		flagRemove=0;
-   		minRemovePairedIndelsLength=400; // used to be 50
+   		minRemovePairedIndelsLength=1000; // used to be 50
    		//maxRemoveSpuriousAnchorsDist=200;
    		//minRemoveSpuriousAnchorsNum=15;
    		//minRemoveSpuriousAnchorsLength=100;
-     	maxRemoveSpuriousAnchorsDist=200;
-   		minRemoveSpuriousAnchorsNum=30;
-   		minRemoveSpuriousAnchorsLength=400;
+     	maxRemoveSpuriousAnchorsDist=500;
+   		minRemoveSpuriousAnchorsNum=10;
    		SecondaryAln = 0;
    		PrimaryAln = 1;
    		BtnSubClusterswindow = 800;
 		binLength = 20000;
 		minBinNum = 3;
 		HighlyAccurate = false;
-
+		splitdist = 1000000;
+		coefficient = 18;
 	}
 };
 #endif
