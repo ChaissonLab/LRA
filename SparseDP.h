@@ -1411,6 +1411,7 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 	}
 }
 
+/*
 //
 // This function is for tracing back a chain;
 //
@@ -1421,27 +1422,93 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 	long int prev_sub = Value[i].prev_sub;
 	long int prev_ind = Value[i].prev_ind;
 	Chain.push_back(i);
+	//cerr << "i: " << i << endl;
 
 	if (prev_sub != -1 and prev_ind != -1) {
 		
 		if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
+			assert(prev_sub <  SubR1.StackSub.size());
+			assert(prev_ind < SubR1[prev_sub].Ep.size());
 			unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
+			assert(ind < SubR1[prev_sub].Dp.size());
 			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], Chain);
 		}
 		else if (Value[i].prev == 1 and Value[i].inv == 0) { // The previous subproblem is SubR2
+			assert(prev_sub <  SubR2.StackSub.size());
+			assert(prev_ind < SubR2[prev_sub].Ep.size());
 			unsigned int ind = SubR2[prev_sub].Ep[prev_ind];
+			assert(ind < SubR2[prev_sub].Dp.size());
 			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR2[prev_sub].Dp[ind], Chain);
 		}
 		else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
+			assert(prev_sub <  SubC1.StackSub.size());
+			assert(prev_ind < SubC1[prev_sub].Ep.size());
 			unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
+			assert(ind < SubC1[prev_sub].Dp.size());
 			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], Chain);
 		}		
 		else { // The previous subproblem is SubC2
-			assert(prev_sub <= SubC2.StackSub.size());
+			assert(prev_sub < SubC2.StackSub.size());
+			assert(prev_ind < SubC2[prev_sub].Ep.size());
 			unsigned int ind = SubC2[prev_sub].Ep[prev_ind];
+			assert(ind < SubC2[prev_sub].Dp.size());
 			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC2[prev_sub].Dp[ind], Chain);
 		}
 
+	}
+}
+*/
+
+
+//
+// This function is for tracing back a chain;
+//
+void 
+TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
+					const vector<Fragment_Info> & Value, unsigned int i, vector<unsigned int> & Chain) {
+
+	long int prev_sub = Value[i].prev_sub;
+	long int prev_ind = Value[i].prev_ind;
+	Chain.push_back(i);
+	//cerr << "i: " << i << endl;
+
+	while (prev_sub != -1 and prev_ind != -1) {
+		
+		if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
+			assert(prev_sub <  SubR1.StackSub.size());
+			assert(prev_ind < SubR1[prev_sub].Ep.size());
+			unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
+			assert(ind < SubR1[prev_sub].Dp.size());
+			i = SubR1[prev_sub].Dp[ind];
+			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], Chain);
+		}
+		else if (Value[i].prev == 1 and Value[i].inv == 0) { // The previous subproblem is SubR2
+			assert(prev_sub <  SubR2.StackSub.size());
+			assert(prev_ind < SubR2[prev_sub].Ep.size());
+			unsigned int ind = SubR2[prev_sub].Ep[prev_ind];
+			assert(ind < SubR2[prev_sub].Dp.size());
+			i = SubR2[prev_sub].Dp[ind];
+			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR2[prev_sub].Dp[ind], Chain);
+		}
+		else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
+			assert(prev_sub <  SubC1.StackSub.size());
+			assert(prev_ind < SubC1[prev_sub].Ep.size());
+			unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
+			assert(ind < SubC1[prev_sub].Dp.size());
+			i = SubC1[prev_sub].Dp[ind];
+			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], Chain);
+		}		
+		else { // The previous subproblem is SubC2
+			assert(prev_sub < SubC2.StackSub.size());
+			assert(prev_ind < SubC2[prev_sub].Ep.size());
+			unsigned int ind = SubC2[prev_sub].Ep[prev_ind];
+			assert(ind < SubC2[prev_sub].Dp.size());
+			i = SubC2[prev_sub].Dp[ind];
+			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC2[prev_sub].Dp[ind], Chain);
+		}
+		prev_sub = Value[i].prev_sub;
+		prev_ind = Value[i].prev_ind;		
+		Chain.push_back(i);
 	}
 }
 
@@ -1938,13 +2005,14 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 				H1.back().orient = 1; 	
 				H1.back().clusterNum = cm; 
 				H1.back().matchstartNum = c;
-			*/			
+				*/
+						
 			}
 			else { 
 				// insert start point s2 into H1
 				insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
 											FragInput[cm].matchesLengths[i], cm, c, 1, 0);
-			/*
+				/*
 				Point s2;
 				H1.push_back(s2);
 				H1.back().ind = 1; // start
@@ -1968,7 +2036,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 				H1.back().orient = 0; // reversed strand			
 				H1.back().clusterNum = cm; 
 				H1.back().matchstartNum = c;
-			*/				
+				*/		
 			}
 
 		/*
@@ -2203,10 +2271,8 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	//cerr << "TraceBack\n";
 	// Trace back to get the FinalChain
 	// store the index of points
-	//outputChain.clear();
 	finalchain.chain.clear();
 	TraceBack(SubR1, SubC1, SubR2, SubC2, Value, max_pos, finalchain.chain); // NOTICE: This chain is from the last anchors to the first anchor;
-
 
 	// Clear SubR and SubC
 	SubR1.Clear(eeR1);
