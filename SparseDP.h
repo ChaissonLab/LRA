@@ -638,7 +638,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 template<typename Tup>
 void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
 				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, std::vector<Fragment_Info> & Value, Options & opts, 
-				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, float & rate) { // std::vector<ClusterCoordinates> & FragInput
+				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, float & rate, bool step) { // std::vector<ClusterCoordinates> & FragInput
 
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
@@ -688,7 +688,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "Start to compute the maximization structure.\n";
 
 						SubR1[j].now = SubR1[j].Eb[*t];
-						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts); // TODO(Jingwen) anything change for SubC????
+						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts, step); // TODO(Jingwen) anything change for SubC????
 						SubR1[j].last = SubR1[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -699,7 +699,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 						
 
-						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts) + 
+						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step) + 
 																std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR1[j].Ep[i1] = i2;							
 
@@ -768,7 +768,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "SubC1[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
 						//cerr << "Start to compute the maximization structure.\n";
 						SubC1[j].now = SubC1[j].Eb[*t]; 
-						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts); 
+						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts, step); 
 						SubC1[j].last = SubC1[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -782,7 +782,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 	//					SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK; 
 	//					SubC1[j].Ep[i1] = i2;							
 
-						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + 
+						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step) + 
 																std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC1[j].Ep[i1] = i2;							
 
@@ -852,7 +852,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "Start to compute the maximization structure.\n";
 
 						SubR2[j].now = SubR2[j].Eb[*t];
-						Maximization (SubR2[j].now, SubR2[j].last, SubR2[j].Di, SubR2[j].Ei, SubR2[j].Dv, SubR2[j].Db, SubR2[j].Block, SubR2[j].S_1, LookUpTable, opts); // TODO(Jingwen) anything change for SubC????
+						Maximization (SubR2[j].now, SubR2[j].last, SubR2[j].Di, SubR2[j].Ei, SubR2[j].Dv, SubR2[j].Db, SubR2[j].Block, SubR2[j].S_1, LookUpTable, opts, step); // TODO(Jingwen) anything change for SubC????
 						SubR2[j].last = SubR2[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -862,7 +862,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Ei that BackDiag is in----i1: " << i1 << "\n";
 						//cerr << "the index in Di which is the best candidate for BackDiag ---- i2: " << i2 << "\n";
 
-						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts) + 
+						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts, step) + 
 																	std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR2[j].Ep[i1] = i2;							
 
@@ -924,7 +924,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "SubC2[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
 						//cerr << "Start to compute the maximization structure.\n";
 						SubC2[j].now = SubC2[j].Eb[*t]; 
-						Maximization (SubC2[j].now, SubC2[j].last, SubC2[j].Di, SubC2[j].Ei, SubC2[j].Dv, SubC2[j].Db, SubC2[j].Block, SubC2[j].S_1, LookUpTable, opts); 
+						Maximization (SubC2[j].now, SubC2[j].last, SubC2[j].Di, SubC2[j].Ei, SubC2[j].Dv, SubC2[j].Db, SubC2[j].Block, SubC2[j].S_1, LookUpTable, opts, step); 
 						SubC2[j].last = SubC2[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -936,7 +936,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 					
 
-						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts) + 
+						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step) + 
 																	std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC2[j].Ep[i1] = i2;							
 
@@ -988,7 +988,7 @@ template<typename Tup>
 void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
 				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, std::vector<Fragment_Info> & Value, Options & opts, 
 				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, SplitChain & inputChain, 
-				 	const vector<unsigned int> & MatchStart, float & rate) { // std::vector<ClusterCoordinates> & FragInput
+				 	const vector<unsigned int> & MatchStart, float & rate, bool step) { // std::vector<ClusterCoordinates> & FragInput
 
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
@@ -1039,7 +1039,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "Start to compute the maximization structure.\n";
 
 						SubR1[j].now = SubR1[j].Eb[*t];
-						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts); // TODO(Jingwen) anything change for SubC????
+						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts, step); // TODO(Jingwen) anything change for SubC????
 						SubR1[j].last = SubR1[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -1050,7 +1050,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 						
 
-						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts) + 
+						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step) + 
 																rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
 																//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR1[j].Ep[i1] = i2;							
@@ -1120,7 +1120,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "SubC1[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
 						//cerr << "Start to compute the maximization structure.\n";
 						SubC1[j].now = SubC1[j].Eb[*t]; 
-						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts); 
+						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts, step); 
 						SubC1[j].last = SubC1[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -1134,7 +1134,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 	//					SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK; 
 	//					SubC1[j].Ep[i1] = i2;							
 
-						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + 
+						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step) + 
 													rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
 																//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC1[j].Ep[i1] = i2;							
@@ -1205,7 +1205,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "Start to compute the maximization structure.\n";
 
 						SubR2[j].now = SubR2[j].Eb[*t];
-						Maximization (SubR2[j].now, SubR2[j].last, SubR2[j].Di, SubR2[j].Ei, SubR2[j].Dv, SubR2[j].Db, SubR2[j].Block, SubR2[j].S_1, LookUpTable, opts); // TODO(Jingwen) anything change for SubC????
+						Maximization (SubR2[j].now, SubR2[j].last, SubR2[j].Di, SubR2[j].Ei, SubR2[j].Dv, SubR2[j].Db, SubR2[j].Block, SubR2[j].S_1, LookUpTable, opts, step); // TODO(Jingwen) anything change for SubC????
 						SubR2[j].last = SubR2[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -1215,7 +1215,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Ei that BackDiag is in----i1: " << i1 << "\n";
 						//cerr << "the index in Di which is the best candidate for BackDiag ---- i2: " << i2 << "\n";
 
-						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts) + 
+						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts, step) + 
 														rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
 																	//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR2[j].Ep[i1] = i2;							
@@ -1278,7 +1278,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "SubC2[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
 						//cerr << "Start to compute the maximization structure.\n";
 						SubC2[j].now = SubC2[j].Eb[*t]; 
-						Maximization (SubC2[j].now, SubC2[j].last, SubC2[j].Di, SubC2[j].Ei, SubC2[j].Dv, SubC2[j].Db, SubC2[j].Block, SubC2[j].S_1, LookUpTable, opts); 
+						Maximization (SubC2[j].now, SubC2[j].last, SubC2[j].Di, SubC2[j].Ei, SubC2[j].Dv, SubC2[j].Db, SubC2[j].Block, SubC2[j].S_1, LookUpTable, opts, step); 
 						SubC2[j].last = SubC2[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -1290,7 +1290,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 					
 
-						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts) + 
+						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step) + 
 														rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
 																	//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC2[j].Ep[i1] = i2;							
@@ -2095,7 +2095,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 			//
 			// The right overlapping region;
 			//
-			if (next < inputChain.size() and curstrand != nextstrand) {
+			if (next < inputChain.size() and add < 1 and curstrand != nextstrand) {
 
 				if (curstrand == 0 and (FragInput[cm].matches[i].first.pos < qsb or FragInput[cm].matches[i].second.pos < tsb)) {
 					//
@@ -2252,7 +2252,8 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	//cerr << "Value: " << Value << endl;
 	//cerr << "ProcessPoint\n";
 	finalchain.InitializeOtherParts (MatchStart, totalMatch, Value);
-	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, inputChain, MatchStart, rate); 
+	bool step = 1;
+	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, inputChain, MatchStart, rate, step); 
 
 	//
 	// find the max_value for the FinalChain 
@@ -2482,7 +2483,8 @@ int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary
 
 	//cerr << "Value: " << Value << endl;
 	//cerr << "ProcessPoint\n";
-	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, rate);	
+	bool step = 0;
+	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, rate, step);	
 
 	//
 	// Trace back chains; There are two parameters: PrimaryAln, SecondaryAln

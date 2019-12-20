@@ -26,7 +26,6 @@
 #include "SparseDP.h"
 #include "Merge.h"
 #include "MergeAnchors.h"
-#include "SparseDP_Forward.h"
 #include "Chain.h"
 #include "overload.h"
 #include "LinearExtend.h"
@@ -621,7 +620,7 @@ CHROMIndex(Cluster & cluster, Genome & genome) {
 // NOTICE: Inside this function, we need to flip reversed Cluster into forward direction to find refined matches;
 // And flip them back after the refining step;
 //
-void 
+int 
 REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Genome & genome, Read & read,  LocalIndex & glIndex, LocalIndex *localIndexes[2], Options & smallOpts, Options & opts) {
 
 
@@ -784,6 +783,7 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 							 		clusters[ph].tStart - chromOffset, clusters[ph].tEnd- chromOffset);
 			}
 		}
+		if (refinedclusters[ph].matches.size() == 0) continue;
 		if (clusters[ph].strand == 1) SwapStrand(read, smallOpts, refinedclusters[ph]);
 		refinedclusters[ph].SetClusterBoundariesFromMatches(smallOpts);
 		refinedclusters[ph].strand = clusters[ph].strand;
@@ -792,6 +792,7 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 		refinedclusters[ph].coarse = -1;
 		refinedclusters[ph].refinespace = 0;
 	}
+	return 0;
 }
 
 
@@ -1224,27 +1225,36 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		revclust.close();
 	}
 
-
-
-/*
-	//
-	// Save the top diagonal bands with high number of anchors
-	// 
-	CleanOffDiagonal(allMatches, strands, genome, read, opts);
-	DiagonalSort<GenomeTuple>(allMatches); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
-	
-	vector<bool> strands(allMatches.size(), 0);
-	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, strands);
-	vector<Cluster> clusters;
-	StoreDiagonalClusters(allMatches, clusters, strands, opts);
-
-	*/
-
 	//
 	// Split clusters on x and y coordinates, vector<Cluster> splitclusters, add a member for each splitcluster to specify the original cluster it comes from
 	//
 	// INPUT: vector<Cluster> clusters   OUTPUT: vector<Cluster> splitclusters with member--"coarse" specify the index of the original cluster splitcluster comes from
-	if (clusters.size() == 0) return 0; // This read cannot be mapped to the genome; 
+	if (clusters.size() == 0) {
+		//ofstream clu("all1.tab", std::ios_base::app);
+		//clu << "1"<< endl;
+		//clu.close();		
+		return 0; // This read cannot be mapped to the genome; 
+	}
+
+	//
+	// remove Cluster that firstChromIndex != lastChromIndex;
+	//
+	vector<bool> RV(clusters.size(), 0);
+	for (int m = 0; m < clusters.size(); m++) {
+		if (CHROMIndex(clusters[m], genome) == 1) {
+			RV[m] = 1;
+		}
+	}
+	int vm = 0;
+	for (int m = 0; m < RV.size(); m++) {
+		if (RV[m] == 0) {
+			clusters[vm] = clusters[m];
+			vm++;
+		}
+	}
+	clusters.resize(vm);
+
+
 	vector<Cluster> splitclusters;
 	SplitClusters(clusters, splitclusters);
 
@@ -1271,6 +1281,33 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		}
 		clust.close();
 	}
+
+
+	if (opts.dotPlot) {
+		ofstream clust("clusters.tab");
+		for (int m = 0; m < clusters.size(); m++) {
+			for (int n = 0; n < clusters[m].matches.size(); n++) {
+				if (clusters[m].strand == 0) {
+					clust << clusters[m].matches[n].first.pos << "\t"
+						  << clusters[m].matches[n].second.pos << "\t"
+						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
+						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
+						  << m << "\t"
+						  << clusters[m].strand << endl;
+				}
+				else {
+					clust << clusters[m].matches[n].first.pos << "\t"
+						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
+						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
+						  << clusters[m].matches[n].second.pos << "\t"
+						  << m << "\t"
+						  << clusters[m].strand << endl;
+				}				
+			}
+		}
+		clust.close();
+	}
+
 
 	if (opts.dotPlot) {
 		ofstream clust("splitclusters-coarse.tab");
@@ -1386,7 +1423,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					}
 				}
 			}
-
 		}
 		clust.close();
 	}	
@@ -1405,7 +1441,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	//
 	LocalIndex forwardIndex(glIndex);
 	LocalIndex reverseIndex(glIndex);
-
 	LocalIndex *localIndexes[2] = {&forwardIndex, &reverseIndex};
 	forwardIndex.IndexSeq(read.seq, read.length);
 	reverseIndex.IndexSeq(readRC, read.length); 
@@ -1421,17 +1456,26 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	tinyOpts.globalK=smallOpts.globalK-3;
 
 
+	// Decide whether the number of anchors in each Cluster is enough to skip refining step;
+	bool sparse = 0;
+	for (int p = 0; p < clusters.size(); p++) {
+		if (((float)(clusters[p].matches.size())/(clusters[p].qEnd - clusters[p].qStart)) < 0.005) sparse = 1;
+		else sparse = 0;
+	}
+
+
 	//
-	// Refining each cluster in "clusters" needed if CLR reads are aligned. Otherwise, skip this step
+	// Refining each cluster in "clusters" needed if CLR reads are aligned OR CCS reads with very few anchors. Otherwise, skip this step
 	// After this step, the t coordinates in clusters and refinedclusters have been substract chromOffSet. 
 	//
 	vector<Cluster> refinedclusters(clusters.size());
  	vector<Cluster*> RefinedClusters(clusters.size());
 
-	if (opts.HighlyAccurate == false) {
+	if (opts.HighlyAccurate == false or (opts.HighlyAccurate == true and sparse == 1) ) {
 			
 		smallOpts.globalK=glIndex.k;
 		smallOpts.globalW=glIndex.w;
+		smallOpts.coefficient = 9;
 		smallOpts.globalMaxFreq=6;
 		smallOpts.cleanMaxDiag=10;// used to be 25
 		smallOpts.maxDiag=50;
@@ -1446,7 +1490,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		clusters.clear();
 	}
 	else {
-
 		//// TODO(Jingwen): write a function to determine the chromIndex and subtract chromOffSet from t coord.
 		for (int s = 0; s < clusters.size(); s++) {	
 
@@ -1502,7 +1545,24 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	for (int p = 0; p < RefinedClusters.size(); p++) {
 		SizeRefinedClusters += RefinedClusters[p]->matches.size();
 	}
+	if (SizeRefinedClusters == 0) return 0; // This read is not mapped!
 
+	
+	//
+	// Remove RefinedCluster without matches;
+	//
+	for (int p = 0; p < Primary_chains.size(); p++) {
+		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
+			int cp = 0;
+			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
+				if (RefinedClusters[Primary_chains[p].chains[h].ch[c]]->matches.size() != 0) {
+					Primary_chains[p].chains[h].ch[cp] = Primary_chains[p].chains[h].ch[c];
+					cp++;
+				}
+			}
+			Primary_chains[p].chains[h].ch.resize(cp);
+		}	
+	}
 
 	//
 	// For each chain, check the two ends and spaces between adjacent clusters. If the spaces are too wide, go to find anchors in the banded region.
@@ -1547,7 +1607,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				}
 
 				if (qe > qs and te > ts) {
-					SpaceLength = min(qe - qs, te - ts);
+					SpaceLength = max(qe - qs, te - ts);
 					if (SpaceLength > 1000 and SpaceLength < 10000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
 						// btwnClusters have GenomePos, st, matches, coarse
 						// This function also set the "coarse" flag for RefinedClusters[cur]
@@ -1575,7 +1635,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				else te = 0;
 			}
 			if (qe > qs and te > ts) {
-				SpaceLength = min(qe - qs, te - ts); 
+				SpaceLength = max(qe - qs, te - ts); 
 				if (SpaceLength > 500 and SpaceLength < 2000 and te < genome.lengths[RefinedClusters[rh]->chromIndex]) {
 					RefineBtwnSpace(RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, rh);
 				}				
@@ -1599,7 +1659,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				te = ts + (qe - qs);
 			}
 			if (qe > qs and te > ts) {
-				SpaceLength = min(qe - qs, te - ts);
+				SpaceLength = max(qe - qs, te - ts);
 				if (SpaceLength > 500 and SpaceLength < 2000 and te < genome.lengths[RefinedClusters[lh]->chromIndex]) {
 					RefineBtwnSpace(RefinedClusters[lh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lh);
 				}				

@@ -345,8 +345,8 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		int ne = n;
 		while (ne < minimizers.size() && minimizers[ne].t == minimizers[n].t) {ne++;}
 		int rz = 1;
-		if (header.pos.back()/100000000 > 1) {rz = header.pos.back()/100000000;}
-		if (ne - n > 500*rz) { // 500*rz is the rough threshold
+		if (header.pos.back()/1000000000 > 1) {rz = header.pos.back()/1000000000;}
+		if (ne - n > opts.minimizerFreq * rz) { // 500*rz is the rough threshold
 			for (uint32_t i = n; i < ne; i++) {
 				//Freq[i] = ne - n;
 				Remove[i] = 1;
@@ -374,7 +374,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	vector<uint32_t> Sortindex(unremoved, 0);
 	CountSort(Freq, RANGE, Remove, Sortindex);
 
-	vector<uint32_t> winCount(sz, 70); // 50 is a parameter that can be changed 
+	vector<uint32_t> winCount(sz, opts.NumOfminimizersPerWindow); // 50 is a parameter that can be changed 
 
 	for (uint32_t s = 0; s < Sortindex.size(); s++) {
 		uint32_t id = minimizers[Sortindex[s]].pos/winsize;

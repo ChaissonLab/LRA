@@ -94,6 +94,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<uns
 
 		int mat = 0;
 		int cm = chain[c];
+		if (clusters[cm]->matches.size() == 0) continue;
 		Set.clear();
 		prev = c - 1;
 		next = c + 1;
@@ -302,6 +303,8 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<uns
 		extCluster[c].strand = clusters[cm]->strand;
 		DecideCoordinates(extCluster[c]);
 		//cerr <<"c: " << c << "   mat:" << mat << endl;
+	
+		assert(clusters[cm]->matches.size() >= extCluster[c].matches.size());
 	}
 }
 

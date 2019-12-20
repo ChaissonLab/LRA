@@ -70,7 +70,8 @@ void HelpMap() {
 			 << "	-Se (int) Allow at most how many secondary alignments" << endl
 			 << "   -Pr (int) Allow at most how many primary alignments" << endl
 			 << "   -aa (flag)  use Merge.h" << endl
-			 << "	-A (flag) Align highly accurate reads" << endl;
+			 << "	-CCS (flag) Align CCS reads" << endl
+			 << "   -CLR (flag) Align CLR reads" << endl;
 }
 		
 class MapInfo {
@@ -227,10 +228,21 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "-S")) {
 			opts.SparseDP = true;
-		}
-		else if (ArgIs(argv[argi], "-A")) {
+		}		
+		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.HighlyAccurate = true;
+			opts.maxDiag=500;
+			opts.maxGap=1500;
+			//opts.minClusterSize=5; 
+			//opts.minClusterLength=50;  
 		}
+		else if (ArgIs(argv[argi], "-CLR")) {
+			opts.HighlyAccurate = false;
+			opts.maxDiag=800;
+			opts.maxGap=2000;
+			//opts.minClusterSize=5; 
+			//opts.minClusterLength=50; 
+		}		
 		else if (ArgIs(argv[argi], "-T")) {
 			opts.LookUpTable = true;
 		}
@@ -364,6 +376,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 void HelpStoreIndex() {
 	cout << "Usage: lra index file.fa [options]" << endl
 			 << "  Global index options " << endl
+			 << "	-CCS (flag) Index for aligning CCS reads" << endl
+			 << "	-CLR (flag) Index for aligning CLR reads" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
 			 << "   -F (int) Maximum minimizer frequency (200)." << endl
 			 << "   -K (int) Word size" << endl
@@ -455,6 +469,16 @@ void RunStoreGlobal(int argc, const char* argv[],
 			++argi;
 			opts.globalMaxFreq = atoi(argv[argi]);
 		}		
+		else if (ArgIs(argv[argi], "-CCS")) {
+			++argi;
+			opts.minimizerFreq = 50;
+			opts.NumOfminimizersPerWindow = 40;			
+		}	
+		else if (ArgIs(argv[argi], "-CLR")) {
+			++argi;
+			opts.minimizerFreq = 60;
+			opts.NumOfminimizersPerWindow = 50;			
+		}
 		else if (ArgIs(argv[argi], "-i")) {
 			++argi;
 			indexFile=argv[argi];
