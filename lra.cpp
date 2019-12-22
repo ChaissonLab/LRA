@@ -71,7 +71,8 @@ void HelpMap() {
 			 << "   -Pr (int) Allow at most how many primary alignments" << endl
 			 << "   -aa (flag)  use Merge.h" << endl
 			 << "	-CCS (flag) Align CCS reads" << endl
-			 << "   -CLR (flag) Align CLR reads" << endl;
+			 << "   -CLR (flag) Align CLR reads" << endl
+			 << "	-NANO (flag) Align Nanopore reads" << endl;
 }
 		
 class MapInfo {
@@ -243,6 +244,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50; 
 		}		
+		else if (ArgIs(argv[argi], "-NANO")) {
+			opts.HighlyAccurate = false;
+			opts.maxDiag=800;
+			opts.maxGap=2000;
+		}
 		else if (ArgIs(argv[argi], "-T")) {
 			opts.LookUpTable = true;
 		}
@@ -378,6 +384,7 @@ void HelpStoreIndex() {
 			 << "  Global index options " << endl
 			 << "	-CCS (flag) Index for aligning CCS reads" << endl
 			 << "	-CLR (flag) Index for aligning CLR reads" << endl
+			 << "	-NANO (flag) Index for aligning Nanopore reads" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
 			 << "   -F (int) Maximum minimizer frequency (200)." << endl
 			 << "   -K (int) Word size" << endl
@@ -390,6 +397,9 @@ void HelpStoreIndex() {
 
 void HelpStoreGlobal() {
 	cout << "Usage: lra index file.fa [options]" << endl
+			 << "	-CCS (flag) Index for aligning CCS reads" << endl
+			 << "	-CLR (flag) Index for aligning CLR reads" << endl
+			 << "	-NANO (flag) Index for aligning Nanopore reads" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
 			 << "   -F (int) Maximum minimizer frequency (200)." << endl
 			 << "   -K (int) Word size" << endl
@@ -415,6 +425,18 @@ void RunStoreLocal(int argc, const char* argv[],
 		if (ArgIs(argv[argi], "-h")) {
 			HelpStoreLocal();
 			exit(1);
+		}
+		else if (ArgIs(argv[argi], "-CCS")) {
+			opts.minimizerFreq = 50;
+			opts.NumOfminimizersPerWindow = 50;			
+		}	
+		else if (ArgIs(argv[argi], "-CLR")) {
+			opts.minimizerFreq = 60;
+			opts.NumOfminimizersPerWindow = 50;			
+		}
+		else if (ArgIs(argv[argi], "-NANO")) {
+			opts.minimizerFreq = 60;
+			opts.NumOfminimizersPerWindow = 50;			
 		}
 		else if (ArgIs(argv[argi], "-k")) {
 			opts.localK=atoi(argv[++argi]);
@@ -470,12 +492,14 @@ void RunStoreGlobal(int argc, const char* argv[],
 			opts.globalMaxFreq = atoi(argv[argi]);
 		}		
 		else if (ArgIs(argv[argi], "-CCS")) {
-			++argi;
 			opts.minimizerFreq = 50;
-			opts.NumOfminimizersPerWindow = 40;			
+			opts.NumOfminimizersPerWindow = 50;			
 		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
-			++argi;
+			opts.minimizerFreq = 60;
+			opts.NumOfminimizersPerWindow = 50;			
+		}
+		else if (ArgIs(argv[argi], "-NANO")) {
 			opts.minimizerFreq = 60;
 			opts.NumOfminimizersPerWindow = 50;			
 		}

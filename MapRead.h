@@ -99,6 +99,7 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, Options &opts) {
 	clusters.resize(c);
 }
 
+/*
 void SimpleMapQV(vector<SegAlignmentGroup> &alignments) {
 	int a=0;
 	int ovp=a;
@@ -137,6 +138,28 @@ void SimpleMapQV(vector<SegAlignmentGroup> &alignments) {
 		alignments[a].SetMapqv();
 		a=ovp;
 	}			
+}
+*/
+
+void SimpleMapQV(vector<SegAlignmentGroup> &alignments, vector<float> &SCORE) {
+
+	if (alignments.size() == 0) return;
+	else {
+		if (SCORE.size() == 1) {
+			alignments[0].mapqv = 120; 	
+			alignments[0].SetMapqv();		
+		}
+		else {
+			alignments[0].mapqv = (int) (120 * (1 - SCORE[1]/SCORE[0]));
+			alignments[0].SetMapqv();	
+		}
+
+		for (int a = 1; a < alignments.size(); ++a) {
+			alignments[a].mapqv = (int) (120 * (1 - SCORE[1]/SCORE[0]) * (1/alignments.size()));
+	 		alignments[a].SetMapqv();
+		}
+		return;	
+	}
 }
 
 int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, GenomePos &tStart, GenomePos &tEnd,
@@ -1343,7 +1366,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	////// TODO(Jingwen): customize a rate fro SparseDP
 	vector<Primary_chain> Primary_chains;
 	float rate = 1;
-	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
+	vector<float> SCORE;
+	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, SCORE, rate);
 	switchindex(splitclusters, Primary_chains);
 
 	//
@@ -1864,7 +1888,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			alignments.back().SetBoundariesFromSegAlignmentAndnm();
 		}
 	}	
-	SimpleMapQV(alignments);
+	SimpleMapQV(alignments, SCORE);
 
 
 	if (opts.dotPlot) {

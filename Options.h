@@ -122,6 +122,8 @@ public:
 		HighlyAccurate = false;
 		splitdist = 1000000;
 		coefficient = 18;
+		minimizerFreq = 50;
+		NumOfminimizersPerWindow = 50;
 	}
 };
 #endif
