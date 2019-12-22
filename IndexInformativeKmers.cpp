@@ -1,4 +1,4 @@
-#include "htslib/kseq.h"
+#include "htslib/htslib/kseq.h"
 #include "bwa/kstring.h"
 #include "bwa/bwa.h"
 #include <iostream>
@@ -88,6 +88,7 @@ void CountKmers(ProcInfo* procInfo) {
 		}
 	}
 }
+
 int main(int argc, char* argv[]) {
 	int optind=1;
 	bwaidx_t *idx;

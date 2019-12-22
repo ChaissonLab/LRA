@@ -59,6 +59,8 @@ void AntiDiagonalSort(typename vector<pair<Tup, Tup> >::iterator  begin,
 											typename vector<pair<Tup, Tup> >::iterator  end, GenomePos genomeLength) {
 	sort(begin, end, AntiDiagonalSortOp<Tup>(genomeLength));
 }
+
+
 template<typename Tup>
 void AntiDiagonalSort(vector<pair<Tup, Tup> > &vals, GenomePos length) {
 	AntiDiagonalSort<Tup>(vals.begin(), vals.end(), length);

@@ -50,9 +50,9 @@ void HelpMap() {
 	cout << "   The genome should be indexed using the 'lra index' program." << endl
 			 << "   'reads' may be either fasta, sam, or bam, and multiple input files may be given." << endl << endl;
 	cout << "Options:" << endl
-			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam 'p' pair ." << endl
+			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' pair ." << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
-       << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
+     		 << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
 			 << "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
 			 << "   -m  m(int)  Do not align clusters with fewer than m refined"<< endl
 			 << "               matches (40). Typically m > 3*M" << endl
@@ -67,7 +67,12 @@ void HelpMap() {
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
 			 << "	-d 	(flag)  Enable dotPlot" << endl
-			 << "   -aa (flag)  use Merge.h" << endl;
+			 << "	-Se (int) Allow at most how many secondary alignments" << endl
+			 << "   -Pr (int) Allow at most how many primary alignments" << endl
+			 << "   -aa (flag)  use Merge.h" << endl
+			 << "	-CCS (flag) Align CCS reads" << endl
+			 << "   -CLR (flag) Align CLR reads" << endl
+			 << "	-NANO (flag) Align Nanopore reads" << endl;
 }
 		
 class MapInfo {
@@ -194,9 +199,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "--maxDiag")) {
 			opts.maxDiag = atoi(GetArgv(argv, argc, argi));
 		}
-		else if (ArgIs(argv[argi], "-n")) {
-			opts.bestn=atoi(GetArgv(argv, argc, argi));
-		}
 		else if (ArgIs(argv[argi], "-t")) {
 			opts.nproc=atoi(GetArgv(argv, argc, argi));
 			++argi;
@@ -213,7 +215,12 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.readStart=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
-
+		else if (ArgIs(argv[argi], "--Se")) {
+			opts.SecondaryAln=atoi(GetArgv(argv, argc, argi));
+		}
+		else if (ArgIs(argv[argi], "--Pr")) {
+			opts.PrimaryAln=atoi(GetArgv(argv, argc, argi));
+		}
 		else if (ArgIs(argv[argi], "-R")) {
 			opts.mergeClusters=true;
 		}
@@ -222,6 +229,25 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "-S")) {
 			opts.SparseDP = true;
+		}		
+		else if (ArgIs(argv[argi], "-CCS")) {
+			opts.HighlyAccurate = true;
+			opts.maxDiag=500;
+			opts.maxGap=1500;
+			//opts.minClusterSize=5; 
+			//opts.minClusterLength=50;  
+		}
+		else if (ArgIs(argv[argi], "-CLR")) {
+			opts.HighlyAccurate = false;
+			opts.maxDiag=800;
+			opts.maxGap=2000;
+			//opts.minClusterSize=5; 
+			//opts.minClusterLength=50; 
+		}		
+		else if (ArgIs(argv[argi], "-NANO")) {
+			opts.HighlyAccurate = false;
+			opts.maxDiag=800;
+			opts.maxGap=2000;
 		}
 		else if (ArgIs(argv[argi], "-T")) {
 			opts.LookUpTable = true;
@@ -356,6 +382,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 void HelpStoreIndex() {
 	cout << "Usage: lra index file.fa [options]" << endl
 			 << "  Global index options " << endl
+			 << "	-CCS (flag) Index for aligning CCS reads" << endl
+			 << "	-CLR (flag) Index for aligning CLR reads" << endl
+			 << "	-NANO (flag) Index for aligning Nanopore reads" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
 			 << "   -F (int) Maximum minimizer frequency (200)." << endl
 			 << "   -K (int) Word size" << endl
@@ -368,6 +397,9 @@ void HelpStoreIndex() {
 
 void HelpStoreGlobal() {
 	cout << "Usage: lra index file.fa [options]" << endl
+			 << "	-CCS (flag) Index for aligning CCS reads" << endl
+			 << "	-CLR (flag) Index for aligning CLR reads" << endl
+			 << "	-NANO (flag) Index for aligning Nanopore reads" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
 			 << "   -F (int) Maximum minimizer frequency (200)." << endl
 			 << "   -K (int) Word size" << endl
@@ -393,6 +425,18 @@ void RunStoreLocal(int argc, const char* argv[],
 		if (ArgIs(argv[argi], "-h")) {
 			HelpStoreLocal();
 			exit(1);
+		}
+		else if (ArgIs(argv[argi], "-CCS")) {
+			opts.minimizerFreq = 50;
+			opts.NumOfminimizersPerWindow = 50;			
+		}	
+		else if (ArgIs(argv[argi], "-CLR")) {
+			opts.minimizerFreq = 60;
+			opts.NumOfminimizersPerWindow = 50;			
+		}
+		else if (ArgIs(argv[argi], "-NANO")) {
+			opts.minimizerFreq = 60;
+			opts.NumOfminimizersPerWindow = 50;			
 		}
 		else if (ArgIs(argv[argi], "-k")) {
 			opts.localK=atoi(argv[++argi]);
@@ -447,6 +491,18 @@ void RunStoreGlobal(int argc, const char* argv[],
 			++argi;
 			opts.globalMaxFreq = atoi(argv[argi]);
 		}		
+		else if (ArgIs(argv[argi], "-CCS")) {
+			opts.minimizerFreq = 50;
+			opts.NumOfminimizersPerWindow = 50;			
+		}	
+		else if (ArgIs(argv[argi], "-CLR")) {
+			opts.minimizerFreq = 60;
+			opts.NumOfminimizersPerWindow = 50;			
+		}
+		else if (ArgIs(argv[argi], "-NANO")) {
+			opts.minimizerFreq = 60;
+			opts.NumOfminimizersPerWindow = 50;			
+		}
 		else if (ArgIs(argv[argi], "-i")) {
 			++argi;
 			indexFile=argv[argi];

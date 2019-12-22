@@ -5,7 +5,7 @@
 
 
 template<typename tup> void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::iterator qEnd, typename vector<tup>::iterator tBegin,
-											typename vector<tup>::iterator tEnd, vector<pair<tup, tup> > &result, Options &opts) {
+											typename vector<tup>::iterator tEnd, vector<pair<tup, tup> > &result, Options &opts, long long int maxDiagNum = 0, long long int minDiagNum = 0) {
 	int qs = 0;
 	int qe = qEnd-qBegin - 1;
 	int ts = 0, te = tEnd - tBegin;
@@ -61,7 +61,11 @@ template<typename tup> void CompareLists(typename vector<tup>::iterator qBegin, 
 				if (tsi - tsStart < opts.globalMaxFreq) {
 					for(GenomePos ti=tsStart; ti != tsi; ti++) {
 						for (GenomePos qi=qsStart; qi <= qs; qi++) {
-							result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+							if (maxDiagNum != 0 and minDiagNum != 0) {
+								long long int Diag = (long long int) qBegin[qi].pos - (long long int) tBegin[ti].pos;
+								if (Diag <= maxDiagNum and Diag >= minDiagNum) result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+							}
+							else result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
 						}
 					}
 				}
@@ -92,7 +96,11 @@ template<typename tup> void CompareLists(typename vector<tup>::iterator qBegin, 
 				if (teStart - te < opts.globalMaxFreq) {
 					for (GenomePos ti=tei; ti < teStart; ti++) {
 						for (GenomePos qi=qe; qi <= qeStart; qi++) {
-							result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+							if (maxDiagNum != 0 and minDiagNum != 0) {
+								long long int Diag = (long long int) qBegin[qi].pos - (long long int) tBegin[ti].pos;
+								if (Diag <= maxDiagNum and Diag >= minDiagNum) result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+							}
+							else result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
 						}
 					}
 				}

@@ -345,8 +345,8 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		int ne = n;
 		while (ne < minimizers.size() && minimizers[ne].t == minimizers[n].t) {ne++;}
 		int rz = 1;
-		if (header.pos.back()/100000000 > 1) {rz = header.pos.back()/100000000;}
-		if (ne - n > 500*rz) { // 500*rz is the rough threshold
+		if (header.pos.back()/1000000000 > 1) {rz = header.pos.back()/1000000000;}
+		if (ne - n > opts.minimizerFreq * rz) { // 500*rz is the rough threshold
 			for (uint32_t i = n; i < ne; i++) {
 				//Freq[i] = ne - n;
 				Remove[i] = 1;
@@ -364,43 +364,6 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 
 	cerr << "RANGE: " << RANGE << endl;
 
-/*
-	//
-	// Get the counts of minimizers in each 1000bp 
-	//
-	int winsize = 1000;
-	uint32_t sz = header.pos.back()/winsize;
-	if (header.pos.back()/winsize % winsize > 0) sz += 1;
-	vector<int> WinCount(sz, 0);
-	vector<uint32_t> WinFreq(sz, 0);
-	vector<int> WinThreshold(sz, 0);
-	for (uint32_t i = 0; i < minimizers.size(); i++) {
-		++WinCount[minimizers[i].pos/winsize];
-		WinFreq[minimizers[i].pos/winsize] += Freq[i];
-	}
-
-	//
-	// Get the threshold of frequency in each 1000bp
-	//
-	for (uint32_t i = 0; i < WinThreshold.size(); i++) {
-		if (WinFreq[i] % WinCount[i] != 0) {WinThreshold[i] = WinFreq[i]/WinCount[i] + 1;}
-		else {WinThreshold[i] = WinFreq[i]/WinCount[i];}
-	}
-
-	//
-	// Remove frequent minimizers based on adaptive threshold in each 1000bp
-	//
-	uint32_t unremoved = 0;
-	for (uint32_t i = 0; i < minimizers.size(); i++) {
-		if (Freq[i] > 800) {
-		//if (Freq[i] > WinThreshold[minimizers[i].pos/winsize]) {
-			Remove[i] = 1;
-		}
-		else {
-			++unremoved;
-		}
-	}
-*/
 
 	// Sort unremoved minimizers by frequency 
 	// Use count sort
@@ -411,7 +374,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	vector<uint32_t> Sortindex(unremoved, 0);
 	CountSort(Freq, RANGE, Remove, Sortindex);
 
-	vector<uint32_t> winCount(sz, 70); // 50 is a parameter that can be changed 
+	vector<uint32_t> winCount(sz, opts.NumOfminimizersPerWindow); // 50 is a parameter that can be changed 
 
 	for (uint32_t s = 0; s < Sortindex.size(); s++) {
 		uint32_t id = minimizers[Sortindex[s]].pos/winsize;
@@ -439,10 +402,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	}
  
 
-
-
-
-
+ 
 	//
 	// Remove too frequent minimizers;
 	//

@@ -29,30 +29,36 @@ using std::endl;
 
 // w function
 float
-w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts) { 
+w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts, bool step) { // step == 1 means the second sdp; step == 0 means the first sdp
 	long int x = labs(j-i) + 1;
 
 	if (opts.LookUpTable) {
 		if (x < 501) {
-	    	return - 6*std::log(x) - 1;   
+	    	return - opts.coefficient*std::log(x) - 1;   
 		}
 		else if (x <= 10001){
 			// check LookUpTable
 			// TODO(Jingwen): finish the code here
 			float f = std::floor((x-501)/5);
 			int a = static_cast<int> (f);
-			return - 6*LookUpTable[a] - 1;
+			return - opts.coefficient*LookUpTable[a] - 1;
 		}
-		else {return -10000;}		
+		else {
+			if (step == 1) {return -10000;}
+			else {return - 800;}
+		}
 	}
 	else {
 		if (x < 501) {
-			return - 6*std::log(x) - 1;  
+			return - opts.coefficient*std::log(x) - 1;  
 		}
 		else if (x <= 10001) {
-			return - 6*std::log(x) - 1;  
+			return - opts.coefficient*std::log(x) - 1;  
 		}
-		else {return - 10000;}
+		else {
+			if (step == 1) {return - 10000;}
+			else {return - opts.coefficient*std::log(x) - 1;}
+		}
 	}
 }  
 
@@ -101,7 +107,7 @@ FindValueInBlock (long int ForwardDiag, std::stack<LPair> & S_1, std::vector<lon
 // Using Binary search to find the first index in [first, last) that a is worse than b
 unsigned int
 FindBoundary (unsigned int first, unsigned int last, unsigned int a, unsigned int b, std::vector<long int> & Di, std::vector<float> & Dv, std::vector<long int> & Ei, 
-					const std::vector<float> & LookUpTable, Options &opts) {
+					const std::vector<float> & LookUpTable, Options &opts, bool step) {
 
 	if (b != -1) {
 		unsigned int it;
@@ -109,7 +115,7 @@ FindBoundary (unsigned int first, unsigned int last, unsigned int a, unsigned in
 		count = last - first;
 		while (count > 0) {
 			it = first; step = count/2; it += step;
-			if (Dv[a] + w(Di[a], Ei[it], LookUpTable, opts) > Dv[b] + w(Di[b], Ei[it], LookUpTable, opts)) { // if a is better than b
+			if (Dv[a] + w(Di[a], Ei[it], LookUpTable, opts, step) > Dv[b] + w(Di[b], Ei[it], LookUpTable, opts, step)) { // if a is better than b
 				first = ++it;
 				count -= step + 1;
 			}
@@ -126,7 +132,7 @@ FindBoundary (unsigned int first, unsigned int last, unsigned int a, unsigned in
 
 void
 Maximization (unsigned int & now, long int & last, std::vector<long int> & Di, std::vector<long int> & Ei, std::vector<float> & Dv, std::vector<long int> & Db, 
-					std::vector<std::pair<long int, long int>> & Block, std::stack<LPair> & S_1, const std::vector<float> & LookUpTable, Options &opts) { // last and now are both index
+					std::vector<std::pair<long int, long int>> & Block, std::stack<LPair> & S_1, const std::vector<float> & LookUpTable, Options &opts, bool step) { // last and now are both index
 
  	unsigned int m = Di.size();
  	unsigned int n = Ei.size();
@@ -172,7 +178,7 @@ Maximization (unsigned int & now, long int & last, std::vector<long int> & Di, s
 			// Update the blocks 
 			long int l = S_1.top().first; 
 
-			if (Dv[i] + w(Di[i], Ei[Db[i]], LookUpTable, opts) > Dv[l] + w(Di[l], Ei[Db[i]], LookUpTable, opts)) { // Di[i] is better than Di[l] at Db[i]
+			if (Dv[i] + w(Di[i], Ei[Db[i]], LookUpTable, opts, step) > Dv[l] + w(Di[l], Ei[Db[i]], LookUpTable, opts, step)) { // Di[i] is better than Di[l] at Db[i]
 				
 				//cerr << "Di[i] is better than Di[l] at Db[i]\n";
 
@@ -186,7 +192,7 @@ Maximization (unsigned int & now, long int & last, std::vector<long int> & Di, s
 				LPair cur = S_1.top();
 				LPair prev = S_1.top();
 				//cerr << "S_1: " << S_1 << endl;
-				while (!S_1.empty() and Dv[i] + w(Di[i], Ei[cur.second - 1], LookUpTable, opts) > Dv[cur.first] + w(Di[cur.first], Ei[cur.second - 1], LookUpTable, opts)) {
+				while (!S_1.empty() and Dv[i] + w(Di[i], Ei[cur.second - 1], LookUpTable, opts, step) > Dv[cur.first] + w(Di[cur.first], Ei[cur.second - 1], LookUpTable, opts, step)) {
 					//cerr << "t " << endl;
 					S_1.pop();
 					prev = cur;
@@ -195,7 +201,7 @@ Maximization (unsigned int & now, long int & last, std::vector<long int> & Di, s
 				}
 				//cerr << "prev: " << prev << endl;
 				//cerr << "cur: " << cur << endl;
-				unsigned int h = FindBoundary(prev.second, cur.second, i, cur.first, Di, Dv, Ei, LookUpTable, opts);
+				unsigned int h = FindBoundary(prev.second, cur.second, i, cur.first, Di, Dv, Ei, LookUpTable, opts, step);
 				//cerr << "h: " << h << endl;
 				LPair e =  std::make_pair(i, h);
 				S_1.push(e);

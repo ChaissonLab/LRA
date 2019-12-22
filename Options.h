@@ -26,7 +26,7 @@ public:
 	bool viewPairwise;
 	bool hardClip;
 	char printFormat;
-	int bestn;
+	//int bestn;
 	bool storeAll;
 	int nproc;
 	string outfile;
@@ -53,7 +53,16 @@ public:
 	int minRemoveSpuriousAnchorsNum;
 	int minRemoveSpuriousAnchorsLength;
 	int SecondaryAln;
-
+	int PrimaryAln;
+	int BtnSubClusterswindow;
+	int binLength;
+	int minBinNum;
+	bool HighlyAccurate;
+	int splitdist;
+	float coefficient;
+	int minimizerFreq;
+	int NumOfminimizersPerWindow;
+	
 	Options() {
 		localMatch=4;
 		localMismatch=-3;
@@ -66,19 +75,20 @@ public:
 		globalW=10; 
 		localK=7;
 		localW=5;
-		bestn=1;
+		//bestn=1;
 		globalMaxFreq=20;
 		localMaxFreq=30;
-		maxDiag=500; // We want maxDiag to be a small number
+		maxDiag=500; // We want maxDiag to be a small number  (used to be 500) //// For CCS, need to be smaller!!! //// lots of unmapped reads due to 500;
 		cleanMaxDiag=50; // used to be 50  
-		minDiagCluster=20; // This parameter is used in CleanOffDiagonal function; It's better not to set it to a single value. 
+		minDiagCluster=10; 	// used to be 20
+							// This parameter is used in CleanOffDiagonal function; It's better not to set it to a single value. 
 							// This parameter is used in another CleanOFFDiagonal function
 							// This parameter can be deleted here
 
-		minClusterSize=5; // used to be 10 
-		minClusterLength=50;  // used to be 100
+		minClusterSize=5; // For CCS, need to be larger!(20)
+		minClusterLength=50;  // For CCS, need to be larger!(200)
 		minRefinedClusterSize=40;
-		window=100;
+		window=0;
 		mergeGapped=false;
 		viewPairwise=false;
 		hardClip=false;
@@ -89,8 +99,8 @@ public:
 		maxCandidates=3;
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
-		maxGap=10000; 
-		maxGapBtwnAnchors=1500; // no larger than 2000 
+		maxGap=2000; 
+		maxGapBtwnAnchors=5000; // no larger than 2000 // used to be 1500
 		mergeClusters=true;
 		NaiveDP=false;
 		seqan=false;
@@ -98,11 +108,22 @@ public:
 		LookUpTable=true;
 		MergeSplit=true;
    		flagRemove=0;
-   		minRemovePairedIndelsLength=50; // used to be 50
-   		maxRemoveSpuriousAnchorsDist=200;
-   		minRemoveSpuriousAnchorsNum=15;
-   		minRemoveSpuriousAnchorsLength=100;
+   		minRemovePairedIndelsLength=1000; // used to be 50
+   		//maxRemoveSpuriousAnchorsDist=200;
+   		//minRemoveSpuriousAnchorsNum=15;
+   		//minRemoveSpuriousAnchorsLength=100;
+     	maxRemoveSpuriousAnchorsDist=500;
+   		minRemoveSpuriousAnchorsNum=10;
    		SecondaryAln = 0;
+   		PrimaryAln = 1;
+   		BtnSubClusterswindow = 800;
+		binLength = 20000;
+		minBinNum = 3;
+		HighlyAccurate = false;
+		splitdist = 1000000;
+		coefficient = 18;
+		minimizerFreq = 50;
+		NumOfminimizersPerWindow = 50;
 	}
 };
 #endif

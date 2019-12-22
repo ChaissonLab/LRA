@@ -2,8 +2,6 @@
 #define ALIGNMENT_TYPE_H_
 
 #include <vector>
-
-
 #include "AlignmentBlock.h"
 #include "Path.h"
 #include "SeqUtils.h"
@@ -42,6 +40,11 @@ class Alignment {
 	string readName;
 	char *genome;
 	int strand;
+ 	bool ISsecondary; // ISsecondary == 1 means this is a secondary chain. Otherwise it's a primary chain
+ 	bool Supplymentary; // Supplymentary == 1 means this is a Supplymentary alignment;
+ 	//int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
+ 	//vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains	
+ 	bool split;
 	void Clear() {
 		queryString=alignString=refString="";
 		blocks.clear();
@@ -169,7 +172,7 @@ class Alignment {
 			t=blocks[0].tPos;
 		}
 
-		for (int b = 0; b < blocks.size() ; b++) {
+		for (int b = 0; b < blocks.size(); b++) {
 
 			for (int bl = 0; bl < blocks[b].length; bl++ ) {
 				assert(t < genomeLen);
@@ -194,10 +197,8 @@ class Alignment {
 			}
 
 
-			int queryGapLen = (blocks[b+1].qPos - 
-												 blocks[b].qPos - blocks[b].length);
-			int textGapLen  = (blocks[b+1].tPos - 
-												 blocks[b].tPos - blocks[b].length);
+			int queryGapLen = (blocks[b+1].qPos - blocks[b].qPos - blocks[b].length);
+			int textGapLen  = (blocks[b+1].tPos - blocks[b].tPos - blocks[b].length);
 			assert(queryGapLen >= 0);
 			assert(textGapLen >= 0);
 			if (queryGapLen > 0 or textGapLen > 0) {
@@ -276,7 +277,7 @@ class Alignment {
 		}
 		cigar=cigarstrm.str();
 	}
-	void CalculateStatistics(int size, int cur) {
+	void CalculateStatistics() {
 
 		CreateAlignmentStrings(read, genome, queryString, alignString, refString);
 		AlignStringsToCigar(queryString, refString, cigar, nm, nmm, ndel, nins);
@@ -295,35 +296,11 @@ class Alignment {
 		// Flag that the stats are calculated for methods that need them.
 		// 
 		prepared=true;
-		if (size == 1) {
-			if (strand == 1) {
-				flag = flag | READ_REVERSE;
-			}
-		}
-		else if (cur == 0) { // this is a chimeric alignment
-			if (strand == 1) {
-				flag = flag | READ_MULTIPLESEGMENTS | READ_FIRSTSEGMENT | READ_SUPPLEMENTARY | READ_REVERSE;
-			}
-			else {
-				flag = flag | READ_MULTIPLESEGMENTS | READ_FIRSTSEGMENT | READ_SUPPLEMENTARY;
-			}
-		}
-		else if (cur == size - 1) {
-			if (strand == 1) {
-				flag = flag | READ_MULTIPLESEGMENTS | READ_LASTSEGMENT | READ_SUPPLEMENTARY | READ_REVERSE;
-			}
-			else {
-				flag = flag | READ_MULTIPLESEGMENTS | READ_LASTSEGMENT | READ_SUPPLEMENTARY;
-			}
-		}
-		else {
-			if (strand == 1) {
-				flag = flag | READ_MULTIPLESEGMENTS | READ_LASTSEGMENT | READ_FIRSTSEGMENT | READ_SUPPLEMENTARY | READ_REVERSE;
-			}
-			else {
-				flag = flag | READ_MULTIPLESEGMENTS | READ_LASTSEGMENT | READ_FIRSTSEGMENT | READ_SUPPLEMENTARY;
-			}
-		}
+
+		if (split == 1) flag = flag | READ_MULTIPLESEGMENTS;
+		if (strand == 1) flag = flag | READ_REVERSE;
+		if (ISsecondary == 1) flag = flag | READ_SECONDARY;
+		if (Supplymentary == 1) flag = flag | READ_SUPPLEMENTARY;
 	}
 	
 	bool Overlaps(const Alignment &b, float frac) const {
@@ -439,35 +416,21 @@ public:
 	GenomePos qStart, qEnd, tStart, tEnd;
 	unsigned char mapqv;
 	int nm;
- 	bool ISsecondary; // ISsecondary == 1 means this is a secondary chain. Otherwise it's a primary chain
- 	int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
- 	vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains	
 	SegAlignmentGroup () {
 		qStart = 0;
 		qEnd = 0;
 		tStart = 0;
 		tEnd = 0;
-		nm = -1;
- 		ISsecondary = 0;
- 		primary = -1;
- 		nm = 0;
+		nm = 0;
 	};
 	~SegAlignmentGroup () {};
 
-	void SetBoundariesFromSegAlignmentAndnm (Read & read) {
+	void SetBoundariesFromSegAlignmentAndnm () {
 		for (int s = 0; s < SegAlignment.size(); s++) {
-			if (SegAlignment[s]->strand == 0) {
-				qStart = min(qStart, SegAlignment[s]->qStart);
-				qEnd   = max(qEnd, SegAlignment[s]->qEnd);
-				tStart = min(tStart, SegAlignment[s]->tStart);
-				tEnd   = max(tEnd, SegAlignment[s]->tEnd);
-			}
-			else {
-				qStart = min(qStart, read.length - SegAlignment[s]->qEnd);
-				qEnd   = max(qEnd, read.length - SegAlignment[s]->qStart);
-				tStart = min(tStart, SegAlignment[s]->tStart);
-				tEnd   = max(tEnd, SegAlignment[s]->tEnd);				
-			}
+			qStart = min(qStart, SegAlignment[s]->qStart);
+			qEnd   = max(qEnd, SegAlignment[s]->qEnd);
+			tStart = min(tStart, SegAlignment[s]->tStart);
+			tEnd   = max(tEnd, SegAlignment[s]->tEnd);
 			nm += SegAlignment[s]->nm;
 		}
 	}
