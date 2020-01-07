@@ -70,6 +70,9 @@ class Alignment {
 		prepared=false;
 		read=NULL;
 		forward=NULL;
+		ISsecondary=0;
+		Supplymentary=0;
+		split=0;
 	}
  	Alignment(char *_read, char *_forward, 
 					 int _rl, string _rn, int _str, 
