@@ -1276,6 +1276,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		}
 	}
 	clusters.resize(vm);
+	if (clusters.size() == 0) return 0; // This read cannot be mapped to the genome; 
 
 
 	vector<Cluster> splitclusters;

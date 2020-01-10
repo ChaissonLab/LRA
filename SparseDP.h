@@ -1868,6 +1868,7 @@ int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Option
 //
 int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain & finalchain, Options & opts, const vector<float> & LookUpTable, Read & read) {
 
+	if (inputChain.size() == 0) return 0;
 	//
 	// Input: vector<Cluster> & FragInput and vector<unsigned int> inputChain;
 	// Generally input 2 points for each anchor; s1 and e1 for forward anchor, while s2 and e2 for reversed anchor;
@@ -2299,6 +2300,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 //
 int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, Options & opts, const vector<float> & LookUpTable, Read & read, vector<float> & SCORE, float & rate) {
 
+	if (FragInput.size() == 0) return 0;
 	std::vector<Point>  H1;
 	// FragInput is vector<Cluster>
 	// get points from FragInput and store them in H1		
