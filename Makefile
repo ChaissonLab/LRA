@@ -66,7 +66,7 @@ qti: QueryTime.o
 lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a
 	$(CXX) $(CCOPTS) -c  -I htslib/include -I seqan/include  lra.cpp
 
-Alchemy2.o: Alchemy2.cpp  htslib/lib/libhts.a
+Alchemy2.o: Alchemy2.cpp Genome.h htslib/lib/libhts.a
 	$(CXX) $(CCOPTS) -c  -I htslib/include -I seqan/include  Alchemy2.cpp
 
 QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a

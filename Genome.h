@@ -121,7 +121,7 @@ class Genome {
 		int i=0;
 		while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
 			char *seq = new char[ks->seq.l];
-			for (i=0;i<ks->seq.l;i++) { seq[i] = toupper(ks->seq.s[i]);}
+			for (int j=0;j<ks->seq.l;j++) { seq[j] = toupper(ks->seq.s[j]);}
 			//			memcpy(seq, ks->seq.s, ks->seq.l);
 			seqs.push_back(seq);
 			lengths.push_back(ks->seq.l);
