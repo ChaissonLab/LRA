@@ -297,6 +297,7 @@ void CountSort(const vector<uint32_t> & Freq, const int & RANGE, const vector<bo
     // Build the output sorted vector
     for (uint32_t i = 0; i < Freq.size() ; i++) { 
     	if (Remove[i] == 0) {
+    		assert (Freq[i] <= RANGE);
     		Sortindex[count[Freq[i]] - 1] = i;
     		--count[Freq[i]];
     	}
@@ -346,13 +347,14 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		while (ne < minimizers.size() && minimizers[ne].t == minimizers[n].t) {ne++;}
 		int rz = 1;
 		if (header.pos.back()/1000000000 > 1) {rz = header.pos.back()/1000000000;}
-		if (ne - n > opts.minimizerFreq * rz) { // 500*rz is the rough threshold
+		if (ne - n > opts.minimizerFreq * rz) { // opts.minimizerFreq*rz is the rough threshold
 			for (uint32_t i = n; i < ne; i++) {
 				//Freq[i] = ne - n;
 				Remove[i] = 1;
 			}
 		}
 		else {
+			//assert(ne - n != 0);
 			for (uint32_t i = n; i < ne; i++) {
 				Freq[i] = ne - n;
 				++unremoved;
@@ -368,7 +370,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	// Sort unremoved minimizers by frequency 
 	// Use count sort
 	//
-	int winsize = 1000;
+	int winsize = 100;
 	uint32_t sz = header.pos.back()/winsize;
 	if (header.pos.back()/winsize % winsize > 0) sz += 1;
 	vector<uint32_t> Sortindex(unremoved, 0);
@@ -386,7 +388,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		}
 	}
 
-
+/*
 	// TODO(Jingwen) Print out all the minimizer and delete this later
 	if (opts.dotPlot) {
 		stringstream outNameStrm;
@@ -395,13 +397,30 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		for (int m=0; m < minimizers.size(); m++) {
 			baseDots << minimizers[m].t << "\t"
 					 << minimizers[m].pos << "\t" 
+					 << minimizers[m].pos + opts.globalK << "\t"
 					 << Freq[m] << "\t" 
 					 << Remove[m] << endl;				
 		}
 		baseDots.close();
 	}
- 
+ */
 
+	// TODO(Jingwen) Print out all the minimizer and delete this later
+	if (opts.dotPlot) {
+		stringstream outNameStrm;
+		outNameStrm << "picked.unique.minimizers.txt";
+		ofstream baseDots(outNameStrm.str().c_str());
+		for (int m=0; m < minimizers.size(); m++) {
+			if (Remove[m] == 0) {
+				baseDots << minimizers[m].t << "\t"
+						 << minimizers[m].pos << "\t" 
+						 << minimizers[m].pos + opts.globalK << "\t"
+						 << Freq[m] << "\t" 
+						 << Remove[m] << endl;				
+			}
+		}
+		baseDots.close();
+	}
  
 	//
 	// Remove too frequent minimizers;
@@ -411,6 +430,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	cerr << "There are " << minimizers.size() << " minimizers left" << endl;
 
 	//RemoveFrequent(minimizers, opts.globalMaxFreq);
+
 }
 
 
