@@ -244,36 +244,6 @@ class LocalIndex {
 };
 
 
-class Freminimizers {
-public:
-	vector<std::pair<uint32_t, uint32_t>> *freCount;
-	vector<uint32_t> index;
-
-	// Initialization
-	Freminimizers (vector<std::pair<uint32_t, uint32_t>> *f) :freCount(f){
-		index.resize(freCount->size());
-		std::iota(index.begin(), index.end(), 0);
-		cerr << "3" << endl;
-		Sort();
-		cerr << "4" << endl;
-	}
-
-	bool operator () (uint32_t i, uint32_t j) {
-		assert(i < freCount->size());
-		assert(j < freCount->size());
-		return (*freCount)[i].first < (*freCount)[j].first; // TODO(Jingwen): "<" or "<="??
-	}
-
-	void Sort() {
-		std::sort(index.begin(), index.end(), *this);
-	}
-
-	uint32_t & operator[] (const uint32_t &i) {
-		return index[i];
-	}
-
-};
-
 void CountSort(const vector<uint32_t> & Freq, const int & RANGE, const vector<bool> & Remove, vector<uint32_t> & Sortindex){
 //void CountSort (const vector<std::pair<uint32_t, uint32_t>> & v, const int & RANGE, 
 //						vector<std::pair<uint32_t, uint32_t>> & sortv) {

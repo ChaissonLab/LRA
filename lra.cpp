@@ -50,7 +50,10 @@ void HelpMap() {
 	cout << "   The genome should be indexed using the 'lra index' program." << endl
 			 << "   'reads' may be either fasta, sam, or bam, and multiple input files may be given." << endl << endl;
 	cout << "Options:" << endl
-			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' pair ." << endl
+			 << "   -CCS (flag) Align CCS reads. " << endl
+			 << "   -CLR (flag) Align CLR reads. " << endl
+			 << "   -NANO (flag) Align Nanopore reads. " << endl
+			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' pair." << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
      		 << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
 			 << "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
@@ -59,20 +62,22 @@ void HelpMap() {
 			 << "   -a  (flag)  Query all positions in a read, not just minimizers. " << endl
 			 << "               This is 10-20% slower, with an increase in specificity. " << endl
 			 << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl
-			 << "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl
-			 << "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
-			 << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
-			 << "	-T 	(flag)  Use log LookUpTable when gap length is larger than 501." << endl
-		     << "   -t n(int)   Use n threads (1)" << endl
+			 //<< "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl
+			 //<< "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
+			// << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
+			// << "	-T 	(flag)  Use log LookUpTable when gap length is larger than 501." << endl
+		     << "   -t  n(int)   Use n threads (1)" << endl
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
-			 << "	-d 	(flag)  Enable dotPlot" << endl
-			 << "	-Se (int) Allow at most how many secondary alignments" << endl
-			 << "   -Pr (int) Allow at most how many primary alignments" << endl
-			 << "   -aa (flag)  use Merge.h" << endl
-			 << "	-CCS (flag) Align CCS reads" << endl
-			 << "   -CLR (flag) Align CLR reads" << endl
-			 << "	-NANO (flag) Align Nanopore reads" << endl;
+			 << "   -d 	(flag)  Enable dotPlot" << endl
+			 << "   -Se (int) Allow at most how many secondary alignments" << endl
+			 << "   -Pr (int) Allow at most how many primary alignments" << endl;
+			 //<< "   -aa (flag)  use Merge.h" << endl;
+	cout << "Examples: " << endl
+			 << "Aligning CCS reads:  lra align -CCS -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
+			 << "Aligning CLR reads:  lra align -CLR -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
+			 << "Aligning Nanopore reads:  lra align -NANO -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl;
+
 }
 		
 class MapInfo {
@@ -234,6 +239,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.HighlyAccurate = true;
 			opts.maxDiag=500;
 			opts.maxGap=1500;
+			opts.minimizerFreq = 50;
+			opts.NumOfminimizersPerWindow = 4;	
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
 		}
@@ -241,6 +248,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.HighlyAccurate = false;
 			opts.maxDiag=800;
 			opts.maxGap=2000;
+			opts.minimizerFreq = 60;
+			opts.NumOfminimizersPerWindow = 5;
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50; 
 		}		
@@ -248,6 +257,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.HighlyAccurate = false;
 			opts.maxDiag=800;
 			opts.maxGap=2000;
+			opts.minimizerFreq = 60;
+			opts.NumOfminimizersPerWindow = 5;
 		}
 		else if (ArgIs(argv[argi], "-T")) {
 			opts.LookUpTable = true;
@@ -396,16 +407,21 @@ void HelpStoreIndex() {
 }
 
 void HelpStoreGlobal() {
-	cout << "Usage: lra index file.fa [options]" << endl
-			 << "	-CCS (flag) Index for aligning CCS reads" << endl
-			 << "	-CLR (flag) Index for aligning CLR reads" << endl
-			 << "	-NANO (flag) Index for aligning Nanopore reads" << endl
+	cout << "Usage: lra index file.fa [options]" << endl;
+	cout << "Options: " << endl
+			 << "   -CCS (flag) Index for aligning CCS reads" << endl
+			 << "   -CLR (flag) Index for aligning CLR reads" << endl
+			 << "   -NANO (flag) Index for aligning Nanopore reads" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
 			 << "   -F (int) Maximum minimizer frequency (200)." << endl
 			 << "   -K (int) Word size" << endl
-			 << "   -h Print help." << endl;
-	
+			 << "   -h Print help." << endl;	
+	cout << "Examples: " << endl
+			 << "Index reference for aligning CCS reads: lra index -CCS ref.fa" << endl
+			 << "Index reference for aligning CLR reads: lra index -CLR ref.fa" << endl
+			 << "Index reference for aligning Nanopore reads: lra index -NANO ref.fa" << endl;
 }
+
 void HelpStoreLocal() {
 	cout << "Usage: lra local file.fa [options]" << endl
 			 << "   -w (int) Local minimizer window size (10)." << endl
