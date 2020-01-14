@@ -46,7 +46,7 @@ const char* GetArgv(const char* argv[], int argc, int argi) {
 
 
 void HelpMap() {
-	cout << "Usage: lra align genome.fa reads [reads2 ...] [options]" << endl << endl;
+	cout << "Usage: lra align [options] genome.fa reads [reads2 ...]" << endl << endl;
 	cout << "   The genome should be indexed using the 'lra index' program." << endl
 			 << "   'reads' may be either fasta, sam, or bam, and multiple input files may be given." << endl << endl;
 	cout << "Options:" << endl
