@@ -428,15 +428,15 @@ void RunStoreLocal(int argc, const char* argv[],
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.minimizerFreq = 50;
-			opts.NumOfminimizersPerWindow = 50;			
+			opts.NumOfminimizersPerWindow = 4;			
 		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.minimizerFreq = 60;
-			opts.NumOfminimizersPerWindow = 50;			
+			opts.NumOfminimizersPerWindow = 5;			
 		}
 		else if (ArgIs(argv[argi], "-NANO")) {
 			opts.minimizerFreq = 60;
-			opts.NumOfminimizersPerWindow = 50;			
+			opts.NumOfminimizersPerWindow = 5;			
 		}
 		else if (ArgIs(argv[argi], "-k")) {
 			opts.localK=atoi(argv[++argi]);
@@ -493,15 +493,18 @@ void RunStoreGlobal(int argc, const char* argv[],
 		}		
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.minimizerFreq = 50;
-			opts.NumOfminimizersPerWindow = 50;			
+			opts.NumOfminimizersPerWindow = 4;			
 		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.minimizerFreq = 60;
-			opts.NumOfminimizersPerWindow = 50;			
+			opts.NumOfminimizersPerWindow = 5;			
 		}
 		else if (ArgIs(argv[argi], "-NANO")) {
 			opts.minimizerFreq = 60;
-			opts.NumOfminimizersPerWindow = 50;			
+			opts.NumOfminimizersPerWindow = 5;			
+		}
+		else if (ArgIs(argv[argi], "-d")) {
+			opts.dotPlot = true;
 		}
 		else if (ArgIs(argv[argi], "-i")) {
 			++argi;

@@ -32,7 +32,7 @@ int DiagonalDrift(int curDiag, Tup &t, int strand=0) {
 	return drift;
 }
 
-// (KEEP)
+
 template<typename Tup>
 void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minDiagCluster, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (matches.size() == 0) {
@@ -115,95 +115,6 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 	}
 
 	matches.resize(c);
-}
-
-
-// This function is used to filter out noisy anchors for refined anchors at the refining step
-template<typename Tup>
-void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int start, int end, Options &opts, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
-	if (end - start == 0) {
-		return;
-	}
-	
-	vector<bool> onDiag(end - start, false);
-	
-	if (end - start > 1 and abs(DiagonalDifference(matches[start], matches[start + 1], strand)) < opts.cleanMaxDiag and 
-				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[start], strand) < diagDrift )) {
-		onDiag[0] = true;
-	}
-	int m;
-	for (int i = start + 1; i < end ; i++) {
-		if (abs(DiagonalDifference(matches[i], matches[i-1], strand)) < opts.cleanMaxDiag and 
-				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i], strand) < diagDrift )) {	
-			onDiag[i - start] = true;
-		}
-	}
-	bool prevOnDiag = false;
-	int  diagStart;
-	for (int i = 0; i < end - start; i++) {
-		if (prevOnDiag == false and onDiag[i] == true) {
-			diagStart = i;
-		}
-		if (prevOnDiag == true and onDiag[i] == false) {
-			if (i - diagStart < opts.minDiagCluster) {
-				for (int j = diagStart; j < i; j++) {
-					onDiag[j] = false;
-				}
-			}
-		}
-		prevOnDiag = onDiag[i];
-	}
-
-	int c = start;
-	for (int i=0; i < end - start; i++) {
-		if (onDiag[i]) {
-			matches[c] = matches[i + start]; c++;
-		}
-	}
-
-	matches.resize(c);
-	end = c;
-}
-
-
-// This function is used to filter out noisy anchors for refined anchors at the refining step
-template<typename Tup>
-void CleanOffDiagonal(const vector<pair<Tup, Tup> > &matches, const vector<int> &G, vector<bool> &D, int start, Options &opts, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
-	if (G.size() == 0) {
-		return;
-	}
-	vector<bool> onDiag(G.size(), false);
-	
-	if (G.size() > 1 and abs(DiagonalDifference(matches[G[0]], matches[G[1]], strand)) < opts.cleanMaxDiag and 
-				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[G[0]], strand) < diagDrift )) {
-		onDiag[0] = true;
-	}
-	int m;
-	for (int i = 1; i < G.size() ; i++) {
-		if (abs(DiagonalDifference(matches[G[i]], matches[G[i-1]], strand)) < opts.cleanMaxDiag and 
-				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[G[i]], strand) < diagDrift )) {	
-			onDiag[i] = true;
-		}
-	}
-	bool prevOnDiag = false;
-	int  diagStart;
-	for (int i = 0; i < G.size(); i++) {
-		if (prevOnDiag == false and onDiag[i] == true) {
-			diagStart = i;
-		}
-		if (prevOnDiag == true and onDiag[i] == false) {
-			if (i - diagStart < opts.minDiagCluster) {
-				for (int j = diagStart; j < i; j++) {
-					onDiag[j] = false;
-				}
-			}
-		}
-		prevOnDiag = onDiag[i];
-	}
-	
-	for (int i = 0; i < G.size(); i++) {
-		D[G[i] - start] = onDiag[i];
-	}
 }
 
 

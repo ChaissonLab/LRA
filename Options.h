@@ -123,7 +123,7 @@ public:
 		splitdist = 1000000;
 		coefficient = 18;
 		minimizerFreq = 50;
-		NumOfminimizersPerWindow = 50;
+		NumOfminimizersPerWindow = 5;
 	}
 };
 #endif
