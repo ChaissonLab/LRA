@@ -141,24 +141,45 @@ void SimpleMapQV(vector<SegAlignmentGroup> &alignments) {
 }
 */
 
-void SimpleMapQV(vector<SegAlignmentGroup> &alignments, vector<float> &SCORE) {
+void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
+//void SimpleMapQV(vector<SegAlignmentGroup> &alignments, Read & read) {
 
-	if (alignments.size() == 0) return;
-	else {
-		if (SCORE.size() == 1) {
-			alignments[0].mapqv = 120; 	
-			alignments[0].SetMapqv();		
+	//
+	// Store the index of primary alignments in vector<int> pry_index;
+	//
+	vector<int> pry_index;
+	for (int sl = 0; sl < alignmentsOrder.size(); sl++) {
+		if (!alignmentsOrder[sl].ISsecondary) { // This is primary alignment;
+			pry_index.push_back(sl);
+		}
+	}
+
+	//
+	// compute mapqv for each alignment;
+	//
+	for (int pi = 0; pi < pry_index.size(); pi++) {
+		
+		int first = pry_index[pi];
+		int last;
+		if (pi == pry_index.size() - 1) last = alignmentsOrder.size();
+		else last = pry_index[pi+1];
+
+		if (last - first == 1) { // No secondary alignments
+			alignmentsOrder[first].mapqv = 60;
+			alignmentsOrder[first].SetMapqv();
 		}
 		else {
-			alignments[0].mapqv = (int) (120 * (1 - SCORE[1]/SCORE[0]));
-			alignments[0].SetMapqv();	
-		}
+			// assign mapqv to primary alignment;
+			alignmentsOrder[first].mapqv = (int) 35*(1-alignmentsOrder[first+1].value/alignmentsOrder[first].value)*(1 + alignmentsOrder[first].nm/(float)read.length);
+			if (alignmentsOrder[first].mapqv > 60) alignmentsOrder[first].mapqv = 60;
+			alignmentsOrder[first].SetMapqv();
 
-		for (int a = 1; a < alignments.size(); ++a) {
-			alignments[a].mapqv = (int) (120 * (1 - SCORE[1]/SCORE[0]) * (1/alignments.size()));
-	 		alignments[a].SetMapqv();
+			// assign mapqv to secondary alignments;
+			for (int sd = first + 1; sd < last; sd++) {
+				alignmentsOrder[sd].mapqv = (int) alignmentsOrder[first].mapqv/(last-first-1);
+				alignmentsOrder[sd].SetMapqv();
+			}
 		}
-		return;	
 	}
 }
 
@@ -1593,10 +1614,12 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	// For each chain, we have vector<Cluster> btwnClusters to store anchors;
 	//
 	vector<SegAlignmentGroup> alignments;
+	AlignmentsOrder alignmentsOrder(&alignments);
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
-		
+			
+			if (Primary_chains[p].chains[h].ch.size() == 0) continue;
 			alignments.resize(alignments.size() + 1);
 			//
 			// Find matches btwn every two adjacent Clusters;
@@ -1757,7 +1780,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				// INPUT: vector<unsigned int> splitchain, vector<Cluster> ExtendClusters; OUTPUT: FinalChain finalchain;
 				//
 				FinalChain finalchain(&ExtendClusters);
-				SparseDP(splitchains[st], ExtendClusters, finalchain, smallOpts, LookUpTable, read);
+				alignments.back().value += SparseDP(splitchains[st], ExtendClusters, finalchain, smallOpts, LookUpTable, read);
 
 				//
 				// RemoveSpuriousAnchors and RemovePairedIndels; ////TODO(Jingwen): implement those two functions in SparseDP to further clean the chain; 
@@ -1818,7 +1841,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					int cln = finalchain.ClusterNum(start);
 					int chromIndex = ExtendClusters[cln].chromIndex;	
 					Alignment *alignment = new Alignment(strands[str], read.seq, read.length, read.name, str, genome.seqs[chromIndex],  
-					genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex); 
+														genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex); 
 					alignments.back().SegAlignment.push_back(alignment);
 					vector<int> scoreMat;
 					vector<Arrow> pathMat;
@@ -1880,39 +1903,39 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					alignment->strand = str;
 					alignment->nblocks = end - 1 - start;
 					alignment->CalculateStatistics();
-
 				}
 			}
-
 			alignments.back().SetBoundariesFromSegAlignmentAndnm();
 		}
+		alignmentsOrder.Update(&alignments);
 	}	
-	SimpleMapQV(alignments, SCORE);
+	//AlignmentsOrder alignmentsOrder(&alignments);
+	SimpleMapQV(alignmentsOrder, read);
 
 
 	if (opts.dotPlot) {
 			ofstream baseDots("alignment.dots");
-			for (int a=0; a < (int) alignments.size(); a++){
-				for (int s = 0; s < alignments[a].SegAlignment.size(); s++) {
+			for (int a=0; a < (int) alignmentsOrder.size(); a++){
+				for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
 
-					for (int c = 0; c < alignments[a].SegAlignment[s]->blocks.size(); c++) {
-						if (alignments[a].SegAlignment[s]->strand == 0) {
-							baseDots << alignments[a].SegAlignment[s]->blocks[c].qPos << "\t" 
-									 << alignments[a].SegAlignment[s]->blocks[c].tPos << "\t" 
-									 << alignments[a].SegAlignment[s]->blocks[c].qPos + alignments[a].SegAlignment[s]->blocks[c].length << "\t" 
-									 << alignments[a].SegAlignment[s]->blocks[c].tPos + alignments[a].SegAlignment[s]->blocks[c].length << "\t"
+					for (int c = 0; c < alignmentsOrder[a].SegAlignment[s]->blocks.size(); c++) {
+						if (alignmentsOrder[a].SegAlignment[s]->strand == 0) {
+							baseDots << alignmentsOrder[a].SegAlignment[s]->blocks[c].qPos << "\t" 
+									 << alignmentsOrder[a].SegAlignment[s]->blocks[c].tPos << "\t" 
+									 << alignmentsOrder[a].SegAlignment[s]->blocks[c].qPos + alignmentsOrder[a].SegAlignment[s]->blocks[c].length << "\t" 
+									 << alignmentsOrder[a].SegAlignment[s]->blocks[c].tPos + alignmentsOrder[a].SegAlignment[s]->blocks[c].length << "\t"
 									 << a << "\t"
 									 << s << "\t"
-									 << alignments[a].SegAlignment[s]->strand << endl;							
+									 << alignmentsOrder[a].SegAlignment[s]->strand << endl;							
 						} 
 						else {
-							baseDots << read.length - alignments[a].SegAlignment[s]->blocks[c].qPos - alignments[a].SegAlignment[s]->blocks[c].length << "\t" 
-									 << alignments[a].SegAlignment[s]->blocks[c].tPos + alignments[a].SegAlignment[s]->blocks[c].length << "\t" 
-									 << read.length - alignments[a].SegAlignment[s]->blocks[c].qPos << "\t" 
-									 << alignments[a].SegAlignment[s]->blocks[c].tPos << "\t"
+							baseDots << read.length - alignmentsOrder[a].SegAlignment[s]->blocks[c].qPos - alignmentsOrder[a].SegAlignment[s]->blocks[c].length << "\t" 
+									 << alignmentsOrder[a].SegAlignment[s]->blocks[c].tPos + alignmentsOrder[a].SegAlignment[s]->blocks[c].length << "\t" 
+									 << read.length - alignmentsOrder[a].SegAlignment[s]->blocks[c].qPos << "\t" 
+									 << alignmentsOrder[a].SegAlignment[s]->blocks[c].tPos << "\t"
 									 << a << "\t"
 									 << s << "\t"
-									 << alignments[a].SegAlignment[s]->strand << endl;
+									 << alignmentsOrder[a].SegAlignment[s]->strand << endl;
 						}
 					}		
 				}
@@ -1921,18 +1944,18 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			baseDots.close();
 	}
 
-	for (int a=0; a < (int) alignments.size(); a++){
+	for (int a=0; a < (int) alignmentsOrder.size(); a++){
 
-		for (int s = 0; s < alignments[a].SegAlignment.size(); s++) {
+		for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
 
 			if (opts.printFormat == 'b') {
-				alignments[a].SegAlignment[s]->PrintBed(*output);
+				alignmentsOrder[a].SegAlignment[s]->PrintBed(*output);
 			}
 			else if (opts.printFormat == 's') {
-				alignments[a].SegAlignment[s]->PrintSAM(*output, opts);
+				alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts);
 			}
 			else if (opts.printFormat == 'p') {
-				alignments[a].SegAlignment[s]->PrintPairwise(*output);
+				alignmentsOrder[a].SegAlignment[s]->PrintPairwise(*output);
 			}
 		}
 	}
@@ -1954,14 +1977,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	}
 	
 	//read.Clear();
-
-	/*
-	// get the time for the program
-	clock_t end = std::clock();
-	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-	cerr << "Time: " << elapsed_secs << endl;
-	*/
-	if (alignments.size() > 0 ) {
+	if (alignments.size() > 0) {
 		return 1;
 	}
 	else {

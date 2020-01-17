@@ -26,14 +26,18 @@ class DiagonalSortOp {
 	}
 };
 
+
 template<typename Tup>
 void DiagonalSort(typename vector<pair<Tup, Tup> >::iterator begin, typename vector<pair<Tup, Tup> >::iterator end) {
 	sort(begin, end, DiagonalSortOp<Tup>());
 }
+
+
 template<typename Tup>
 void DiagonalSort(vector<pair<Tup, Tup> > &vals) {
 	DiagonalSort<Tup>(vals.begin(), vals.end());
 }
+
 
 template<typename Tup> 
 class AntiDiagonalSortOp {
@@ -224,7 +228,6 @@ template<typename T1, typename T2>
 SortByBackDiagOp<T1, T2>::SortByBackDiagOp(std::vector<T1> & H) {
 	Hp = & H;
 }
-
 
 
 // This Lower_bound function return the index of the element

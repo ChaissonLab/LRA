@@ -120,7 +120,7 @@ public:
 		binLength = 20000;
 		minBinNum = 3;
 		HighlyAccurate = false;
-		splitdist = 1000000;
+		splitdist = 100000;
 		coefficient = 18;
 		minimizerFreq = 50;
 		NumOfminimizersPerWindow = 5;

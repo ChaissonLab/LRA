@@ -68,12 +68,9 @@ class Fragment_valueOrder {
 	vector<int> index;
 	
  	Fragment_valueOrder(const vector<Fragment_Info> *c) {
- 		//(*fragments_value).clear();
- 		//(*fragments_value).resize(c->size(), 0);
  		vector<float> fv(c->size(), 0);
  		for (unsigned int i = 0; i < c->size(); i++) {
  			fv[i] = (*c)[i].val;
- 			//fragments_value.push_back( (*c)[i].val );
  		}
  		fragments_value = fv;
  		assert(fragments_value.size() == c->size());

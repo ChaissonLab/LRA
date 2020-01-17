@@ -1521,11 +1521,12 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 
 	std::vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-
-	for (unsigned int fv = 0; fv < fragments_valueOrder.size(); fv++) {
+	float value_thres = 0.95*fragments_valueOrder[0];
+	unsigned int fv = 0;
+	while (fv < fragments_valueOrder.size() and fragments_valueOrder[fv] >= value_thres) {
+	//for (unsigned int fv = 0; fv < fragments_valueOrder.size(); fv++) {
 
 		unsigned int d = fragments_valueOrder.index[fv];
-
 		vector<unsigned int> onechain;
 		vector<bool> link;
 		TraceBack(SubR1, SubC1, SubR2, SubC2, Value, d, onechain, link, used);
@@ -1551,7 +1552,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 			if (((float)(qEnd - qStart)/read.length) > 0.1) {
 				//
 				// Compare onechain to all the primary chains we've found. 
-				// If onechain overlaps with one primary chain over 70% ---> onechain is a secondary chain 
+				// If onechain overlaps with one primary chain over 50% ---> onechain is a secondary chain 
 				// If onechain overlaps with all the primary chains less than 50% ---> onechain is another primary chain
 				//
 				if (Primary_chains.size() == 0) {
@@ -1562,24 +1563,25 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					bool newpr = 1, inserted = 0;
 					int p = 0;
 					while (p < Primary_chains.size()) {
-						if (Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.7)) {
-							if (Primary_chains[p].chains.size() < opts.SecondaryAln + 1) {
+						if (Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.5)) {
+							//if (Primary_chains[p].chains.size() < opts.SecondaryAln + 1) {
 								Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
 								inserted = 1;								
-							}
+							//}
 							break;
 						}
-						else if (Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.5)) {
+						else{
+						//else if (Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.5)) {
 							newpr = 0;
 						}
 						++p;
 					}			
 					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 1) {		
-						if (Primary_chains.size() < opts.PrimaryAln) {
+						//if (Primary_chains.size() < opts.PrimaryAln) {
 							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
 							Primary_chains.push_back(Pc);
-						}	
-						else break;		
+						//}	
+						//else break;		
 					}	
 				}
 			}
@@ -1587,6 +1589,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 		}
 		onechain.clear();
 		link.clear();
+		fv++;
 	}
 	if (fragments_valueOrder.size() > 0) SCORE.push_back(fragments_valueOrder[0]);
 	if (fragments_valueOrder.size() > 1) SCORE.push_back(fragments_valueOrder[1]);
@@ -1866,7 +1869,7 @@ int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Option
 // This SDP needs to insert 4 points for only anchors in the overlapping region between Clusters;
 // This SDP needs to increase the cost for linking 2 anchors of different directions;
 //
-int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain & finalchain, Options & opts, const vector<float> & LookUpTable, Read & read) {
+float SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain & finalchain, Options & opts, const vector<float> & LookUpTable, Read & read) {
 
 	if (inputChain.size() == 0) return 0;
 	//
@@ -2289,7 +2292,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	//cerr << "Time: " << elapsed_secs << endl;
 
-	return 0;
+	return max_value;
 }
 
 

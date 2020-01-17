@@ -419,16 +419,21 @@ public:
 	GenomePos qStart, qEnd, tStart, tEnd;
 	unsigned char mapqv;
 	int nm;
+	bool ISsecondary;
+	float value;
 	SegAlignmentGroup () {
 		qStart = 0;
 		qEnd = 0;
 		tStart = 0;
 		tEnd = 0;
 		nm = 0;
+		ISsecondary = 0;
+		value = 0;
 	};
 	~SegAlignmentGroup () {};
 
 	void SetBoundariesFromSegAlignmentAndnm () {
+		ISsecondary = SegAlignment[0]->ISsecondary;
 		for (int s = 0; s < SegAlignment.size(); s++) {
 			qStart = min(qStart, SegAlignment[s]->qStart);
 			qEnd   = max(qEnd, SegAlignment[s]->qEnd);
@@ -459,8 +464,79 @@ public:
 			SegAlignment[s]->mapqv = mapqv;
 		}
 	}
-
 };
 
+/*
+class AlignmentsOrder {
+public:
+	vector<SegAlignmentGroup> *alignments;
+	vector<int> index;
+
+	// constructor
+	AlignmentsOrder(vector<SegAlignmentGroup> *a): alignments(a) {
+		index.resize(a->size());
+		for (int i=0;i < index.size(); i++) { index[i]=i;}
+		Sort();
+	}
+
+	int operator()(const int i, const int j) {
+		return (*alignments)[i].value > (*alignments)[j].value;
+	}
+
+	void Sort() {
+		sort(index.begin(), index.end(), *this);
+	}
+
+	SegAlignmentGroup & operator[](int i) {
+		return (*alignments)[index[i]];
+	}
+
+	int size() {
+		return index.size();
+	}	
+};
+*/
+
+class AlignmentsOrder {
+public:
+	vector<SegAlignmentGroup> *alignments;
+	vector<int> index;
+	int Oldend;
+
+	// constructor
+	AlignmentsOrder(vector<SegAlignmentGroup> *a): alignments(a) {
+		Oldend = 0;
+	}
+
+	void Update(vector<SegAlignmentGroup> *a) {
+		index.resize(a->size());
+		for (int i=Oldend;i < index.size(); i++) {index[i]=i;}
+		Sort();
+		//
+		// Update the flag
+		//
+		(*alignments)[index[Oldend]].ISsecondary = 0;
+		for (int i=Oldend+1;i < index.size(); i++) {
+			(*alignments)[index[i]].ISsecondary = 1;
+		}
+		Oldend = index.size();
+	}
+
+	int operator()(const int i, const int j) {
+		return (*alignments)[i].value > (*alignments)[j].value;
+	}
+
+	void Sort() {
+		sort(index.begin()+Oldend, index.end(), *this);
+	}
+
+	SegAlignmentGroup & operator[](int i) {
+		return (*alignments)[index[i]];
+	}
+
+	int size() {
+		return index.size();
+	}	
+};
 
 #endif

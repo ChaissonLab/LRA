@@ -34,7 +34,9 @@ public:
 		ch = onechain;
 		main = -1;
 		link = lk;
+		//value = val;
 	}
+	/*
 	CHain (GenomePos &qS, GenomePos &qE, GenomePos &tS, GenomePos &tE, vector<unsigned int> &onechain, int idx) {
 		qStart = qS;
 		qEnd = qE;
@@ -43,6 +45,7 @@ public:
 		ch = onechain;
 		main = idx;
 	}
+	*/
 	int Overlaps (GenomePos &qS, GenomePos &qE, float rate);
 };
 
@@ -60,10 +63,10 @@ int CHain::Overlaps (GenomePos &qS, GenomePos &qE, float rate) {
 		ovp = qEnd - qStart;
 	}
 	float denomA = qEnd - qStart;
-	float denomB = qE - qS;
+	//float denomB = qE - qS;
 
-	if (max(ovp/denomA, ovp/denomB) >= rate) {return true;}
-	//if ((float)ovp/(qEnd - qStart) >= rate) {return true;}
+	if (ovp/denomA >= rate) {return true;}
+	//if (max(ovp/denomA, ovp/denomB) >= rate) {return true;}
 	else {return false;}
 }
 
