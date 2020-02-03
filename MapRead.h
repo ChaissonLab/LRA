@@ -1036,7 +1036,7 @@ int LargestSplitChain(vector<SplitChain> &splitchains) {
 int LargestFinalSeperateChain(vector<vector<int>> &finalSeperateChain) {
 	int maxi = 0;
 	for (int mi = 1; mi < finalSeperateChain.size(); mi++) {
-		if (finalSeperateChain[mi].size() > finalSeperateChain[maxi].size()) {
+		if (finalSeperateChain[mi].back() - finalSeperateChain[mi][0] > finalSeperateChain[maxi].back() - finalSeperateChain[maxi][0]){
 			maxi = mi;
 		}
 	}
