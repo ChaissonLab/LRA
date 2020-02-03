@@ -1037,7 +1037,7 @@ public:
 	}
 };
 
-
+/*
 //
 // This function sorts the splitchains by the number of Cluster in the descending order;
 //
@@ -1049,18 +1049,37 @@ public:
 	}
 };
 
-
 template <typename T>
 void SortSplitChains(typename vector<T>::iterator begin, typename vector<T>::iterator end, int SC = 0) {
 	sort(begin, end, SortChainByClusterNumOp<T>());
 }
 
-
 template <typename T>
 void SortFinalChains(typename vector<T>::iterator begin, typename vector<T>::iterator end, int SC = 0) {
 	sort(begin, end, SortChainByAnchorNumOp<T>()); 
 }
+*/
 
+int LargestSplitChain(vector<SplitChain> &splitchains) {
+	int maxi = 0;
+	for (int mi = 1; mi < splitchains.size(); mi++) {
+		if (splitchains[mi].sptc.size() > splitchains[maxi].sptc.size()) {
+			maxi = mi;
+		}
+	}
+	return maxi;
+}
+
+
+int LargestFinalSeperateChain(vector<vector<int>> &finalSeperateChain) {
+	int maxi = 0;
+	for (int mi = 1; mi < finalSeperateChain.size(); mi++) {
+		if (finalSeperateChain[mi].size() > finalSeperateChain[maxi].size()) {
+			maxi = mi;
+		}
+	}
+	return maxi;	
+}
 
 //
 // This function creates the alignment for a "segment"(one big chunk) on the chain;
@@ -1825,8 +1844,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			//
 			vector<SplitChain> splitchains;
 			SPLITChain(ExtendClusters, splitchains, Primary_chains[p].chains[h].link, smallOpts);
-			SortSplitChains<SplitChain>(splitchains.begin(), splitchains.end());
-			//// TODO(Jingwen): sort splitchains!!!!
+			//SortSplitChains<SplitChain>(splitchains.begin(), splitchains.end());
+			int LSC = LargestSplitChain(splitchains);
+
 
 			//
 			// Apply SDP on all splitchains to get the final rough alignment path;
@@ -1885,7 +1905,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				SeperateChainByStrand(finalchain, finalSeperateChain, ExtendClusters); ////TODO(Jingwen): Modify the function to remove mapping to different locations part!!!!
 				//SortFinalChains<vector<int>>(finalSeperateChain.begin(), finalSeperateChain.end());  //// get rid of this sorting becasue want to keep the alignment with inversion 
 																									// in the order from right to left.
-
+				int LFC = LargestFinalSeperateChain(finalSeperateChain);
 				//
 				// Refine and store the alignment; NOTICE: when filling in the space between two adjacent anchors, the process works in forward direction, so we need to flip the small matches
 				// found in the spaces before insert them into the alignment if necessary;
@@ -1914,7 +1934,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					//
 					if (h > 0) alignment->ISsecondary = 1;
 					if (splitchains.size() > 1 or finalSeperateChain.size() > 1) alignment->split = 1;					
-					if (st > 0 or fsc > 0) alignment->Supplymentary = 1;	
+					if (st != LSC or fsc != LFC) alignment->Supplymentary = 1; //if (st > 0 or fsc > 0) alignment->Supplymentary = 1;	
 
 					GenomePos genomeThres = 0;
 					if (str == 0) {
