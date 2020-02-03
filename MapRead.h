@@ -993,22 +993,6 @@ SeperateChainByStrand(FinalChain & finalchain, vector<vector<int>> & finalSepera
 	while (fl < finalchain.chain.size() - 1) {
 
 		if (finalchain.strand(fl) == finalchain.strand(fl+1)) {
-			/*
-			assert(finalchain[fl].first.pos >= finalchain[fl+1].first.pos + finalchain.length(fl+1));
-			GenomePos ReadDist = finalchain[fl].first.pos - finalchain[fl+1].first.pos - finalchain.length(fl+1);
-			GenomePos GenomeDist;
-			if (finalchain.strand(fl) == 0) GenomeDist = finalchain[fl].second.pos - finalchain[fl+1].second.pos - finalchain.length(fl+1);
-			else GenomeDist = finalchain[fl+1].second.pos - finalchain[fl].second.pos - finalchain.length(fl);
-
-			if (min(GenomeDist, ReadDist) > 100000) {
-				sep.push_back(fl+1);
-				finalSeperateChain.push_back(sep);
-				sep.clear();
-				sep.push_back(fl+1);
-				fl++;
-			}	
-			else fl++;
-			*/
 			fl++;
 		}
 		else {
@@ -1037,28 +1021,6 @@ public:
 	}
 };
 
-/*
-//
-// This function sorts the splitchains by the number of Cluster in the descending order;
-//
-template <typename T> 
-class SortChainByClusterNumOp {
-public: 
-	int operator() (const T & a, const T & b) {
-		return a.sptc.size() > b.sptc.size();
-	}
-};
-
-template <typename T>
-void SortSplitChains(typename vector<T>::iterator begin, typename vector<T>::iterator end, int SC = 0) {
-	sort(begin, end, SortChainByClusterNumOp<T>());
-}
-
-template <typename T>
-void SortFinalChains(typename vector<T>::iterator begin, typename vector<T>::iterator end, int SC = 0) {
-	sort(begin, end, SortChainByAnchorNumOp<T>()); 
-}
-*/
 
 int LargestSplitChain(vector<SplitChain> &splitchains) {
 	int maxi = 0;
@@ -1844,7 +1806,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			//
 			vector<SplitChain> splitchains;
 			SPLITChain(ExtendClusters, splitchains, Primary_chains[p].chains[h].link, smallOpts);
-			//SortSplitChains<SplitChain>(splitchains.begin(), splitchains.end());
 			int LSC = LargestSplitChain(splitchains);
 
 
@@ -1903,8 +1864,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				//
 				vector<vector<int>> finalSeperateChain;
 				SeperateChainByStrand(finalchain, finalSeperateChain, ExtendClusters); ////TODO(Jingwen): Modify the function to remove mapping to different locations part!!!!
-				//SortFinalChains<vector<int>>(finalSeperateChain.begin(), finalSeperateChain.end());  //// get rid of this sorting becasue want to keep the alignment with inversion 
-																									// in the order from right to left.
 				int LFC = LargestFinalSeperateChain(finalSeperateChain);
 				//
 				// Refine and store the alignment; NOTICE: when filling in the space between two adjacent anchors, the process works in forward direction, so we need to flip the small matches
