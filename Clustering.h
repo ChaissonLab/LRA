@@ -69,6 +69,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 	// Set the parameter minDiagCluster according to the value of Largest_ClusterNum
 	// In this way, we won't lose small inversion.
 	//cerr << "Largest_ClusterNum: " << Largest_ClusterNum << endl;
+	/*
 	if (Largest_ClusterNum < 10) {
 		minDiagCluster = 1;
 	}
@@ -87,6 +88,8 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 	else { // Largest_clusterNum >= 250 show obvious clusters
 		minDiagCluster = 20;
 	}
+	*/
+	minDiagCluster=5;
 	
 
 	//minDiagCluster = (int) floor(Largest_ClusterNum/10);
@@ -254,6 +257,7 @@ class Cluster : public ClusterCoordinates {
 	long long int maxDiagNum;
 	long long int minDiagNum; // maxDiagNum and minDiagNum defines diagonal band boundary of the current cluster
 	int coarse; 
+	int Val; // Val stores the value of each Cluster;(using in SDP)
 	vector<int> matchesLengths; // store the length of each anchor 
 	bool refined; // refined == 0 means this Cluster has not been refined yet
 	bool refinespace; // refinespace == 0 means this Cluster has not been add anchors in the step of RefineBtwnSpace;
@@ -281,6 +285,7 @@ class Cluster : public ClusterCoordinates {
 		minDiagNum=0;
 		refined = 0;
 		refinespace = 0;
+		Val = 0;
 	}
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
@@ -291,6 +296,7 @@ class Cluster : public ClusterCoordinates {
 		coarse=-1;
 		maxDiagNum=0;
 		minDiagNum=0;
+		Val = 0;
 	}
   Cluster(GenomePos qs, GenomePos qe, GenomePos ts, GenomePos te, int st, int coa) {
 		qStart = qs;
@@ -299,6 +305,7 @@ class Cluster : public ClusterCoordinates {
 		tEnd = te;
 		strand = st;
 		coarse = coa;
+		Val = 0;
 	}
   Cluster(int st, GenomePairs::iterator gpBegin, GenomePairs::iterator gpEnd, vector<int>::iterator stBegin, vector<int>::iterator stEnd) {
   		strand = st;

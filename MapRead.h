@@ -170,8 +170,14 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 		}
 		else {
 			// assign mapqv to primary alignment;
-			alignmentsOrder[first].mapqv = (int) 35*(1-alignmentsOrder[first+1].value/alignmentsOrder[first].value)*(1 + alignmentsOrder[first].nm/(float)read.length);
-			if (alignmentsOrder[first].mapqv > 60) alignmentsOrder[first].mapqv = 60;
+			int nmmdiff = alignmentsOrder[first].nmm - alignmentsOrder[first+1].nmm;
+			if (nmmdiff < -50) {
+				alignmentsOrder[first].mapqv = 60;				
+			}
+			else {
+				alignmentsOrder[first].mapqv = (int) 35*(1-alignmentsOrder[first+1].value/alignmentsOrder[first].value)*(1 + alignmentsOrder[first].nm/(float)read.length);
+				if (alignmentsOrder[first].mapqv > 60) alignmentsOrder[first].mapqv = 60;
+			}
 			alignmentsOrder[first].SetMapqv();
 
 			// assign mapqv to secondary alignments;
@@ -190,8 +196,6 @@ int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, 
 	int tLen = tEnd-tStart;
 	int drift = abs(qLen - tLen);
 	int k = max(7, drift+1);
-	
-
 	
 	/*
 	int score = KBandAlign(&qSeq[qStart], qEnd-qStart, &tSeq[tStart], tEnd-tStart, 
@@ -845,7 +849,7 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 //
 int 			
 RefineBtwnSpace(Cluster * cluster, Options & opts, Genome & genome, Read & read, char *strands[2], GenomePos qe, GenomePos qs, 
-							GenomePos te, GenomePos ts, GenomePos st, int cur) {
+							GenomePos te, GenomePos ts, bool st, int &cur) {
 
 	int ChromIndex = cluster->chromIndex;
 
@@ -865,8 +869,8 @@ RefineBtwnSpace(Cluster * cluster, Options & opts, Genome & genome, Read & read,
 	long long int diag1, diag2;
 	diag1 = 0;
 	diag2 = (long long int) (qe - qs) - (long long int) (te - ts); // scale diag1 and diag2 to the local coordinates
-	minDiagNum = min(diag1, diag2) - 50;
-	maxDiagNum = max(diag1, diag2) + 50;
+	minDiagNum = min(diag1, diag2) - 200; // used 50 before
+	maxDiagNum = max(diag1, diag2) + 200;
  
 	//
 	// Find matches in read and reference 
@@ -1302,6 +1306,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 	vector<Cluster> splitclusters;
 	SplitClusters(clusters, splitclusters);
+	DecideSplitClustersValue(clusters, splitclusters, opts);
 
 
 	if (opts.dotPlot) {
@@ -1362,6 +1367,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					  << splitclusters[m].qEnd   << "\t"
 					  << splitclusters[m].tEnd   << "\t"
 					  << m << "\t"
+					  << splitclusters[m].coarse << "\t"
 					  << splitclusters[m].strand << endl;
 			}
 			else {
@@ -1370,6 +1376,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					  << splitclusters[m].qEnd   << "\t"
 					  << splitclusters[m].tStart   << "\t"
 					  << m << "\t"
+					  << splitclusters[m].coarse << "\t"
 					  << splitclusters[m].strand << endl;
 			}
 		}
@@ -1377,6 +1384,32 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	}
 
 
+	if (opts.dotPlot) {
+		ofstream clust("splitclusters-decideval.tab");
+		for (int m = 0; m < splitclusters.size(); m++) {
+			if (splitclusters[m].Val !=0) {
+				if (splitclusters[m].strand == 0) {
+					clust << splitclusters[m].qStart << "\t" 
+						  << splitclusters[m].tStart << "\t"
+						  << splitclusters[m].qEnd   << "\t"
+						  << splitclusters[m].tEnd   << "\t"
+						  << m << "\t"
+						  << splitclusters[m].coarse << "\t"
+						  << splitclusters[m].strand << endl;
+				}
+				else {
+					clust << splitclusters[m].qStart << "\t" 
+						  << splitclusters[m].tEnd << "\t"
+						  << splitclusters[m].qEnd   << "\t"
+						  << splitclusters[m].tStart   << "\t"
+						  << m << "\t"
+						  << splitclusters[m].coarse << "\t"
+						  << splitclusters[m].strand << endl;
+				}				
+			}
+		}
+		clust.close();
+	}
 
 	//
 	// Apply SDP on splitclusters. Based on the chain, clean clusters to make it only contain clusters that are on the chain.   --- vector<Cluster> clusters
@@ -1386,7 +1419,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 	////// TODO(Jingwen): customize a rate fro SparseDP
 	vector<Primary_chain> Primary_chains;
-	float rate = 1;
+	float rate = 7;
 	vector<float> SCORE;
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, SCORE, rate);
 	switchindex(splitclusters, Primary_chains);
@@ -1493,7 +1526,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 	// Set the parameters for merging anchors and 1st SDP
 	Options smallOpts = opts;
-	smallOpts.coefficient = 12;
+	smallOpts.coefficient = 12; // used to be 9
 	Options tinyOpts = smallOpts;
 	tinyOpts.globalMaxFreq=3;
 	tinyOpts.maxDiag=5;
@@ -1520,7 +1553,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			
 		smallOpts.globalK=glIndex.k;
 		smallOpts.globalW=glIndex.w;
-		smallOpts.coefficient = 9;
+		smallOpts.coefficient = 12; // used to be 9
 		smallOpts.globalMaxFreq=6;
 		smallOpts.cleanMaxDiag=10;// used to be 25
 		smallOpts.maxDiag=50;
@@ -1641,12 +1674,14 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				if (RefinedClusters[cur]->tEnd <= RefinedClusters[prev]->tStart) {
 					ts = RefinedClusters[cur]->tEnd;
 					te = RefinedClusters[prev]->tStart;
-					st = 0;
+					//st = 0;
+					st = 1;
 				}
 				else if (RefinedClusters[cur]->tStart > RefinedClusters[prev]->tEnd) {
 					ts = RefinedClusters[prev]->tEnd;
 					te = RefinedClusters[cur]->tStart;
-					st = 1;
+					//st = 1;
+					st = 0;
 				}
 				else {
 					c++;
@@ -1655,14 +1690,39 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 				if (qe > qs and te > ts) {
 					SpaceLength = max(qe - qs, te - ts);
-					if (SpaceLength > 1000 and SpaceLength < 10000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
+					if (SpaceLength > 1000 and SpaceLength < 6000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
 						// btwnClusters have GenomePos, st, matches, coarse
 						// This function also set the "coarse" flag for RefinedClusters[cur]
 						RefineBtwnSpace(RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te, ts, st, cur);
 					}
+					/*
+					else if (SpaceLength >= 100000 and qe - qs > 500 and qe - qs < 5000) { 
+						//
+						// If there is space btwn 2 refinedClusters too far away on reference, try to refine anchors at the end of those 2 refinedClusters
+						//
+						int bup, bdown;
+						if (st == 0) {
+							bup = prev;
+							bdown = cur;
+						}
+						else {
+							bup = cur;
+							bdown = prev;
+						}
+
+						// Decide sts for bdown
+						GenomePos sts = 0;
+						if (te > qe - qs + 4000) {sts = te - (qe - qs) - 4000;}
+						// Decide ste for bup
+						GenomePos ste = ts + (qe - qs) + 4000;
+						if (ste > genome.lengths[RefinedClusters[bup]->chromIndex]) ste = genome.lengths[RefinedClusters[bup]->chromIndex];
+
+						RefineBtwnSpace(RefinedClusters[bdown], smallOpts, genome, read, strands, qe, qs, te, sts, RefinedClusters[bdown]->strand, bdown);
+						RefineBtwnSpace(RefinedClusters[bup], smallOpts, genome, read, strands, qe, qs, ste, ts, RefinedClusters[bup]->strand, bup);
+					}
+					*/
 				}
 				c++;
-
 			}
 
 			//
@@ -1683,7 +1743,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}
 			if (qe > qs and te > ts) {
 				SpaceLength = max(qe - qs, te - ts); 
-				if (SpaceLength > 500 and SpaceLength < 2000 and te < genome.lengths[RefinedClusters[rh]->chromIndex]) {
+				if (SpaceLength > 1000 and SpaceLength < 6000 and te < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (500, 2000)
 					RefineBtwnSpace(RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, rh);
 				}				
 			}
@@ -1707,7 +1767,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}
 			if (qe > qs and te > ts) {
 				SpaceLength = max(qe - qs, te - ts);
-				if (SpaceLength > 500 and SpaceLength < 2000 and te < genome.lengths[RefinedClusters[lh]->chromIndex]) {
+				if (SpaceLength > 1000 and SpaceLength < 6000 and te < genome.lengths[RefinedClusters[lh]->chromIndex]) { // used (500, 2000)
 					RefineBtwnSpace(RefinedClusters[lh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lh);
 				}				
 			}
@@ -1790,7 +1850,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				//RemoveSpuriousAnchors(finalchain, smallOpts);
 				//cerr << "RemoveSpuriousAnchors removes: " << orig - finalchain.size()  << endl;
 				orig = finalchain.size();
-				RemovePairedIndels(finalchain, smallOpts);
+				//RemovePairedIndels(finalchain, smallOpts);
 				//cerr << "RemovePairedIndels removes: " << orig - finalchain.size() << endl;
 				if (finalchain.size() == 0) continue; // cannot be mapped to the genome!
 
@@ -1823,7 +1883,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				//
 				vector<vector<int>> finalSeperateChain;
 				SeperateChainByStrand(finalchain, finalSeperateChain, ExtendClusters); ////TODO(Jingwen): Modify the function to remove mapping to different locations part!!!!
-				SortFinalChains<vector<int>>(finalSeperateChain.begin(), finalSeperateChain.end()); 
+				//SortFinalChains<vector<int>>(finalSeperateChain.begin(), finalSeperateChain.end());  //// get rid of this sorting becasue want to keep the alignment with inversion 
+																									// in the order from right to left.
 
 				//
 				// Refine and store the alignment; NOTICE: when filling in the space between two adjacent anchors, the process works in forward direction, so we need to flip the small matches
@@ -1952,7 +2013,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				alignmentsOrder[a].SegAlignment[s]->PrintBed(*output);
 			}
 			else if (opts.printFormat == 's') {
-				alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts);
+				alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts, s);
 			}
 			else if (opts.printFormat == 'p') {
 				alignmentsOrder[a].SegAlignment[s]->PrintPairwise(*output);

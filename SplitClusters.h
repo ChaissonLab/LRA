@@ -146,5 +146,43 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters) 
 }
 
 
+void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & splitclusters, Options & opts) {
+	//
+	// Compute matches bases/the Cluster length for each Cluster in clusters;
+	//
+	for (int m = 0; m < clusters.size(); m++) {
+
+		if (clusters[m].matches.size() == 0) continue;
+		GenomePos cur_len = clusters[m].matches[0].first.pos;
+		GenomePos MatNum = 0;
+
+		for (int n = 0; n < clusters[m].matches.size(); n++) {
+
+			if (cur_len >= clusters[m].matches[n].first.pos) {
+				assert(cur_len <= clusters[m].matches[n].first.pos + opts.globalK);
+				MatNum += clusters[m].matches[n].first.pos + opts.globalK - cur_len;
+			}
+			else {
+				MatNum += opts.globalK;
+			}
+			cur_len = clusters[m].matches[n].first.pos + opts.globalK;
+		}
+		clusters[m].Val = MatNum;
+	} 
+
+	//
+	// Compute the value for each Cluster in splitclusters;
+	//
+	for (int m = 0; m < splitclusters.size(); m++) {
+		int ic = splitclusters[m].coarse;
+		float pika = (float)min(splitclusters[m].qEnd - splitclusters[m].qStart, splitclusters[m].tEnd - splitclusters[m].tStart)/(float)min(clusters[ic].qEnd - clusters[ic].qStart, clusters[ic].tEnd - clusters[ic].tStart);
+		splitclusters[m].Val = (int)clusters[ic].Val*pika;
+		//cerr << "m: " << m << " ic: " << ic << " length/totallenth: " << pika << 
+		//" clusters[ic].Val: " << clusters[ic].Val << endl;
+	}
+
+}
+
+
 #endif
 

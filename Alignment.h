@@ -358,7 +358,7 @@ class Alignment {
 				 << nm << "\t" << nblocks << endl;
 	}
 
-	void PrintSAM(ostream &out, Options &opts, char *passthrough=NULL) {
+	void PrintSAM(ostream &out, Options &opts, int &AO, char *passthrough=NULL) {
 		stringstream samStrm;
 		samStrm << readName << "\t";
 		assert(prepared);
@@ -401,6 +401,7 @@ class Alignment {
 			}
 			samStrm << "\t";
 			samStrm << "*";
+			samStrm << "AO:i:" << AO;
 		}
 		out << samStrm.str();
 		if (passthrough != NULL ) {
@@ -419,6 +420,7 @@ public:
 	GenomePos qStart, qEnd, tStart, tEnd;
 	unsigned char mapqv;
 	int nm;
+	int nmm;
 	bool ISsecondary;
 	float value;
 	SegAlignmentGroup () {
@@ -427,6 +429,7 @@ public:
 		tStart = 0;
 		tEnd = 0;
 		nm = 0;
+		nmm = 0;
 		ISsecondary = 0;
 		value = 0;
 	};
@@ -440,6 +443,7 @@ public:
 			tStart = min(tStart, SegAlignment[s]->tStart);
 			tEnd   = max(tEnd, SegAlignment[s]->tEnd);
 			nm += SegAlignment[s]->nm;
+			nmm += SegAlignment[s]->nmm;
 		}
 	}
 

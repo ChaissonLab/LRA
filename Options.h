@@ -79,7 +79,7 @@ public:
 		globalMaxFreq=20;
 		localMaxFreq=30;
 		maxDiag=500; // We want maxDiag to be a small number  (used to be 500) //// For CCS, need to be smaller!!! //// lots of unmapped reads due to 500;
-		cleanMaxDiag=50; // used to be 50  
+		cleanMaxDiag=100; // used to be 50  
 		minDiagCluster=10; 	// used to be 20
 							// This parameter is used in CleanOffDiagonal function; It's better not to set it to a single value. 
 							// This parameter is used in another CleanOFFDiagonal function
@@ -100,7 +100,7 @@ public:
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
 		maxGap=2000; 
-		maxGapBtwnAnchors=5000; // no larger than 2000 // used to be 1500
+		maxGapBtwnAnchors=1000; // no larger than 2000 // used to be 1500
 		mergeClusters=true;
 		NaiveDP=false;
 		seqan=false;

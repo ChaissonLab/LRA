@@ -44,8 +44,9 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts
 			return - opts.coefficient*LookUpTable[a] - 1;
 		}
 		else {
-			if (step == 1) {return -10000;}
-			else {return - 800;}
+			return -800;
+			//if (step == 1) {return -10000;}
+			//else {return -800;}
 		}
 	}
 	else {
