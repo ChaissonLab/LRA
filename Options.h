@@ -100,7 +100,7 @@ public:
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
 		maxGap=2000; 
-		maxGapBtwnAnchors=1000; // no larger than 2000 // used to be 1500
+		maxGapBtwnAnchors=400; // no larger than 2000 // used to be 1500 // 1000
 		mergeClusters=true;
 		NaiveDP=false;
 		seqan=false;

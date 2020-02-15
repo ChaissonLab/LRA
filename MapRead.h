@@ -602,7 +602,7 @@ void RemovePairedIndels (FinalChain & chain, Options & opts) {
 // This function switches index in splitclusters back 
 //
 void 
-switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_chains) {
+switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_chains, vector<Cluster> & clusters) {
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
 			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
@@ -632,8 +632,7 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 		}
 	}
 
-
-	// Remove the dupplicates 
+	// Remove the dupplicates in consecutive group of elements
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
 	  		vector<unsigned int>::iterator itp;
@@ -641,6 +640,40 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 	  		Primary_chains[p].chains[h].ch.resize(distance(Primary_chains[p].chains[h].ch.begin(), itp));			
 		}
 	}
+
+	/*
+	//Remove nonconsecutive dupplicates
+	vector<int> count(clusters.size(), 0);
+	for (int p = 0; p < Primary_chains.size(); p++) {
+		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
+
+			vector<bool> rm(Primary_chains[p].chains[h].ch.size(), 0);
+			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
+				int ic = Primary_chains[p].chains[h].ch[c];
+				if (count[ic] == 0) {
+					count[ic] += 1;
+				}
+				else {
+					rm[c] = 1;
+				}
+			}
+
+			int sm = 0;
+			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
+				if (rm[c] == 0){
+					Primary_chains[p].chains[h].ch[sm] = Primary_chains[p].chains[h].ch[c];
+					sm++;
+				}
+				else {
+					Primary_chains[p].chains[h].link.erase(Primary_chains[p].chains[h].link.begin() + c - 1);
+				}
+			}
+			Primary_chains[p].chains[h].ch.resize(sm);
+			Primary_chains[p].chains[h].link.resize(sm-1);
+
+		}
+	}
+	*/
 }
 
 
@@ -1009,7 +1042,7 @@ SeperateChainByStrand(FinalChain & finalchain, vector<vector<int>> & finalSepera
 	}	
 }
 
-
+/*
 //
 // This function sorts the SeperateChain by the number of anchors in the descending order;
 //
@@ -1020,7 +1053,7 @@ public:
 		return a.back() - a[0] > b.back() - b[0];
 	}
 };
-
+*/
 
 int LargestSplitChain(vector<SplitChain> &splitchains) {
 	int maxi = 0;
@@ -1403,7 +1436,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	float rate = 7;
 	vector<float> SCORE;
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, SCORE, rate);
-	switchindex(splitclusters, Primary_chains);
+	switchindex(splitclusters, Primary_chains, clusters);
 
 	//
 	// Remove Clusters in "clusters" that are not on the chains;
