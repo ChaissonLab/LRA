@@ -2096,24 +2096,6 @@ float SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain
 												FragInput[cm].matchesLengths[i], cm, c, 0, 0);
 					add++;
 				}
-				else if (i == 0){ //If no overlapping with prevCluster, but curstrand != prevstrand, we have to insert 4 points for the 1st anchor.
-					if (curstrand == 0) {
-						//
-						// If it is forward stranded, then insert s2 and e2 for it;					
-						// insert start point s2 into H1
-						insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-													FragInput[cm].matchesLengths[i], cm, c, 1, 1);
-						add++;						
-					}
-					else {
-						// 
-						// If it is reversed stranded, then insert s1 and e1 for it;
-						// insert start point s1 into H1
-						insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-													FragInput[cm].matchesLengths[i], cm, c, 0, 0);
-						add++;						
-					}
-				}
 			}
 
 			//
@@ -2138,25 +2120,30 @@ float SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain
 												FragInput[cm].matchesLengths[i], cm, c, 0, 0);
 					add++;
 				}		
-				else if (i == FragInput[cm].matches.size() - 1) {
-					if (curstrand == 0) {
-						//
-						// If it is forward stranded, then insert s2 and e2 for it;					
-						// insert start point s2 into H1
-						insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-													FragInput[cm].matchesLengths[i], cm, c, 1, 1);	
-						add++;							
-					}
-					else {
-						// 
-						// If it is reversed stranded, then insert s1 and e1 for it;
-						// insert start point s1 into H1
-						insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-													FragInput[cm].matchesLengths[i], cm, c, 0, 0);
-						add++;						
-					}
-				}		
 			}
+
+			//
+			// In case there is no overlap btwn different clusters, we need to insert 4 points for the 1st and last anchor
+			//
+			if (add < 1 and (i == 0 or i == FragInput[cm].matches.size() - 1)) {
+				if (curstrand == 0) {
+					//
+					// If it is forward stranded, then insert s2 and e2 for it;					
+					// insert start point s2 into H1
+					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+												FragInput[cm].matchesLengths[i], cm, c, 1, 1);
+					add++;						
+				}
+				else {
+					// 
+					// If it is reversed stranded, then insert s1 and e1 for it;
+					// insert start point s1 into H1
+					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+												FragInput[cm].matchesLengths[i], cm, c, 0, 0);
+					add++;						
+				}				
+			}
+
 			assert(add <= 1);
 		}
 	}

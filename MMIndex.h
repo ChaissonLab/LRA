@@ -317,7 +317,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		while (ne < minimizers.size() && minimizers[ne].t == minimizers[n].t) {ne++;}
 		int rz = 1;
 		if (header.pos.back()/1000000000 > 1) {rz = header.pos.back()/1000000000;}
-		if (ne - n > opts.minimizerFreq * rz) { // opts.minimizerFreq*rz is the rough threshold
+		if (ne - n > opts.globalMaxFreq * rz) { // opts.minimizerFreq*rz is the rough threshold
 			for (uint32_t i = n; i < ne; i++) {
 				//Freq[i] = ne - n;
 				Remove[i] = 1;

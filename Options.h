@@ -60,7 +60,7 @@ public:
 	bool HighlyAccurate;
 	int splitdist;
 	float coefficient;
-	int minimizerFreq;
+	//int minimizerFreq;
 	int NumOfminimizersPerWindow;
 	
 	Options() {
@@ -76,7 +76,7 @@ public:
 		localK=7;
 		localW=5;
 		//bestn=1;
-		globalMaxFreq=20;
+		globalMaxFreq=50;
 		localMaxFreq=30;
 		maxDiag=500; // We want maxDiag to be a small number  (used to be 500) //// For CCS, need to be smaller!!! //// lots of unmapped reads due to 500;
 		cleanMaxDiag=100; // used to be 50  
@@ -100,7 +100,7 @@ public:
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
 		maxGap=2000; 
-		maxGapBtwnAnchors=400; // no larger than 2000 // used to be 1500 // 1000
+		maxGapBtwnAnchors=1000; // no larger than 2000 // used to be 1500 // 1000
 		mergeClusters=true;
 		NaiveDP=false;
 		seqan=false;
@@ -122,7 +122,7 @@ public:
 		HighlyAccurate = false;
 		splitdist = 100000;
 		coefficient = 18;
-		minimizerFreq = 50;
+		//minimizerFreq = 50;
 		NumOfminimizersPerWindow = 5;
 	}
 };

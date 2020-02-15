@@ -641,12 +641,10 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 		}
 	}
 
-	/*
 	//Remove nonconsecutive dupplicates
 	vector<int> count(clusters.size(), 0);
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
-
 			vector<bool> rm(Primary_chains[p].chains[h].ch.size(), 0);
 			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
 				int ic = Primary_chains[p].chains[h].ch[c];
@@ -670,10 +668,9 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 			}
 			Primary_chains[p].chains[h].ch.resize(sm);
 			Primary_chains[p].chains[h].link.resize(sm-1);
-
 		}
 	}
-	*/
+	
 }
 
 
