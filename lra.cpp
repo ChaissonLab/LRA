@@ -239,7 +239,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.HighlyAccurate = true;
 			opts.maxDiag=500;
 			opts.maxGap=1500;
-			opts.minimizerFreq = 50;
+			opts.globalMaxFreq = 50;
 			opts.NumOfminimizersPerWindow = 4;	
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
@@ -248,7 +248,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.HighlyAccurate = false;
 			opts.maxDiag=800;
 			opts.maxGap=2000;
-			opts.minimizerFreq = 60;
+			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50; 
@@ -257,7 +257,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.HighlyAccurate = false;
 			opts.maxDiag=800;
 			opts.maxGap=2000;
-			opts.minimizerFreq = 60;
+			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;
 		}
 		else if (ArgIs(argv[argi], "-T")) {
@@ -413,7 +413,8 @@ void HelpStoreGlobal() {
 			 << "   -CLR (flag) Index for aligning CLR reads" << endl
 			 << "   -NANO (flag) Index for aligning Nanopore reads" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
-			 << "   -F (int) Maximum minimizer frequency (200)." << endl
+			 << "   -F (int) Maximum minimizer frequency. (default: 60 for CLR and NANO reads; 50 for CCS reads)" << endl
+			 << "   -N (int) Maximum minimizers allowed in per 1000bp window. (default: 5 for CLR and NANO reads; 4 for CCS reads)" << endl
 			 << "   -K (int) Word size" << endl
 			 << "   -h Print help." << endl;	
 	cout << "Examples: " << endl
@@ -443,15 +444,15 @@ void RunStoreLocal(int argc, const char* argv[],
 			exit(1);
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
-			opts.minimizerFreq = 50;
+			opts.globalMaxFreq = 50;
 			opts.NumOfminimizersPerWindow = 4;			
 		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
-			opts.minimizerFreq = 60;
+			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;			
 		}
 		else if (ArgIs(argv[argi], "-NANO")) {
-			opts.minimizerFreq = 60;
+			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;			
 		}
 		else if (ArgIs(argv[argi], "-k")) {
@@ -508,15 +509,15 @@ void RunStoreGlobal(int argc, const char* argv[],
 			opts.globalMaxFreq = atoi(argv[argi]);
 		}		
 		else if (ArgIs(argv[argi], "-CCS")) {
-			opts.minimizerFreq = 50;
+			opts.globalMaxFreq = 50;
 			opts.NumOfminimizersPerWindow = 4;			
 		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
-			opts.minimizerFreq = 60;
+			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;			
 		}
 		else if (ArgIs(argv[argi], "-NANO")) {
-			opts.minimizerFreq = 60;
+			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;			
 		}
 		else if (ArgIs(argv[argi], "-d")) {
