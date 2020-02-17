@@ -401,6 +401,7 @@ class Alignment {
 			}
 			samStrm << "\t";
 			samStrm << "*";
+			samStrm << "\t";
 			samStrm << "AO:i:" << AO;
 		}
 		out << samStrm.str();
