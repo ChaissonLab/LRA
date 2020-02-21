@@ -224,7 +224,6 @@ class Alignment {
 					textStr.push_back(text[t]);
 					alignStr.push_back(gapSeparationChar);
 					queryStr.push_back(gapChar);
-
 				}
 
 				for (g = 0; g < commonGapLen; g++ ) {
@@ -244,6 +243,91 @@ class Alignment {
 		}
 		refLen=t-refStart;
 	}
+
+	// Print out sv signatures within-alignment
+	void Printsvsig(char *query, char* text, Options & opts, string &prefix) {
+		stringstream svsigstrm;
+		GenomePos q, t;
+		GenomePos  g;
+
+		if (blocks.size() == 0) {
+			return;
+		}
+
+		for (int b = 0; b < blocks.size(); b++) {
+
+			q = blocks[b].qPos + blocks[b].length;
+			t = blocks[b].tPos + blocks[b].length;
+			//
+			//  There are no gaps to count after the last block, so 
+			//  don't add the gapped characters for this.
+			//
+			if (blocks.size() == 0)
+				continue;
+			if (b == blocks.size() - 1) {
+				continue;
+			}
+
+			int queryGapLen = (blocks[b+1].qPos - blocks[b].qPos - blocks[b].length);
+			int textGapLen  = (blocks[b+1].tPos - blocks[b].tPos - blocks[b].length);
+			assert(queryGapLen >= 0);
+			assert(textGapLen >= 0);
+
+			if (queryGapLen > 0 or textGapLen > 0) {
+				// commonGapLen should be the shorter gap.
+				int commonGapLen = queryGapLen; 
+				if (queryGapLen > textGapLen) {
+					commonGapLen = textGapLen;
+				}
+				textGapLen -= commonGapLen;
+				queryGapLen -= commonGapLen;
+
+				if (queryGapLen > 10) {
+					svsigstrm << chrom << "\t"
+							  << readName << "\t"
+							  << t << "\t"
+							  << t << "\t"
+							  << queryGapLen << "\t"
+							  << "INS" << "\t";
+
+					for (g = 0; g < queryGapLen; g++, q++ ){
+						assert(t < genomeLen);
+						svsigstrm << query[q];
+					}		
+					svsigstrm << endl;			
+				}
+
+				if (textGapLen > 10) {
+					svsigstrm << chrom << "\t"
+							  << readName << "\t"
+							  << t << "\t"
+							  << t + textGapLen - 1 << "\t"
+							  << textGapLen << "\t"
+							  << "DEL" << "\t";
+					for (g = 0; g < textGapLen; g++, t++ ){
+						assert(t < genomeLen);
+						svsigstrm << text[t];
+					}					
+					svsigstrm << endl;								
+				}
+
+				for (g = 0; g < commonGapLen; g++ ) {
+					assert(t < genomeLen);
+					t++;
+					q++;
+				}
+			}
+		}
+
+		ofstream clust;
+		clust.open(prefix + ".svsig", std::ios_base::app);
+		clust << svsigstrm.str();
+		clust.close();
+		//out << svsigstrm.str();
+		//out << endl;
+		//out.flush();
+	}
+
 
 	void AlignStringsToCigar(string &query, string &target, string &cigar, int &nm, int &nmm, int &nins, int &ndel) {
 		stringstream cigarstrm;
@@ -280,10 +364,12 @@ class Alignment {
 		}
 		cigar=cigarstrm.str();
 	}
-	void CalculateStatistics() {
+
+	void CalculateStatistics(Options & opts, string &prefix) {
 
 		CreateAlignmentStrings(read, genome, queryString, alignString, refString);
 		AlignStringsToCigar(queryString, refString, cigar, nm, nmm, ndel, nins);
+		if (opts.Printsvsig == true) Printsvsig(read, genome, opts, prefix);
 		preClip = 0;
 		sufClip=0;
 		if (blocks.size() > 0) {

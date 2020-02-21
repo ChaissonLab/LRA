@@ -62,6 +62,7 @@ void HelpMap() {
 			 << "   -a  (flag)  Query all positions in a read, not just minimizers. " << endl
 			 << "               This is 10-20% slower, with an increase in specificity. " << endl
 			 << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl
+			 << "   -P  (flag)  Print all the sv signatures for each alignment. DEFAULT:false" << endl
 			 //<< "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl
 			 //<< "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
 			// << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
@@ -95,6 +96,7 @@ public:
 	pthread_mutex_t *semaphore;
 	int *numAligned;
 	int *numRead;
+	string prefix;
 };
 
 void MapReads(MapInfo *mapInfo) {
@@ -108,7 +110,7 @@ void MapReads(MapInfo *mapInfo) {
 		}
 		else {
 			for (int i = 0; i< reads.size(); i++) {
-				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm, *mapInfo->glIndex, *mapInfo->opts, &strm, mapInfo->semaphore);
+				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm, *mapInfo->glIndex, *mapInfo->opts, &strm, mapInfo->prefix, mapInfo->semaphore);
 				reads[i].Clear();
 			}
 			reads.clear();
@@ -260,6 +262,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;
 		}
+		else if (ArgIs(argv[argi], "-P")) {
+			opts.Printsvsig=true;
+		}
 		else if (ArgIs(argv[argi], "-T")) {
 			opts.LookUpTable = true;
 		}
@@ -272,7 +277,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-aa")) {
 			opts.MergeSplit = false;
 		}		
-
 		else if (ArgIs(argv[argi], "--locMatch")) {
 			opts.localMatch=atoi(GetArgv(argv,argc,argi));
 			++argi;
@@ -349,6 +353,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		genome.header.WriteSAMHeader(*outPtr);
 	}
 
+
 	vector<float> LookUpTable;
 	CreateLookUpTable(LookUpTable);
 
@@ -375,18 +380,22 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			mapInfo[procIndex].thread=procIndex;
 			mapInfo[procIndex].semaphore=&semaphore;
 			mapInfo[procIndex].numAligned=&numAligned;
+			if (allreads.size() == 1) mapInfo[procIndex].prefix=allreads[0];
+			else mapInfo[procIndex].prefix="";
 			pthread_create(&threads[procIndex], &threadAttr[procIndex], (void* (*)(void*))MapReads, &mapInfo[procIndex]);
 		}
 
 		for (int procIndex = 0; procIndex < opts.nproc; procIndex++) {
 			pthread_join(threads[procIndex], NULL);
 		}
-	
-	
+
 	}
 	else {
 		while (reader.GetNext(read)) {
-			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr);
+			string prefix;
+			if (allreads.size() == 1) prefix=allreads[0];
+			else prefix="";
+			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr, prefix);
 		}
 	}
 }

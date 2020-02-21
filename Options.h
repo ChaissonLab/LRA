@@ -62,6 +62,7 @@ public:
 	float coefficient;
 	//int minimizerFreq;
 	int NumOfminimizersPerWindow;
+	bool Printsvsig;
 	
 	Options() {
 		localMatch=4;
@@ -124,6 +125,7 @@ public:
 		coefficient = 18;
 		//minimizerFreq = 50;
 		NumOfminimizersPerWindow = 5;
+		Printsvsig=false;
 	}
 };
 #endif
