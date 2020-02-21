@@ -1517,7 +1517,7 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 //
 void 
 DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
-					const std::vector<Fragment_Info> & Value, vector<Primary_chain> &Primary_chains, Read & read, vector<float> & SCORE, Options & opts) {
+					const std::vector<Fragment_Info> & Value, vector<Primary_chain> &Primary_chains, Read & read, Options & opts) {
 
 	std::vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
@@ -1563,7 +1563,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					bool newpr = 1, inserted = 0;
 					int p = 0;
 					while (p < Primary_chains.size()) {
-						if (Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.5)) {
+						if (Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.5) and !Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.9)) {
 							//if (Primary_chains[p].chains.size() < opts.SecondaryAln + 1) {
 								Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
 								inserted = 1;								
@@ -1591,8 +1591,6 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 		link.clear();
 		fv++;
 	}
-	if (fragments_valueOrder.size() > 0) SCORE.push_back(fragments_valueOrder[0]);
-	if (fragments_valueOrder.size() > 1) SCORE.push_back(fragments_valueOrder[1]);
 }
 
 /*
@@ -2143,7 +2141,6 @@ float SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain
 					add++;						
 				}				
 			}
-
 			assert(add <= 1);
 		}
 	}
@@ -2324,7 +2321,7 @@ float SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain
 // fragments of different lengths
 // This SDP needs to insert 4 points for any anchors
 //
-int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, Options & opts, const vector<float> & LookUpTable, Read & read, vector<float> & SCORE, float & rate) {
+int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, Options & opts, const vector<float> & LookUpTable, Read & read, float & rate) {
 
 	if (FragInput.size() == 0) return 0;
 	std::vector<Point>  H1;
@@ -2523,7 +2520,7 @@ int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary
 	//
 	// Trace back chains; There are two parameters: PrimaryAln, SecondaryAln
 	//
-	DecidePrimaryChains(FragInput, SubR1, SubC1, SubR2, SubC2, Value, Primary_chains, read, SCORE, opts);
+	DecidePrimaryChains(FragInput, SubR1, SubC1, SubR2, SubC2, Value, Primary_chains, read, opts);
 
 	// Clear SubR and SubC
 	SubR1.Clear(eeR1);

@@ -601,7 +601,7 @@ void RemovePairedIndels (FinalChain & chain, Options & opts) {
 //
 // This function switches index in splitclusters back 
 //
-void 
+int
 switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_chains, vector<Cluster> & clusters) {
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
@@ -632,15 +632,18 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 		}
 	}
 
+	//
 	// Remove the dupplicates in consecutive group of elements
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
 	  		vector<unsigned int>::iterator itp;
 	  		itp = unique(Primary_chains[p].chains[h].ch.begin(), Primary_chains[p].chains[h].ch.end()); 
-	  		Primary_chains[p].chains[h].ch.resize(distance(Primary_chains[p].chains[h].ch.begin(), itp));			
+	  		int pdist = distance(Primary_chains[p].chains[h].ch.begin(), itp);
+	  		Primary_chains[p].chains[h].ch.resize(pdist);			
 		}
 	}
 
+	/*
 	//Remove nonconsecutive dupplicates
 	vector<int> count(clusters.size(), 0);
 	for (int p = 0; p < Primary_chains.size(); p++) {
@@ -660,17 +663,19 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
 				if (rm[c] == 0){
 					Primary_chains[p].chains[h].ch[sm] = Primary_chains[p].chains[h].ch[c];
+					if (sm >= 1) Primary_chains[p].chains[h].link[sm-1] = Primary_chains[p].chains[h].link[c-1];
 					sm++;
 				}
 				else {
-					Primary_chains[p].chains[h].link.erase(Primary_chains[p].chains[h].link.begin() + c - 1);
+					//Primary_chains[p].chains[h].link.erase(Primary_chains[p].chains[h].link.begin() + c - 1);
 				}
 			}
 			Primary_chains[p].chains[h].ch.resize(sm);
 			Primary_chains[p].chains[h].link.resize(sm-1);
 		}
 	}
-	
+	*/
+	return 0;
 }
 
 
@@ -932,7 +937,7 @@ RefineBtwnSpace(Cluster * cluster, Options & opts, Genome & genome, Read & read,
 
 
 //
-// This function splits the chain if Clusters on the chain are mapped to different chromosomes or different locations on the same chromosome;
+// This function splits the chain if Clusters on the chain are mapped to different chromosomes or different locations (quite far, default: 100000) on the same chromosome;
 //
 void
 SPLITChain(vector<Cluster> ExtendClusters, vector<SplitChain> & splitchains, vector<bool> & link, Options & opts) {
@@ -1138,7 +1143,8 @@ PassgenomeThres(int cur, GenomePos & genomeThres, FinalChain & finalchain) {
 	else return 0;
 }
 
-int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, pthread_mutex_t *semaphore=NULL) {
+int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, 
+				ostream *output, string &prefix, pthread_mutex_t *semaphore=NULL) {
 	
 	string baseName = read.name;
 
@@ -1421,7 +1427,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		}
 		clust.close();
 	}
-
+	
 	//
 	// Apply SDP on splitclusters. Based on the chain, clean clusters to make it only contain clusters that are on the chain.   --- vector<Cluster> clusters
 	// class: chains: vector<chain> chain: vector<vector<int>>     Need parameters: PrimaryAlgnNum, SecondaryAlnNum
@@ -1431,8 +1437,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	////// TODO(Jingwen): customize a rate fro SparseDP
 	vector<Primary_chain> Primary_chains;
 	float rate = 7;
-	vector<float> SCORE;
-	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, SCORE, rate);
+	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
 	switchindex(splitclusters, Primary_chains, clusters);
 
 	//
@@ -1460,7 +1465,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		}
 	}
 	clusters.resize(lm);	
-
 
 	//
 	// Change the index stored in Primary_chains, since we remove some Clusters in "clusters";
@@ -1552,7 +1556,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		else sparse = 0;
 	}
 
-
 	//
 	// Refining each cluster in "clusters" needed if CLR reads are aligned OR CCS reads with very few anchors. Otherwise, skip this step
 	// After this step, the t coordinates in clusters and refinedclusters have been substract chromOffSet. 
@@ -1599,7 +1602,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			RefinedClusters[s] = &clusters[s];
 		}
 	}
-
 
 	if (opts.dotPlot) {
 		ofstream clust("RefinedClusters.tab");
@@ -1659,6 +1661,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	//
 	vector<SegAlignmentGroup> alignments;
 	AlignmentsOrder alignmentsOrder(&alignments);
+
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
@@ -1706,32 +1709,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						// This function also set the "coarse" flag for RefinedClusters[cur]
 						RefineBtwnSpace(RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te, ts, st, cur);
 					}
-					/*
-					else if (SpaceLength >= 100000 and qe - qs > 500 and qe - qs < 5000) { 
-						//
-						// If there is space btwn 2 refinedClusters too far away on reference, try to refine anchors at the end of those 2 refinedClusters
-						//
-						int bup, bdown;
-						if (st == 0) {
-							bup = prev;
-							bdown = cur;
-						}
-						else {
-							bup = cur;
-							bdown = prev;
-						}
-
-						// Decide sts for bdown
-						GenomePos sts = 0;
-						if (te > qe - qs + 4000) {sts = te - (qe - qs) - 4000;}
-						// Decide ste for bup
-						GenomePos ste = ts + (qe - qs) + 4000;
-						if (ste > genome.lengths[RefinedClusters[bup]->chromIndex]) ste = genome.lengths[RefinedClusters[bup]->chromIndex];
-
-						RefineBtwnSpace(RefinedClusters[bdown], smallOpts, genome, read, strands, qe, qs, te, sts, RefinedClusters[bdown]->strand, bdown);
-						RefineBtwnSpace(RefinedClusters[bup], smallOpts, genome, read, strands, qe, qs, ste, ts, RefinedClusters[bup]->strand, bup);
-					}
-					*/
 				}
 				c++;
 			}
@@ -1755,6 +1732,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			if (qe > qs and te > ts) {
 				SpaceLength = max(qe - qs, te - ts); 
 				if (SpaceLength > 1000 and SpaceLength < 6000 and te < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (500, 2000)
+					//
 					RefineBtwnSpace(RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, rh);
 				}				
 			}
@@ -1792,7 +1770,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			vector<Cluster> ExtendClusters(Primary_chains[p].chains[h].ch.size());
 			LinearExtend(RefinedClusters, ExtendClusters, Primary_chains[p].chains[h].ch, smallOpts, genome, read);
 
-
 			int SizeExtendClusters = 0;
 			for (int p = 0; p < ExtendClusters.size(); p++) {
 				SizeExtendClusters += ExtendClusters[p].matches.size();
@@ -1827,8 +1804,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}	
 
 			assert(SizeRefinedClusters != 0);
-			//cerr << "SizeRefinedClusters: " << SizeRefinedClusters << "   SizeExtendClusters: " << SizeExtendClusters << "  read.name:"<< read.name <<  endl;
-			//cerr << "LinearExtend efficiency: " << (float)SizeExtendClusters/(float)SizeRefinedClusters << endl;
+			/*
+			cerr << "SizeRefinedClusters: " << SizeRefinedClusters << "   SizeExtendClusters: " << SizeExtendClusters
+				   << "  read.name:"<< read.name <<  endl;
+			cerr << "LinearExtend efficiency: " << (float)SizeExtendClusters/(float)SizeRefinedClusters << endl;
+			*/
 
 			//
 			// Split the chain Primary_chains[p].chains[h] if clusters are aligned to different chromosomes; SplitAlignment is class that vector<* vector<Cluster>>
@@ -1854,19 +1834,16 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				alignments.back().value += SparseDP(splitchains[st], ExtendClusters, finalchain, smallOpts, LookUpTable, read);
 
 				//
-				// RemoveSpuriousAnchors and RemovePairedIndels; ////TODO(Jingwen): implement those two functions in SparseDP to further clean the chain; 
+				// RemoveSpuriousAnchors and RemovePairedIndels; 
 				//
-				//cerr << "finaichain.size(): " << finalchain.size() << endl;
 				int orig = finalchain.size();
 				//RemoveSpuriousAnchors(finalchain, smallOpts);
-				//cerr << "RemoveSpuriousAnchors removes: " << orig - finalchain.size()  << endl;
 				orig = finalchain.size();
 				//RemovePairedIndels(finalchain, smallOpts);
-				//cerr << "RemovePairedIndels removes: " << orig - finalchain.size() << endl;
 				if (finalchain.size() == 0) continue; // cannot be mapped to the genome!
 
 				if (opts.dotPlot) {
-					ofstream clust("SparseDP.tab", std::ios_base::app);
+					ofstream clust("SparseDP.tab");
 					for (int p = 0; p < finalchain.chain.size(); p++) {
 						if (finalchain.strand(p) == 0) {
 							clust << finalchain[p].first.pos << "\t"
@@ -1889,14 +1866,16 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				}	
 
 				//
-				// If there are inversions in the path, then seperate finalchain into several parts. In each part anchors are in the same direction, which is for better manipulation;
+				// If there are inversions in the path, then seperate finalchain into several parts. 
+				// In each part anchors are in the same direction, which is for better manipulation;
 				// INPUT: FinalChain finalchain, OUTPUT: vector<int> finalchainSeperateChain;
 				//
 				vector<vector<int>> finalSeperateChain;
-				SeperateChainByStrand(finalchain, finalSeperateChain, ExtendClusters); ////TODO(Jingwen): Modify the function to remove mapping to different locations part!!!!
+				SeperateChainByStrand(finalchain, finalSeperateChain, ExtendClusters); 
 				int LFC = LargestFinalSeperateChain(finalSeperateChain);
 				//
-				// Refine and store the alignment; NOTICE: when filling in the space between two adjacent anchors, the process works in forward direction, so we need to flip the small matches
+				// Refine and store the alignment; NOTICE: when filling in the space between two adjacent anchors, 
+				// the process works in forward direction, so we need to flip the small matches
 				// found in the spaces before insert them into the alignment if necessary;
 				// INPUT: vector<int> finalchainSeperateStrand; OUTPUT: Alignment *alignment;
 				//
@@ -1947,6 +1926,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 							int cur = fl;
 							int next = fl + 1;
 							if (!PassgenomeThres(cur, genomeThres, finalchain)) {
+								//
 								RefinedAlignmentbtwnAnchors(cur, next, str, chromIndex, finalchain, alignment, read, genome, strands, scoreMat, 
 																												pathMat, tinyOpts, genomeThres);
 							}
@@ -1972,7 +1952,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					alignment->read = strands[str];
 					alignment->strand = str;
 					alignment->nblocks = end - 1 - start;
-					alignment->CalculateStatistics();
+					alignment->CalculateStatistics(opts, prefix);
 				}
 			}
 			alignments.back().SetBoundariesFromSegAlignmentAndnm();
@@ -2013,7 +1993,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			
 			baseDots.close();
 	}
-
+		
 	for (int a=0; a < (int) alignmentsOrder.size(); a++){
 
 		for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
@@ -2039,6 +2019,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	//
 	// Done with one read. Clean memory.
 	//
+	
 	delete[] readRC;
 	for (int a = 0; a < alignments.size(); a++) {
 		for (int s = 0; s < alignments[a].SegAlignment.size(); s++) {

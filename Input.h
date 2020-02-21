@@ -120,7 +120,7 @@ class Input {
 				exit(1);
 			}
 
-      samHeader = sam_hdr_read(htsfp);
+      		samHeader = sam_hdr_read(htsfp);
 			inputType=1;
 			return true;
 		}
