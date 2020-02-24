@@ -245,7 +245,7 @@ class Alignment {
 	}
 
 	// Print out sv signatures within-alignment
-	void Printsvsig(char *query, char* text, Options & opts, string &prefix) {
+	void Printsvsig(char *query, char* text, Options & opts, ostream* clust) {
 		stringstream svsigstrm;
 		GenomePos q, t;
 		GenomePos  g;
@@ -282,7 +282,7 @@ class Alignment {
 				textGapLen -= commonGapLen;
 				queryGapLen -= commonGapLen;
 
-				if (queryGapLen > 10) {
+				if (queryGapLen > opts.svsigLen) {
 					svsigstrm << chrom << "\t"
 							  << readName << "\t"
 							  << t << "\t"
@@ -297,7 +297,7 @@ class Alignment {
 					svsigstrm << endl;			
 				}
 
-				if (textGapLen > 10) {
+				if (textGapLen > opts.svsigLen) {
 					svsigstrm << chrom << "\t"
 							  << readName << "\t"
 							  << t << "\t"
@@ -319,13 +319,7 @@ class Alignment {
 			}
 		}
 
-		ofstream clust;
-		clust.open(prefix + ".svsig", std::ios_base::app);
-		clust << svsigstrm.str();
-		clust.close();
-		//out << svsigstrm.str();
-		//out << endl;
-		//out.flush();
+		*clust << svsigstrm.str();
 	}
 
 
@@ -365,11 +359,11 @@ class Alignment {
 		cigar=cigarstrm.str();
 	}
 
-	void CalculateStatistics(Options & opts, string &prefix) {
+	void CalculateStatistics(Options & opts, ostream *svsigstrm) {
 
 		CreateAlignmentStrings(read, genome, queryString, alignString, refString);
 		AlignStringsToCigar(queryString, refString, cigar, nm, nmm, ndel, nins);
-		if (opts.Printsvsig == true) Printsvsig(read, genome, opts, prefix);
+		if (opts.Printsvsig == true) Printsvsig(read, genome, opts, svsigstrm);
 		preClip = 0;
 		sufClip=0;
 		if (blocks.size() > 0) {

@@ -30,6 +30,7 @@ public:
 	bool storeAll;
 	int nproc;
 	string outfile;
+	string outsvfile;
 	int maxCandidates;
 	int refineLevel;
 	bool doBandedAlignment;
@@ -63,6 +64,7 @@ public:
 	//int minimizerFreq;
 	int NumOfminimizersPerWindow;
 	bool Printsvsig;
+	int svsigLen;
 	
 	Options() {
 		localMatch=4;
@@ -97,6 +99,7 @@ public:
 		storeAll=false;
 		nproc=1;
 		outfile="";
+		outsvfile="";
 		maxCandidates=3;
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
@@ -126,6 +129,7 @@ public:
 		//minimizerFreq = 50;
 		NumOfminimizersPerWindow = 5;
 		Printsvsig=false;
+		svsigLen = 25;
 	}
 };
 #endif

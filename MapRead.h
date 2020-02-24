@@ -1144,7 +1144,7 @@ PassgenomeThres(int cur, GenomePos & genomeThres, FinalChain & finalchain) {
 }
 
 int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, 
-				ostream *output, string &prefix, pthread_mutex_t *semaphore=NULL) {
+				ostream *output, ostream *svsigstrm, pthread_mutex_t *semaphore=NULL) {
 	
 	string baseName = read.name;
 
@@ -1952,7 +1952,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					alignment->read = strands[str];
 					alignment->strand = str;
 					alignment->nblocks = end - 1 - start;
-					alignment->CalculateStatistics(opts, prefix);
+					alignment->CalculateStatistics(opts,svsigstrm);
 				}
 			}
 			alignments.back().SetBoundariesFromSegAlignmentAndnm();

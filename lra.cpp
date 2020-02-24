@@ -53,7 +53,7 @@ void HelpMap() {
 			 << "   -CCS (flag) Align CCS reads. " << endl
 			 << "   -CLR (flag) Align CLR reads. " << endl
 			 << "   -NANO (flag) Align Nanopore reads. " << endl
-			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' pair." << endl
+			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' pair" << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
      		 << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
 			 << "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
@@ -62,7 +62,7 @@ void HelpMap() {
 			 << "   -a  (flag)  Query all positions in a read, not just minimizers. " << endl
 			 << "               This is 10-20% slower, with an increase in specificity. " << endl
 			 << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl
-			 << "   -P  (flag)  Print all the sv signatures for each alignment. DEFAULT:false" << endl
+			 << "   -SV  (int) (path to svsig file)  Print sv signatures for each alignment with length above the given threshold (DEFAULT:25). And the path of output svsig file" << endl
 			 //<< "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl
 			 //<< "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
 			// << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
@@ -91,17 +91,18 @@ public:
 	Input *reader;
 	Options *opts;
 	ostream *out;
+	ostream *svsigOut;
 	int thread;
 	int numThreads;
 	pthread_mutex_t *semaphore;
 	int *numAligned;
 	int *numRead;
-	string prefix;
 };
 
 void MapReads(MapInfo *mapInfo) {
 	Read read;
 	stringstream strm;
+	stringstream svsigstrm;
 	vector<Read> reads;
 	while (mapInfo->reader->BufferedRead(reads,IO_BUFFER_SIZE)) {
 		if (mapInfo->opts->readStride != 1 and
@@ -110,11 +111,13 @@ void MapReads(MapInfo *mapInfo) {
 		}
 		else {
 			for (int i = 0; i< reads.size(); i++) {
-				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm, *mapInfo->glIndex, *mapInfo->opts, &strm, mapInfo->prefix, mapInfo->semaphore);
+				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm, *mapInfo->glIndex, *mapInfo->opts, &strm, &svsigstrm, mapInfo->semaphore);
 				reads[i].Clear();
 			}
 			reads.clear();
-			
+			//
+			// Print progress to the screen.
+			//
 			if (mapInfo->reader->basesRead > 100000000) {
 				if (mapInfo->semaphore != NULL) {
 					pthread_mutex_lock(mapInfo->semaphore);
@@ -137,12 +140,14 @@ void MapReads(MapInfo *mapInfo) {
 					pthread_mutex_lock(mapInfo->semaphore);
 				}
 				*mapInfo->out << strm.str();
+				*mapInfo->svsigOut << svsigstrm.str(); 
 				if (mapInfo->semaphore != NULL) {
 					pthread_mutex_unlock(mapInfo->semaphore);
 				}
 				strm.str("");
 				strm.clear();
-
+				svsigstrm.str("");
+				svsigstrm.clear();
 			}
 				
 		}
@@ -262,8 +267,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;
 		}
-		else if (ArgIs(argv[argi], "-P")) {
+		else if (ArgIs(argv[argi], "-SV")) {
 			opts.Printsvsig=true;
+			opts.svsigLen=atoi(GetArgv(argv, argc, argi));
+			++argi;
+			opts.outsvfile=argv[++argi];
 		}
 		else if (ArgIs(argv[argi], "-T")) {
 			opts.LookUpTable = true;
@@ -334,13 +342,23 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	int offset=0;
 	Read read;
 	ostream *outPtr;
+	ostream *outSVsig;
 	ofstream outfile;
+	ofstream outsvfile;
 	if (opts.outfile == "" or opts.outfile=="-") {
 		outPtr = &cout;
 	}
 	else {
 		outfile.open(opts.outfile.c_str());
 		outPtr = &outfile;
+	}
+
+	if (opts.outsvfile== "" or opts.outsvfile =="-") {
+		outSVsig = &cout;
+	}
+	else {
+		outsvfile.open(opts.outsvfile.c_str());
+		outSVsig = &outsvfile;
 	}
 
 	if (opts.printFormat == 's') {
@@ -377,11 +395,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			mapInfo[procIndex].reader = &reader;
 			mapInfo[procIndex].opts= &opts;
 			mapInfo[procIndex].out = outPtr;
+			mapInfo[procIndex].svsigOut = outSVsig;
 			mapInfo[procIndex].thread=procIndex;
 			mapInfo[procIndex].semaphore=&semaphore;
 			mapInfo[procIndex].numAligned=&numAligned;
-			if (allreads.size() == 1) mapInfo[procIndex].prefix=allreads[0];
-			else mapInfo[procIndex].prefix="";
 			pthread_create(&threads[procIndex], &threadAttr[procIndex], (void* (*)(void*))MapReads, &mapInfo[procIndex]);
 		}
 
@@ -392,13 +409,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	}
 	else {
 		while (reader.GetNext(read)) {
-			string prefix;
-			if (allreads.size() == 1) prefix=allreads[0];
-			else prefix="";
-			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr, prefix);
+			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr, outSVsig);
 		}
 	}
+	outfile.close();
+	outsvfile.close();
 }
+
+
 void HelpStoreIndex() {
 	cout << "Usage: lra index file.fa [options]" << endl
 			 << "  Global index options " << endl
