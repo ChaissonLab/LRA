@@ -46,11 +46,12 @@ public:
 		main = idx;
 	}
 	*/
-	int Overlaps (GenomePos &qS, GenomePos &qE, float rate);
+	int OverlapsOnQ (GenomePos &qS, GenomePos &qE, float rate);
+	int OverlapsOnT (GenomePos &tS, GenomePos &tE, float rate);
 };
 
 
-int CHain::Overlaps (GenomePos &qS, GenomePos &qE, float rate) {
+int CHain::OverlapsOnQ (GenomePos &qS, GenomePos &qE, float rate) {
 
 	int ovp = 0;
 	if (qS >= qStart and qS < qEnd) {
@@ -69,6 +70,28 @@ int CHain::Overlaps (GenomePos &qS, GenomePos &qE, float rate) {
 	//if (max(ovp/denomA, ovp/denomB) >= rate) {return true;}
 	else {return false;}
 }
+
+
+int CHain::OverlapsOnT (GenomePos &tS, GenomePos &tE, float rate) {
+
+	int ovp = 0;
+	if (tS >= tStart and tS < tEnd) {
+		ovp = min(tE, tEnd) - tS;
+	}
+	else if (tE > tStart and tE <= tEnd) {
+		ovp = tE - max(tS, tStart);
+	}
+	else if (tS < tStart and tE > tEnd) {
+		ovp = tEnd - tStart;
+	}
+	float denomA = tEnd - tStart;
+	//float denomB = qE - qS;
+
+	if (ovp/denomA >= rate) {return true;}
+	//if (max(ovp/denomA, ovp/denomB) >= rate) {return true;}
+	else {return false;}
+}
+
 
 
 class Primary_chain {
