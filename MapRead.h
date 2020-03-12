@@ -171,12 +171,16 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 		else {
 			// assign mapqv to primary alignment;
 			int nmmdiff = alignmentsOrder[first].nmm - alignmentsOrder[first+1].nmm;
-			if (nmmdiff < -50) {
+			if (nmmdiff < -10) {
 				alignmentsOrder[first].mapqv = 60;				
 			}
 			else {
-				alignmentsOrder[first].mapqv = (int) 35*(1-alignmentsOrder[first+1].value/alignmentsOrder[first].value)*(1 + alignmentsOrder[first].nm/(float)read.length);
-				if (alignmentsOrder[first].mapqv > 60) alignmentsOrder[first].mapqv = 60;
+				//alignmentsOrder[first].mapqv = (int) 35*(1-alignmentsOrder[first+1].value/alignmentsOrder[first].value)*(1 + alignmentsOrder[first].nm/(float)read.length);
+				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 100) {
+					float denom = pow(0.3,abs(nmmdiff));
+					alignmentsOrder[first].mapqv = min(60, (int) (60 + 2*log10(denom)));
+				}
+				else { alignmentsOrder[first].value = 60;}
 			}
 			alignmentsOrder[first].SetMapqv();
 
@@ -1436,8 +1440,42 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 	////// TODO(Jingwen): customize a rate fro SparseDP
 	vector<Primary_chain> Primary_chains;
-	float rate = 7;
+	float rate = 4;
+	if (splitclusters.size() > 10) rate = 1; // mapping to repetitive region
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
+	if (opts.dotPlot) {
+		ofstream clust("Chains.tab");
+
+		for (int p = 0; p < Primary_chains.size(); p++) {
+			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
+				for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
+					int ph = Primary_chains[p].chains[h].ch[c];
+					if (splitclusters[ph].strand == 0) {
+						clust << splitclusters[ph].qStart << "\t" 
+							  << splitclusters[ph].tStart << "\t"
+							  << splitclusters[ph].qEnd   << "\t"
+							  << splitclusters[ph].tEnd   << "\t"
+							  << p << "\t"
+							  << h << "\t"
+							  << Primary_chains[p].chains[h].ch[c] << "\t"
+							  << splitclusters[ph].strand << endl;
+					} 
+					else {
+						clust << splitclusters[ph].qStart << "\t" 
+							  << splitclusters[ph].tEnd << "\t"
+							  << splitclusters[ph].qEnd   << "\t"
+							  << splitclusters[ph].tStart  << "\t"
+							  << p << "\t"
+							  << h << "\t"
+							  << Primary_chains[p].chains[h].ch[c] << "\t"
+							  << splitclusters[ph].strand << endl;
+					}
+				}
+			}
+		}
+		clust.close();
+	}	
+
 	switchindex(splitclusters, Primary_chains, clusters);
 
 	//
@@ -1541,7 +1579,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 	// Set the parameters for merging anchors and 1st SDP
 	Options smallOpts = opts;
-	smallOpts.coefficient = 12; // used to be 9
+	smallOpts.coefficient = 9; // used to be 9
 	Options tinyOpts = smallOpts;
 	tinyOpts.globalMaxFreq=3;
 	tinyOpts.maxDiag=5;
@@ -1731,7 +1769,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}
 			if (qe > qs and te > ts) {
 				SpaceLength = max(qe - qs, te - ts); 
-				if (SpaceLength > 1000 and SpaceLength < 6000 and te < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (500, 2000)
+				if (SpaceLength > 1000 and SpaceLength < 6000 and te < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (1000, 6000)
 					//
 					RefineBtwnSpace(RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, rh);
 				}				
@@ -1756,7 +1794,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			}
 			if (qe > qs and te > ts) {
 				SpaceLength = max(qe - qs, te - ts);
-				if (SpaceLength > 1000 and SpaceLength < 6000 and te < genome.lengths[RefinedClusters[lh]->chromIndex]) { // used (500, 2000)
+				if (SpaceLength > 1000 and SpaceLength < 6000 and te < genome.lengths[RefinedClusters[lh]->chromIndex]) { // used (1000, 6000)
 					RefineBtwnSpace(RefinedClusters[lh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lh);
 				}				
 			}
@@ -1771,32 +1809,32 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			LinearExtend(RefinedClusters, ExtendClusters, Primary_chains[p].chains[h].ch, smallOpts, genome, read);
 
 			int SizeExtendClusters = 0;
-			for (int p = 0; p < ExtendClusters.size(); p++) {
-				SizeExtendClusters += ExtendClusters[p].matches.size();
+			for (int ep = 0; ep < ExtendClusters.size(); ep++) {
+				SizeExtendClusters += ExtendClusters[ep].matches.size();
 			}	
 
 			if (opts.dotPlot) {
-				ofstream clust("ExtendClusters.tab");
+				ofstream clust("ExtendClusters.tab", std::ofstream::app);
 
-				for (int p = 0; p < ExtendClusters.size(); p++) {
+				for (int ep = 0; ep < ExtendClusters.size(); ep++) {
 
-					for (int h = 0; h < ExtendClusters[p].matches.size(); h++) {
+					for (int eh = 0; eh < ExtendClusters[ep].matches.size(); eh++) {
 						
-						if (ExtendClusters[p].strand == 0) {
-							clust << ExtendClusters[p].matches[h].first.pos << "\t"
-								  << ExtendClusters[p].matches[h].second.pos << "\t"
-								  << ExtendClusters[p].matches[h].first.pos + ExtendClusters[p].matchesLengths[h] << "\t"
-								  << ExtendClusters[p].matches[h].second.pos + ExtendClusters[p].matchesLengths[h] << "\t"
-								  << p << "\t"
-								  << ExtendClusters[p].strand << endl;
+						if (ExtendClusters[ep].strand == 0) {
+							clust << ExtendClusters[ep].matches[eh].first.pos << "\t"
+								  << ExtendClusters[ep].matches[eh].second.pos << "\t"
+								  << ExtendClusters[ep].matches[eh].first.pos + ExtendClusters[ep].matchesLengths[eh] << "\t"
+								  << ExtendClusters[ep].matches[eh].second.pos + ExtendClusters[ep].matchesLengths[eh] << "\t"
+								  << h << "\t"
+								  << ExtendClusters[ep].strand << endl;
 						}
 						else {
-							clust << ExtendClusters[p].matches[h].first.pos << "\t"
-								  << ExtendClusters[p].matches[h].second.pos + ExtendClusters[p].matchesLengths[h] << "\t"
-								  << ExtendClusters[p].matches[h].first.pos + ExtendClusters[p].matchesLengths[h] << "\t"
-								  << ExtendClusters[p].matches[h].second.pos<< "\t"
-								  << p << "\t"
-								  << ExtendClusters[p].strand << endl;					
+							clust << ExtendClusters[ep].matches[eh].first.pos << "\t"
+								  << ExtendClusters[ep].matches[eh].second.pos + ExtendClusters[ep].matchesLengths[eh] << "\t"
+								  << ExtendClusters[ep].matches[eh].first.pos + ExtendClusters[ep].matchesLengths[eh] << "\t"
+								  << ExtendClusters[ep].matches[eh].second.pos<< "\t"
+								  << h << "\t"
+								  << ExtendClusters[ep].strand << endl;					
 						}
 					}
 				}
@@ -1831,7 +1869,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				// INPUT: vector<unsigned int> splitchain, vector<Cluster> ExtendClusters; OUTPUT: FinalChain finalchain;
 				//
 				FinalChain finalchain(&ExtendClusters);
-				alignments.back().value += SparseDP(splitchains[st], ExtendClusters, finalchain, smallOpts, LookUpTable, read);
+				SparseDP(splitchains[st], ExtendClusters, finalchain, smallOpts, LookUpTable, read);
 
 				//
 				// RemoveSpuriousAnchors and RemovePairedIndels; 
@@ -1843,23 +1881,25 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				if (finalchain.size() == 0) continue; // cannot be mapped to the genome!
 
 				if (opts.dotPlot) {
-					ofstream clust("SparseDP.tab");
-					for (int p = 0; p < finalchain.chain.size(); p++) {
-						if (finalchain.strand(p) == 0) {
-							clust << finalchain[p].first.pos << "\t"
-								  << finalchain[p].second.pos << "\t"
-								  << finalchain[p].first.pos + finalchain.length(p) << "\t"
-								  << finalchain[p].second.pos + finalchain.length(p) << "\t"
-								  << finalchain.ClusterNum(p) << "\t"
-								  << finalchain.strand(p) << endl;
+					ofstream clust("SparseDP.tab", std::ofstream::app);
+					for (int ep = 0; ep < finalchain.chain.size(); ep++) {
+						if (finalchain.strand(ep) == 0) {
+							clust << finalchain[ep].first.pos << "\t"
+								  << finalchain[ep].second.pos << "\t"
+								  << finalchain[ep].first.pos + finalchain.length(ep) << "\t"
+								  << finalchain[ep].second.pos + finalchain.length(ep) << "\t"
+								  << h << "\t"
+								  << finalchain.ClusterNum(ep) << "\t"
+								  << finalchain.strand(ep) << endl;
 						}
 						else {
-							clust << finalchain[p].first.pos << "\t"
-								  << finalchain[p].second.pos + finalchain.length(p) << "\t"
-								  << finalchain[p].first.pos + finalchain.length(p) << "\t"
-								  << finalchain[p].second.pos << "\t"
-								  << finalchain.ClusterNum(p) << "\t"
-								  << finalchain.strand(p) << endl;					
+							clust << finalchain[ep].first.pos << "\t"
+								  << finalchain[ep].second.pos + finalchain.length(ep) << "\t"
+								  << finalchain[ep].first.pos + finalchain.length(ep) << "\t"
+								  << finalchain[ep].second.pos << "\t"
+								  << h << "\t"
+								  << finalchain.ClusterNum(ep) << "\t"
+								  << finalchain.strand(ep) << endl;					
 						}
 					}
 					clust.close();
@@ -1952,10 +1992,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					alignment->read = strands[str];
 					alignment->strand = str;
 					alignment->nblocks = end - 1 - start;
-					alignment->CalculateStatistics(opts,svsigstrm);
+					alignment->CalculateStatistics(opts,svsigstrm, LookUpTable);
 				}
 			}
-			alignments.back().SetBoundariesFromSegAlignmentAndnm();
+			alignments.back().SetFromSegAlignment();
 		}
 		alignmentsOrder.Update(&alignments);
 	}	
