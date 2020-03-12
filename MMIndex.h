@@ -261,7 +261,7 @@ void CountSort(const vector<uint32_t> & Freq, const int & RANGE, const vector<bo
     // Change count[i] so that count[i] now contains actual  
     // position of each frequency
     for (int i = 1; i <= RANGE; i++) {
-        count[i] += count[i-1];     	
+        count[i] += count[i-1];   
     }
  
     // Build the output sorted vector
@@ -306,35 +306,42 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	//
 	// Get the frequency for minimizers; Store the frequency in Freq;
 	//
+	int rz = 1;
+	if (header.pos.back()/1000000000 > 1) {rz = header.pos.back()/1000000000;}
+	int RANGE = opts.globalMaxFreq * rz;
 	vector<bool> Remove (minimizers.size(), 0);
-	int RANGE = 0;
 	vector<uint32_t> Freq(minimizers.size(), 0);
 
-	int n = 0;
+	uint32_t n = 0; uint32_t ne = 0;
 	uint32_t unremoved = 0;
+	uint32_t removed = 0;
+
 	while (n < minimizers.size()) {
-		int ne = n;
+		ne = n + 1;
 		while (ne < minimizers.size() && minimizers[ne].t == minimizers[n].t) {ne++;}
-		int rz = 1;
-		if (header.pos.back()/1000000000 > 1) {rz = header.pos.back()/1000000000;}
-		if (ne - n > opts.globalMaxFreq * rz) { // opts.minimizerFreq*rz is the rough threshold
+		if (ne - n > RANGE) { // opts.minimizerFreq*rz is the rough threshold
 			for (uint32_t i = n; i < ne; i++) {
 				//Freq[i] = ne - n;
 				Remove[i] = 1;
+				//++removed;
 			}
+			removed += ne-n;
+			assert(removed+unremoved<=Remove.size());
 		}
 		else {
-			//assert(ne - n != 0);
 			for (uint32_t i = n; i < ne; i++) {
 				Freq[i] = ne - n;
-				++unremoved;
+				//++unremoved;
 			}		
-			if (ne -n > RANGE) {RANGE = ne - n;}
+			//if (ne -n > RANGE) {RANGE = ne - n;}
+			unremoved += ne-n;
+			assert(removed+unremoved<=Remove.size());
 		}
 		n = ne;
 	}
 
 	cerr << "RANGE: " << RANGE << endl;
+	assert(removed+unremoved==Remove.size());
 
 
 	// Sort unremoved minimizers by frequency 
