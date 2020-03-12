@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <sstream>
 #include <algorithm>
+#include <math.h>       
 using namespace std;
 const unsigned int READ_UNMAPPED=0x4;
 const unsigned int READ_REVERSE=0x10;
@@ -45,6 +46,7 @@ class Alignment {
  	//int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
  	//vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains	
  	bool split;
+ 	float value;
 	void Clear() {
 		queryString=alignString=refString="";
 		blocks.clear();
@@ -73,6 +75,7 @@ class Alignment {
 		ISsecondary=0;
 		Supplymentary=0;
 		split=0;
+		value=0;
 	}
  	Alignment(char *_read, char *_forward, 
 					 int _rl, string _rn, int _str, 
@@ -323,11 +326,13 @@ class Alignment {
 	}
 
 
-	void AlignStringsToCigar(string &query, string &target, string &cigar, int &nm, int &nmm, int &nins, int &ndel) {
+	void AlignStringsToCigar(string &query, string &target, string &cigar, int &nm, int &nmm, int &nins, int &ndel, Options &opts, const std::vector<float> & LookUpTable) {
 		stringstream cigarstrm;
 		int i=0;
 		int p=0;
 		nm=nmm=nins=ndel=0;
+		value=0;
+		opts.coefficient = 3;
 		while (i < query.size()) {
 			p=i;
 			while (i < query.size() and seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
@@ -335,34 +340,48 @@ class Alignment {
 			if (i > p) {
 				cigarstrm << i-p << '=';
 				nm+=i-p;
+				value+=i-p;
 				continue;
 			}
 			while (i < query.size() and seqMap[query[i]] != seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'X';
 				nmm+=i-p;
+				value-=2*(i-p);
 				continue;
 			}
 			while (i < query.size() and query[i] == '-' and target[i] != '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'D';
 				ndel+=i-p;
+				if (i-p < 501) {value += -opts.coefficient*log(i-p) - 1;}
+				else if (i-p <= 10001){
+					int a = (int)floor((i-p-501)/5);
+					value += -opts.coefficient*LookUpTable[a] - 1;
+				}
+				else {value += -800;}
 				continue;
 			}
 			while (i < query.size() and query[i] != '-' and target[i] == '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'I';
 				nins+=i-p;
+				if (i-p < 501) {value += -opts.coefficient*log(i-p) - 1;}
+				else if (i-p <= 10001){
+					int a = (int)floor((i-p-501)/5);
+					value += -opts.coefficient*LookUpTable[a] - 1;
+				}
+				else {value += -800;}
 				continue;
 			}
 		}
 		cigar=cigarstrm.str();
 	}
 
-	void CalculateStatistics(Options & opts, ostream *svsigstrm) {
+	void CalculateStatistics(Options & opts, ostream *svsigstrm, const std::vector<float> & LookUpTable) {
 
 		CreateAlignmentStrings(read, genome, queryString, alignString, refString);
-		AlignStringsToCigar(queryString, refString, cigar, nm, nmm, ndel, nins);
+		AlignStringsToCigar(queryString, refString, cigar, nm, nmm, ndel, nins, opts, LookUpTable);
 		if (opts.Printsvsig == true) Printsvsig(read, genome, opts, svsigstrm);
 		preClip = 0;
 		sufClip=0;
@@ -382,7 +401,7 @@ class Alignment {
 
 		if (split == 1) flag = flag | READ_MULTIPLESEGMENTS;
 		if (strand == 1) flag = flag | READ_REVERSE;
-		if (ISsecondary == 1) flag = flag | READ_SECONDARY;
+		//if (ISsecondary == 1) flag = flag | READ_SECONDARY;
 		if (Supplymentary == 1) flag = flag | READ_SUPPLEMENTARY;
 	}
 	
@@ -516,7 +535,7 @@ public:
 	};
 	~SegAlignmentGroup () {};
 
-	void SetBoundariesFromSegAlignmentAndnm () {
+	void SetFromSegAlignment() {
 		ISsecondary = SegAlignment[0]->ISsecondary;
 		for (int s = 0; s < SegAlignment.size(); s++) {
 			qStart = min(qStart, SegAlignment[s]->qStart);
@@ -525,6 +544,7 @@ public:
 			tEnd   = max(tEnd, SegAlignment[s]->tEnd);
 			nm += SegAlignment[s]->nm;
 			nmm += SegAlignment[s]->nmm;
+			value += SegAlignment[s]->value;
 		}
 	}
 
@@ -601,10 +621,18 @@ public:
 		// Update the flag
 		//
 		(*alignments)[index[Oldend]].ISsecondary = 0;
-		for (int i=Oldend+1;i < index.size(); i++) {
+		for (int i=Oldend+1; i<index.size(); i++) {
 			(*alignments)[index[i]].ISsecondary = 1;
 		}
 		Oldend = index.size();
+
+		for (int i = 0; i< (*alignments).size(); i++) {
+			if ((*alignments)[i].ISsecondary == 1) {
+				for (int z = 0; z < (*alignments)[i].SegAlignment.size(); z++) {
+					(*alignments)[i].SegAlignment[z]->flag = (*alignments)[i].SegAlignment[z]->flag | READ_SECONDARY;
+				}
+			}
+		}
 	}
 
 	int operator()(const int i, const int j) {
