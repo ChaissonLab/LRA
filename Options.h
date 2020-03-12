@@ -53,8 +53,7 @@ public:
 	int maxRemoveSpuriousAnchorsDist; 
 	int minRemoveSpuriousAnchorsNum;
 	int minRemoveSpuriousAnchorsLength;
-	int SecondaryAln;
-	int PrimaryAln;
+	int NumAln;
 	int BtnSubClusterswindow;
 	int binLength;
 	int minBinNum;
@@ -118,8 +117,7 @@ public:
    		//minRemoveSpuriousAnchorsLength=100;
      	maxRemoveSpuriousAnchorsDist=500;
    		minRemoveSpuriousAnchorsNum=10;
-   		SecondaryAln = 0;
-   		PrimaryAln = 1;
+   		NumAln = 1;
    		BtnSubClusterswindow = 800;
 		binLength = 20000;
 		minBinNum = 3;

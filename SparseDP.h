@@ -1521,7 +1521,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 
 	std::vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-	float value_thres = 0.98*fragments_valueOrder[0];
+	float value_thres = 0.97*fragments_valueOrder[0];
 	unsigned int fv = 0;
 	while (fv < fragments_valueOrder.size() and fragments_valueOrder[fv] >= value_thres) {
 	//for (unsigned int fv = 0; fv < fragments_valueOrder.size(); fv++) {
@@ -1563,12 +1563,14 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					bool newpr = 1, inserted = 0;
 					int p = 0;
 					while (p < Primary_chains.size()) {
-						if (Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.5) and !Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.9)) {
-							//if (Primary_chains[p].chains.size() < opts.SecondaryAln + 1) {
-								Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
-								inserted = 1;								
-							//}
-							break;
+						if (Primary_chains[p].chains[0].OverlapsOnQ(qStart, qEnd, 0.5)) {
+							if (!Primary_chains[p].chains[0].OverlapsOnT(tStart, tEnd, 0.5)) {
+								//if (Primary_chains[p].chains.size() < opts.SecondaryAln + 1) {
+									Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
+									inserted = 1;								
+								//}
+								break;
+							}
 						}
 						else{
 						//else if (Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.5)) {
@@ -1867,7 +1869,7 @@ int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Option
 // This SDP needs to insert 4 points for only anchors in the overlapping region between Clusters;
 // This SDP needs to increase the cost for linking 2 anchors of different directions;
 //
-float SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain & finalchain, Options & opts, const vector<float> & LookUpTable, Read & read) {
+int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain & finalchain, Options & opts, const vector<float> & LookUpTable, Read & read) {
 
 	if (inputChain.size() == 0) return 0;
 	//
@@ -2312,7 +2314,7 @@ float SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain
 	//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	//cerr << "Time: " << elapsed_secs << endl;
 
-	return max_value;
+	return 0;
 }
 
 

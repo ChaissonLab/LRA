@@ -71,8 +71,7 @@ void HelpMap() {
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
 			 << "   -d 	(flag)  Enable dotPlot" << endl
-			 << "   -Se (int) Allow at most how many secondary alignments" << endl
-			 << "   -Pr (int) Allow at most how many primary alignments" << endl;
+			 << "   -Al (int) Allow at most how many alignments for one read" << endl;
 			 //<< "   -aa (flag)  use Merge.h" << endl;
 	cout << "Examples: " << endl
 			 << "Aligning CCS reads:  lra align -CCS -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
@@ -156,6 +155,7 @@ void MapReads(MapInfo *mapInfo) {
 		pthread_mutex_lock(mapInfo->semaphore);
 	}
 	*mapInfo->out << strm.str();
+	*mapInfo->svsigOut << svsigstrm.str();
 	if (mapInfo->semaphore != NULL) {
 		pthread_mutex_unlock(mapInfo->semaphore);
 	}
@@ -192,7 +192,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-f")) {
 			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
 			++argi;
-		}		
+		}	
+		else if (ArgIs(argv[argi], "-n")) {
+			opts.NumOfminimizersPerWindow=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}			
 		else if (ArgIs(argv[argi], "-F")) {
 			opts.flagRemove=atoi(GetArgv(argv, argc, argi));
 			++argi;
@@ -227,11 +231,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.readStart=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
-		else if (ArgIs(argv[argi], "--Se")) {
-			opts.SecondaryAln=atoi(GetArgv(argv, argc, argi));
-		}
-		else if (ArgIs(argv[argi], "--Pr")) {
-			opts.PrimaryAln=atoi(GetArgv(argv, argc, argi));
+		else if (ArgIs(argv[argi], "--Al")) {
+			opts.NumAln=atoi(GetArgv(argv, argc, argi));
 		}
 		else if (ArgIs(argv[argi], "-R")) {
 			opts.mergeClusters=true;

@@ -158,7 +158,7 @@ void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & spl
 
 		for (int n = 0; n < clusters[m].matches.size(); n++) {
 
-			if (cur_len >= clusters[m].matches[n].first.pos) {
+			if (cur_len > clusters[m].matches[n].first.pos) {
 				assert(cur_len <= clusters[m].matches[n].first.pos + opts.globalK);
 				MatNum += clusters[m].matches[n].first.pos + opts.globalK - cur_len;
 			}
