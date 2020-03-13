@@ -53,7 +53,7 @@ void HelpMap() {
 			 << "   -CCS (flag) Align CCS reads. " << endl
 			 << "   -CLR (flag) Align CLR reads. " << endl
 			 << "   -NANO (flag) Align Nanopore reads. " << endl
-			 << "   -CONTIG (flag) Align large contigs." << endls
+			 << "   -CONTIG (flag) Align large contigs." << endl
 			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' pair" << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
      		 << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
