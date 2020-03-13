@@ -53,6 +53,7 @@ void HelpMap() {
 			 << "   -CCS (flag) Align CCS reads. " << endl
 			 << "   -CLR (flag) Align CLR reads. " << endl
 			 << "   -NANO (flag) Align Nanopore reads. " << endl
+			 << "   -CONTIG (flag) Align large contigs." << endls
 			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' pair" << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
      		 << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
@@ -252,6 +253,15 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
 		}
+		else if (ArgIs(argv[argi], "-CONTIG")) {
+			opts.HighlyAccurate = true;
+			opts.maxDiag=500;
+			opts.maxGap=1500;
+			opts.globalMaxFreq = 50;
+			opts.NumOfminimizersPerWindow = 4;	
+			//opts.minClusterSize=5; 
+			//opts.minClusterLength=50;  
+		}
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.HighlyAccurate = false;
 			opts.maxDiag=800;
@@ -424,6 +434,7 @@ void HelpStoreIndex() {
 			 << "	-CCS (flag) Index for aligning CCS reads" << endl
 			 << "	-CLR (flag) Index for aligning CLR reads" << endl
 			 << "	-NANO (flag) Index for aligning Nanopore reads" << endl
+			 << "   -CONTIG (flag) Index for aligning large contigs" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
 			 << "   -F (int) Maximum minimizer frequency (200)." << endl
 			 << "   -K (int) Word size" << endl
@@ -440,6 +451,7 @@ void HelpStoreGlobal() {
 			 << "   -CCS (flag) Index for aligning CCS reads" << endl
 			 << "   -CLR (flag) Index for aligning CLR reads" << endl
 			 << "   -NANO (flag) Index for aligning Nanopore reads" << endl
+			 << "   -CONTIG (flag) Index for aligning large contigs" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
 			 << "   -F (int) Maximum minimizer frequency. (default: 60 for CLR and NANO reads; 50 for CCS reads)" << endl
 			 << "   -N (int) Maximum minimizers allowed in per 1000bp window. (default: 5 for CLR and NANO reads; 4 for CCS reads)" << endl
@@ -472,6 +484,10 @@ void RunStoreLocal(int argc, const char* argv[],
 			exit(1);
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
+			opts.globalMaxFreq = 50;
+			opts.NumOfminimizersPerWindow = 4;			
+		}	
+		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.globalMaxFreq = 50;
 			opts.NumOfminimizersPerWindow = 4;			
 		}	
@@ -547,6 +563,10 @@ void RunStoreGlobal(int argc, const char* argv[],
 		else if (ArgIs(argv[argi], "-NANO")) {
 			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;			
+		}
+		else if (ArgIs(argv[argi], "-CONTIG")) {
+			opts.globalMaxFreq = 50;
+			opts.NumOfminimizersPerWindow = 4;			
 		}
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;
