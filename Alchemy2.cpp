@@ -45,12 +45,13 @@ void HelpAlchemy2() {
 			 << " Simulating reads: (default without a bam file)" << endl
 			 << "   -m (string) Input model." << endl		
 			 << "   -g (string) Input genome"  << endl
-			 << "   -o (string) Output reads." << endl
+			 << "   -x (string) Output reads." << endl
 			 << "   -r (string) Simulate from these reads not the genome." << endl
 			 << "   -R (string) Simulate from regions (bed file)" << endl
 			 << "   -l (int)    Minimum read length (1000)." << endl
 			 << "   -p (string) Simulate from positions." << endl
 			 << "   -E (string) Use empirical read length distribution (false=log-normal)." << endl
+			 << "   -F (int) Use fixed read length." << endl
 			 << "   -B (int)    Number of bases to simulated. Ignores -r" << endl
 			 << "   -x (int)    Fold coverage to simulate. Ignores -r and -B" << endl
 			 << "   -u (int)    Override model mean read length" << endl
@@ -413,6 +414,8 @@ int main(int argc, char* argv[]) {
 	char c;
 	int maxSampledReads=50000;
 	bool useEmpiricalReadLengths=false;
+	bool usefixedLength=false;
+	int fixedLength=5000;
 	int minReadLength=1000;
 	long foldCoverage=0;
 	if (argc == 1) {
@@ -432,9 +435,13 @@ int main(int argc, char* argv[]) {
         context=atoi(optarg);
         break;
       case 'E':
-				useEmpiricalReadLengths=true;
-				break;
-      case 'u':
+		useEmpiricalReadLengths=true;
+		break;
+	  case 'F':
+	  	fixedLength=atof(optarg);
+	  	usefixedLength=true;
+	  	break;
+	  case 'u':
         avgReadLen=atof(optarg);
 				break;
 			case 'V':
@@ -630,6 +637,9 @@ int main(int argc, char* argv[]) {
 			
 			if (useEmpiricalReadLengths) {
 				readLen = model.readLengths[RandInt(model.readLengths.size())];
+			}
+			else if (usefixedLength) {
+				readLen = fixedLength;
 			}
 			else {
 				readLen = distribution(generator);
