@@ -1521,7 +1521,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 
 	std::vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-	float value_thres = 0.97*fragments_valueOrder[0];
+	float value_thres = 0.98*fragments_valueOrder[0];
 	unsigned int fv = 0;
 	while (fv < fragments_valueOrder.size() and fragments_valueOrder[fv] >= value_thres) {
 	//for (unsigned int fv = 0; fv < fragments_valueOrder.size(); fv++) {
@@ -1564,11 +1564,11 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					int p = 0;
 					while (p < Primary_chains.size()) {
 						if (Primary_chains[p].chains[0].OverlapsOnQ(qStart, qEnd, 0.5)) {
-							if (!Primary_chains[p].chains[0].OverlapsOnT(tStart, tEnd, 0.5)) {
-								//if (Primary_chains[p].chains.size() < opts.SecondaryAln + 1) {
+							if (!Primary_chains[p].chains[0].OverlapsOnT(tStart, tEnd, 0.3)) {
+								if (Primary_chains[p].chains.size() < opts.NumAln) {
 									Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
 									inserted = 1;								
-								//}
+								}
 								break;
 							}
 						}
@@ -1579,11 +1579,11 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 						++p;
 					}			
 					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 1) {		
-						//if (Primary_chains.size() < opts.PrimaryAln) {
+						if (Primary_chains.size() < opts.NumAln) {
 							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
 							Primary_chains.push_back(Pc);
-						//}	
-						//else break;		
+						}	
+						else break;		
 					}	
 				}
 			}
