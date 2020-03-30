@@ -43,7 +43,8 @@ void HelpAlchemy2() {
 			 << "   -g (int)    Maximum gap to model. This is intended to skip adding SVs to the model (30)" << endl
 			 << "   -s (int)    Minimum number of output values to sample" << endl
 			 << " Simulating reads: (default without a bam file)" << endl
-			 << "   -m (string) Input model." << endl		
+			 << "   -m (string) Input model." << endl	
+			 << "   -F (int) Use fixed read length." << endl	
 			 << "   -g (string) Input genome"  << endl
 			 << "   -x (string) Output reads." << endl
 			 << "   -r (string) Simulate from these reads not the genome." << endl
@@ -51,7 +52,6 @@ void HelpAlchemy2() {
 			 << "   -l (int)    Minimum read length (1000)." << endl
 			 << "   -p (string) Simulate from positions." << endl
 			 << "   -E (string) Use empirical read length distribution (false=log-normal)." << endl
-			 << "   -F (int) Use fixed read length." << endl
 			 << "   -B (int)    Number of bases to simulated. Ignores -r" << endl
 			 << "   -x (int)    Fold coverage to simulate. Ignores -r and -B" << endl
 			 << "   -u (int)    Override model mean read length" << endl
@@ -422,12 +422,17 @@ int main(int argc, char* argv[]) {
 		HelpAlchemy2();
 		exit(1);
 	}
-  while ((c = getopt (argc, argv, "b:k:L:G:s:g:m:r:R:B:l:N:p:o:u:V:x:")) != -1) {
+  while ((c = getopt (argc, argv, "b:F:k:L:G:s:g:m:r:R:B:l:N:p:o:u:V:x:")) != -1) {
     switch (c)
       {
       case 'b':
 				bamFile=optarg;
         break;
+	  case 'F':
+	  	fixedLength=atoi(optarg);
+	  	usefixedLength=true;
+	  	cerr << "fixedLength: " << fixedLength << "  usefixedLength: " << usefixedLength << endl; 
+	  	break;
       case 'L':
         maxSampledReads=atoi(optarg);
         break;
@@ -437,10 +442,6 @@ int main(int argc, char* argv[]) {
       case 'E':
 		useEmpiricalReadLengths=true;
 		break;
-	  case 'F':
-	  	fixedLength=atof(optarg);
-	  	usefixedLength=true;
-	  	break;
 	  case 'u':
         avgReadLen=atof(optarg);
 				break;
@@ -482,6 +483,7 @@ int main(int argc, char* argv[]) {
 			 }
 	 }
 
+	 cerr << "fixedLength: " << fixedLength << "  usefixedLength: " << usefixedLength << endl; 
 	if (bamFile != "") {
 
 		cerr << "Storing model" << endl;
