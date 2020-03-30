@@ -603,7 +603,7 @@ int main(int argc, char* argv[]) {
 
 		ofstream readsFile(outFile.c_str());
 		
-		int nSimulatedBases=0;
+		long nSimulatedBases=0;
 		if (avgReadLen == 0) {
 			avgReadLen = model.avgLogReadLength;
 		}
