@@ -431,7 +431,6 @@ int main(int argc, char* argv[]) {
 	  case 'F':
 	  	fixedLength=atoi(optarg);
 	  	usefixedLength=true;
-	  	cerr << "fixedLength: " << fixedLength << "  usefixedLength: " << usefixedLength << endl; 
 	  	break;
       case 'L':
         maxSampledReads=atoi(optarg);
@@ -658,6 +657,7 @@ int main(int argc, char* argv[]) {
 			char *ref=&genome.seqs[refIdx][offset];
 			string sim="";
 			string kmer;
+
 			kmer.resize(model.k);
 			for (int i=model.k/2; i < readLen-model.k/2; i++) {
 				string simOut="";
@@ -678,13 +678,17 @@ int main(int argc, char* argv[]) {
 					sim+=simOut;
 				}
 			}
+
 			stringstream title;
+
 			title << ">" << chrom << ":" << offset << "-" << offset+readLen << "/" << readIndex;
 			readsFile << title.str() << endl;
 			readsFile << sim << endl;			
+
 			readIndex++;
 			if (readIndex % 1000 == 0) {
-				cerr << "Alchemy2: simulated " << nSimulatedBases << " bases." << endl;
+				cerr << "Alchemy2: simulated " << nSimulatedBases /1000000 << "M bases. " 
+						 << numBases / 1000000 <<  "M " << endl;
 			}
 		}
 		//

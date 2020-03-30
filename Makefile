@@ -58,7 +58,7 @@ lra: lra.o
 	$(CXX) $(STATIC) $(CCOPTS) $^ -L $(PWD)/htslib/lib  -lhts -lz -lpthread -o $@ -Wl,-rpath,$(PWD)/htslib/lib
 
 alchemy2: Alchemy2.o
-	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -Wl,-rpath,htslib/lib -lhts -lz -lpthread -o $@
+	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib  -lhts -lz -lpthread -o $@  -Wl,-rpath,$(PWD)/htslib/lib
 
 qti: QueryTime.o
 	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
