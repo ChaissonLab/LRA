@@ -50,6 +50,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 		if (abs(DiagonalDifference(matches[i], matches[i-1], strand)) < opts.cleanMaxDiag and 
 				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift )) {	
 			onDiag[i] = true;
+			onDiag[i-1] = true;
 		}
 	}
 	bool prevOnDiag = false;
@@ -89,7 +90,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 		minDiagCluster = 20;
 	}
 	*/
-	minDiagCluster=5;
+	minDiagCluster=10; // used to be 5, but if use smaller kmer, should be larger
 	
 
 	//minDiagCluster = (int) floor(Largest_ClusterNum/10);
