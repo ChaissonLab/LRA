@@ -347,7 +347,7 @@ class Alignment {
 			if (i > p) {
 				cigarstrm << i-p << 'X';
 				nmm+=i-p;
-				value-=2*(i-p);
+				value-=3*(i-p);
 				continue;
 			}
 			while (i < query.size() and query[i] == '-' and target[i] != '-') {	i++;}
@@ -454,7 +454,7 @@ class Alignment {
 				 << tEnd << "\t"
 				 << (int) mapqv << "\t" 
 				 << readName << "\t" << readLen << "\t" << qStart << "\t" << qEnd << "\t"
-				 << nm << "\t" << nblocks << endl;
+				 << nm << "\t" << nmm << "\t" << nblocks << "\t" << flag << endl;
 	}
 
 	void PrintSAM(ostream &out, Options &opts, int &AO, char *passthrough=NULL) {
