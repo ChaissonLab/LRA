@@ -1521,7 +1521,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 
 	std::vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-	float value_thres = 0.98*fragments_valueOrder[0];
+	float value_thres = 0.70*fragments_valueOrder[0];
 	unsigned int fv = 0;
 	while (fv < fragments_valueOrder.size() and fragments_valueOrder[fv] >= value_thres) {
 	//for (unsigned int fv = 0; fv < fragments_valueOrder.size(); fv++) {
@@ -1578,7 +1578,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 						}
 						++p;
 					}			
-					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 1) {		
+					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 0) {		
 						if (Primary_chains.size() < opts.NumAln) {
 							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
 							Primary_chains.push_back(Pc);
@@ -1887,7 +1887,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	// Decide the rate;
 	//
 	float rate = 1;
-	//if ((float)totalMatch / (float) read.length < 0.1) rate = 3;
+	if ((float)totalMatch / (float) read.length <= 0.1) rate = 3; 
 
 	// get points from FragInput and store them in H1;
 	//
