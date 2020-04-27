@@ -33,6 +33,56 @@
 
 using namespace std;
 
+class Timing {
+public:
+	vector<long> ticks;
+	vector<string> labels;
+	int index;
+	clock_t curTime;
+	void Start() {
+		index=0;
+		curTime=clock()/1000;
+	}
+	void Tick(string label) {
+		if (index +1 > ticks.size()) {
+			ticks.push_back(0);
+		}
+		long prev=ticks[index];
+		ticks[index] += clock()/1000 - curTime;
+		if (prev > ticks[index]) {
+			cerr << "Warning, tick has wrapped over long" << endl;
+		}
+		curTime=clock()/1000;
+		if (index + 1 > labels.size()) {
+			labels.push_back(label);
+		}
+		index+=1;
+	}
+	void Add(Timing &t) {
+		//
+		// Only add ticks the same size -- sometimes a thread 
+		// will be created without adding ticks.
+		//
+		if (t.ticks.size() == ticks.size()) {
+			for (int i =0; i < t.ticks.size(); i++) {
+				ticks[i] += t.ticks[i];
+			}
+		}
+	}
+	void Summarize(const string &outFileName) {
+		long total=0;
+		ofstream outFile(outFileName.c_str());
+		for (int i=0;i<ticks.size(); i++) {
+			total+= ticks[i];
+		}
+		for (int i=0; i < ticks.size(); i++) {
+			outFile << labels[i] << "\t" << ticks[i] << "\t" << ((double)ticks[i])/total << endl;
+		}
+		outFile.close();
+	}
+		
+};
+
 
 void SwapStrand (Read & read, Options & opts, Cluster & cluster) {
 	for (int m = 0; m < cluster.matches.size(); m++) {
@@ -1148,7 +1198,7 @@ PassgenomeThres(int cur, GenomePos & genomeThres, FinalChain & finalchain) {
 }
 
 int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, 
-				ostream *output, ostream *svsigstrm, pthread_mutex_t *semaphore=NULL) {
+						ostream *output, ostream *svsigstrm, Timing &timing, pthread_mutex_t *semaphore=NULL) {
 	
 	string baseName = read.name;
 
@@ -1160,6 +1210,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 	vector<GenomeTuple> readmm; // readmm stores minimizers
 	vector<pair<GenomeTuple, GenomeTuple> > allMatches, forMatches, revMatches, matches;
+	timing.Start();
 
 	if (opts.storeAll) {
 		Options allOpts = opts;
@@ -1170,12 +1221,14 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		StoreMinimizers<GenomeTuple, Tuple>(read.seq, read.length, opts.globalK, opts.globalW, readmm);
 	}
 	sort(readmm.begin(), readmm.end()); //sort kmers in readmm(minimizers)
+
+	timing.Tick("Store minimizers");
 	//
 	// Add matches between the read and the genome.
 	//
 	CompareLists(readmm, genomemm, allMatches, opts);
 	DiagonalSort<GenomeTuple>(allMatches); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
-
+	timing.Tick("Sort minimizers");
 
 	// TODO(Jinwen): delete this after debug
 	if (opts.dotPlot) {
@@ -1329,7 +1382,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	SplitClusters(clusters, splitclusters);
 	DecideSplitClustersValue(clusters, splitclusters, opts);
 
-
+	timing.Tick("Preprocess");
 	if (opts.dotPlot) {
 		ofstream clust("clusters-coarse.tab");
 		for (int m = 0; m < clusters.size(); m++) {
@@ -1477,7 +1530,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	}	
 
 	switchindex(splitclusters, Primary_chains, clusters);
-
+	timing.Tick("Sparse DP - clusters");
 	//
 	// Remove Clusters in "clusters" that are not on the chains;
 	//
@@ -1669,7 +1722,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		clust.close();
 	}	
 
-
+	timing.Tick("Refine");
 	int SizeRefinedClusters = 0;
 	for (int p = 0; p < RefinedClusters.size(); p++) {
 		SizeRefinedClusters += RefinedClusters[p]->matches.size();
@@ -1930,7 +1983,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					int cln = finalchain.ClusterNum(start);
 					int chromIndex = ExtendClusters[cln].chromIndex;	
 					Alignment *alignment = new Alignment(strands[str], read.seq, read.length, read.name, str, genome.seqs[chromIndex],  
-														genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex); 
+																							 genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex, 0); 
 					alignments.back().SegAlignment.push_back(alignment);
 					vector<int> scoreMat;
 					vector<Arrow> pathMat;
@@ -2002,7 +2055,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	//AlignmentsOrder alignmentsOrder(&alignments);
 	SimpleMapQV(alignmentsOrder, read);
 
-
+	timing.Tick("Local-SDP");
 	if (opts.dotPlot) {
 			ofstream baseDots("alignment.dots");
 			for (int a=0; a < (int) alignmentsOrder.size(); a++){
@@ -2037,15 +2090,19 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	for (int a=0; a < (int) alignmentsOrder.size(); a++){
 
 		for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
-
-			if (opts.printFormat == 'b') {
+			alignmentsOrder[a].SegAlignment[s]->order=s;
+			
+			if (opts.printFormat == "b") {
 				alignmentsOrder[a].SegAlignment[s]->PrintBed(*output);
 			}
-			else if (opts.printFormat == 's') {
-				alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts, s);
+			else if (opts.printFormat == "s") {
+				alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts);
 			}
-			else if (opts.printFormat == 'p') {
+			else if (opts.printFormat == "a") {
 				alignmentsOrder[a].SegAlignment[s]->PrintPairwise(*output);
+			}
+			else if (opts.printFormat == "p" or opts.printFormat == "pc") {
+				alignmentsOrder[a].SegAlignment[s]->PrintPAF(*output, opts.printFormat=="pc");
 			}
 		}
 	}

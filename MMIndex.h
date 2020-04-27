@@ -236,7 +236,7 @@ class LocalIndex {
 		gzFile f = gzopen(genome.c_str(), "r");
 		kseq_t *ks = kseq_init(f);
 		while (kseq_read(ks) >= 0) { 
-			cerr << "Storing for "<< ks->name.s << endl;
+			//			cerr << "Storing for "<< ks->name.s << endl;
 			IndexSeq(ks->seq.s, ks->seq.l);
 		}
 	}
@@ -289,7 +289,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 
 	while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
 		int prevMinCount = minimizers.size();
-		cerr << "Storing for "<< ks->name.s << " " << prevMinCount << " " << offset << endl;
+		//		cerr << "Storing for "<< ks->name.s << " " << prevMinCount << " " << offset << endl;
 		StoreMinimizers<GenomeTuple, Tuple>(ks->seq.s, ks->seq.l, opts.globalK, opts.globalW, minimizers);
 		
 		for (GenomePos i=prevMinCount; i< minimizers.size(); i++) {

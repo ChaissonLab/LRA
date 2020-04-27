@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 
 #include <thread>
 #include <string>
@@ -54,7 +55,7 @@ void HelpMap() {
 			 << "   -CLR (flag) Align CLR reads. " << endl
 			 << "   -NANO (flag) Align Nanopore reads. " << endl
 			 << "   -CONTIG (flag) Align large contigs." << endl
-			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' pair" << endl
+			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' PAF, 'pc' PAF with cigar, 'a' pairwise alignment." << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
      		 << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
 			 << "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
@@ -80,6 +81,8 @@ void HelpMap() {
 			 << "Aligning Nanopore reads:  lra align -NANO -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl;
 
 }
+
+
 		
 class MapInfo {
 public:
@@ -97,6 +100,7 @@ public:
 	pthread_mutex_t *semaphore;
 	int *numAligned;
 	int *numRead;
+	Timing timing;
 };
 
 void MapReads(MapInfo *mapInfo) {
@@ -111,7 +115,7 @@ void MapReads(MapInfo *mapInfo) {
 		}
 		else {
 			for (int i = 0; i< reads.size(); i++) {
-				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm, *mapInfo->glIndex, *mapInfo->opts, &strm, &svsigstrm, mapInfo->semaphore);
+				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm, *mapInfo->glIndex, *mapInfo->opts, &strm, &svsigstrm, mapInfo->timing, mapInfo->semaphore);
 				reads[i].Clear();
 			}
 			reads.clear();
@@ -210,7 +214,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.hardClip=true;
 		}
 		else if (ArgIs(argv[argi], "-p")) {			
-			opts.printFormat = GetArgv(argv, argc, argi)[0];
+			opts.printFormat = GetArgv(argv, argc, argi);
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--maxDiag")) {
@@ -243,7 +247,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "-S")) {
 			opts.SparseDP = true;
-		}		
+		}
+		else if (ArgIs(argv[argi], "--timing")) {
+			opts.timing=GetArgv(argv, argc, argi);
+			++argi;
+		}			
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.HighlyAccurate = true;
 			opts.maxDiag=500;
@@ -372,7 +380,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		outSVsig = &outsvfile;
 	}
 
-	if (opts.printFormat == 's') {
+	if (opts.printFormat == "s") {
 		stringstream cl;
 		cl << "lra align";
 		for (int i=0; i < argc; i++) {
@@ -416,11 +424,18 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		for (int procIndex = 0; procIndex < opts.nproc; procIndex++) {
 			pthread_join(threads[procIndex], NULL);
 		}
-
+		
+		for (int procIndex = 1; procIndex < opts.nproc; procIndex++) {
+			mapInfo[0].timing.Add(mapInfo[procIndex].timing);
+		}
+		if (opts.timing != "") {
+			mapInfo[0].timing.Summarize(opts.timing);
+		}
 	}
 	else {
-		while (reader.GetNext(read)) {
-			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr, outSVsig);
+		Timing timing;
+		while (reader.GetNext(read)) {			
+			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr, outSVsig, timing);
 		}
 	}
 	outfile.close();

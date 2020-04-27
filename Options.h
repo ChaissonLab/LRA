@@ -25,7 +25,7 @@ public:
 	int minRefinedClusterSize;
 	bool viewPairwise;
 	bool hardClip;
-	char printFormat;
+	string printFormat;
 	//int bestn;
 	bool storeAll;
 	int nproc;
@@ -64,7 +64,7 @@ public:
 	int NumOfminimizersPerWindow;
 	bool Printsvsig;
 	int svsigLen;
-	
+	string timing;
 	Options() {
 		localMatch=4;
 		localMismatch=-3;
@@ -94,7 +94,7 @@ public:
 		mergeGapped=false;
 		viewPairwise=false;
 		hardClip=false;
-		printFormat='b';
+		printFormat="p";
 		storeAll=false;
 		nproc=1;
 		outfile="";
@@ -128,6 +128,7 @@ public:
 		NumOfminimizersPerWindow = 5;
 		Printsvsig=false;
 		svsigLen = 25;
+		timing="";
 	}
 };
 #endif

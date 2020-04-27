@@ -35,18 +35,21 @@ class Alignment {
 	bool prepared;
 	char *read;
 	char *forward;
+	char *passthrough;
 	int readLen;
 	int refLen;
 	GenomePos genomeLen;
 	string readName;
 	char *genome;
 	int strand;
+	int order;
  	bool ISsecondary; // ISsecondary == 1 means this is a secondary chain. Otherwise it's a primary chain
  	bool Supplymentary; // Supplymentary == 1 means this is a Supplymentary alignment;
  	//int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
  	//vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains	
  	bool split;
  	float value;
+
 	void Clear() {
 		queryString=alignString=refString="";
 		blocks.clear();
@@ -76,10 +79,13 @@ class Alignment {
 		Supplymentary=0;
 		split=0;
 		value=0;
+		order=0;
+		// Will eventually contain quality value strings.
+		passthrough=NULL;
 	}
  	Alignment(char *_read, char *_forward, 
 					 int _rl, string _rn, int _str, 
-					 char *_genome, GenomePos _gl, string &_chrom, int _ci) : Alignment() { 
+						char *_genome, GenomePos _gl, string &_chrom, int _ci, long _cl) : Alignment() { 
 		read=_read; 
 		forward=_forward;
 		readLen = _rl; 
@@ -89,6 +95,7 @@ class Alignment {
 		genomeLen = _gl;
 		chrom=_chrom;
 		chromIndex=_ci;
+
 	}
 
 	int GetQStart() const {
@@ -457,7 +464,30 @@ class Alignment {
 				 << nm << "\t" << nblocks << endl;
 	}
 
-	void PrintSAM(ostream &out, Options &opts, int &AO, char *passthrough=NULL) {
+	void PrintPAF(ostream &out, bool printCigar=false) {
+		char strandChar = '+';
+		if (strand == 1) {
+			strandChar = '-';
+		}
+
+		out << readName << "\t" << queryString.size() << "\t" << qStart << "\t" << qEnd << "\t" 
+				<< strandChar << "\t" << chrom << "\t" << genomeLen << "\t" << tStart << "\t" << tEnd 
+				<< "\t" << nm+nmm+nins+ndel << "\t" << (int)mapqv << "\t" << "AO:i:" << order;
+		if (printCigar) {
+			out << "\tCG:z:";
+			char clipOp = 'S';
+			if (preClip > 0) {
+				out << preClip << clipOp;
+			}
+			out << cigar;
+			if (sufClip > 0) {
+				out << sufClip << clipOp;
+			}
+
+		}
+		out << endl;
+	}
+	void PrintSAM(ostream &out, Options &opts, char *passthrough=NULL) {
 		stringstream samStrm;
 		samStrm << readName << "\t";
 		assert(prepared);
@@ -501,7 +531,7 @@ class Alignment {
 			samStrm << "\t";
 			samStrm << "*";
 			samStrm << "\t";
-			samStrm << "AO:i:" << AO;
+			samStrm << "AO:i:" << order;
 		}
 		out << samStrm.str();
 		if (passthrough != NULL ) {
@@ -532,6 +562,7 @@ public:
 		nmm = 0;
 		ISsecondary = 0;
 		value = 0;
+
 	};
 	~SegAlignmentGroup () {};
 
