@@ -468,8 +468,8 @@ void HelpStoreGlobal() {
 			 << "   -NANO (flag) Index for aligning Nanopore reads" << endl
 			 << "   -CONTIG (flag) Index for aligning large contigs" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
-			 << "   -F (int) Maximum minimizer frequency. (default: 60 for CLR and NANO reads; 50 for CCS reads)" << endl
-			 << "   -N (int) Maximum minimizers allowed in per 1000bp window. (default: 5 for CLR and NANO reads; 4 for CCS reads)" << endl
+			 << "   -f (int) Maximum minimizer frequency. (default: 60 for CLR and NANO reads; 50 for CCS reads)" << endl
+			 << "   -n (int) Maximum minimizers allowed in per 100bp window. (default: 5 for CLR and NANO reads; 4 for CCS reads)" << endl
 			 << "   -K (int) Word size" << endl
 			 << "   -h Print help." << endl;	
 	cout << "Examples: " << endl
@@ -486,8 +486,7 @@ void HelpStoreLocal() {
 			 << "   -h Print help." << endl;
 }
 
-void RunStoreLocal(int argc, const char* argv[], 
-									 LocalIndex &glIndex, Options &opts) {
+void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &opts) {
 	int argi = 0;
 	string genome;
 	string indexFile="";
@@ -498,6 +497,7 @@ void RunStoreLocal(int argc, const char* argv[],
 			HelpStoreLocal();
 			exit(1);
 		}
+		/*
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.globalMaxFreq = 50;
 			opts.NumOfminimizersPerWindow = 4;			
@@ -514,6 +514,7 @@ void RunStoreLocal(int argc, const char* argv[],
 			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;			
 		}
+		*/
 		else if (ArgIs(argv[argi], "-k")) {
 			opts.localK=atoi(argv[++argi]);
 			glIndex.k=opts.localK;
@@ -526,7 +527,8 @@ void RunStoreLocal(int argc, const char* argv[],
 			opts.localMaxFreq=atoi(argv[++argi]);
 			glIndex.maxFreq=opts.localMaxFreq;
 		}
-		else if (ArgIs(argv[argi], "-K") or ArgIs(argv[argi], "-W") or ArgIs(argv[argi], "-F")) {
+		else if (ArgIs(argv[argi], "-K") or ArgIs(argv[argi], "-W") or ArgIs(argv[argi], "-F")
+				 or ArgIs(argv[argi], "-f") or ArgIs(argv[argi], "-n")) {
 			argi+=2;
 			continue;
 		}
@@ -563,10 +565,10 @@ void RunStoreGlobal(int argc, const char* argv[],
 			++argi;
 			opts.globalW = atoi(argv[argi]);
 		}
-		else if (ArgIs(argv[argi], "-F")) {
+		else if (ArgIs(argv[argi], "-K")) {
 			++argi;
-			opts.globalMaxFreq = atoi(argv[argi]);
-		}		
+			opts.globalW = atoi(argv[argi]);
+		}
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.globalMaxFreq = 50;
 			opts.NumOfminimizersPerWindow = 4;			
@@ -583,6 +585,14 @@ void RunStoreGlobal(int argc, const char* argv[],
 			opts.globalMaxFreq = 50;
 			opts.NumOfminimizersPerWindow = 4;			
 		}
+		else if (ArgIs(argv[argi], "-f")) {
+			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}	
+		else if (ArgIs(argv[argi], "-n")) {
+			opts.NumOfminimizersPerWindow=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}			
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;
 		}
@@ -598,11 +608,12 @@ void RunStoreGlobal(int argc, const char* argv[],
 			++argi;
 			printIndex = true;
 		}
-		else if (ArgIs(argv[argi], "-K")) {
+		else if (ArgIs(argv[argi], "-Kglo")) {
 			++argi;
 			opts.globalK=atoi(argv[argi]);
 		}		
-		else if (ArgIs(argv[argi], "-k") or ArgIs(argv[argi], "-w") or ArgIs(argv[argi], "-f")) {
+		//else if (ArgIs(argv[argi], "-k") or ArgIs(argv[argi], "-w") or ArgIs(argv[argi], "-f")) {
+		else if (ArgIs(argv[argi], "-k") or ArgIs(argv[argi], "-w")) {
 			argi+=2;
 			continue;
 		}

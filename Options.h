@@ -81,7 +81,7 @@ public:
 		globalMaxFreq=50;
 		localMaxFreq=30;
 		maxDiag=500; // We want maxDiag to be a small number  (used to be 500) //// For CCS, need to be smaller!!! //// lots of unmapped reads due to 500;
-		cleanMaxDiag=100; // used to be 50  
+		cleanMaxDiag=100; 
 		minDiagCluster=10; 	// used to be 20
 							// This parameter is used in CleanOffDiagonal function; It's better not to set it to a single value. 
 							// This parameter is used in another CleanOFFDiagonal function
@@ -117,7 +117,7 @@ public:
    		//minRemoveSpuriousAnchorsLength=100;
      	maxRemoveSpuriousAnchorsDist=500;
    		minRemoveSpuriousAnchorsNum=10;
-   		NumAln = 3;
+   		NumAln = 6;//3
    		BtnSubClusterswindow = 800;
 		binLength = 20000;
 		minBinNum = 3;

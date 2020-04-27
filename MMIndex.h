@@ -321,7 +321,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		while (ne < minimizers.size() && minimizers[ne].t == minimizers[n].t) {ne++;}
 		if (ne - n > RANGE) { // opts.minimizerFreq*rz is the rough threshold
 			for (uint32_t i = n; i < ne; i++) {
-				//Freq[i] = ne - n;
+				Freq[i] = ne - n;
 				Remove[i] = 1;
 				//++removed;
 			}
@@ -347,7 +347,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	// Sort unremoved minimizers by frequency 
 	// Use count sort
 	//
-	int winsize = 100;
+	int winsize = 16;
 	uint32_t sz = header.pos.back()/winsize;
 	if (header.pos.back()/winsize % winsize > 0) sz += 1;
 	vector<uint32_t> Sortindex(unremoved, 0);
@@ -357,15 +357,18 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 
 	for (uint32_t s = 0; s < Sortindex.size(); s++) {
 		uint32_t id = minimizers[Sortindex[s]].pos/winsize;
-		if (winCount[id] > 0) {
+		if (winCount[id] > 0 and minimizers[Sortindex[s]].pos<id*winsize+10) { // force the minimizer to fall into the first 10bp of the window
 			winCount[id] -= 1;
 		}
+		//if (winCount[id] > 0) {
+		//	winCount[id] -= 1;
+		//}
 		else {
 			Remove[Sortindex[s]] = 1;
 		}
 	}
 
-/*
+
 	// TODO(Jingwen) Print out all the minimizer and delete this later
 	if (opts.dotPlot) {
 		stringstream outNameStrm;
@@ -380,12 +383,12 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		}
 		baseDots.close();
 	}
- */
-
+ 
+/*
 	// TODO(Jingwen) Print out all the minimizer and delete this later
 	if (opts.dotPlot) {
 		stringstream outNameStrm;
-		outNameStrm << "picked.unique.minimizers.txt";
+		outNameStrm << "picked.minimizers.txt";
 		ofstream baseDots(outNameStrm.str().c_str());
 		for (int m=0; m < minimizers.size(); m++) {
 			if (Remove[m] == 0) {
@@ -398,12 +401,13 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		}
 		baseDots.close();
 	}
- 
+ */
+
 	//
 	// Remove too frequent minimizers;
 	//
 	cerr << "Removing too frequent minimizers" << endl;
-	RemoveFrequent (minimizers, Remove);
+	RemoveFrequent (minimizers, Remove); 
 	cerr << "There are " << minimizers.size() << " minimizers left" << endl;
 
 	//RemoveFrequent(minimizers, opts.globalMaxFreq);
