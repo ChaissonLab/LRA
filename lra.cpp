@@ -436,6 +436,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		Timing timing;
 		while (reader.GetNext(read)) {			
 			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr, outSVsig, timing);
+			if (opts.timing != "") {
+				timing.Summarize(opts.timing);
+			}
 		}
 	}
 	outfile.close();
