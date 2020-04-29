@@ -1114,6 +1114,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		//		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
 		StoreFineClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, forwardStrand);
 	}
+	for (int c = 0; c < clusters.size(); c++) { 
+		CartesianSort(forMatches, clusters[c].start, clusters[c].end);
+	}
 
 
 	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize());
@@ -1124,11 +1127,15 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	vector<Cluster> revroughClusters;
 	int reverseStrand=1;
 	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), true, false, reverseStrand);
-
+  int nForwardClusters = clusters.size();
 	for (int c = 0; c < revroughClusters.size(); c++) {
 		//		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
 		//StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
 		StoreFineClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, reverseStrand);
+	}
+	
+	for (int c = nForwardClusters; c < clusters.size(); c++) { 
+		CartesianSort(revMatches, clusters[c].start, clusters[c].end);
 	}
 
 	if (opts.dotPlot) {
