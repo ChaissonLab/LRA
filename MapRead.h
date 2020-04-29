@@ -27,6 +27,8 @@
 #include <sstream>
 #include <thread>
 #include <thread>
+#include <climits>
+
 using namespace std;
 
 class Timing {
@@ -1109,7 +1111,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	StoreDiagonalClusters(forMatches, roughclusters, opts, 0, forMatches.size(), true, false, forwardStrand); // rough == true means only storing "start and end" in every clusters[i]
 	for (int c = 0; c < roughclusters.size(); c++) {
 		CartesianSort(forMatches, roughclusters[c].start, roughclusters[c].end);
-		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
+		//		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
+		StoreFineClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, forwardStrand);
 	}
 
 
@@ -1123,8 +1126,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), true, false, reverseStrand);
 
 	for (int c = 0; c < revroughClusters.size(); c++) {
-		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
-		StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
+		//		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
+		//StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
+		StoreFineClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, reverseStrand);
 	}
 
 	if (opts.dotPlot) {

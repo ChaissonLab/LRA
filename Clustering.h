@@ -2,6 +2,7 @@
 #define CLUSTERING_H_
 #include "Options.h"
 #include <vector>
+#include <climits>
 
 template<typename Tup>
 int64_t DiagonalDifference(Tup &a, Tup &b, int strand=0) {
@@ -492,7 +493,96 @@ void PrintDiagonal(vector<pair<Tup, Tup> > &matches, int strand=0) {
 		cout << matches[m-1].first.pos << "\t" << matches[m].first.pos << "\t" << matches[m-1].second.pos << "\t" << matches[m].second.pos << "\t" << d << endl;
 	}
 }
-		
+ 
+template<typename Tup>
+long GetDiag(pair<Tup, Tup> &match) {
+	return (long)match.first.pos - (long) match.second.pos;
+}
+
+template<typename Tup>
+void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, int strand=0) {
+	if (e==s) {
+		return;
+	}
+	long minDiag=GetDiag(matches[s]), maxDiag=GetDiag(matches[s]);
+	for (int i=s+1; i < e; i++) {
+		long diag=GetDiag(matches[i]);
+		//		cout << "i " << i << " diag\t" << diag << endl;
+		if (diag < minDiag) { minDiag = diag;}
+		if (diag > maxDiag) { maxDiag = diag;}
+	}
+	int binSize=50;
+	long span=maxDiag-minDiag;
+	vector<int> bins(span/binSize + 1,0);
+	for (int i=s; i < e; i++) {
+		long diag=GetDiag(matches[i]);
+		long index=(diag - minDiag) / binSize;
+		bins[index]+=1;
+	}
+	for (int i=0; i < bins.size(); i++) {
+		if (bins[i] < opts.minClusterSize) {
+			bins[i] = 0;
+		}
+	}
+	// 
+	// Greedily assign clusters.
+	//
+	vector<int> diagStart, diagEnd, diagSize;
+	bool foundCluster = true;
+
+	while (foundCluster == true) {
+		int maxDiagSize=0;
+		int maxDiag=0;
+		bool clusterStarted = false;
+		for (int i=0; i < bins.size(); i++) {
+			if ( bins[i] > maxDiagSize and bins[i] > opts.minClusterSize) { 
+				maxDiagSize=bins[i];
+				maxDiag =i;
+			}
+		}
+		if ( maxDiagSize  == 0) {
+			break;
+		}
+		else {
+			int j=maxDiag;
+			while (j > 0 and maxDiag - j < 3 and bins[j-1] > 0) { j--;}
+			int k=maxDiag+1;
+			while (k < bins.size() and k-maxDiag < 3 and bins[k] > 0) { k++;}			
+			int totalSize=0;
+			for (int l=j; l < k; l++) {
+				totalSize+=bins[l];
+				bins[l] = 0;
+			}
+			diagSize.push_back(totalSize);
+			diagStart.push_back(j);
+			diagEnd.push_back(k+1);
+		}
+	}
+	
+	int n=diagStart.size();
+	vector<GenomePos> qStart(n, INT_MAX), qEnd(n,0), tStart(n, INT_MAX), tEnd(n,0);
+	vector<int> cStart(n,INT_MAX), cEnd(n,0);
+	for (int i=s; i < e; i++) {
+		long diagBin=(GetDiag(matches[i]) -minDiag) / binSize;
+		cout << "i: " << i << "\td " << GetDiag(matches[i]) << "\tdb " << diagBin << endl;
+		for (int c=0; c < diagStart.size(); c++) {
+			if (diagBin >= diagStart[c] and diagBin < diagEnd[c] ) {
+				qStart[c] = min(qStart[c], matches[i].first.pos);
+				qEnd[c]   = max(qEnd[c], matches[i].first.pos + opts.globalK);
+				tStart[c] = min(tStart[c], matches[i].second.pos);
+				tEnd[c]   = max(tEnd[c], matches[i].second.pos + opts.globalK);
+				cStart[c] = min(cStart[c], i);
+				cEnd[c] = max(cEnd[c],i);
+				break;
+			}
+			
+		}
+	}
+	for (int c=0; c < diagStart.size(); c++) {
+		clusters.push_back(Cluster(cStart[c], cEnd[c], qStart[c], qEnd[c], tStart[c], tEnd[c], strand, 
+															 matches.begin() + cStart[c], matches.begin()+cEnd[c]));
+	}
+}
 
 template<typename Tup>
 void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
@@ -522,9 +612,10 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 			qEnd   = max(qEnd, matches[ce].first.pos + opts.globalK);
 			tStart = min(tStart, matches[ce].second.pos);
 			tEnd   = max(tEnd, matches[ce].second.pos + opts.globalK);
+			//			cout << cs << "\t" << ce << "\t" << qStart << "\t" << qEnd << "\t" << tStart << "\t" << tEnd << endl;
 			ce++;
 		}	
-
+		
 		if (ce - cs >= opts.minClusterSize and qEnd - qStart >= opts.minClusterLength and tEnd - tStart >= opts.minClusterLength) {
 			if (rough == true) {
 				clusters.push_back(Cluster(cs, ce));
