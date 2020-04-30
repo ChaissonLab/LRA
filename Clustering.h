@@ -567,8 +567,8 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	}
 	
 	int n=diagStart.size();
-	vector<GenomePos> qStart(n, INT_MAX), qEnd(n,0), tStart(n, INT_MAX), tEnd(n,0);
-	vector<int> cStart(n,INT_MAX), cEnd(n,0);
+	vector<GenomePos> qStart(n, UINT_MAX), qEnd(n,0), tStart(n, UINT_MAX), tEnd(n,0);
+	vector<int> cStart(n, UINT_MAX), cEnd(n,0);
 	for (int i=s; i < e; i++) {
 		long diagBin=(GetDiag(matches[i], strand) -minDiag) / binSize;
 

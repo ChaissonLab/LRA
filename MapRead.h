@@ -1110,12 +1110,14 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	// Then break the clusters[i] into two if any two anchors are father than maxGap. 
 	StoreDiagonalClusters(forMatches, roughclusters, opts, 0, forMatches.size(), true, false, forwardStrand); // rough == true means only storing "start and end" in every clusters[i]
 	for (int c = 0; c < roughclusters.size(); c++) {
-		CartesianSort(forMatches, roughclusters[c].start, roughclusters[c].end);
+		//		CartesianSort(forMatches, roughclusters[c].start, roughclusters[c].end);
 		//		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
 		StoreFineClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, forwardStrand);
 	}
 
-
+	for (int c = 0; c < clusters.size(); c++) {
+		cout << c << "\t" << clusters[c].end - clusters[c].start << "\t" << clusters[c].start << "\t" << clusters[c].end << "\t" << clusters[c].qStart << "\t" << clusters[c].qEnd << endl;
+	}
 	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize());
 	minDiagCluster = 0; // This parameter will be set inside function CleanOffDiagonal, according to anchors density
 	CleanOffDiagonal(revMatches, opts, minDiagCluster, 1);
