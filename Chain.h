@@ -12,7 +12,9 @@ public:
 	vector<bool> link;
 	int direction;
 	GenomePos qStart, qEnd, tStart, tEnd;
-	int main; // If one chain is aligned to several chromosomes, then we need to split this chain. main refers to the index of the main alignment in vector chain
+	int main; // If one chain is aligned to several chromosomes, 
+			 // then we need to split this chain. main refers to the index of the main alignment in vector chain
+	float value;
 	CHain () {
 		qStart = 0;
 		qEnd = 0;
@@ -20,13 +22,14 @@ public:
 		tEnd = 0;
 		direction = 0;
 		main = -1;
+		value = 0;
 	};
 	~CHain() {};
 	CHain (vector<unsigned int> &onechain) {
 		ch = onechain;
 		main = -1;
 	}	
-	CHain (GenomePos &qS, GenomePos &qE, GenomePos &tS, GenomePos &tE, vector<unsigned int> &onechain, vector<bool> &lk) {
+	CHain (GenomePos &qS, GenomePos &qE, GenomePos &tS, GenomePos &tE, vector<unsigned int> &onechain, vector<bool> &lk, float &val) {
 		qStart = qS;
 		qEnd = qE;
 		tStart = tS;
@@ -34,18 +37,8 @@ public:
 		ch = onechain;
 		main = -1;
 		link = lk;
-		//value = val;
+		value = val;
 	}
-	/*
-	CHain (GenomePos &qS, GenomePos &qE, GenomePos &tS, GenomePos &tE, vector<unsigned int> &onechain, int idx) {
-		qStart = qS;
-		qEnd = qE;
-		tStart = tS;
-		tEnd = tE;
-		ch = onechain;
-		main = idx;
-	}
-	*/
 	int OverlapsOnQ (GenomePos &qS, GenomePos &qE, float rate);
 	int OverlapsOnT (GenomePos &tS, GenomePos &tE, float rate);
 };
