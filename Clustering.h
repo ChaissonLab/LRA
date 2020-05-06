@@ -506,7 +506,8 @@ long GetDiag(pair<Tup, Tup> &match, int strand) {
 }
 
 template<typename Tup>
-void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, int strand=0) {
+void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
+						GenomePos readLength, int strand=0) {
 	if (e==s) {
 		return;
 	}
@@ -517,8 +518,27 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		if (diag < minDiag) { minDiag = diag;}
 		if (diag > maxDiag) { maxDiag = diag;}
 	}
-	int binSize=50;
+	int binSize=300;//50
 	long span=maxDiag-minDiag;
+	int unit_readlength=3000; 
+	int readlength_impact=readLength / unit_readlength;
+	if (span>1200*readlength_impact and e-s>400*readlength_impact) { // this rough cluster contains a tandem repeat
+		binSize=300*readlength_impact;
+		opts.minClusterSize=30*readlength_impact;
+	}
+	// else {
+	// 	binSize=200*readlength_impact;
+	// 	opts.minClusterSize=5*readlength_impact;		
+	// }
+	else if (span>600*readlength_impact and e-s>200*readlength_impact) {
+		binSize=150*readlength_impact;
+		opts.minClusterSize=15*readlength_impact;
+	}
+	else {
+		binSize=50*readlength_impact;
+		opts.minClusterSize=5*readlength_impact;
+	}
+	//cerr << "span: " << span << " binSize: " << binSize << " minClusterSize: " << opts.minClusterSize << endl;
 	vector<int> bins(span/binSize + 1,0);
 	for (int i=s; i < e; i++) {
 		long diag=GetDiag(matches[i], strand);
@@ -526,7 +546,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		bins[index]+=1;
 	}
 	for (int i=0; i < bins.size(); i++) {
-		if (bins[i] < opts.minClusterSize) {
+		if (bins[i] < opts.minClusterSize) { // TODO:Jingwen: minClusterSize is too small?
 			bins[i] = 0;
 		}
 	}
@@ -551,9 +571,9 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		}
 		else {
 			int j=maxDiag;
-			while (j > 0 and maxDiag - j < 3 and bins[j-1] > opts.minClusterSize) { j--; }
+			while (j > 0 and maxDiag - j < 3 and bins[j-1] > opts.minClusterSize) { j--; } //3;
 			int k=maxDiag;
-			while (k < bins.size() and k-maxDiag < 3 and bins[k] > 0) { k++;}			
+			while (k < bins.size() and k-maxDiag < 3 and bins[k] > 0) { k++;} //3;
 			int totalSize=0;
 			for (int l=j; l < k; l++) {
 				totalSize+=bins[l];
@@ -568,9 +588,9 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	
 	int n=diagStart.size();
 	vector<GenomePos> qStart(n, UINT_MAX), qEnd(n,0), tStart(n, UINT_MAX), tEnd(n,0);
-	vector<int> cStart(n, UINT_MAX), cEnd(n,0);
+	vector<int> cStart(n, e), cEnd(n,0);
 	for (int i=s; i < e; i++) {
-		long diagBin=(GetDiag(matches[i], strand) -minDiag) / binSize;
+		long diagBin=(GetDiag(matches[i], strand)-minDiag) / binSize;
 
 		for (int c=0; c < diagStart.size(); c++) {
 			if (diagBin >= diagStart[c] and diagBin < diagEnd[c] ) {
@@ -606,9 +626,9 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 	while (cs < e) {
 		ce = cs+1;
 		GenomePos qStart=matches[cs].first.pos, 
-			qEnd=matches[cs].first.pos + opts.globalK, 
-			tStart=matches[cs].second.pos, 
-			tEnd=matches[cs].second.pos + opts.globalK;
+				  qEnd=matches[cs].first.pos + opts.globalK, 
+			      tStart=matches[cs].second.pos, 
+			      tEnd=matches[cs].second.pos + opts.globalK;
 		int diff=0;
 
 		// (TODO)Jingwen: Delete (opts.maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < opts.maxGap) in the below
@@ -624,7 +644,7 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 		
 		if (ce - cs >= opts.minClusterSize and qEnd - qStart >= opts.minClusterLength and tEnd - tStart >= opts.minClusterLength) {
 			if (rough == true) {
-				clusters.push_back(Cluster(cs, ce));
+				clusters.push_back(Cluster(cs,ce, qStart, qEnd, tStart, tEnd, strand));
 			}
 			else {
 				if (lite == false ) {
