@@ -354,13 +354,14 @@ class Alignment {
 			if (i > p) {
 				cigarstrm << i-p << 'X';
 				nmm+=i-p;
-				value-=3*(i-p);
+				value-=i-p;
 				continue;
 			}
 			while (i < query.size() and query[i] == '-' and target[i] != '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'D';
-				ndel+=i-p;
+				//ndel+=i-p;
+				if (i-p<=10) {ndel++;}
 				if (i-p < 501) {value += -opts.coefficient*log(i-p) - 1;}
 				else if (i-p <= 10001){
 					int a = (int)floor((i-p-501)/5);
@@ -372,7 +373,8 @@ class Alignment {
 			while (i < query.size() and query[i] != '-' and target[i] == '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'I';
-				nins+=i-p;
+				//nins+=i-p;
+				if (i-p<=10) nins++;
 				if (i-p < 501) {value += -opts.coefficient*log(i-p) - 1;}
 				else if (i-p <= 10001){
 					int a = (int)floor((i-p-501)/5);
@@ -461,7 +463,7 @@ class Alignment {
 				 << tEnd << "\t"
 				 << (int) mapqv << "\t" 
 				 << readName << "\t" << readLen << "\t" << qStart << "\t" << qEnd << "\t"
-				 << nm << "\t" << nmm << "\t" << nblocks << "\t" << flag << endl;
+				 << nm << "\t" << nmm << "\t" << nins << "\t" << ndel << "\t" << value  << "\t" << flag << endl;
 	}
 
 	void PrintPAF(ostream &out, bool printCigar=false) {
@@ -551,6 +553,8 @@ public:
 	unsigned char mapqv;
 	int nm;
 	int nmm;
+	int ndel;
+	int nins;
 	bool ISsecondary;
 	float value;
 	SegAlignmentGroup () {
@@ -560,6 +564,8 @@ public:
 		tEnd = 0;
 		nm = 0;
 		nmm = 0;
+		ndel = 0;
+		nins = 0;
 		ISsecondary = 0;
 		value = 0;
 
@@ -575,6 +581,8 @@ public:
 			tEnd   = max(tEnd, SegAlignment[s]->tEnd);
 			nm += SegAlignment[s]->nm;
 			nmm += SegAlignment[s]->nmm;
+			ndel += SegAlignment[s]->ndel;
+			nins += SegAlignment[s]->nins;
 			value += SegAlignment[s]->value;
 		}
 	}
