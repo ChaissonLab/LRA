@@ -1521,10 +1521,13 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 
 	std::vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-	float value_thres = 0.70*fragments_valueOrder[0];
+	float value_thres = max(opts.alnthres*fragments_valueOrder[0], fragments_valueOrder[0]-100*opts.globalK);//30 for 50kb
+	//float value_thres = opts.alnthres*fragments_valueOrder[0];
+	//cerr << "value_thres: " << value_thres << endl;
+	//cerr << "fragments_valueOrder[0]: " << fragments_valueOrder[0] << " fragments_valueOrder[1]: " << 
+	//			fragments_valueOrder[1] << endl;
 	unsigned int fv = 0;
 	while (fv < fragments_valueOrder.size() and fragments_valueOrder[fv] >= value_thres) {
-	//for (unsigned int fv = 0; fv < fragments_valueOrder.size(); fv++) {
 
 		unsigned int d = fragments_valueOrder.index[fv];
 		vector<unsigned int> onechain;
@@ -1545,7 +1548,6 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 				qStart = min(FragInput[onechain[c]].qStart, qStart);
 				tStart = min(FragInput[onechain[c]].tStart, tStart);
 			}
-
 			//
 			// If this chain overlap with read greater than 10%, insert it to chains
 			//
@@ -1556,7 +1558,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 				// If onechain overlaps with all the primary chains less than 50% ---> onechain is another primary chain
 				//
 				if (Primary_chains.size() == 0) {
-					Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
+					Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv]));
 					Primary_chains.push_back(Pc);
 				} 
 				else {
@@ -1566,7 +1568,8 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 						if (Primary_chains[p].chains[0].OverlapsOnQ(qStart, qEnd, 0.5)) {
 							if (!Primary_chains[p].chains[0].OverlapsOnT(tStart, tEnd, 0.3)) {
 								if (Primary_chains[p].chains.size() < opts.NumAln) {
-									Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
+									Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, 
+																				link, fragments_valueOrder[fv]));
 									inserted = 1;								
 								}
 								break;
@@ -1580,7 +1583,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					}			
 					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 0) {		
 						if (Primary_chains.size() < opts.NumAln) {
-							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
+							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv]));
 							Primary_chains.push_back(Pc);
 						}	
 						else break;		
@@ -1886,8 +1889,9 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 
 	// Decide the rate;
 	//
-	float rate = 1;
-	if ((float)totalMatch / (float) read.length <= 0.1) rate = 3; 
+	float rate = 4;//2
+	//cerr << "totalMatch/read.length: " << (float)totalMatch / (float) read.length << " rate: " << rate << endl;
+	if ((float)totalMatch / (float) read.length <= 0.1) rate = 4; 
 
 	// get points from FragInput and store them in H1;
 	//
