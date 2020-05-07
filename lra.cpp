@@ -69,6 +69,7 @@ void HelpMap() {
 			 //<< "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
 			// << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
 			// << "	-T 	(flag)  Use log LookUpTable when gap length is larger than 501." << endl
+			 << "   -at  (float) a float in (0, 1), Threshold to decide secondary alignments based on chaining value." << endl
 		     << "   -t  n(int)   Use n threads (1)" << endl
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
@@ -260,6 +261,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.NumOfminimizersPerWindow = 4;	
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
+			opts.maxGapBtwnAnchors=1500;
 		}
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.HighlyAccurate = true;
@@ -269,6 +271,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.NumOfminimizersPerWindow = 4;	
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
+			opts.maxGapBtwnAnchors=1500;
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.HighlyAccurate = false;
@@ -278,6 +281,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.NumOfminimizersPerWindow = 5;
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50; 
+			opts.maxGapBtwnAnchors=1800;
 		}		
 		else if (ArgIs(argv[argi], "-NANO")) {
 			opts.HighlyAccurate = false;
@@ -285,6 +289,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.maxGap=2000;
 			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;
+			opts.maxGapBtwnAnchors=1800;
+		}
+		else if (ArgIs(argv[argi], "-at")) {
+			opts.alnthres=atoi(GetArgv(argv, argc, argi));
+			++argi;
 		}
 		else if (ArgIs(argv[argi], "-SV")) {
 			opts.Printsvsig=true;
