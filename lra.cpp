@@ -239,6 +239,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "--Al")) {
 			opts.NumAln=atoi(GetArgv(argv, argc, argi));
+			++argi;
 		}
 		else if (ArgIs(argv[argi], "-R")) {
 			opts.mergeClusters=true;

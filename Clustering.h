@@ -264,19 +264,19 @@ class Cluster : public ClusterCoordinates {
 	vector<int> matchesLengths; // store the length of each anchor 
 	bool refined; // refined == 0 means this Cluster has not been refined yet
 	bool refinespace; // refinespace == 0 means this Cluster has not been add anchors in the step of RefineBtwnSpace;
-	Cluster() {}
-  Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1;}
+	Cluster() { refined=0; coarse=-1;}
+ Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1; refined=0;}
 
-  Cluster(int s, int e, int st) : ClusterCoordinates(s,e,st) { coarse=-1;}
+ Cluster(int s, int e, int st) : ClusterCoordinates(s,e,st) { coarse=-1; refined=0;}
 
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
 					GenomePos ts, GenomePos te, 
-					int st) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=-1;} 
+					int st) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=-1; refined=0;} 
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
 					GenomePos ts, GenomePos te, 
-					int st, int cs) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=cs;} 
+					int st, int cs) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=cs; refined=0;} 
 	
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
@@ -498,10 +498,10 @@ void PrintDiagonal(vector<pair<Tup, Tup> > &matches, int strand=0) {
 template<typename Tup>
 long GetDiag(pair<Tup, Tup> &match, int strand) {
 	if (strand == 0) {
-		return (long)match.first.pos - (long) match.second.pos;
+		return (long) match.first.pos - (long) match.second.pos;
 	}
 	else {
-		return (long)match.first.pos + (long) match.second.pos;
+		return (long) match.first.pos + (long) match.second.pos;
 	}
 }
 
@@ -520,96 +520,251 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	}
 	int binSize=300;//50
 	long span=maxDiag-minDiag;
-	int unit_readlength=3000; 
-	int readlength_impact=readLength / unit_readlength;
-	if (span>1200*readlength_impact and e-s>400*readlength_impact) { // this rough cluster contains a tandem repeat
-		binSize=300*readlength_impact;
-		opts.minClusterSize=30*readlength_impact;
-	}
-	// else {
-	// 	binSize=200*readlength_impact;
-	// 	opts.minClusterSize=5*readlength_impact;		
-	// }
-	else if (span>600*readlength_impact and e-s>200*readlength_impact) {
-		binSize=150*readlength_impact;
-		opts.minClusterSize=15*readlength_impact;
-	}
-	else {
-		binSize=50*readlength_impact;
-		opts.minClusterSize=5*readlength_impact;
-	}
+
 	//cerr << "span: " << span << " binSize: " << binSize << " minClusterSize: " << opts.minClusterSize << endl;
 	vector<int> bins(span/binSize + 1,0);
 	for (int i=s; i < e; i++) {
-		long diag=GetDiag(matches[i], strand);
-		long index=(diag - minDiag) / binSize;
-		bins[index]+=1;
+		long diag  = GetDiag(matches[i], strand);
+		long index = (diag - minDiag) / binSize;
+		bins[index] += 1;
 	}
 	for (int i=0; i < bins.size(); i++) {
 		if (bins[i] < opts.minClusterSize) { // TODO:Jingwen: minClusterSize is too small?
 			bins[i] = 0;
 		}
 	}
-	// 
-	// Greedily assign clusters.
-	//
-	vector<int> diagStart, diagEnd, diagSize;
-	bool foundCluster = true;
-
-	while (foundCluster == true) {
-		int maxDiagSize=0;
-		int maxDiag=0;
-		bool clusterStarted = false;
-		for (int i=0; i < bins.size(); i++) {
-			if ( bins[i] > maxDiagSize and bins[i] > opts.minClusterSize) { 
-				maxDiagSize=bins[i];
-				maxDiag =i;
-			}
-		}
-		if ( maxDiagSize  == 0) {
-			break;
-		}
-		else {
-			int j=maxDiag;
-			while (j > 0 and maxDiag - j < 3 and bins[j-1] > opts.minClusterSize) { j--; } //3;
-			int k=maxDiag;
-			while (k < bins.size() and k-maxDiag < 3 and bins[k] > 0) { k++;} //3;
-			int totalSize=0;
-			for (int l=j; l < k; l++) {
-				totalSize+=bins[l];
-				bins[l] = 0;
-			}
-
-			diagSize.push_back(totalSize);
-			diagStart.push_back(j);
-			diagEnd.push_back(k);
-		}
+	/*
+	for (int i=0; i<bins.size(); i++) {
+		cout << "bin " << i << "\t" << bins[i] << endl;
 	}
-	
-	int n=diagStart.size();
-	vector<GenomePos> qStart(n, UINT_MAX), qEnd(n,0), tStart(n, UINT_MAX), tEnd(n,0);
-	vector<int> cStart(n, e), cEnd(n,0);
+	*/
+	vector<int> diagStart, diagEnd, diagSize;
+	map<int, int> diagToCluster;
+	long curDiagIndex=-1;
+	int curCluster=-1;
 	for (int i=s; i < e; i++) {
-		long diagBin=(GetDiag(matches[i], strand)-minDiag) / binSize;
+		long diag  = GetDiag(matches[i], strand);
+		long index = (diag - minDiag) / binSize;
 
-		for (int c=0; c < diagStart.size(); c++) {
-			if (diagBin >= diagStart[c] and diagBin < diagEnd[c] ) {
-				qStart[c] = min(qStart[c], matches[i].first.pos);
-				qEnd[c]   = max(qEnd[c], matches[i].first.pos + opts.globalK);
-				tStart[c] = min(tStart[c], matches[i].second.pos);
-				tEnd[c]   = max(tEnd[c], matches[i].second.pos + opts.globalK);
-				cStart[c] = min(cStart[c], i);
-				cEnd[c]   = max(cEnd[c],i);
-				break;
+		if ( bins[index] > 0 ) {
+
+			//
+			// Need to store this match. curClusterIndex points to the diagonal index
+			// where matches are being stored. 
+			//
+
+			if ( curDiagIndex != index) {
+				//
+				// The diagonal at index is not the one currently pointed to
+				// by curClusterIndex, need to find where to store matches.  
+				//
+				if (diagToCluster.find(index) != diagToCluster.end() ) {
+					//
+					// This diagonal points to a cluster, reset curClusterIndex
+					// to use this index to point to the current cluster.
+					//
+					curDiagIndex = index;
+					curCluster   = diagToCluster[index];
+				}
+				else {
+					//
+					// Need to find out which diagonal to point a cluster to.
+					//
+					if (curDiagIndex >=0 and abs(index - curDiagIndex) <= 3) {
+						assert(curCluster != -1);
+						diagToCluster[index] = curCluster;
+						curDiagIndex = index;
+					}
+					else {
+						//
+						// Too far off, need to start a new cluster.
+						//						cout << "Creating a new cluster because of diagonal drift " << index - curDiagIndex << endl;
+						diagToCluster[index] = clusters.size();
+						curDiagIndex = index;
+
+						if (curCluster > 0) {
+							int nMatch = clusters[curCluster].matches.size();
+							if (nMatch  > 0) {
+								clusters[curCluster].qEnd = clusters[curCluster].matches[nMatch-1].first.pos + opts.globalK;
+								clusters[curCluster].tEnd = clusters[curCluster].matches[nMatch-1].second.pos + opts.globalK;
+							}
+							else {
+								clusters[curCluster].tStart = 0;
+								clusters[curCluster].qStart = 0;
+							}
+						}
+						curCluster   = clusters.size();								
+						clusters.push_back(Cluster(0, 0, matches[i].first.pos, 
+																			 matches[i].first.pos + opts.globalK, 
+																			 matches[i].second.pos, 
+																			 matches[i].second.pos + opts.globalK, strand));
+					}
+				}
+			}
+			int clusterSize;
+			assert(curCluster != -1);
+			if (clusters.size() > 0 and 
+					(clusterSize=clusters[curCluster].matches.size()) > 0 
+					and GapDifference(clusters[curCluster].matches[clusterSize-1], matches[i]) > 1000) {
+				//
+				// This is not the first point on a diagonal, but it is too
+				// far away from the previous point. Split into a new cluster.
+				// 
+				
+				//
+				// First add an end to the current cluster.
+				//
+				if (curCluster > 0) {
+					assert(curCluster < clusters.size());
+					int nMatch = clusters[curCluster].matches.size();
+					if (nMatch  > 0) {
+						clusters[curCluster].qEnd = max(clusters[curCluster].qEnd, matches[nMatch-1].first.pos + opts.globalK);
+						clusters[curCluster].tEnd = max(clusters[curCluster].tEnd, matches[nMatch-1].second.pos + opts.globalK);
+						clusters[curCluster].qStart = min(clusters[curCluster].qStart, matches[nMatch-1].first.pos);
+						clusters[curCluster].tStart = min(clusters[curCluster].tStart, matches[nMatch-1].second.pos);
+
+						assert(clusters[curCluster].tEnd >= clusters[curCluster].tStart);
+						assert(clusters[curCluster].qEnd >= clusters[curCluster].qStart);
+					}
+					else {
+						clusters[curCluster].tStart = 0;
+						clusters[curCluster].qStart = 0;
+					}
+				}
+
+				//
+				// Next, there may be diagonals that point to that cluster. Remove them.
+				//
+				map<int,int>::iterator it, it2;
+				assert(diagToCluster.size() > 0);
+				it = diagToCluster.begin();
+				while (it != diagToCluster.end()) {
+					if (it->second == curCluster) {
+						it2=it;
+						++it2;
+						diagToCluster.erase(it);
+						it=it2;
+					}
+					else {
+						++it;
+					}
+				}
+
+				//
+				// Start the new cluster.
+				//
+				
+				diagToCluster[index] = clusters.size();
+				curDiagIndex = index;
+				curCluster   = clusters.size();
+				clusters.push_back(Cluster(0,0, matches[i].first.pos, matches[i].first.pos+opts.globalK, 
+																	 matches[i].second.pos, matches[i].second.pos + opts.globalK, strand));
 			}
 			
+					
+			clusters[curCluster].matches.push_back(matches[i]);
+			// Update endpoint of cluster.
+			/*
+			cout << curCluster << "\tbound\t"
+					 << clusters[curCluster].tEnd << "\t"
+					 << matches[i].first.pos << "\t"
+					 << clusters[curCluster].qEnd << "\t"
+					 << matches[i].second.pos << endl;*/
+			assert(curCluster < clusters.size());
+			clusters[curCluster].qEnd = max(clusters[curCluster].qEnd, matches[i].first.pos + opts.globalK);
+			clusters[curCluster].tEnd = max(clusters[curCluster].tEnd, matches[i].second.pos + opts.globalK);
+			clusters[curCluster].qStart = min(clusters[curCluster].qStart, matches[i].first.pos);
+			clusters[curCluster].tStart = min(clusters[curCluster].tStart, matches[i].second.pos);
+
+			assert(clusters[curCluster].tEnd >= clusters[curCluster].tStart);
+			assert(clusters[curCluster].qEnd >= clusters[curCluster].qStart);
 		}
 	}
-	for (int c=0; c < diagStart.size(); c++) {
-		clusters.push_back(Cluster(cStart[c], cEnd[c], qStart[c], qEnd[c], tStart[c], tEnd[c], strand, 
-															 matches.begin() + cStart[c], matches.begin()+cEnd[c]));
+	for (int c=0; c < clusters.size(); c++) {
+		assert(clusters[c].tStart >= 0);
+		assert(clusters[c].tEnd >= 0);
+		//		cout << "clust: " << c << "\t" << clusters[c].tStart << "\t"<< clusters[c].tEnd << "\t" << clusters[c].qStart << "\t" << clusters[c].qEnd << endl;
+
+	}
+	int cn=0;
+	for (int c=0; c < clusters.size(); c++) {
+		if (clusters[c].matches.size() >= opts.minClusterSize ) {
+			clusters[cn] = clusters[c];
+			cn++;
+		}
+	}
+	clusters.resize(cn);
+			
+			//
+			// Add this point to a cluster.
+
+	
+//	while ( foundCluster == true ) {
+//		int maxDiagSize=0;
+//		int maxDiag=0;
+//		bool clusterStarted = false;
+//		for ( int i=0; i < bins.size(); i++ ) {
+//			if ( bins[i] > maxDiagSize and bins[i] > opts.minClusterSize ) { 
+//				maxDiagSize = bins[i];
+//				maxDiag = i;
+//			}
+//		}
+//		if ( maxDiagSize  == 0 ) {
+//			break;
+//		}
+//		else {
+//			int j=maxDiag;
+//			while (j > 0 and maxDiag - j < 3 and bins[j-1] > opts.minClusterSize) { j--; } //3;
+//			int k=maxDiag;
+//			while (k < bins.size() and k-maxDiag < 3 and bins[k] > 0) { k++;} //3;
+//			int totalSize=0;
+//			for (int l=j; l < k; l++) {
+//				totalSize+=bins[l];
+//				bins[l] = 0;
+//			}
+//
+//			diagSize.push_back(totalSize);
+//			diagStart.push_back(j);
+//			diagEnd.push_back(k);
+//		}
+//	}
+//	
+}
+
+void SplitClustersWithGaps(vector<Cluster> &clusters, vector<Cluster> &split, Options &opts ) {
+	int curSplit=-1;
+
+	for (int c=0; c < clusters.size(); c++) {
+		split.push_back(Cluster());
+		curSplit++;
+		split[curSplit].tStart = clusters[c].tStart;
+		split[curSplit].qStart = clusters[c].qStart;
+
+		if (clusters[c].matches.size() == 0) {
+			continue;
+		}
+		split[curSplit].matches.push_back(clusters[c].matches[0]);
+		for (int m=1; m < clusters[c].matches.size(); m++) {
+			int gap=GapDifference(clusters[c].matches[m], clusters[c].matches[m-1]);
+
+			if (gap > 500) {
+				// s				cout << "GAP: " << gap << "\t" << m << "\t" << clusters[c].matches.size() << "\t" << clusters[c].matches[m].second.pos - clusters[c].matches[m-1].second.pos << "\t" << clusters[c].matches[m].first.pos - clusters[c].matches[m-1].first.pos << endl;
+				split[curSplit].qEnd = clusters[c].matches[m-1].first.pos + opts.globalK;
+				split[curSplit].tEnd = clusters[c].matches[m-1].second.pos + opts.globalK;
+
+				split.push_back(Cluster());
+				curSplit++;
+				split[curSplit].qStart = clusters[c].matches[m].first.pos;
+				split[curSplit].tStart = clusters[c].matches[m].second.pos;
+
+			}
+		}
+		int last=clusters[c].matches.size();
+		split[curSplit].qEnd = clusters[c].matches[last-1].first.pos + opts.globalK;
+		split[curSplit].tEnd = clusters[c].matches[last-1].second.pos + opts.globalK;
 	}
 }
+
 
 template<typename Tup>
 void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
