@@ -4,6 +4,7 @@
 #include <vector>
 #include <climits>
 
+
 template<typename Tup>
 int64_t DiagonalDifference(Tup &a, Tup &b, int strand=0) {
 	if (strand == 0) { // forMatches
@@ -508,6 +509,7 @@ long GetDiag(pair<Tup, Tup> &match, int strand) {
 template<typename Tup>
 void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
 						GenomePos readLength, int strand=0) {
+	int startClusterIndex=clusters.size();
 	if (e==s) {
 		return;
 	}
@@ -556,11 +558,11 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			if ( curDiagIndex != index) {
 				//
 				// The diagonal at index is not the one currently pointed to
-				// by curClusterIndex, need to find where to store matches.  
+				// by curDiagIndex, need to find where to store matches.  
 				//
 				if (diagToCluster.find(index) != diagToCluster.end() ) {
 					//
-					// This diagonal points to a cluster, reset curClusterIndex
+					// This diagonal points to a cluster, reset curDiagIndex
 					// to use this index to point to the current cluster.
 					//
 					curDiagIndex = index;
@@ -603,7 +605,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			}
 			int clusterSize;
 			assert(curCluster != -1);
-			if (clusters.size() > 0 and 
+			if (clusters.size() > startClusterIndex and 
 					(clusterSize=clusters[curCluster].matches.size()) > 0 
 					and GapDifference(clusters[curCluster].matches[clusterSize-1], matches[i]) > 1000) {
 				//
@@ -614,7 +616,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 				//
 				// First add an end to the current cluster.
 				//
-				if (curCluster > 0) {
+				if (curCluster > startClusterIndex) {
 					assert(curCluster < clusters.size());
 					int nMatch = clusters[curCluster].matches.size();
 					if (nMatch  > 0) {
@@ -633,36 +635,69 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 				}
 
 				//
-				// Next, there may be diagonals that point to that cluster. Remove them.
+				// This diagonal may point to a new cluster, so remove it.
 				//
-				map<int,int>::iterator it, it2;
-				assert(diagToCluster.size() > 0);
-				it = diagToCluster.begin();
-				while (it != diagToCluster.end()) {
-					if (it->second == curCluster) {
-						it2=it;
-						++it2;
-						diagToCluster.erase(it);
-						it=it2;
-					}
-					else {
-						++it;
-					}
-				}
+				diagToCluster.erase(index);
 
 				//
-				// Start the new cluster.
-				//
+				// Finally, it is possible that this point is actually
+				// somewhat close to another diagonal but because of drift in
+				// the alignment it moves down a bit. Try and find that.
+
+				long startDiagIndex=max(0L,index-3);
+				long endDiagIndex = min(index+3, (long) bins.size());
 				
-				diagToCluster[index] = clusters.size();
-				curDiagIndex = index;
-				curCluster   = clusters.size();
-				clusters.push_back(Cluster(0,0, matches[i].first.pos, matches[i].first.pos+opts.globalK, 
-																	 matches[i].second.pos, matches[i].second.pos + opts.globalK, strand));
+				int newDiagIndex=-1;
+				int big=999999;
+				int minDiagGap=big;
+				for (int di=startDiagIndex; di < endDiagIndex; di++) {
+					map<int,int>::iterator it;
+					it=diagToCluster.find(di);
+					if (it != diagToCluster.end()) {
+						//
+						// This diagonal has a chain, look to see if the gap from
+						// the end of that chain to this current index is within
+						// the correct bound.
+						int ms=clusters[it->second].matches.size();
+						if (ms > 0) {
+							int gapDiff;
+							if (matches[i].first.pos >= clusters[it->second].matches[ms-1].first.pos and
+									((strand == 0 and matches[i].second.pos >= clusters[it->second].matches[ms-1].second.pos) or
+									 (strand == 1 and matches[i].second.pos < clusters[it->second].matches[ms-1].second.pos)) and
+									(gapDiff = GapDifference(clusters[it->second].matches[ms-1], matches[i])) < 1000) {
+								if (gapDiff < minDiagGap) {
+									newDiagIndex = it->first;
+									minDiagGap = gapDiff;
+								}
+							}
+						}
+					}
+				}
+				if (newDiagIndex != -1) {
+					curDiagIndex = newDiagIndex;
+					diagToCluster[index] = diagToCluster[curDiagIndex];
+					curCluster = diagToCluster[index];
+				}
+				else {
+					//
+					// Start the new cluster.
+					//
+				
+					diagToCluster[index] = clusters.size();
+					curDiagIndex = index;
+					curCluster   = clusters.size();
+					clusters.push_back(Cluster(0,0, matches[i].first.pos, matches[i].first.pos+opts.globalK, 
+																		 matches[i].second.pos, matches[i].second.pos + opts.globalK, strand));
+				}
 			}
 			
 					
 			clusters[curCluster].matches.push_back(matches[i]);
+			/*
+			cout << curCluster << "\t" << curDiagIndex << "\t" << index <<
+			"\t" << clusters[curCluster].matches.size() << "\t" <<
+			matches[i].first.pos << "\t" << matches[i].second.pos << endl;
+			*/
 			// Update endpoint of cluster.
 			/*
 			cout << curCluster << "\tbound\t"
@@ -683,17 +718,18 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	for (int c=0; c < clusters.size(); c++) {
 		assert(clusters[c].tStart >= 0);
 		assert(clusters[c].tEnd >= 0);
-		//		cout << "clust: " << c << "\t" << clusters[c].tStart << "\t"<< clusters[c].tEnd << "\t" << clusters[c].qStart << "\t" << clusters[c].qEnd << endl;
-
 	}
-	int cn=0;
-	for (int c=0; c < clusters.size(); c++) {
+	int cn=startClusterIndex;
+
+	for (int c=startClusterIndex; c < clusters.size(); c++) {
 		if (clusters[c].matches.size() >= opts.minClusterSize ) {
+			cout << clusters[c].qEnd - clusters[c].qStart << "\tcl: " << c << "\t" << clusters[c].tStart << "\t" << clusters[c].tEnd << "\t" << clusters[c].qStart << "\t" << clusters[c].qEnd << "\t" << clusters[c].matches.size() << endl;
 			clusters[cn] = clusters[c];
 			cn++;
 		}
 	}
 	clusters.resize(cn);
+
 			
 			//
 			// Add this point to a cluster.
@@ -794,6 +830,11 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 			qEnd   = max(qEnd, matches[ce].first.pos + opts.globalK);
 			tStart = min(tStart, matches[ce].second.pos);
 			tEnd   = max(tEnd, matches[ce].second.pos + opts.globalK);
+			/*		cout << "rc:\t" << clusters.size() << "\t" << matches[ce].first.pos << "\t" << matches[ce].second.pos << "\t" 
+					 << GetDiag(matches[ce], strand) << "\t" <<
+					 abs(DiagonalDifference(matches[ce], matches[ce-1], strand))
+					 << endl;
+			*/
 			ce++;
 		}	
 		

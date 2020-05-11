@@ -1196,6 +1196,26 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	// first let maxDiag be a small number but not too small(like 500), which also alleviate the cases where anchors are on a curvy line.
 	// Then break the clusters[i] into two if any two anchors are father than maxGap. 
 	StoreDiagonalClusters(forMatches, roughClusters, opts, 0, forMatches.size(), true, false, forwardStrand); // rough == true means only storing "start and end" in every clusters[i]
+
+	if (opts.dotPlot) {
+		ofstream clust("for-matches.dots");
+		for (int m=0; m < forMatches.size(); m++) {
+			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"
+					<< forMatches[m].second.pos + opts.globalK << "\t" << m << "\t0"<<endl;
+		}
+		clust.close();
+		ofstream wclust("roughClusters-matches.dots");
+		for (int m=0; m < roughClusters.size(); m++) {
+			int rci = genome.header.Find(roughClusters[m].tStart);
+			for (int c = roughClusters[m].start; c < roughClusters[m].end; ++c) {
+				wclust << forMatches[c].first.pos << "\t" << forMatches[c].second.pos << "\t" << opts.globalK + forMatches[c].first.pos << "\t"
+					<< forMatches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci]<< "\t0"<<endl;				
+			}
+		}
+		wclust.close();
+
+	}
+
 	for (int c = 0; c < roughClusters.size(); c++) {
 		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
 		//		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
@@ -1213,41 +1233,22 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	vector<Cluster> revroughClusters;
 	int reverseStrand=1;
 	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), true, false, reverseStrand);
-	for (int c = 0; c < revroughClusters.size(); c++) {
-		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
-		//StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
-		int rci = genome.header.Find(revroughClusters[c].tStart);
-		//cerr << "revroughClusters: " << c << " chr: " << genome.header.names[rci] << " " << revroughClusters[c].tStart << " ";
-		StoreFineClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, read.length, reverseStrand);
-	}
-	/*	
-	for (int c=0; c < clusters.size(); c++) { 
-		CartesianSort(clusters[c].matches, 0, clusters[c].matches.size());
-	}
-	*/
-	if (opts.dotPlot) {
-		ofstream clust("for-matches.dots");
-		for (int m=0; m < forMatches.size(); m++) {
-			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"
-					<< forMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
+	vector<int> ci(revroughClusters.size());
+	for (int c = 0 ; c < revroughClusters.size(); c++ ) {
+		
+		for (int cii=revroughClusters[c].start; cii< revroughClusters[c].end; ++cii) {
+			ci.push_back(c);
 		}
-		clust.close();
+	}
+
+	if (opts.dotPlot) {
 		ofstream rclust("rev-matches.dots");
 		for (int m=0; m < revMatches.size(); m++) {			
 			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[m].first.pos << "\t"
-					<< revMatches[m].second.pos << "\t0\t0"<<endl;
+					<< revMatches[m].second.pos << "\t" << ci[m] << "\t0"<<endl;
 		}
 		rclust.close();
 
-		ofstream wclust("roughClusters-matches.dots");
-		for (int m=0; m < roughClusters.size(); m++) {
-			int rci = genome.header.Find(roughClusters[m].tStart);
-			for (int c = roughClusters[m].start; c < roughClusters[m].end; ++c) {
-				wclust << forMatches[c].first.pos << "\t" << forMatches[c].second.pos << "\t" << opts.globalK + forMatches[c].first.pos << "\t"
-					<< forMatches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci]<< "\t0"<<endl;				
-			}
-		}
-		wclust.close();
 
 		ofstream revclust("revroughClusters-matches.dots");
 		for (int m=0; m < revroughClusters.size(); m++) {
@@ -1259,6 +1260,20 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		}
 		revclust.close();
 	}
+
+	
+	for (int c = 0; c < revroughClusters.size(); c++) {
+		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
+		//StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
+		int rci = genome.header.Find(revroughClusters[c].tStart);
+		cout << "revroughClusters: " << c << "\t" << revroughClusters[c].end - revroughClusters[c].start << "\tchr: " << genome.header.names[rci] << " " << revroughClusters[c].tStart << "\t" << revroughClusters[c].tEnd << "\t" << revroughClusters[c].qStart << "\t" << revroughClusters[c].qEnd << endl;
+		StoreFineClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, read.length, reverseStrand);
+	}
+	/*	
+	for (int c=0; c < clusters.size(); c++) { 
+		CartesianSort(clusters[c].matches, 0, clusters[c].matches.size());
+	}
+	*/
 
 	//
 	// Split clusters on x and y coordinates, vector<Cluster> splitclusters, add a member for each splitcluster to specify the original cluster it comes from
