@@ -1266,9 +1266,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
 		//StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
 		int rci = genome.header.Find(revroughClusters[c].tStart);
-		cout << "revroughClusters: " << c << "\t" << revroughClusters[c].end - revroughClusters[c].start << "\tchr: " << genome.header.names[rci] << " " << revroughClusters[c].tStart << "\t" << revroughClusters[c].tEnd << "\t" << revroughClusters[c].qStart << "\t" << revroughClusters[c].qEnd << endl;
+		//		cout << "revroughClusters: " << c << "\t" << revroughClusters[c].end - revroughClusters[c].start << "\tchr: " << genome.header.names[rci] << " " << revroughClusters[c].tStart << "\t" << revroughClusters[c].tEnd << "\t" << revroughClusters[c].qStart << "\t" << revroughClusters[c].qEnd << endl;
 		StoreFineClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, read.length, reverseStrand);
 	}
+	
+
 	/*	
 	for (int c=0; c < clusters.size(); c++) { 
 		CartesianSort(clusters[c].matches, 0, clusters[c].matches.size());
@@ -1283,6 +1285,31 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		return 0; // This read cannot be mapped to the genome; 
 	}
 
+
+	if (opts.dotPlot) {
+		ofstream clust("clusters-coarse.tab");
+		for (int m = 0; m < clusters.size(); m++) {
+			if (clusters[m].strand == 0) {
+				clust << clusters[m].qStart << "\t"
+							<< clusters[m].tStart << "\t"
+							<< clusters[m].qEnd   << "\t"
+							<< clusters[m].tEnd   << "\t"
+							<< m << "\t"
+							<< clusters[m].strand << "\t"
+							<< clusters[m].matches.size() << endl;
+			}
+			else {
+				clust << clusters[m].qStart << "\t"
+							<< clusters[m].tEnd   << "\t"
+							<< clusters[m].qEnd   << "\t"
+							<< clusters[m].tStart << "\t"
+							<< m << "\t"
+							<< clusters[m].strand << "\t"
+							<< clusters[m].matches.size() << endl;
+			}
+		}
+		clust.close();
+	}
 	//
 	// remove Cluster that firstChromIndex != lastChromIndex; or remove Cluster of 0 matches;
 	//
@@ -1302,34 +1329,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	clusters.resize(vm);
 	if (clusters.size() == 0) return 0; // This read cannot be mapped to the genome; 
 
-
 	vector<Cluster> splitclusters;
 	SplitClusters(clusters, splitclusters);
 	DecideSplitClustersValue(clusters, splitclusters, opts);
 
 	timing.Tick("Preprocess");
-	if (opts.dotPlot) {
-		ofstream clust("clusters-coarse.tab");
-		for (int m = 0; m < clusters.size(); m++) {
-			if (clusters[m].strand == 0) {
-				clust << clusters[m].qStart << "\t" 
-					  << clusters[m].tStart << "\t"
-					  << clusters[m].qEnd   << "\t"
-					  << clusters[m].tEnd   << "\t"
-					  << m << "\t"
-					  << clusters[m].strand << endl;
-			}
-			else {
-				clust << clusters[m].qStart << "\t" 
-					  << clusters[m].tEnd << "\t"
-					  << clusters[m].qEnd   << "\t"
-					  << clusters[m].tStart   << "\t"
-					  << m << "\t"
-					  << clusters[m].strand << endl;
-			}
-		}
-		clust.close();
-	}
 
 	if (opts.dotPlot) {
 		ofstream clust("clusters.tab");

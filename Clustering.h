@@ -690,8 +690,11 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 																		 matches[i].second.pos, matches[i].second.pos + opts.globalK, strand));
 				}
 			}
-			
-					
+			int d=0;
+			if (clusters[curCluster].matches.size() > 0) {
+				d=GapDifference(clusters[curCluster].matches[clusters[curCluster].matches.size()-1], matches[i]);
+			}
+				
 			clusters[curCluster].matches.push_back(matches[i]);
 			/*
 			cout << curCluster << "\t" << curDiagIndex << "\t" << index <<
@@ -711,6 +714,15 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			clusters[curCluster].qStart = min(clusters[curCluster].qStart, matches[i].first.pos);
 			clusters[curCluster].tStart = min(clusters[curCluster].tStart, matches[i].second.pos);
 
+			cout << curCluster << "\t" << index << "\t"  << i << "\t" << d << "\t"
+					 << clusters[curCluster].qStart << "\t" 
+					 << clusters[curCluster].qEnd << "\t" 
+					 << clusters[curCluster].qEnd - clusters[curCluster].qStart << "\t" 
+					 << clusters[curCluster].tStart << "\t" 
+					 << clusters[curCluster].tEnd << "\t"
+					 << clusters[curCluster].tEnd - clusters[curCluster].tEnd << endl;
+
+
 			assert(clusters[curCluster].tEnd >= clusters[curCluster].tStart);
 			assert(clusters[curCluster].qEnd >= clusters[curCluster].qStart);
 		}
@@ -723,7 +735,11 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 
 	for (int c=startClusterIndex; c < clusters.size(); c++) {
 		if (clusters[c].matches.size() >= opts.minClusterSize ) {
-			cout << clusters[c].qEnd - clusters[c].qStart << "\tcl: " << c << "\t" << clusters[c].tStart << "\t" << clusters[c].tEnd << "\t" << clusters[c].qStart << "\t" << clusters[c].qEnd << "\t" << clusters[c].matches.size() << endl;
+			//			cout << clusters[c].qEnd - clusters[c].qStart << "\tcl:
+			//			" << c << "\t" << clusters[c].tStart << "\t" <<
+			//			clusters[c].tEnd << "\t" << clusters[c].qStart << "\t"
+			//			<< clusters[c].qEnd << "\t" <<
+			//			clusters[c].matches.size() << endl;
 			clusters[cn] = clusters[c];
 			cn++;
 		}
@@ -792,7 +808,6 @@ void SplitClustersWithGaps(vector<Cluster> &clusters, vector<Cluster> &split, Op
 				curSplit++;
 				split[curSplit].qStart = clusters[c].matches[m].first.pos;
 				split[curSplit].tStart = clusters[c].matches[m].second.pos;
-
 			}
 		}
 		int last=clusters[c].matches.size();
