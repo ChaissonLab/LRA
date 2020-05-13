@@ -464,35 +464,98 @@ void RemoveSpuriousAnchors(FinalChain & chain, Options & opts) {
 	chain.resize(m);
 }
 
+// //
+// // This function removes paired indels in the finalchain after SDP;
+// //
+// void RemovePairedIndels (FinalChain & chain, Options & opts) {
+
+// 	if (chain.size() < 3) return;
+// 	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
+
+// 	for (int c = 1; c < chain.size() - 1; c++) {
+
+// 		if (chain.strand(c-1) == chain.strand(c) and chain.strand(c) == chain.strand(c+1)) {
+// 			int prevGap, nextGap;
+// 			if (chain.strand(c) == 0) {
+// 				prevGap = (int)(((long int)chain[c-1].second.pos - (long int)chain[c-1].first.pos) 
+// 								- ((long int)chain[c].second.pos - (long int)chain[c].first.pos));
+// 				nextGap = (int)(((long int)chain[c].second.pos - (long int)chain[c].first.pos) 
+// 								- ((long int)chain[c+1].second.pos - (long int)chain[c+1].first.pos));
+// 			}
+// 			else {
+// 				prevGap = (int)((long int)(chain[c-1].first.pos + chain[c-1].second.pos) 
+// 								- (long int)(chain[c].first.pos + chain[c].second.pos));
+// 				nextGap = (int)((long int)(chain[c].first.pos + chain[c].second.pos) 
+// 								- (long int)(chain[c+1].first.pos + chain[c+1].second.pos));
+// 			}
+// 			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)
+// 					and chain.length(c) < opts.maxRemovePairedIndelsLength) { // the second condition filter out when prevGap == 0 or nextGap == 0
+// 				remove[c] = true;
+// 			}	
+// 		}
+// 	}
+
+// 	int m = 0;
+// 	for (int i = 0; i < chain.size(); i++) {
+// 		if (remove[i] == false) {
+// 			chain.chain[m] = chain.chain[i];
+// 			m++;
+// 		}
+// 	}
+// 	chain.resize(m);
+// }
+
 //
 // This function removes paired indels in the finalchain after SDP;
 //
-void RemovePairedIndels (FinalChain & chain, Options & opts) {
+void RemovePairedIndels (FinalChain &chain) {
 
-	if (chain.size() < 3) return;
+ 	if (chain.size() < 2) return;
 	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
+	vector<int> SV;
+	vector<int> SVpos;
+	int s = 0, e = 0;
 
-	for (int c = 1; c < chain.size() - 1; c++) {
-
-		if (chain.strand(c-1) == chain.strand(c) and chain.strand(c) == chain.strand(c+1)) {
-			int prevGap, nextGap;
+	//
+	// Store SVs in vector SV; Store the anchor just after the SV[c] in SVpos[c];
+	//
+	for (int c = 1; c < chain.size(); c++) {
+		if (chain.strand(c) == chain.strand(c-1)) {
 			if (chain.strand(c) == 0) {
-				prevGap = (int)(((long int)chain[c-1].second.pos - (long int)chain[c-1].first.pos) 
-								- ((long int)chain[c].second.pos - (long int)chain[c].first.pos));
-				nextGap = (int)(((long int)chain[c].second.pos - (long int)chain[c].first.pos) 
-								- ((long int)chain[c+1].second.pos - (long int)chain[c+1].first.pos));
+				int Gap = (int)(((long int)chain[c].second.pos - (long int)chain[c].first.pos) - 
+							    ((long int)chain[c-1].second.pos - (long int)chain[c-1].first.pos));
+				if (abs(Gap) > 100) {
+					SV.push_back(Gap);	
+					SVpos.push_back(c);
+				}
 			}
 			else {
-				prevGap = (int)((long int)(chain[c-1].first.pos + chain[c-1].second.pos + chain.length(c-1) - 1) 
-								- (long int)(chain[c].first.pos + chain[c].second.pos));
-				nextGap = (int)((long int)(chain[c].first.pos + chain[c].second.pos + chain.length(c) - 1) 
-								- (long int)(chain[c+1].first.pos + chain[c+1].second.pos));
+				int Gap = (int)((long int)(chain[c].first.pos + chain[c].second.pos) - 
+								(long int)(chain[c-1].first.pos + chain[c-1].second.pos));
+				if (abs(Gap) > 100) {
+					SV.push_back(Gap);	
+					SVpos.push_back(c);
+				}				
 			}
-			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)
-					and chain.length(c) < opts.minRemovePairedIndelsLength) { // the second condition filter out when prevGap == 0 or nextGap == 0
-				remove[c] = true;
-			}	
 		}
+		else {
+			SV.push_back(0);
+			SVpos.push_back(c);
+		}
+	}
+
+	//
+	// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
+	// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
+	//
+	for (int c = 1; c < SV.size(); c++) {
+		if (sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 100 
+										 and abs(SV[c]) + abs(SV[c-1]) > abs(SV[c] + SV[c-1])) { 
+			//
+			// remove anchors from SVpos[c-1] to SV[c];
+			//
+			for (int i = SVpos[c-1]; i < SVpos[c]; i++) remove[i] = true;
+		} 
 	}
 
 	int m = 0;
@@ -1449,9 +1512,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 
 	// Set the parameters for merging anchors and 1st SDP
-	Options smallOpts = opts;
-	smallOpts.coefficient = 9; // used to be 9
-	Options tinyOpts = smallOpts;
+	Options smallOpts=opts;
+	smallOpts.coefficient=12; // used to be 9
+	Options tinyOpts=smallOpts;
 	tinyOpts.globalMaxFreq=3;
 	tinyOpts.maxDiag=5;
 	tinyOpts.minDiagCluster=2;
@@ -1476,7 +1539,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			
 		smallOpts.globalK=glIndex.k;
 		smallOpts.globalW=glIndex.w;
-		smallOpts.coefficient = 12; // used to be 9
+		smallOpts.coefficient=15; // used to be 12
 		smallOpts.globalMaxFreq=6;
 		smallOpts.cleanMaxDiag=10;// used to be 25
 		smallOpts.maxDiag=50;
@@ -1512,35 +1575,35 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		}
 	}
 
-	if (opts.dotPlot) {
-		ofstream clust("RefinedClusters.tab");
+	// if (opts.dotPlot) {
+	// 	ofstream clust("RefinedClusters.tab", std::ofstream::app);
 
-		for (int p = 0; p < RefinedClusters.size(); p++) {
+	// 	for (int p = 0; p < RefinedClusters.size(); p++) {
 
-			for (int h = 0; h < RefinedClusters[p]->matches.size(); h++) {
+	// 		for (int h = 0; h < RefinedClusters[p]->matches.size(); h++) {
 
-				if (RefinedClusters[p]->strand == 0) {
-					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos << "\t"
-						  << RefinedClusters[p]->matches[h].first.pos + smallOpts.globalK << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos + smallOpts.globalK << "\t"
-						  << p << "\t"
-						  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
-						  << RefinedClusters[p]->strand << endl;
-				}
-				else {
-					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos + smallOpts.globalK << "\t"
-						  << RefinedClusters[p]->matches[h].first.pos + smallOpts.globalK << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos<< "\t"
-						  << p << "\t"
-						  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
-						  << RefinedClusters[p]->strand << endl;					
-				}
-			}
-		}
-		clust.close();
-	}	
+	// 			if (RefinedClusters[p]->strand == 0) {
+	// 				clust << RefinedClusters[p]->matches[h].first.pos << "\t"
+	// 					  << RefinedClusters[p]->matches[h].second.pos << "\t"
+	// 					  << RefinedClusters[p]->matches[h].first.pos + smallOpts.globalK << "\t"
+	// 					  << RefinedClusters[p]->matches[h].second.pos + smallOpts.globalK << "\t"
+	// 					  << p << "\t"
+	// 					  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
+	// 					  << RefinedClusters[p]->strand << endl;
+	// 			}
+	// 			else {
+	// 				clust << RefinedClusters[p]->matches[h].first.pos << "\t"
+	// 					  << RefinedClusters[p]->matches[h].second.pos + smallOpts.globalK << "\t"
+	// 					  << RefinedClusters[p]->matches[h].first.pos + smallOpts.globalK << "\t"
+	// 					  << RefinedClusters[p]->matches[h].second.pos<< "\t"
+	// 					  << p << "\t"
+	// 					  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
+	// 					  << RefinedClusters[p]->strand << endl;					
+	// 			}
+	// 		}
+	// 	}
+	// 	clust.close();
+	// }	
 
 	timing.Tick("Refine");
 	int SizeRefinedClusters = 0;
@@ -1752,7 +1815,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				int orig = finalchain.size();
 				//RemoveSpuriousAnchors(finalchain, smallOpts);
 				orig = finalchain.size();
-				//RemovePairedIndels(finalchain, smallOpts);
+				RemovePairedIndels(finalchain);
 				if (finalchain.size() == 0) continue; // cannot be mapped to the genome!
 
 				if (opts.dotPlot) {
