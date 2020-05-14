@@ -7,6 +7,30 @@
 
 using namespace std;
 
+class LongAnchors {
+public:
+	vector<int> anchorIndex;
+	GenomePairs *matches;
+
+  	LongAnchors(GenomePairs *m) {
+  		matches=m;
+	}	
+	//
+	// Cartesian sort of clusters.
+	//
+	int operator()(const int i, const int j) {
+		if ((*matches)[i].first.pos != (*matches)[j].first.pos) {
+			return (*matches)[i].first.pos < (*matches)[j].first.pos;
+		}
+		else {
+			return (*matches)[i].second.pos < (*matches)[j].second.pos;
+		}
+	}
+	void Sort() {
+		sort(anchorIndex.begin(), anchorIndex.end(), *this);
+	}
+};
+
 
 void Checkbp(GenomePair & cur, GenomePair & next, Genome & genome, Read & read, int & ChromIndex, GenomePos & qe, GenomePos & te, int & strand, Options & opts, int & mat) {
 	GenomePos curQ, curT, nextQ, nextT;
@@ -84,7 +108,6 @@ DecideCoordinates (Cluster & cluster) {
 // This function implements linear extension for each Cluster on the chain;
 // NOTE: The extension for anchors should avoid overlapping;
 //
-
 void
 LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<unsigned int> & chain, Options & opts, Genome & genome, Read & read) {
 
@@ -184,7 +207,6 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<uns
 		}	
 		*/
 
-		
 		//
 		// Linear Extension;
 		// NOTICE: anchors in "clusters[cm]" have the same strand;
@@ -308,6 +330,49 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<uns
 	}
 }
 
+//
+// This function trim overlapped long anchors.
+//
+void 
+TrimOverlappedAnchors(vector<Cluster> & extCluster) {
+
+	//
+	// Get all long anchors
+	//
+	for (int c = 0; c < extCluster.size(); c++) {
+
+		LongAnchors longanchors(&extCluster[c].matches);
+		for (int ln = 0; ln < extCluster[c].matches.size(); ln++) {
+			if (extCluster[c].matchesLengths[ln] >= 500) {
+				longanchors.anchorIndex.push_back(ln);
+			}
+		}
+
+		//
+		// Catersiansort anchors and trim overlapped adjacent two;
+		//
+		longanchors.Sort();
+		for (int ln = 1; ln < longanchors.anchorIndex.size(); ln++) {
+
+			int prev = longanchors.anchorIndex[ln-1];
+			int cur = longanchors.anchorIndex[ln];
+
+			//
+			// If the adjacent anchors are overlapped less than 20b, trim the prev
+			// 
+			if (extCluster[c].matches[cur].first.pos < extCluster[c].matches[prev].first.pos + extCluster[c].matchesLengths[prev] 
+				and 
+				extCluster[c].matches[cur].first.pos >= extCluster[c].matches[prev].first.pos + extCluster[c].matchesLengths[prev] - 20) {
+
+				int overlap = extCluster[c].matches[prev].first.pos + extCluster[c].matchesLengths[prev] - extCluster[c].matches[cur].first.pos;
+				assert(overlap <= 20);
+				assert(overlap > 0);
+				extCluster[c].matchesLengths[prev] -= overlap+1;
+				assert(extCluster[c].matches[cur].first.pos >= extCluster[c].matches[prev].first.pos + extCluster[c].matchesLengths[prev]);
+			}
+		}
+	}
+}
 
 
 /*
