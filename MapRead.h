@@ -1824,7 +1824,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				int orig = finalchain.size();
 				//RemoveSpuriousAnchors(finalchain, smallOpts);
 				orig = finalchain.size();
-				//RemovePairedIndels(finalchain);
+				RemovePairedIndels(finalchain);
 				if (finalchain.size() == 0) continue; // cannot be mapped to the genome!
 
 				if (opts.dotPlot) {
