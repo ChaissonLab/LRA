@@ -86,15 +86,12 @@ class CartesianSortOp {
 };
 
 template<typename Tup>
-void CartesianSort(typename vector<pair<Tup, Tup> >::iterator  begin,
-									 typename vector<pair<Tup, Tup> >::iterator  end) {
-
+void CartesianSort(typename vector<pair<Tup, Tup> >::iterator  begin, typename vector<pair<Tup, Tup> >::iterator  end) {
 	sort(begin, end, CartesianSortOp<Tup>());
 }
 
 template<typename Tup>
 void CartesianSort(vector<pair<Tup, Tup> > &vals, int s, int e) {
-
 	sort(vals.begin() + s, vals.begin() + e, CartesianSortOp<Tup>());
 }
 
@@ -103,7 +100,6 @@ template<typename Tup>
 void CartesianSort(vector<pair<Tup, Tup> > &vals) {
 	CartesianSort<Tup>(vals.begin(), vals.end());
 }
-
 		
 template<typename Tup> 
 class CartesianTargetSortOp {

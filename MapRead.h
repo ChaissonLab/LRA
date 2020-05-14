@@ -1749,6 +1749,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			//
 			vector<Cluster> ExtendClusters(Primary_chains[p].chains[h].ch.size());
 			LinearExtend(RefinedClusters, ExtendClusters, Primary_chains[p].chains[h].ch, smallOpts, genome, read);
+			TrimOverlappedAnchors(ExtendClusters);
 
 			int SizeExtendClusters = 0;
 			for (int ep = 0; ep < ExtendClusters.size(); ep++) {
@@ -1767,18 +1768,20 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 								  << ExtendClusters[ep].matches[eh].second.pos << "\t"
 								  << ExtendClusters[ep].matches[eh].first.pos + ExtendClusters[ep].matchesLengths[eh] << "\t"
 								  << ExtendClusters[ep].matches[eh].second.pos + ExtendClusters[ep].matchesLengths[eh] << "\t"
-								  << h << "\t"
+								  << ep << "\t"
 								  << genome.header.names[ExtendClusters[ep].chromIndex]<< "\t"
-								  << ExtendClusters[ep].strand << endl;
+								  << ExtendClusters[ep].strand << "\t"
+								  << eh << endl;
 						}
 						else {
 							clust << ExtendClusters[ep].matches[eh].first.pos << "\t"
 								  << ExtendClusters[ep].matches[eh].second.pos + ExtendClusters[ep].matchesLengths[eh] << "\t"
 								  << ExtendClusters[ep].matches[eh].first.pos + ExtendClusters[ep].matchesLengths[eh] << "\t"
 								  << ExtendClusters[ep].matches[eh].second.pos<< "\t"
-								  << h << "\t"
+								  << ep << "\t"
 								  << genome.header.names[ExtendClusters[ep].chromIndex]<< "\t"
-								  << ExtendClusters[ep].strand << endl;					
+								  << ExtendClusters[ep].strand << "\t"
+								  << eh << endl;					
 						}
 					}
 				}
@@ -1821,7 +1824,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				int orig = finalchain.size();
 				//RemoveSpuriousAnchors(finalchain, smallOpts);
 				orig = finalchain.size();
-				RemovePairedIndels(finalchain);
+				//RemovePairedIndels(finalchain);
 				if (finalchain.size() == 0) continue; // cannot be mapped to the genome!
 
 				if (opts.dotPlot) {
