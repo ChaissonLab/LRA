@@ -549,8 +549,9 @@ void RemovePairedIndels (FinalChain &chain) {
 	// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
 	//
 	for (int c = 1; c < SV.size(); c++) {
-		if (sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 100 
-										 and abs(SV[c]) + abs(SV[c-1]) > abs(SV[c] + SV[c-1])) { 
+		if (SVpos[c] - SVpos[c-1] < 2000 and 
+				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 100 
+				and abs(SV[c]) + abs(SV[c-1]) > abs(SV[c] + SV[c-1])) { 
 			//
 			// remove anchors from SVpos[c-1] to SV[c];
 			//
