@@ -525,7 +525,8 @@ void RemovePairedIndels (FinalChain &chain) {
 			if (chain.strand(c) == 0) {
 				int Gap = (int)(((long int)chain[c].second.pos - (long int)chain[c].first.pos) - 
 							    ((long int)chain[c-1].second.pos - (long int)chain[c-1].first.pos));
-				if (abs(Gap) > 100) {
+
+				if (abs(Gap) > 30) {
 					SV.push_back(Gap);	
 					SVgenome.push_back(chain[c].second.pos);
 					SVpos.push_back(c);
@@ -534,7 +535,7 @@ void RemovePairedIndels (FinalChain &chain) {
 			else {
 				int Gap = (int)((long int)(chain[c].first.pos + chain[c].second.pos) - 
 								(long int)(chain[c-1].first.pos + chain[c-1].second.pos));
-				if (abs(Gap) > 100) {
+				if (abs(Gap) > 30) {
 					SV.push_back(Gap);	
 					SVgenome.push_back(chain[c].first.pos);
 					SVpos.push_back(c);
@@ -553,9 +554,9 @@ void RemovePairedIndels (FinalChain &chain) {
 	// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
 	//
 	for (int c = 1; c < SV.size(); c++) {
-		if (abs(SVgenome[c] - SVgenome[c-1]) < 2000 and 
+		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(10*SV[c]) and 
 				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 100 
-				and abs(SV[c]) + abs(SV[c-1]) > abs(SV[c] + SV[c-1])) { 
+				and abs(SV[c]) != 0 and SV[c-1] != 0) { 
 			//
 			// remove anchors from SVpos[c-1] to SV[c];
 			//
