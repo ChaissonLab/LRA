@@ -514,6 +514,7 @@ void RemovePairedIndels (FinalChain &chain) {
 	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
 	vector<int> SV;
 	vector<int> SVpos;
+	vector<int> SVgenome;
 	int s = 0, e = 0;
 
 	//
@@ -526,6 +527,7 @@ void RemovePairedIndels (FinalChain &chain) {
 							    ((long int)chain[c-1].second.pos - (long int)chain[c-1].first.pos));
 				if (abs(Gap) > 100) {
 					SV.push_back(Gap);	
+					SVgenome.push_back(chain[c].second.pos);
 					SVpos.push_back(c);
 				}
 			}
@@ -534,13 +536,15 @@ void RemovePairedIndels (FinalChain &chain) {
 								(long int)(chain[c-1].first.pos + chain[c-1].second.pos));
 				if (abs(Gap) > 100) {
 					SV.push_back(Gap);	
+					SVgenome.push_back(chain[c].first.pos);
 					SVpos.push_back(c);
 				}				
 			}
 		}
 		else {
-			SV.push_back(0);
+			SVgenome.push_back(chain[c].first.pos);
 			SVpos.push_back(c);
+			SV.push_back(0);
 		}
 	}
 
@@ -549,7 +553,7 @@ void RemovePairedIndels (FinalChain &chain) {
 	// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
 	//
 	for (int c = 1; c < SV.size(); c++) {
-		if (SVpos[c] - SVpos[c-1] < 2000 and 
+		if (abs(SVgenome[c] - SVgenome[c-1]) < 2000 and 
 				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 100 
 				and abs(SV[c]) + abs(SV[c-1]) > abs(SV[c] + SV[c-1])) { 
 			//
