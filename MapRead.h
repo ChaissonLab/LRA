@@ -1221,7 +1221,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		//		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
 		int rci = genome.header.Find(roughClusters[c].tStart);
 		//		cout << "roughClusters: " << c << "\t" << roughClusters[c].start << "\t" << roughClusters[c].end << endl;
-		StoreFineClusters(forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, read.length, forwardStrand);
+		StoreFineClusters(forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, read.length, forwardStrand, c);
 	}
 
 
@@ -1267,10 +1267,13 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		//StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
 		int rci = genome.header.Find(revroughClusters[c].tStart);
 		//		cout << "revroughClusters: " << c << "\t" << revroughClusters[c].end - revroughClusters[c].start << "\tchr: " << genome.header.names[rci] << " " << revroughClusters[c].tStart << "\t" << revroughClusters[c].tEnd << "\t" << revroughClusters[c].qStart << "\t" << revroughClusters[c].qEnd << endl;
-		StoreFineClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, read.length, reverseStrand);
+		StoreFineClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, read.length, reverseStrand, c);
 	}
-	
-
+	/*
+	for (int c=0; c < clusters.size(); c++) {
+		cout << "cluster\t" << c << "\t" << clusters[c].qStart << "\t" << clusters[c].qEnd << "\t" << clusters[c].tStart << "\t" << clusters[c].tEnd << "\t" << clusters[c].matches.size() << endl;
+	}
+	*/
 	/*	
 	for (int c=0; c < clusters.size(); c++) { 
 		CartesianSort(clusters[c].matches, 0, clusters[c].matches.size());
@@ -1296,6 +1299,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 							<< clusters[m].tEnd   << "\t"
 							<< m << "\t"
 							<< clusters[m].strand << "\t"
+							<< clusters[m].outerCluster << "\t"
 							<< clusters[m].matches.size() << endl;
 			}
 			else {
@@ -1305,6 +1309,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 							<< clusters[m].tStart << "\t"
 							<< m << "\t"
 							<< clusters[m].strand << "\t"
+							<< clusters[m].outerCluster << "\t"
 							<< clusters[m].matches.size() << endl;
 			}
 		}

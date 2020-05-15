@@ -265,6 +265,7 @@ class Cluster : public ClusterCoordinates {
 	vector<int> matchesLengths; // store the length of each anchor 
 	bool refined; // refined == 0 means this Cluster has not been refined yet
 	bool refinespace; // refinespace == 0 means this Cluster has not been add anchors in the step of RefineBtwnSpace;
+	int outerCluster;
 	Cluster() { refined=0; coarse=-1;}
  Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1; refined=0;}
 
@@ -508,7 +509,7 @@ long GetDiag(pair<Tup, Tup> &match, int strand) {
 
 template<typename Tup>
 void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
-						GenomePos readLength, int strand=0) {
+											 GenomePos readLength, int strand=0, int outerIteration=0) {
 	int startClusterIndex=clusters.size();
 	if (e==s) {
 		return;
@@ -580,26 +581,37 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 					else {
 						//
 						// Too far off, need to start a new cluster.
-						//						cout << "Creating a new cluster because of diagonal drift " << index - curDiagIndex << endl;
-						diagToCluster[index] = clusters.size();
-						curDiagIndex = index;
 
-						if (curCluster > 0) {
-							int nMatch = clusters[curCluster].matches.size();
-							if (nMatch  > 0) {
-								clusters[curCluster].qEnd = clusters[curCluster].matches[nMatch-1].first.pos + opts.globalK;
-								clusters[curCluster].tEnd = clusters[curCluster].matches[nMatch-1].second.pos + opts.globalK;
-							}
-							else {
-								clusters[curCluster].tStart = 0;
-								clusters[curCluster].qStart = 0;
+						int minDistance=-1;
+						int bestDiag=-1;
+						for (int clSearch=0; clSearch < clusters.size(); clSearch++) {
+							if (clusters[clSearch].matches.size() > 0) {
+								
+								int d=GapDifference(matches[i], clusters[clSearch].matches[clusters[clSearch].matches.size()-1]);
+								if (minDistance == -1 or d < minDistance) {
+									minDistance=d;
+									bestDiag=clSearch;
+								}
 							}
 						}
-						curCluster   = clusters.size();								
-						clusters.push_back(Cluster(0, 0, matches[i].first.pos, 
-																			 matches[i].first.pos + opts.globalK, 
-																			 matches[i].second.pos, 
-																			 matches[i].second.pos + opts.globalK, strand));
+						if (minDistance != -1 and minDistance < 300) {
+							assert(bestDiag != -1);
+							curDiagIndex=bestDiag;
+							diagToCluster[index]=curDiagIndex;
+							curCluster=curDiagIndex;
+						}
+						else {
+							//							cout << "Creating a new cluster because of diagonal drift " << index - curDiagIndex << "\t" << minDistance << endl;
+							diagToCluster[index] = clusters.size();
+							curDiagIndex = index;
+							
+							curCluster   = clusters.size();								
+							clusters.push_back(Cluster(0, 0, matches[i].first.pos, 
+																				 matches[i].first.pos + opts.globalK, 
+																				 matches[i].second.pos, 
+																				 matches[i].second.pos + opts.globalK, strand));
+							clusters[clusters.size()-1].outerCluster = outerIteration;
+						}
 					}
 				}
 			}
@@ -613,27 +625,6 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 				// far away from the previous point. Split into a new cluster.
 				// 
 				
-				//
-				// First add an end to the current cluster.
-				//
-				if (curCluster > startClusterIndex) {
-					assert(curCluster < clusters.size());
-					int nMatch = clusters[curCluster].matches.size();
-					if (nMatch  > 0) {
-						clusters[curCluster].qEnd = max(clusters[curCluster].qEnd, matches[nMatch-1].first.pos + opts.globalK);
-						clusters[curCluster].tEnd = max(clusters[curCluster].tEnd, matches[nMatch-1].second.pos + opts.globalK);
-						clusters[curCluster].qStart = min(clusters[curCluster].qStart, matches[nMatch-1].first.pos);
-						clusters[curCluster].tStart = min(clusters[curCluster].tStart, matches[nMatch-1].second.pos);
-
-						assert(clusters[curCluster].tEnd >= clusters[curCluster].tStart);
-						assert(clusters[curCluster].qEnd >= clusters[curCluster].qStart);
-					}
-					else {
-						clusters[curCluster].tStart = 0;
-						clusters[curCluster].qStart = 0;
-					}
-				}
-
 				//
 				// This diagonal may point to a new cluster, so remove it.
 				//
@@ -675,6 +666,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 				}
 				if (newDiagIndex != -1) {
 					curDiagIndex = newDiagIndex;
+					assert(newDiagIndex != -1);
 					diagToCluster[index] = diagToCluster[curDiagIndex];
 					curCluster = diagToCluster[index];
 				}
@@ -682,12 +674,34 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 					//
 					// Start the new cluster.
 					//
-				
-					diagToCluster[index] = clusters.size();
-					curDiagIndex = index;
-					curCluster   = clusters.size();
-					clusters.push_back(Cluster(0,0, matches[i].first.pos, matches[i].first.pos+opts.globalK, 
-																		 matches[i].second.pos, matches[i].second.pos + opts.globalK, strand));
+					int minDistance=-1;
+					int bestDiag=-1;
+					for (int clSearch=0; clSearch < clusters.size(); clSearch++) {
+						if (clusters[clSearch].matches.size() > 0) {
+							
+							int d=GapDifference(matches[i], clusters[clSearch].matches[clusters[clSearch].matches.size()-1]);
+							if (minDistance == -1 or d < minDistance) {
+								minDistance=d;
+								bestDiag=clSearch;
+							}
+						}
+					}
+					if (minDistance != -1 and minDistance < 300) {
+						assert(bestDiag != -1);
+						curDiagIndex=bestDiag;
+						diagToCluster[index]=curDiagIndex;
+					}
+					else {
+
+						//						cout << "Creating a new cluster while the min distance is " << minDistance <<endl;
+						
+						diagToCluster[index] = clusters.size();
+						curDiagIndex = index;
+						curCluster   = clusters.size();
+						clusters.push_back(Cluster(0,0, matches[i].first.pos, matches[i].first.pos+opts.globalK, 
+																			 matches[i].second.pos, matches[i].second.pos + opts.globalK, strand));
+						clusters[clusters.size()-1].outerCluster=outerIteration;
+					}
 				}
 			}
 			int d=0;
@@ -702,17 +716,12 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			matches[i].first.pos << "\t" << matches[i].second.pos << endl;
 			*/
 			// Update endpoint of cluster.
-			/*
-			cout << curCluster << "\tbound\t"
-					 << clusters[curCluster].tEnd << "\t"
-					 << matches[i].first.pos << "\t"
-					 << clusters[curCluster].qEnd << "\t"
-					 << matches[i].second.pos << endl;*/
 			assert(curCluster < clusters.size());
 			clusters[curCluster].qEnd = max(clusters[curCluster].qEnd, matches[i].first.pos + opts.globalK);
 			clusters[curCluster].tEnd = max(clusters[curCluster].tEnd, matches[i].second.pos + opts.globalK);
 			clusters[curCluster].qStart = min(clusters[curCluster].qStart, matches[i].first.pos);
 			clusters[curCluster].tStart = min(clusters[curCluster].tStart, matches[i].second.pos);
+			/*
 
 			cout << curCluster << "\t" << index << "\t"  << i << "\t" << d << "\t"
 					 << clusters[curCluster].qStart << "\t" 
@@ -720,9 +729,11 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 					 << clusters[curCluster].qEnd - clusters[curCluster].qStart << "\t" 
 					 << clusters[curCluster].tStart << "\t" 
 					 << clusters[curCluster].tEnd << "\t"
-					 << clusters[curCluster].tEnd - clusters[curCluster].tEnd << endl;
+					 << clusters[curCluster].tEnd - clusters[curCluster].tEnd << "\t" 
+					 << clusters[curCluster].matches.size() << "\t"
+					 << outerIteration << endl;
 
-
+			*/
 			assert(clusters[curCluster].tEnd >= clusters[curCluster].tStart);
 			assert(clusters[curCluster].qEnd >= clusters[curCluster].qStart);
 		}
@@ -733,7 +744,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	}
 	int cn=startClusterIndex;
 
-	for (int c=startClusterIndex; c < clusters.size(); c++) {
+		for (int c=startClusterIndex; c < clusters.size(); c++) {
 		if (clusters[c].matches.size() >= opts.minClusterSize ) {
 			//			cout << clusters[c].qEnd - clusters[c].qStart << "\tcl:
 			//			" << c << "\t" << clusters[c].tStart << "\t" <<
@@ -743,8 +754,9 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			clusters[cn] = clusters[c];
 			cn++;
 		}
-	}
+		}
 	clusters.resize(cn);
+	
 
 			
 			//
