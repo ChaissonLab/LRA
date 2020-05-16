@@ -3,8 +3,9 @@
 #include "Options.h"
 #include <vector>
 #include <climits>
-
-
+#include <boost/icl/interval_map.hpp>
+using namespace boost::icl;
+using namespace std;
 template<typename Tup>
 int64_t DiagonalDifference(Tup &a, Tup &b, int strand=0) {
 	if (strand == 0) { // forMatches
@@ -510,6 +511,7 @@ long GetDiag(pair<Tup, Tup> &match, int strand) {
 template<typename Tup>
 void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
 											 GenomePos readLength, int strand=0, int outerIteration=0) {
+	int localMinClusterSize=10;
 	int startClusterIndex=clusters.size();
 	if (e==s) {
 		return;
@@ -532,7 +534,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		bins[index] += 1;
 	}
 	for (int i=0; i < bins.size(); i++) {
-		if (bins[i] < opts.minClusterSize) { // TODO:Jingwen: minClusterSize is too small?
+		if (bins[i] < localMinClusterSize) { // TODO:Jingwen: minClusterSize is too small?
 			bins[i] = 0;
 		}
 	}
@@ -542,7 +544,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	}
 	*/
 	vector<int> diagStart, diagEnd, diagSize;
-	map<int, int> diagToCluster;
+	std::map<int, int> diagToCluster;
 	long curDiagIndex=-1;
 	int curCluster=-1;
 	for (int i=s; i < e; i++) {
@@ -642,7 +644,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 				int big=999999;
 				int minDiagGap=big;
 				for (int di=startDiagIndex; di < endDiagIndex; di++) {
-					map<int,int>::iterator it;
+					std::map<int,int>::iterator it;
 					it=diagToCluster.find(di);
 					if (it != diagToCluster.end()) {
 						//
@@ -742,19 +744,36 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		assert(clusters[c].tStart >= 0);
 		assert(clusters[c].tEnd >= 0);
 	}
+
 	int cn=startClusterIndex;
 
-		for (int c=startClusterIndex; c < clusters.size(); c++) {
-		if (clusters[c].matches.size() >= opts.minClusterSize ) {
-			//			cout << clusters[c].qEnd - clusters[c].qStart << "\tcl:
-			//			" << c << "\t" << clusters[c].tStart << "\t" <<
-			//			clusters[c].tEnd << "\t" << clusters[c].qStart << "\t"
-			//			<< clusters[c].qEnd << "\t" <<
-			//			clusters[c].matches.size() << endl;
+	interval_map<GenomePos, int> xIntv, yIntv;
+	for (int c=startClusterIndex; c < clusters.size(); c++) {
+		if (clusters[c].matches.size() > localMinClusterSize) {
+			xIntv.add(make_pair(interval<GenomePos>::right_open(clusters[c].qStart, 
+																													clusters[c].qEnd), 
+													clusters[c].matches.size()));
+			yIntv.add(make_pair(interval<GenomePos>::right_open(clusters[c].tStart, 
+																													clusters[c].tEnd), 
+													clusters[c].matches.size()));
+		}
+	}
+	int nContained=0;
+	
+	for (int c=startClusterIndex; c < clusters.size(); c++) {
+		bool sizeThresh=clusters[c].matches.size() >= localMinClusterSize;
+		bool contained = !( contains(xIntv, clusters[c].qStart) or 
+												contains(xIntv, clusters[c].qEnd-1) or
+												contains(yIntv, clusters[c].tStart) or
+												contains(yIntv, clusters[c].tEnd-1));
+		if (sizeThresh == false and contained == true) { ++nContained;}
+		if (sizeThresh or contained == false) {
 			clusters[cn] = clusters[c];
 			cn++;
 		}
-		}
+	}
+	//	if (nContained > 20) { cerr << clusters.size() << "\t" << nContained << endl;}
+	//  std::cout << outerIteration << "\t" << clusters.size() << "\t" << cn << endl;
 	clusters.resize(cn);
 	
 

@@ -32,7 +32,7 @@
 using namespace std;
 
 int IO_BUFFER_SIZE=10000000;
-const char* version="0.1-alpha";
+const char* lraVersion="0.1-alpha";
 
 bool ArgIs(const char* a, const char* b) {
 	return strcmp(a,b) == 0;
@@ -396,7 +396,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		for (int i=0; i < argc; i++) {
 			cl << " " << argv[i];
 		}
-		*outPtr << "@PG\tID:lra\tPN:lra\tVN:"<<version<<"\tCL:"<<cl.str() << endl;
+		*outPtr << "@PG\tID:lra\tPN:lra\tVN:"<<lraVersion<<"\tCL:"<<cl.str() << endl;
 		genome.header.WriteSAMHeader(*outPtr);
 	}
 
@@ -689,8 +689,8 @@ void RunStoreIndex(int argc, const char* argv[]) {
 
 void Usage() {
 	cout << "Program: lra (long sequence alignment)" << endl;
-	cout << "Version: " << version << endl;
-	cout << "Contact: Mark Chaisson (mchaisso@usc.edu)" << endl << endl;
+	cout << "Version: " << lraVersion << endl;
+	cout << "Contact: Mark Chaisson (mchaisso@usc.edu) and Jingwen Ren (jingwenr@usc.edu)" << endl << endl;
 	cout << "Usage:   lra <command> [options]"<< endl << endl;
 	cout << "Command: index   - Build global and local indexes on a genome." << endl;
 	cout << "         align   - Map reads using the index." << endl;

@@ -497,7 +497,11 @@ class Alignment {
 			//
 			// Create a null alignment
 			//
-			cerr << "will create this later." << endl;
+			chrom="*";
+			tStart=0;
+			tEnd=0;
+			order=0;
+			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t" << string(read,readLen) << "\t*" << endl;
 		}
 		else {
 

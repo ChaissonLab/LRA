@@ -2063,25 +2063,35 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			
 			baseDots.close();
 	}
-		
-	for (int a=0; a < (int) alignmentsOrder.size(); a++){
-		for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
-			alignmentsOrder[a].SegAlignment[s]->order=s;
-		
-			if (opts.printFormat == "b") {
-				alignmentsOrder[a].SegAlignment[s]->PrintBed(*output);
-			}
-			else if (opts.printFormat == "s") {
-				alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts);
-			}
-			else if (opts.printFormat == "a") {
-				alignmentsOrder[a].SegAlignment[s]->PrintPairwise(*output);
-			}
-			else if (opts.printFormat == "p" or opts.printFormat == "pc") {
-				alignmentsOrder[a].SegAlignment[s]->PrintPAF(*output, opts.printFormat=="pc");
+	if (alignmentsOrder.size() > 0 and alignmentsOrder[0].SegAlignment.size() > 0) {
+		for (int a=0; a < (int) alignmentsOrder.size(); a++){
+			for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
+				alignmentsOrder[a].SegAlignment[s]->order=s;
+				
+				if (opts.printFormat == "b") {
+					alignmentsOrder[a].SegAlignment[s]->PrintBed(*output);
+				}
+				else if (opts.printFormat == "s") {
+					alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts);
+				}
+				else if (opts.printFormat == "a") {
+					alignmentsOrder[a].SegAlignment[s]->PrintPairwise(*output);
+				}
+				else if (opts.printFormat == "p" or opts.printFormat == "pc") {
+					alignmentsOrder[a].SegAlignment[s]->PrintPAF(*output, opts.printFormat=="pc");
+				}
 			}
 		}
 	}
+	else {
+		if (opts.printFormat == "s") {
+			Alignment unaligned;
+			unaligned.read=read.seq;
+			unaligned.readLen=read.length;
+			unaligned.PrintSAM(*output,opts);
+		}
+	}
+	
 
 	/*
 	if (semaphore != NULL ) {
