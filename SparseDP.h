@@ -1551,7 +1551,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 			//
 			// If this chain overlap with read greater than 10%, insert it to chains
 			//
-			if (((float)(qEnd - qStart)/read.length) > 0.1) {
+			if (((float)(qEnd - qStart)/read.length) > 0.05) {
 				//
 				// Compare onechain to all the primary chains we've found. 
 				// If onechain overlaps with one primary chain over 50% ---> onechain is a secondary chain 

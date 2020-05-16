@@ -511,7 +511,7 @@ long GetDiag(pair<Tup, Tup> &match, int strand) {
 template<typename Tup>
 void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
 											 GenomePos readLength, int strand=0, int outerIteration=0) {
-	int localMinClusterSize=10;
+	int localMinClusterSize=5;
 	int startClusterIndex=clusters.size();
 	if (e==s) {
 		return;
@@ -723,8 +723,8 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			clusters[curCluster].tEnd = max(clusters[curCluster].tEnd, matches[i].second.pos + opts.globalK);
 			clusters[curCluster].qStart = min(clusters[curCluster].qStart, matches[i].first.pos);
 			clusters[curCluster].tStart = min(clusters[curCluster].tStart, matches[i].second.pos);
+	
 			/*
-
 			cout << curCluster << "\t" << index << "\t"  << i << "\t" << d << "\t"
 					 << clusters[curCluster].qStart << "\t" 
 					 << clusters[curCluster].qEnd << "\t" 
@@ -734,8 +734,8 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 					 << clusters[curCluster].tEnd - clusters[curCluster].tEnd << "\t" 
 					 << clusters[curCluster].matches.size() << "\t"
 					 << outerIteration << endl;
-
 			*/
+	
 			assert(clusters[curCluster].tEnd >= clusters[curCluster].tStart);
 			assert(clusters[curCluster].qEnd >= clusters[curCluster].qStart);
 		}
