@@ -66,6 +66,7 @@ public:
 	int svsigLen;
 	float alnthres;
 	string timing;
+	int PrintNumAln;
 	Options() {
 		localMatch=4;
 		localMismatch=-3;
@@ -119,6 +120,7 @@ public:
      	maxRemoveSpuriousAnchorsDist=500;
    		minRemoveSpuriousAnchorsNum=10;
    		NumAln = 6;//3
+   		PrintNumAln = 1;
    		BtnSubClusterswindow = 800;
 		binLength = 20000;
 		minBinNum = 3;

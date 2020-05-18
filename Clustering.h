@@ -268,7 +268,8 @@ class Cluster : public ClusterCoordinates {
 	bool refined; // refined == 0 means this Cluster has not been refined yet
 	bool refinespace; // refinespace == 0 means this Cluster has not been add anchors in the step of RefineBtwnSpace;
 	int outerCluster;
-	Cluster() { refined=0; coarse=-1;}
+	bool used;
+	Cluster() { refined=0; coarse=-1; used=0;}
  Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1; refined=0;}
 
  Cluster(int s, int e, int st) : ClusterCoordinates(s,e,st) { coarse=-1; refined=0;}
@@ -313,6 +314,7 @@ class Cluster : public ClusterCoordinates {
 		strand = st;
 		coarse = coa;
 		Val = 0;
+		used = 0;
 	}
   Cluster(int st, GenomePairs::iterator gpBegin, GenomePairs::iterator gpEnd, vector<int>::iterator stBegin, vector<int>::iterator stEnd) {
   		strand = st;

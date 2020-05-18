@@ -74,7 +74,8 @@ void HelpMap() {
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
 			 << "   -d 	(flag)  Enable dotPlot" << endl
-			 << "   -Al (int) Allow at most how many alignments for one read" << endl;
+			 << "   -PAl (int) Print at most how many alignments for one read" << endl
+			 << "   -Al (int) Compute at most how many alignments for one read" << endl;
 			 //<< "   -aa (flag)  use Merge.h" << endl;
 	cout << "Examples: " << endl
 			 << "Aligning CCS reads:  lra align -CCS -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
@@ -237,10 +238,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.readStart=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "--PAl")) {
+			opts.PrintNumAln=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
 		else if (ArgIs(argv[argi], "--Al")) {
 			opts.NumAln=atoi(GetArgv(argv, argc, argi));
 			++argi;
-		}
+		}		
 		else if (ArgIs(argv[argi], "-R")) {
 			opts.mergeClusters=true;
 		}

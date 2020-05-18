@@ -2336,6 +2336,7 @@ int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary
 
 	for (unsigned int i = 0; i < FragInput.size(); i++) {
 
+		if (FragInput[i].used == 0) {
 			// insert start point s1 into H1
 			Point s1;
 			H1.push_back(s1);
@@ -2397,7 +2398,7 @@ int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary
 			else {
 				H1.back().orient = 0; 				
 			}
-
+		}
 	}
 
 	//clock_t begin = std::clock();

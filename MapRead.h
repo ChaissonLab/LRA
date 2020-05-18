@@ -276,8 +276,10 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 			int nmmdiff = alignmentsOrder[first].nmm - alignmentsOrder[first+1].nmm;
 			int nsmallgap = (alignmentsOrder[first].ndel + alignmentsOrder[first].nins) - 
 								(alignmentsOrder[first+1].ndel + alignmentsOrder[first+1].nins);
+			int nmdiff = alignmentsOrder[first].nm - alignmentsOrder[first+1].nm;
 			//cerr << "nmmdiff: " << nmmdiff << " nsmallgap: " << nsmallgap << endl;
 			float denom_1 = 1, denom_2 = 1;
+
 			if (nmmdiff <= 0 and nsmallgap <= 0) { // nmmdiff=0 and nsmallgap=0 ==> mapqv=52
 				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 300) { 
 					if (nmmdiff > -20) denom_1 = 1;
@@ -319,8 +321,11 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 					if (cpr>=0) alignmentsOrder[first].mapqv = min(60, cpr);
 					else alignmentsOrder[first].mapqv = 0;					
 				}
-				else { alignmentsOrder[first].mapqv = 60;}	
-			}
+				else {alignmentsOrder[first].mapqv = 60;}	
+			}				
+
+
+
 			alignmentsOrder[first].SetMapqv();
 			//
 			// assign mapqv to secondary alignments;
@@ -1431,13 +1436,22 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	//
 
 	////// TODO(Jingwen): customize a rate fro SparseDP
-	vector<Primary_chain> Primary_chains, Primary_chains2;
+	vector<Primary_chain> Primary_chains;
 	float rate = 4;
 	if (splitclusters.size() > 10) { // mapping to repetitive region
 		rate = 1; 
 	}
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
-	SparseDP (splitclusters, Primary_chains2, opts, LookUpTable, read, rate);
+	for (int p = 0; p < Primary_chains.size(); p++) {
+		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
+			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
+				int ph = Primary_chains[p].chains[h].ch[c];
+				splitclusters[ph].used = 1;
+			}
+		}
+	}
+
+	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
 
 	if (opts.dotPlot) {
 		ofstream clust("Chains.tab");
@@ -2068,7 +2082,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			baseDots.close();
 	}
 	if (alignmentsOrder.size() > 0 and alignmentsOrder[0].SegAlignment.size() > 0) {
-		for (int a=0; a < (int) alignmentsOrder.size(); a++){
+		for (int a=0; a < (int) min(alignmentsOrder.size(), opts.PrintNumAln); a++){
 			for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
 				alignmentsOrder[a].SegAlignment[s]->order=s;
 				
