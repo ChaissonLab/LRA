@@ -278,7 +278,11 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 								(alignmentsOrder[first+1].ndel + alignmentsOrder[first+1].nins);
 			//cerr << "nmmdiff: " << nmmdiff << " nsmallgap: " << nsmallgap << endl;
 			float denom_1 = 1, denom_2 = 1;
-			if (nmmdiff <= 0 and nsmallgap <= 0) { // nmmdiff=0 and nsmallgap=0 ==> mapqv=52
+			if (nmmdiff == 0 and nsmallgap == 0 ) {
+				alignmentsOrder[first].mapqv = 2;
+				alignmentsOrder[first+1].mapqv = 1;
+			}
+			else if (nmmdiff <= 0 and nsmallgap <= 0) { // nmmdiff=0 and nsmallgap=0 ==> mapqv=52
 				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 300) { 
 					if (nmmdiff > -20) denom_1 = 1;
 					else denom_1 = pow(0.9,20-abs(nmmdiff));  
