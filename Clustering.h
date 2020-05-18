@@ -761,11 +761,12 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	int nContained=0;
 	
 	for (int c=startClusterIndex; c < clusters.size(); c++) {
-		bool sizeThresh=clusters[c].matches.size() >= localMinClusterSize;
-		bool contained = !( contains(xIntv, clusters[c].qStart) or 
-												contains(xIntv, clusters[c].qEnd-1) or
-												contains(yIntv, clusters[c].tStart) or
-												contains(yIntv, clusters[c].tEnd-1));
+		bool sizeThresh=clusters[c].matches.size() >= localMinClusterSize*5;
+		bool xIntvS = contains(xIntv, clusters[c].qStart);
+		bool xIntvE = contains(xIntv, clusters[c].qEnd-1);
+		bool yIntvS = contains(yIntv, clusters[c].tStart);
+		bool yIntvE = contains(yIntv, clusters[c].tEnd-1);
+		bool contained = xIntvS or xIntvE or yIntvS or yIntvE;
 		if (sizeThresh == false and contained == true) { ++nContained;}
 		if (sizeThresh or contained == false) {
 			clusters[cn] = clusters[c];
