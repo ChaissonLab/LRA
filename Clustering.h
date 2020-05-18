@@ -135,6 +135,7 @@ class ClusterCoordinates {
 	GenomePos qStart, qEnd, tStart, tEnd;
 	int chromIndex;	
 	int coarseSubCluster;
+	bool used;
 	ClusterCoordinates() {
 		qStart=-1;
 		qEnd=0;
@@ -510,7 +511,10 @@ long GetDiag(pair<Tup, Tup> &match, int strand) {
 
 template<typename Tup>
 void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
-											 GenomePos readLength, int strand=0, int outerIteration=0) {
+											 GenomePos readLength, 
+											 interval_map<GenomePos, int> &xIntv, 
+											 interval_map<GenomePos, int> &yIntv,
+											 int strand=0, int outerIteration=0) {
 	int localMinClusterSize=5;
 	int startClusterIndex=clusters.size();
 	if (e==s) {
@@ -747,9 +751,10 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 
 	int cn=startClusterIndex;
 
-	interval_map<GenomePos, int> xIntv, yIntv;
+
 	for (int c=startClusterIndex; c < clusters.size(); c++) {
 		if (clusters[c].matches.size() > localMinClusterSize) {
+			//			cout << "adding intervals " << clusters[c].qStart << "\t" << clusters[c].qEnd << "\t" << clusters[c].tStart << "\t" << clusters[c].tEnd << endl;
 			xIntv.add(make_pair(interval<GenomePos>::right_open(clusters[c].qStart, 
 																													clusters[c].qEnd), 
 													clusters[c].matches.size()));

@@ -1216,12 +1216,15 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 	}
 
+	interval_map<GenomePos, int> xIntv;
+	interval_map<GenomePos, int> yIntv;
+
 	for (int c = 0; c < roughClusters.size(); c++) {
 		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
 		//		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
 		int rci = genome.header.Find(roughClusters[c].tStart);
 		//		cout << "roughClusters: " << c << "\t" << roughClusters[c].start << "\t" << roughClusters[c].end << endl;
-		StoreFineClusters(forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, read.length, forwardStrand, c);
+		StoreFineClusters(forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, read.length, xIntv, yIntv, forwardStrand, c);
 	}
 
 
@@ -1267,7 +1270,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		//StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
 		int rci = genome.header.Find(revroughClusters[c].tStart);
 		//		cout << "revroughClusters: " << c << "\t" << revroughClusters[c].end - revroughClusters[c].start << "\tchr: " << genome.header.names[rci] << " " << revroughClusters[c].tStart << "\t" << revroughClusters[c].tEnd << "\t" << revroughClusters[c].qStart << "\t" << revroughClusters[c].qEnd << endl;
-		StoreFineClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, read.length, reverseStrand, c);
+		StoreFineClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, read.length, xIntv, yIntv, reverseStrand, c);
 	}
 	/*
 	for (int c=0; c < clusters.size(); c++) {
@@ -1428,12 +1431,13 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	//
 
 	////// TODO(Jingwen): customize a rate fro SparseDP
-	vector<Primary_chain> Primary_chains;
+	vector<Primary_chain> Primary_chains, Primary_chains2;
 	float rate = 4;
 	if (splitclusters.size() > 10) { // mapping to repetitive region
 		rate = 1; 
 	}
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
+	SparseDP (splitclusters, Primary_chains2, opts, LookUpTable, read, rate);
 
 	if (opts.dotPlot) {
 		ofstream clust("Chains.tab");
