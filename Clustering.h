@@ -135,7 +135,6 @@ class ClusterCoordinates {
 	GenomePos qStart, qEnd, tStart, tEnd;
 	int chromIndex;	
 	int coarseSubCluster;
-	bool used;
 	ClusterCoordinates() {
 		qStart=-1;
 		qEnd=0;
