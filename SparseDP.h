@@ -1567,7 +1567,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					while (p < Primary_chains.size()) {
 						if (Primary_chains[p].chains[0].OverlapsOnQ(qStart, qEnd, 0.5)) {
 							if (!Primary_chains[p].chains[0].OverlapsOnT(tStart, tEnd, 0.3)) {
-								if (Primary_chains[p].chains.size() < opts.NumAln) {
+								if (Primary_chains[p].chains.size() <= opts.NumAln) {
 									Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, 
 																				link, fragments_valueOrder[fv]));
 									inserted = 1;								
@@ -1582,7 +1582,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 						++p;
 					}			
 					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 0) {		
-						if (Primary_chains.size() < opts.NumAln) {
+						if (Primary_chains.size() < 2) { // TODO(Jingwen): how to decide the number of Primary alignments
 							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv]));
 							Primary_chains.push_back(Pc);
 						}	
@@ -2330,6 +2330,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, Options & opts, const vector<float> & LookUpTable, Read & read, float & rate) {
 
 	if (FragInput.size() == 0) return 0;
+	if (Primary_chains.size() != 0 and Primary_chains[0].chains.size() == opts.NumAln) return 0;
 	std::vector<Point>  H1;
 	// FragInput is vector<Cluster>
 	// get points from FragInput and store them in H1		
@@ -2404,6 +2405,7 @@ int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary
 	//clock_t begin = std::clock();
 
 	//Sort the point by row
+	if (H1.size() == 0) return 0;
 	sort(H1.begin(), H1.end(), SortByRowOp<Point>()); // with same q and t coordinates, end point < start point
 	std::vector<unsigned int> H2(H1.size());
 	iota(H2.begin(), H2.end(), 0);
