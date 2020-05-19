@@ -370,7 +370,8 @@ class Alignment {
 					int a = (int)floor((i-p-501)/5);
 					value += -opts.coefficient*LookUpTable[a] - 1;
 				}
-				else {value += -1000;}
+				else if (i-p <= 100001) {value += -1000;}
+				else {value += -2000;}
 				continue;
 			}
 			while (i < query.size() and query[i] != '-' and target[i] == '-') {	i++;}
@@ -384,7 +385,8 @@ class Alignment {
 					int a = (int)floor((i-p-501)/5);
 					value += -opts.coefficient*LookUpTable[a] - 1;
 				}
-				else {value += -1000;}
+				else if (i-p <= 100001) {value += -1000;}
+				else {value += -2000;}
 				continue;
 			}
 		}
