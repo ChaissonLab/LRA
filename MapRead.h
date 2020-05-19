@@ -113,7 +113,7 @@ void SetMatchAndGaps(GenomePos qs, GenomePos qe, GenomePos ts, GenomePos te, int
 	tg=te-ts+1-m;
 }
 
-void RemoveOverlappingClusters(vector<Cluster> &clusters, Options &opts) {
+void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOrder, Options &opts) {
 	int a=0;
 	int ovp=a;
 	if (clusters.size() == 0) {
@@ -124,12 +124,14 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, Options &opts) {
 		float num=1.0;
 		float denom=1.0;
 
-		while ( ovp < clusters.size() and clusters[a].Overlaps(clusters[ovp], 0.8 ) ) {
+		while ( ovp < clusters.size() and
+						clusters[clusterOrder[a]].strand == clusters[clusterOrder[ovp]].strand and
+						clusters[clusterOrder[a]].Overlaps(clusters[clusterOrder[ovp]], 0.8 ) ) {
 			ovp++;
 		}
 		if (ovp - a > opts.maxCandidates) {
 			for (int i=a+opts.maxCandidates; i < ovp; i++) {
-				clusters[i].matches.clear();
+				clusters[clusterOrder[i]].matches.clear();
 			}
 		}
 		a=ovp;
@@ -1298,7 +1300,16 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	if (clusters.size() == 0) {	
 		return 0; // This read cannot be mapped to the genome; 
 	}
-
+	
+	ClusterOrder fineClusterOrder(&clusters, 1);
+	RemoveOverlappingClusters(clusters, fineClusterOrder.index, opts);
+	ClusterOrder fineClusterOrder2(&clusters, 1);
+	/*
+	for (int co=0; co < clusters.size(); co++) {
+		int idx=fineClusterOrder2.index[co];
+		cout << co << "\t" << clusters[idx].size() << "\t" << clusters[idx].qStart << "\t" << clusters[idx].qEnd << endl;
+	}
+	*/
 
 	if (opts.dotPlot) {
 		ofstream clust("clusters-coarse.tab");

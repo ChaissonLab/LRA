@@ -382,8 +382,8 @@ class ClusterOrder {
  public:
 	vector<Cluster> *clusters;
 	vector<int> index;
-
-  	ClusterOrder(vector<Cluster> *c) : clusters(c) {
+	int orderType;
+ ClusterOrder(vector<Cluster> *c, int t=0) : clusters(c), orderType(t) {
 		index.resize(clusters->size());
 		for (int i=0;i<index.size();i++) { index[i]=i;}
 		Sort();
@@ -393,16 +393,26 @@ class ClusterOrder {
 	// Cartesian sort of clusters.
 	//
 	int operator()(const int i, const int j) {
-			assert((*clusters)[i].strand == 0 or (*clusters)[i].strand == 1);
-			assert((*clusters)[j].strand == 0 or (*clusters)[j].strand == 1);
-
-		if ((*clusters)[i].tStart != (*clusters)[j].tStart) {
-			return (*clusters)[i].tStart < (*clusters)[j].tStart;
+		if (orderType == 1) { 
+			return (*clusters)[i].size() > (*clusters)[j].size();
 		}
 		else {
-			return (*clusters)[i].qStart < (*clusters)[j].qStart;
+			assert((*clusters)[i].strand == 0 or (*clusters)[i].strand == 1);
+			assert((*clusters)[j].strand == 0 or (*clusters)[j].strand == 1);
+			
+			if ((*clusters)[i].tStart != (*clusters)[j].tStart) {
+				return (*clusters)[i].tStart < (*clusters)[j].tStart;
+			}
+			else {
+				return (*clusters)[i].qStart < (*clusters)[j].qStart;
+			}
 		}
 	}
+	template<typename t>
+		void Sort() {
+		sort(index.begin(), index.end(), t());
+	}
+
 	void Sort() {
 		sort(index.begin(), index.end(), *this);
 	}
@@ -528,7 +538,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		if (diag < minDiag) { minDiag = diag;}
 		if (diag > maxDiag) { maxDiag = diag;}
 	}
-	int binSize=300;//50
+	int binSize=50;
 	long span=maxDiag-minDiag;
 
 	//cerr << "span: " << span << " binSize: " << binSize << " minClusterSize: " << opts.minClusterSize << endl;
@@ -752,10 +762,13 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 
 	int cn=startClusterIndex;
 
-
+	bool sufficientSize=false;
 	for (int c=startClusterIndex; c < clusters.size(); c++) {
 		if (clusters[c].matches.size() > localMinClusterSize) {
 			//			cout << "adding intervals " << clusters[c].qStart << "\t" << clusters[c].qEnd << "\t" << clusters[c].tStart << "\t" << clusters[c].tEnd << endl;
+			if (clusters[c].matches.size() >= localMinClusterSize) {
+				sufficientSize=true;
+			}
 			xIntv.add(make_pair(interval<GenomePos>::right_open(clusters[c].qStart, 
 																													clusters[c].qEnd), 
 													clusters[c].matches.size()));
@@ -774,7 +787,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		bool yIntvE = contains(yIntv, clusters[c].tEnd-1);
 		bool contained = xIntvS or xIntvE or yIntvS or yIntvE;
 		if (sizeThresh == false and contained == true) { ++nContained;}
-		if (sizeThresh or contained == false) {
+		if (sizeThresh or (contained == false and sufficientSize == true) ) {
 			clusters[cn] = clusters[c];
 			cn++;
 		}

@@ -537,6 +537,9 @@ class Alignment {
 			samStrm << "\t";
 			samStrm << "*";
 			samStrm << "\t";
+			samStrm << "NX:i:" << nmm << "\t";
+			samStrm << "ND:i:" << ndel << "\t";
+			samStrm << "NI:i:" << nins << "\t";
 			samStrm << "AO:i:" << order;
 		}
 		out << samStrm.str();
