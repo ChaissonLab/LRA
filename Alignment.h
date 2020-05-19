@@ -30,6 +30,7 @@ class Alignment {
 	string queryString, alignString, refString;
 	int nblocks;
 	int nm, nmm, nins, ndel;
+	int tm, tmm, tins, tdel;
 	int preClip, sufClip;
 	string cigar;
 	bool prepared;
@@ -48,7 +49,7 @@ class Alignment {
  	//int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
  	//vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains	
  	bool split;
- 	float value;
+ 	int value;
 
 	void Clear() {
 		queryString=alignString=refString="";
@@ -70,6 +71,7 @@ class Alignment {
 		flag=0;
 		mapqv=0;
 		nm=nmm=nins=ndel=0;
+		tm=tmm=tins=tdel=0;
 		nblocks=0;
 		preClip=0; sufClip=0;
 		prepared=false;
@@ -346,7 +348,7 @@ class Alignment {
 			
 			if (i > p) {
 				cigarstrm << i-p << '=';
-				nm+=i-p;
+				nm+=i-p;				
 				value+=i-p;
 				continue;
 			}
@@ -361,6 +363,7 @@ class Alignment {
 			if (i > p) {
 				cigarstrm << i-p << 'D';
 				//ndel+=i-p;
+				tdel+=i-p;
 				if (i-p<=10) {ndel++;}
 				if (i-p < 501) {value += -opts.coefficient*log(i-p) - 1;}
 				else if (i-p <= 10001){
@@ -374,6 +377,7 @@ class Alignment {
 			if (i > p) {
 				cigarstrm << i-p << 'I';
 				//nins+=i-p;
+				tins+=i-p;
 				if (i-p<=10) nins++;
 				if (i-p < 501) {value += -opts.coefficient*log(i-p) - 1;}
 				else if (i-p <= 10001){
@@ -537,9 +541,13 @@ class Alignment {
 			samStrm << "\t";
 			samStrm << "*";
 			samStrm << "\t";
+			samStrm << "NM:i:" << nm << "\t";
 			samStrm << "NX:i:" << nmm << "\t";
 			samStrm << "ND:i:" << ndel << "\t";
+			samStrm << "TD:i:" << tdel << "\t";
 			samStrm << "NI:i:" << nins << "\t";
+			samStrm << "TI:i:" << tins << "\t";
+			samStrm << "NV:i:" << value << "\t";
 			samStrm << "AO:i:" << order;
 		}
 		out << samStrm.str();
