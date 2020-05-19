@@ -188,67 +188,6 @@ void SimpleMapQV(vector<SegAlignmentGroup> &alignments) {
 }
 */
 
-// void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
-// 	//
-// 	// Store the index of primary alignments in vector<int> pry_index;
-// 	//
-// 	vector<int> pry_index;
-// 	for (int sl = 0; sl < alignmentsOrder.size(); sl++) {
-// 		if (!alignmentsOrder[sl].ISsecondary) { // This is primary alignment;
-// 			pry_index.push_back(sl);
-// 		}
-// 	}
-// 	//
-// 	// compute mapqv for each alignment;
-// 	//
-// 	for (int pi = 0; pi < pry_index.size(); pi++) {
-		
-// 		int first = pry_index[pi];
-// 		int last;
-// 		if (pi == pry_index.size() - 1) last = alignmentsOrder.size();
-// 		else last = pry_index[pi+1];
-
-// 		if (last - first == 1) { // No secondary alignments
-// 			alignmentsOrder[first].mapqv = 60;
-// 			alignmentsOrder[first].SetMapqv();
-// 		}
-// 		else {
-// 			// assign mapqv to primary alignment;
-// 			int nmmdiff = alignmentsOrder[first].nmm - alignmentsOrder[first+1].nmm;
-// 			if (nmmdiff < -20) { //-10
-// 				alignmentsOrder[first].mapqv = 60;				
-// 			}
-// 			else if (nmmdiff >= -20 and nmmdiff <= 0) {
-// 				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 200) { 
-// 					float denom = pow(0.4,20-abs(nmmdiff));  
-// 					alignmentsOrder[first].mapqv = min(60, (int) (60 + 5*log10(denom)));// when nmmdiff=0, mapqv=20
-// 				}
-// 				else { alignmentsOrder[first].mapqv = 60;}				
-// 			}
-// 			else {
-// 				//alignmentsOrder[first].mapqv = (int) 35*(1-alignmentsOrder[first+1].value/alignmentsOrder[first].value)*
-// 				// (1 + alignmentsOrder[first].nm/(float)read.length);
-// 				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 200) { 
-// 					float denom = pow(0.3,abs(nmmdiff));  //0.3 is the probability of nmmdiff are real snps. 
-// 					int cpr=(int) (60 + 5*log10(denom)); //60 + 10*log10(denom) // when nmmdiff=20, mapqv=0
-// 					if (cpr>=0) alignmentsOrder[first].mapqv = min(60, (int) (60 + 5*log10(denom)));
-// 					else alignmentsOrder[first].mapqv = 0;
-// 				}
-// 				else { alignmentsOrder[first].mapqv = 60;}
-// 			}
-// 			alignmentsOrder[first].SetMapqv();
-
-// 			assert(alignmentsOrder[first].mapqv <= 60);
-// 			// assign mapqv to secondary alignments;
-// 			for (int sd = first + 1; sd < last; sd++) {
-// 				alignmentsOrder[sd].mapqv = (int) alignmentsOrder[first].mapqv/(2*(last-first-1));
-// 				alignmentsOrder[sd].SetMapqv();
-// 			}
-// 		}
-// 	}
-// }
-
-
 void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 	//
 	// Store the index of primary alignments in vector<int> pry_index;
@@ -278,7 +217,6 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 			int nmmdiff = alignmentsOrder[first].nmm - alignmentsOrder[first+1].nmm;
 			int nsmallgap = (alignmentsOrder[first].ndel + alignmentsOrder[first].nins) - 
 								(alignmentsOrder[first+1].ndel + alignmentsOrder[first+1].nins);
-			int nmdiff = alignmentsOrder[first].nm - alignmentsOrder[first+1].nm;
 			//cerr << "nmmdiff: " << nmmdiff << " nsmallgap: " << nsmallgap << endl;
 			float denom_1 = 1, denom_2 = 1;
 			if (nmmdiff == 0 and nsmallgap == 0 ) {
@@ -287,10 +225,13 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 			}
 			else if (nmmdiff <= 0 and nsmallgap <= 0) { // nmmdiff=0 and nsmallgap=0 ==> mapqv=52
 				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 300) { 
-					if (nmmdiff > -20) denom_1 = 1;
-					else denom_1 = pow(0.9,20-abs(nmmdiff));  
-					if (nsmallgap > -20) denom_2 = 1;
-					else  denom_2 = pow(0.9,20-abs(nsmallgap));  
+					if (nmmdiff < -20) denom_1 = 1;
+					else if (nmmdiff >= -20 and nmmdiff < -5) denom_1 = pow(0.9,20-abs(nmmdiff));  
+					else denom_1 = pow(0.7,20-abs(nmmdiff));
+
+					if (nsmallgap < -20) denom_2 = 1;
+					else if (nsmallgap >= -20 and nsmallgap < -5) denom_2 = pow(0.9,20-abs(nsmallgap));
+					else  denom_2 = pow(0.7,20-abs(nsmallgap)); 
 					alignmentsOrder[first].mapqv = min(60, (int) (60 + 5*log10(denom_1) + 5*log10(denom_2)));
 				}
 				else { alignmentsOrder[first].mapqv = 60;}			
@@ -298,38 +239,39 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 			else if (nmmdiff <= 0 and nsmallgap >= 0) { // when nsmallgap=30 and nmmdiff=0; mapqv=0
 				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 300) { 
 					if (nmmdiff < -20) denom_1 = 1;
-					else denom_1 = pow(0.9,20-abs(nmmdiff));  
-					denom_2 = pow(0.5, abs(nsmallgap));  
-					int cpr=(int) (60 + 5*log10(denom_1) + 5*log10(denom_2)); //60 + 10*log10(denom) 
+					else if (nmmdiff >= -20 and nmmdiff < -5) denom_1 = pow(0.9,20-abs(nmmdiff));  
+					else denom_1 = pow(0.7,20-abs(nmmdiff));
+
+					denom_2 = pow(0.1, abs(nsmallgap));  
+					int cpr=(int) (60 + 5*log10(denom_1) + 20*log10(denom_2)); //60 + 10*log10(denom) 
 					if (cpr>=0) alignmentsOrder[first].mapqv = min(60, cpr);
-					else alignmentsOrder[first].mapqv = 0;					
+					else alignmentsOrder[first].mapqv = 2;					
 				}
 				else { alignmentsOrder[first].mapqv = 60;}					
-
 			}
 			else if (nmmdiff >= 0 and nsmallgap <= 0) { // when nsmallgap=0 and nmmdiff=30, mapqv=0
 				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 300) { 
-					denom_1 = pow(0.5, abs(nmmdiff));  
+					denom_1 = pow(0.1, abs(nmmdiff));  
+
 					if (nsmallgap < -20) denom_2 = 1;
-					else  denom_2 = pow(0.9,20-abs(nsmallgap)); 
-					int cpr=(int) (60 + 5*log10(denom_1) + 5*log10(denom_2)); //60 + 10*log10(denom) 
+					else if (nsmallgap >= -20 and nsmallgap < -5) denom_2 = pow(0.9,20-abs(nsmallgap));
+					else  denom_2 = pow(0.7,20-abs(nsmallgap)); 
+					int cpr=(int) (60 + 20*log10(denom_1) + 5*log10(denom_2)); //60 + 10*log10(denom) 
 					if (cpr>=0) alignmentsOrder[first].mapqv = min(60, cpr);
-					else alignmentsOrder[first].mapqv = 0;						
+					else alignmentsOrder[first].mapqv = 2;						
 				}
 				else { alignmentsOrder[first].mapqv = 60;}	
 			}
 			else { 
 				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 300) { 
-					denom_1 = pow(0.5, abs(nmmdiff));  
-					denom_2 = pow(0.5, abs(nsmallgap));  
-					int cpr=(int) (60 + 5*log10(denom_1) + 5*log10(denom_2));
+					denom_1 = pow(0.1, abs(nmmdiff));  
+					denom_2 = pow(0.1, abs(nsmallgap));  
+					int cpr=(int) (60 + 20*log10(denom_1) + 20*log10(denom_2));
 					if (cpr>=0) alignmentsOrder[first].mapqv = min(60, cpr);
-					else alignmentsOrder[first].mapqv = 0;					
+					else alignmentsOrder[first].mapqv = 2;					
 				}
 				else {alignmentsOrder[first].mapqv = 60;}	
 			}				
-
-
 
 			alignmentsOrder[first].SetMapqv();
 			//
