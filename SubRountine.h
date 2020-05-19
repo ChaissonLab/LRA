@@ -43,10 +43,13 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts
 			int a = static_cast<int> (f);
 			return - opts.coefficient*LookUpTable[a] - 1;
 		}
-		else {
+		else if (x <= 100001){
 			return -1000; //-800
 			//if (step == 1) {return -10000;}
 			//else {return -800;}
+		}
+		else {
+			return -2000;
 		}
 	}
 	else {
@@ -56,9 +59,13 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts
 		else if (x <= 10001) {
 			return - opts.coefficient*std::log(x) - 1;  
 		}
-		else {
+		else if (x <= 100001) {
 			if (step == 1) {return -1000;}
 			else {return - opts.coefficient*std::log(x) - 1;}
+		}
+		else {
+			if (step == 1) {return -2000;}
+			else {return - opts.coefficient*std::log(x) - 1;}			
 		}
 	}
 }  
