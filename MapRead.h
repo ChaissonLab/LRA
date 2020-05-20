@@ -1572,7 +1572,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		for (int p = 0; p < Primary_chains.size(); p++) {
 			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
 				//cerr << "p: " << p << " h: " << h << " chr: " << genome.header.names[genome.header.Find(Primary_chains[p].chains[h].tStart)] << 
-				 // " value: " << Primary_chains[p].chains[h].value << " tStart: " <<  Primary_chains[p].chains[h].tStart << endl;
+				 //" value: " << Primary_chains[p].chains[h].value << " tStart: " <<  Primary_chains[p].chains[h].tStart << endl;
 				for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
 					int ph = Primary_chains[p].chains[h].ch[c];
 					if (clusters[ph].strand == 0) {
@@ -1963,7 +1963,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				//
 				int orig = finalchain.size();
 				//RemoveSpuriousAnchors(finalchain, smallOpts);
-				RemovePairedIndels(finalchain, smallOpts);
+				RemovePairedIndels(finalchain);
 				if (finalchain.size() == 0) continue; // cannot be mapped to the genome!
 				if (opts.dotPlot) {
 					ofstream clust("SparseDP.tab", std::ofstream::app);
