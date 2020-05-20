@@ -1710,35 +1710,35 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		}
 	}
 
-	// if (opts.dotPlot) {
-	// 	ofstream clust("RefinedClusters.tab", std::ofstream::app);
+	if (opts.dotPlot) {
+		ofstream clust("RefinedClusters.tab", std::ofstream::app);
 
-	// 	for (int p = 0; p < RefinedClusters.size(); p++) {
+		for (int p = 0; p < RefinedClusters.size(); p++) {
 
-	// 		for (int h = 0; h < RefinedClusters[p]->matches.size(); h++) {
+			for (int h = 0; h < RefinedClusters[p]->matches.size(); h++) {
 
-	// 			if (RefinedClusters[p]->strand == 0) {
-	// 				clust << RefinedClusters[p]->matches[h].first.pos << "\t"
-	// 					  << RefinedClusters[p]->matches[h].second.pos << "\t"
-	// 					  << RefinedClusters[p]->matches[h].first.pos + smallOpts.globalK << "\t"
-	// 					  << RefinedClusters[p]->matches[h].second.pos + smallOpts.globalK << "\t"
-	// 					  << p << "\t"
-	// 					  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
-	// 					  << RefinedClusters[p]->strand << endl;
-	// 			}
-	// 			else {
-	// 				clust << RefinedClusters[p]->matches[h].first.pos << "\t"
-	// 					  << RefinedClusters[p]->matches[h].second.pos + smallOpts.globalK << "\t"
-	// 					  << RefinedClusters[p]->matches[h].first.pos + smallOpts.globalK << "\t"
-	// 					  << RefinedClusters[p]->matches[h].second.pos<< "\t"
-	// 					  << p << "\t"
-	// 					  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
-	// 					  << RefinedClusters[p]->strand << endl;					
-	// 			}
-	// 		}
-	// 	}
-	// 	clust.close();
-	// }	
+				if (RefinedClusters[p]->strand == 0) {
+					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos << "\t"
+						  << RefinedClusters[p]->matches[h].first.pos + smallOpts.globalK << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos + smallOpts.globalK << "\t"
+						  << p << "\t"
+						  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
+						  << RefinedClusters[p]->strand << endl;
+				}
+				else {
+					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos + smallOpts.globalK << "\t"
+						  << RefinedClusters[p]->matches[h].first.pos + smallOpts.globalK << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos<< "\t"
+						  << p << "\t"
+						  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
+						  << RefinedClusters[p]->strand << endl;					
+				}
+			}
+		}
+		clust.close();
+	}	
 
 	timing.Tick("Refine");
 	int SizeRefinedClusters = 0;
@@ -1791,6 +1791,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				//
 				// Decide the boudaries of space and strand direction btwn RefinedClusters[cur] and RefinedClusters[prev]
 				//
+				if (RefinedClusters[cur]->strand == RefinedClusters[prev]->strand) st = RefinedClusters[cur]->strand;
+				else st = RefinedClusters[cur]->strand;
 				qs = RefinedClusters[cur]->qEnd; 
 				qe = RefinedClusters[prev]->qStart;
 
@@ -1798,21 +1800,22 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					ts = RefinedClusters[cur]->tEnd;
 					te = RefinedClusters[prev]->tStart;
 					//st = 0;
-					st = 1;
+					//st = 1;
 				}
 				else if (RefinedClusters[cur]->tStart > RefinedClusters[prev]->tEnd) {
 					ts = RefinedClusters[prev]->tEnd;
 					te = RefinedClusters[cur]->tStart;
 					//st = 1;
-					st = 0;
+					//st = 0;
 				}
 				else {
 					c++;
 					continue; // No need to refine the space!					
 				}
-
+				//cerr << "btwn  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 				if (qe > qs and te > ts) {
-					SpaceLength = max(qe - qs, te - ts);
+					SpaceLength = max(qe - qs, te - ts); 
+					//cerr << "SpaceLength: " << SpaceLength << "st: " << st << endl;
 					if (SpaceLength > 1000 and SpaceLength < 6000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
 						// btwnClusters have GenomePos, st, matches, coarse
 						// This function also set the "coarse" flag for RefinedClusters[cur]

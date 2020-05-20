@@ -1567,7 +1567,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					while (p < Primary_chains.size()) {
 						if (Primary_chains[p].chains[0].OverlapsOnQ(qStart, qEnd, 0.5)) {
 							if (!Primary_chains[p].chains[0].OverlapsOnT(tStart, tEnd, 0.3)) {
-								if (Primary_chains[p].chains.size() <= opts.NumAln) {
+								if (Primary_chains[p].chains.size() < opts.NumAln) {
 									Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, 
 																				link, fragments_valueOrder[fv]));
 									inserted = 1;								
