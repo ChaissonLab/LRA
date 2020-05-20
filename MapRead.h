@@ -225,7 +225,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 				alignmentsOrder[first].mapqv = 2;
 				alignmentsOrder[first+1].mapqv = 1;
 			}
-			else if (abs(alnvaluediff) <= 5 and abs(nmmdiff) <= 3 and abs(nsmallgap) <= 3) {
+			else if (abs(alnvaluediff) <= 10 and abs(nmmdiff) <= 5 and abs(nsmallgap) <= 3) { // 5 3 3
 				alignmentsOrder[first].mapqv = 2;
 				alignmentsOrder[first+1].mapqv = 1;
 			}
@@ -1206,7 +1206,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		ofstream rclust("rev-matches.dots");
 		for (int m=0; m < revMatches.size(); m++) {			
 			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[m].first.pos << "\t"
-					<< revMatches[m].second.pos << "\t" << ci[m] << "\t0"<<endl;
+					 << revMatches[m].second.pos << "\t0"<<endl;
 		}
 		rclust.close();
 
@@ -1375,7 +1375,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						  << splitclusters[m].tEnd   << "\t"
 						  << m << "\t"
 						  << splitclusters[m].coarse << "\t"
-						  << splitclusters[m].strand << endl;
+						  << splitclusters[m].strand << "\t"
+						  << splitclusters[m].Val << endl;
 				}
 				else {
 					clust << splitclusters[m].qStart << "\t" 
@@ -1384,7 +1385,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						  << splitclusters[m].tStart   << "\t"
 						  << m << "\t"
 						  << splitclusters[m].coarse << "\t"
-						  << splitclusters[m].strand << endl;
+						  << splitclusters[m].strand << "\t"
+						  << splitclusters[m].Val << endl;
 				}				
 			}
 		}
