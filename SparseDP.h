@@ -1521,10 +1521,13 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 
 	std::vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-	float value_thres = 0.70*fragments_valueOrder[0];
+	float value_thres = max(opts.alnthres*fragments_valueOrder[0], fragments_valueOrder[0]-100*opts.globalK);//30 for 50kb
+	//float value_thres = opts.alnthres*fragments_valueOrder[0];
+	//cerr << "value_thres: " << value_thres << endl;
+	//cerr << "fragments_valueOrder[0]: " << fragments_valueOrder[0] << " fragments_valueOrder[1]: " << 
+	//			fragments_valueOrder[1] << endl;
 	unsigned int fv = 0;
 	while (fv < fragments_valueOrder.size() and fragments_valueOrder[fv] >= value_thres) {
-	//for (unsigned int fv = 0; fv < fragments_valueOrder.size(); fv++) {
 
 		unsigned int d = fragments_valueOrder.index[fv];
 		vector<unsigned int> onechain;
@@ -1545,18 +1548,17 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 				qStart = min(FragInput[onechain[c]].qStart, qStart);
 				tStart = min(FragInput[onechain[c]].tStart, tStart);
 			}
-
 			//
 			// If this chain overlap with read greater than 10%, insert it to chains
 			//
-			if (((float)(qEnd - qStart)/read.length) > 0.1) {
+			if (((float)(qEnd - qStart)/read.length) > 0.05) {
 				//
 				// Compare onechain to all the primary chains we've found. 
 				// If onechain overlaps with one primary chain over 50% ---> onechain is a secondary chain 
 				// If onechain overlaps with all the primary chains less than 50% ---> onechain is another primary chain
 				//
 				if (Primary_chains.size() == 0) {
-					Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
+					Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv]));
 					Primary_chains.push_back(Pc);
 				} 
 				else {
@@ -1565,8 +1567,9 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					while (p < Primary_chains.size()) {
 						if (Primary_chains[p].chains[0].OverlapsOnQ(qStart, qEnd, 0.5)) {
 							if (!Primary_chains[p].chains[0].OverlapsOnT(tStart, tEnd, 0.3)) {
-								if (Primary_chains[p].chains.size() < opts.NumAln) {
-									Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
+								if (Primary_chains[p].chains.size() <= opts.NumAln) {
+									Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, 
+																				link, fragments_valueOrder[fv]));
 									inserted = 1;								
 								}
 								break;
@@ -1579,8 +1582,8 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 						++p;
 					}			
 					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 0) {		
-						if (Primary_chains.size() < opts.NumAln) {
-							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link));
+						if (Primary_chains.size() < 2) { // TODO(Jingwen): how to decide the number of Primary alignments
+							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv]));
 							Primary_chains.push_back(Pc);
 						}	
 						else break;		
@@ -1886,9 +1889,9 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 
 	// Decide the rate;
 	//
-	float rate = 1;
-	// if ((float)totalMatch / (float) read.length <= 0.1) rate = 3; 
-	// cout << "rate: " << rate << endl;
+	float rate = 1;//2
+	//cerr << "totalMatch/read.length: " << (float)totalMatch / (float) read.length << " rate: " << rate << endl;
+	if ((float)totalMatch / (float) read.length <= 0.1) rate = 2; 
 
 	// get points from FragInput and store them in H1;
 	//
@@ -2327,12 +2330,14 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, Options & opts, const vector<float> & LookUpTable, Read & read, float & rate) {
 
 	if (FragInput.size() == 0) return 0;
+	if (Primary_chains.size() != 0 and Primary_chains[0].chains.size() == opts.NumAln) return 0;
 	std::vector<Point>  H1;
 	// FragInput is vector<Cluster>
 	// get points from FragInput and store them in H1		
 
 	for (unsigned int i = 0; i < FragInput.size(); i++) {
 
+		if (FragInput[i].used == 0) {
 			// insert start point s1 into H1
 			Point s1;
 			H1.push_back(s1);
@@ -2394,12 +2399,13 @@ int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary
 			else {
 				H1.back().orient = 0; 				
 			}
-
+		}
 	}
 
 	//clock_t begin = std::clock();
 
 	//Sort the point by row
+	if (H1.size() == 0) return 0;
 	sort(H1.begin(), H1.end(), SortByRowOp<Point>()); // with same q and t coordinates, end point < start point
 	std::vector<unsigned int> H2(H1.size());
 	iota(H2.begin(), H2.end(), 0);

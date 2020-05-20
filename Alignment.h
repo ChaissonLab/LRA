@@ -30,6 +30,7 @@ class Alignment {
 	string queryString, alignString, refString;
 	int nblocks;
 	int nm, nmm, nins, ndel;
+	int tm, tmm, tins, tdel;
 	int preClip, sufClip;
 	string cigar;
 	bool prepared;
@@ -48,7 +49,7 @@ class Alignment {
  	//int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
  	//vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains	
  	bool split;
- 	float value;
+ 	int value;
 
 	void Clear() {
 		queryString=alignString=refString="";
@@ -70,6 +71,7 @@ class Alignment {
 		flag=0;
 		mapqv=0;
 		nm=nmm=nins=ndel=0;
+		tm=tmm=tins=tdel=0;
 		nblocks=0;
 		preClip=0; sufClip=0;
 		prepared=false;
@@ -346,7 +348,7 @@ class Alignment {
 			
 			if (i > p) {
 				cigarstrm << i-p << '=';
-				nm+=i-p;
+				nm+=i-p;				
 				value+=i-p;
 				continue;
 			}
@@ -354,31 +356,37 @@ class Alignment {
 			if (i > p) {
 				cigarstrm << i-p << 'X';
 				nmm+=i-p;
-				value-=3*(i-p);
+				value-=i-p;
 				continue;
 			}
 			while (i < query.size() and query[i] == '-' and target[i] != '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'D';
-				ndel+=i-p;
+				//ndel+=i-p;
+				tdel+=i-p;
+				if (i-p<=10) {ndel++;}
 				if (i-p < 501) {value += -opts.coefficient*log(i-p) - 1;}
 				else if (i-p <= 10001){
 					int a = (int)floor((i-p-501)/5);
 					value += -opts.coefficient*LookUpTable[a] - 1;
 				}
-				else {value += -800;}
+				else if (i-p <= 100001) {value += -1000;}
+				else {value += -2000;}
 				continue;
 			}
 			while (i < query.size() and query[i] != '-' and target[i] == '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'I';
-				nins+=i-p;
+				//nins+=i-p;
+				tins+=i-p;
+				if (i-p<=10) nins++;
 				if (i-p < 501) {value += -opts.coefficient*log(i-p) - 1;}
 				else if (i-p <= 10001){
 					int a = (int)floor((i-p-501)/5);
 					value += -opts.coefficient*LookUpTable[a] - 1;
 				}
-				else {value += -800;}
+				else if (i-p <= 100001) {value += -1000;}
+				else {value += -2000;}
 				continue;
 			}
 		}
@@ -461,7 +469,7 @@ class Alignment {
 				 << tEnd << "\t"
 				 << (int) mapqv << "\t" 
 				 << readName << "\t" << readLen << "\t" << qStart << "\t" << qEnd << "\t"
-				 << nm << "\t" << nmm << "\t" << nblocks << "\t" << flag << endl;
+				 << nm << "\t" << nmm << "\t" << nins << "\t" << ndel << "\t" << value  << "\t" << flag << endl;
 	}
 
 	void PrintPAF(ostream &out, bool printCigar=false) {
@@ -495,7 +503,11 @@ class Alignment {
 			//
 			// Create a null alignment
 			//
-			cerr << "will create this later." << endl;
+			chrom="*";
+			tStart=0;
+			tEnd=0;
+			order=0;
+			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t" << string(read,readLen) << "\t*" << endl;
 		}
 		else {
 
@@ -531,6 +543,13 @@ class Alignment {
 			samStrm << "\t";
 			samStrm << "*";
 			samStrm << "\t";
+			samStrm << "NM:i:" << nm << "\t";
+			samStrm << "NX:i:" << nmm << "\t";
+			samStrm << "ND:i:" << ndel << "\t";
+			samStrm << "TD:i:" << tdel << "\t";
+			samStrm << "NI:i:" << nins << "\t";
+			samStrm << "TI:i:" << tins << "\t";
+			samStrm << "NV:i:" << value << "\t";
 			samStrm << "AO:i:" << order;
 		}
 		out << samStrm.str();
@@ -551,6 +570,8 @@ public:
 	unsigned char mapqv;
 	int nm;
 	int nmm;
+	int ndel;
+	int nins;
 	bool ISsecondary;
 	float value;
 	SegAlignmentGroup () {
@@ -560,6 +581,8 @@ public:
 		tEnd = 0;
 		nm = 0;
 		nmm = 0;
+		ndel = 0;
+		nins = 0;
 		ISsecondary = 0;
 		value = 0;
 
@@ -575,6 +598,8 @@ public:
 			tEnd   = max(tEnd, SegAlignment[s]->tEnd);
 			nm += SegAlignment[s]->nm;
 			nmm += SegAlignment[s]->nmm;
+			ndel += SegAlignment[s]->ndel;
+			nins += SegAlignment[s]->nins;
 			value += SegAlignment[s]->value;
 		}
 	}

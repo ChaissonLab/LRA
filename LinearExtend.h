@@ -343,7 +343,7 @@ TrimOverlappedAnchors(vector<Cluster> & extCluster) {
 
 		LongAnchors longanchors(&extCluster[c].matches);
 		for (int ln = 0; ln < extCluster[c].matches.size(); ln++) {
-			if (extCluster[c].matchesLengths[ln] >= 500) {
+			if (extCluster[c].matchesLengths[ln] >= 100) { // 500
 				longanchors.anchorIndex.push_back(ln);
 			}
 		}

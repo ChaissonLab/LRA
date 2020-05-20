@@ -32,7 +32,7 @@
 using namespace std;
 
 int IO_BUFFER_SIZE=10000000;
-const char* version="0.1-alpha";
+const char* lraVersion="0.1-alpha";
 
 bool ArgIs(const char* a, const char* b) {
 	return strcmp(a,b) == 0;
@@ -69,11 +69,13 @@ void HelpMap() {
 			 //<< "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
 			// << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
 			// << "	-T 	(flag)  Use log LookUpTable when gap length is larger than 501." << endl
+			 << "   -at  (float) a float in (0, 1), Threshold to decide secondary alignments based on chaining value." << endl
 		     << "   -t  n(int)   Use n threads (1)" << endl
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
 			 << "   -d 	(flag)  Enable dotPlot" << endl
-			 << "   -Al (int) Allow at most how many alignments for one read" << endl;
+			 << "   -PAl (int) Print at most how many alignments for one read" << endl
+			 << "   -Al (int) Compute at most how many alignments for one read" << endl;
 			 //<< "   -aa (flag)  use Merge.h" << endl;
 	cout << "Examples: " << endl
 			 << "Aligning CCS reads:  lra align -CCS -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
@@ -236,9 +238,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.readStart=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "--PAl")) {
+			opts.PrintNumAln=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
 		else if (ArgIs(argv[argi], "--Al")) {
 			opts.NumAln=atoi(GetArgv(argv, argc, argi));
-		}
+			++argi;
+		}		
 		else if (ArgIs(argv[argi], "-R")) {
 			opts.mergeClusters=true;
 		}
@@ -260,6 +267,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.NumOfminimizersPerWindow = 4;	
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
+			opts.maxGapBtwnAnchors=1500;
 		}
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.HighlyAccurate = true;
@@ -269,6 +277,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.NumOfminimizersPerWindow = 4;	
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
+			opts.maxGapBtwnAnchors=1500;
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.HighlyAccurate = false;
@@ -278,6 +287,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.NumOfminimizersPerWindow = 5;
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50; 
+			opts.maxGapBtwnAnchors=1800;
 		}		
 		else if (ArgIs(argv[argi], "-NANO")) {
 			opts.HighlyAccurate = false;
@@ -285,6 +295,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.maxGap=2000;
 			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;
+			opts.maxGapBtwnAnchors=1800;
+		}
+		else if (ArgIs(argv[argi], "-at")) {
+			opts.alnthres=atoi(GetArgv(argv, argc, argi));
+			++argi;
 		}
 		else if (ArgIs(argv[argi], "-SV")) {
 			opts.Printsvsig=true;
@@ -386,7 +401,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		for (int i=0; i < argc; i++) {
 			cl << " " << argv[i];
 		}
-		*outPtr << "@PG\tID:lra\tPN:lra\tVN:"<<version<<"\tCL:"<<cl.str() << endl;
+		*outPtr << "@PG\tID:lra\tPN:lra\tVN:"<<lraVersion<<"\tCL:"<<cl.str() << endl;
 		genome.header.WriteSAMHeader(*outPtr);
 	}
 
@@ -679,8 +694,8 @@ void RunStoreIndex(int argc, const char* argv[]) {
 
 void Usage() {
 	cout << "Program: lra (long sequence alignment)" << endl;
-	cout << "Version: " << version << endl;
-	cout << "Contact: Mark Chaisson (mchaisso@usc.edu)" << endl << endl;
+	cout << "Version: " << lraVersion << endl;
+	cout << "Contact: Mark Chaisson (mchaisso@usc.edu) and Jingwen Ren (jingwenr@usc.edu)" << endl << endl;
 	cout << "Usage:   lra <command> [options]"<< endl << endl;
 	cout << "Command: index   - Build global and local indexes on a genome." << endl;
 	cout << "         align   - Map reads using the index." << endl;

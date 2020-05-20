@@ -64,7 +64,9 @@ public:
 	int NumOfminimizersPerWindow;
 	bool Printsvsig;
 	int svsigLen;
+	float alnthres;
 	string timing;
+	int PrintNumAln;
 	Options() {
 		localMatch=4;
 		localMismatch=-3;
@@ -87,10 +89,10 @@ public:
 							// This parameter is used in another CleanOFFDiagonal function
 							// This parameter can be deleted here
 
-		minClusterSize=5; // For CCS, need to be larger!(20)
+		minClusterSize=5; // For CCS, need to be larger!(20) // 5
 		minClusterLength=50;  // For CCS, need to be larger!(200)
 		minRefinedClusterSize=40;
-		window=0;
+		window=0; 
 		mergeGapped=false;
 		viewPairwise=false;
 		hardClip=false;
@@ -118,6 +120,7 @@ public:
      	maxRemoveSpuriousAnchorsDist=500;
    		minRemoveSpuriousAnchorsNum=10;
    		NumAln = 6;//3
+   		PrintNumAln = 1;
    		BtnSubClusterswindow = 800;
 		binLength = 20000;
 		minBinNum = 3;
@@ -128,6 +131,7 @@ public:
 		NumOfminimizersPerWindow = 5;
 		Printsvsig=false;
 		svsigLen = 25;
+		alnthres = 0.7;
 		timing="";
 	}
 };
