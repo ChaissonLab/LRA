@@ -703,7 +703,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 							}
 						}
 					}
-					if (minDistance != -1 and minDistance < 300) {
+					if (minDistance != -1 and minDistance < 1000) {
 						assert(bestDiag != -1);
 						curDiagIndex=bestDiag;
 						diagToCluster[index]=curDiagIndex;
@@ -739,8 +739,8 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			clusters[curCluster].qStart = min(clusters[curCluster].qStart, matches[i].first.pos);
 			clusters[curCluster].tStart = min(clusters[curCluster].tStart, matches[i].second.pos);
 	
-			/*
-			cout << curCluster << "\t" << index << "\t"  << i << "\t" << d << "\t"
+
+			cout << curCluster << "\t" << index << "\t"  << s << "-" << i  << "-" << e << "\t" << d << "\t"
 					 << clusters[curCluster].qStart << "\t" 
 					 << clusters[curCluster].qEnd << "\t" 
 					 << clusters[curCluster].qEnd - clusters[curCluster].qStart << "\t" 
@@ -749,7 +749,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 					 << clusters[curCluster].tEnd - clusters[curCluster].tEnd << "\t" 
 					 << clusters[curCluster].matches.size() << "\t"
 					 << outerIteration << endl;
-			*/
+
 	
 			assert(clusters[curCluster].tEnd >= clusters[curCluster].tStart);
 			assert(clusters[curCluster].qEnd >= clusters[curCluster].qStart);
@@ -778,7 +778,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		}
 	}
 	int nContained=0;
-	
+	/*
 	for (int c=startClusterIndex; c < clusters.size(); c++) {
 		bool sizeThresh=clusters[c].matches.size() >= localMinClusterSize*5;
 		bool xIntvS = contains(xIntv, clusters[c].qStart);
@@ -795,43 +795,8 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	//	if (nContained > 20) { cerr << clusters.size() << "\t" << nContained << endl;}
 	//  std::cout << outerIteration << "\t" << clusters.size() << "\t" << cn << endl;
 	clusters.resize(cn);
-	
+	*/
 
-			
-			//
-			// Add this point to a cluster.
-
-	
-//	while ( foundCluster == true ) {
-//		int maxDiagSize=0;
-//		int maxDiag=0;
-//		bool clusterStarted = false;
-//		for ( int i=0; i < bins.size(); i++ ) {
-//			if ( bins[i] > maxDiagSize and bins[i] > opts.minClusterSize ) { 
-//				maxDiagSize = bins[i];
-//				maxDiag = i;
-//			}
-//		}
-//		if ( maxDiagSize  == 0 ) {
-//			break;
-//		}
-//		else {
-//			int j=maxDiag;
-//			while (j > 0 and maxDiag - j < 3 and bins[j-1] > opts.minClusterSize) { j--; } //3;
-//			int k=maxDiag;
-//			while (k < bins.size() and k-maxDiag < 3 and bins[k] > 0) { k++;} //3;
-//			int totalSize=0;
-//			for (int l=j; l < k; l++) {
-//				totalSize+=bins[l];
-//				bins[l] = 0;
-//			}
-//
-//			diagSize.push_back(totalSize);
-//			diagStart.push_back(j);
-//			diagEnd.push_back(k);
-//		}
-//	}
-//	
 }
 
 void SplitClustersWithGaps(vector<Cluster> &clusters, vector<Cluster> &split, Options &opts ) {

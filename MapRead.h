@@ -1254,6 +1254,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		//		cout << "roughClusters: " << c << "\t" << roughClusters[c].start << "\t" << roughClusters[c].end << endl;
 		StoreFineClusters(forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, read.length, xIntv, yIntv, forwardStrand, c);
 	}
+	cout << "ended with " << clusters.size() << " matches "<< endl;
 
 
 	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize());

@@ -481,6 +481,13 @@ class Alignment {
 		out << readName << "\t" << queryString.size() << "\t" << qStart << "\t" << qEnd << "\t" 
 				<< strandChar << "\t" << chrom << "\t" << genomeLen << "\t" << tStart << "\t" << tEnd 
 				<< "\t" << nm+nmm+nins+ndel << "\t" << (int)mapqv << "\t" << "AO:i:" << order;
+		out << "\t" << "NM:i:" << nm << "\t";
+		out << "NX:i:" << nmm << "\t";
+		out << "ND:i:" << ndel << "\t";
+		out << "TD:i:" << tdel << "\t";
+		out << "NI:i:" << nins << "\t";
+		out << "TI:i:" << tins;
+
 		if (printCigar) {
 			out << "\tCG:z:";
 			char clipOp = 'S';
