@@ -538,7 +538,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		if (diag < minDiag) { minDiag = diag;}
 		if (diag > maxDiag) { maxDiag = diag;}
 	}
-	int binSize=50;
+	int binSize=200;
 	long span=maxDiag-minDiag;
 
 	//cerr << "span: " << span << " binSize: " << binSize << " minClusterSize: " << opts.minClusterSize << endl;
@@ -611,7 +611,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 								}
 							}
 						}
-						if (minDistance != -1 and minDistance < 300) {
+						if (minDistance != -1 and minDistance < 1000) {
 							assert(bestDiag != -1);
 							curDiagIndex=bestDiag;
 							diagToCluster[index]=curDiagIndex;
