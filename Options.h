@@ -48,7 +48,7 @@ public:
 	int localBand;
 	int MergeSplit;
 	int flagRemove;
-	int minRemovePairedIndelsLength; // if an anchor's length is larger than this parameter, 
+	int maxRemovePairedIndelsLength; // if an anchor's length is larger than this parameter, 
 									// then even if it has paired indels before and after it, we do not delete this anchor.
 	int maxRemoveSpuriousAnchorsDist; 
 	int minRemoveSpuriousAnchorsNum;
@@ -113,7 +113,7 @@ public:
 		LookUpTable=true;
 		MergeSplit=true;
    		flagRemove=0;
-   		minRemovePairedIndelsLength=1000; // used to be 50
+   		maxRemovePairedIndelsLength=500; // used to be 50
    		//maxRemoveSpuriousAnchorsDist=200;
    		//minRemoveSpuriousAnchorsNum=15;
    		//minRemoveSpuriousAnchorsLength=100;

@@ -1889,9 +1889,15 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 
 	// Decide the rate;
 	//
+<<<<<<< HEAD
 	float rate = 4;//2
 	//cerr << "totalMatch/read.length: " << (float)totalMatch / (float) read.length << " rate: " << rate << endl;
 	if ((float)totalMatch / (float) read.length <= 0.1) rate = 4; 
+=======
+	float rate = 1;
+	// if ((float)totalMatch / (float) read.length <= 0.1) rate = 3; 
+	// cout << "rate: " << rate << endl;
+>>>>>>> master
 
 	// get points from FragInput and store them in H1;
 	//
