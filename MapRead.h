@@ -1816,7 +1816,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				if (qe > qs and te > ts) {
 					SpaceLength = max(qe - qs, te - ts); 
 					//cerr << "SpaceLength: " << SpaceLength << "st: " << st << endl;
-					if (SpaceLength > 1000 and SpaceLength < 6000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
+					if (SpaceLength > 1000 and SpaceLength < 10000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
 						// btwnClusters have GenomePos, st, matches, coarse
 						// This function also set the "coarse" flag for RefinedClusters[cur]
 						RefineBtwnSpace(RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te, ts, st, cur);
