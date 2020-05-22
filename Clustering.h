@@ -526,7 +526,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 											 interval_map<GenomePos, int> &xIntv, 
 											 interval_map<GenomePos, int> &yIntv,
 											 int strand=0, int outerIteration=0) {
-	int localMinClusterSize=5;
+	int localMinClusterSize=2;
 	int startClusterIndex=clusters.size();
 	if (e==s) {
 		return;
@@ -766,7 +766,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	for (int c=startClusterIndex; c < clusters.size(); c++) {
 		if (clusters[c].matches.size() > localMinClusterSize) {
 			//			cout << "adding intervals " << clusters[c].qStart << "\t" << clusters[c].qEnd << "\t" << clusters[c].tStart << "\t" << clusters[c].tEnd << endl;
-			if (clusters[c].matches.size() >= localMinClusterSize) {
+			if (clusters[c].matches.size() >= localMinClusterSize*4) {
 				sufficientSize=true;
 			}
 			xIntv.add(make_pair(interval<GenomePos>::right_open(clusters[c].qStart, 
@@ -778,15 +778,17 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		}
 	}
 	int nContained=0;
-	
+	/*
 	for (int c=startClusterIndex; c < clusters.size(); c++) {
-		bool sizeThresh=clusters[c].matches.size() >= localMinClusterSize*5;
+		bool sizeThresh=clusters[c].matches.size() >= localMinClusterSize*2;
 		bool xIntvS = contains(xIntv, clusters[c].qStart);
 		bool xIntvE = contains(xIntv, clusters[c].qEnd-1);
 		bool yIntvS = contains(yIntv, clusters[c].tStart);
 		bool yIntvE = contains(yIntv, clusters[c].tEnd-1);
 		bool contained = xIntvS or xIntvE or yIntvS or yIntvE;
 		if (sizeThresh == false and contained == true) { ++nContained;}
+		//
+		// If the anchor is large enough, or it is 
 		if (sizeThresh or (contained == false and sufficientSize == true) ) {
 			clusters[cn] = clusters[c];
 			cn++;
@@ -795,7 +797,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	//	if (nContained > 20) { cerr << clusters.size() << "\t" << nContained << endl;}
 	//  std::cout << outerIteration << "\t" << clusters.size() << "\t" << cn << endl;
 	clusters.resize(cn);
-	
+	*/
 
 			
 			//

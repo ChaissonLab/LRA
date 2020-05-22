@@ -1318,8 +1318,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	}
 	
 	ClusterOrder fineClusterOrder(&clusters, 1);
-	RemoveOverlappingClusters(clusters, fineClusterOrder.index, opts);
-	ClusterOrder fineClusterOrder2(&clusters, 1);
+	//RemoveOverlappingClusters(clusters, fineClusterOrder.index, opts);
+
 	/*
 	for (int co=0; co < clusters.size(); co++) {
 		int idx=fineClusterOrder2.index[co];
