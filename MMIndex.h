@@ -357,7 +357,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 
 	for (uint32_t s = 0; s < Sortindex.size(); s++) {
 		uint32_t id = minimizers[Sortindex[s]].pos/winsize;
-		if (winCount[id] > 0 and minimizers[Sortindex[s]].pos<id*winsize+10) { // force the minimizer to fall into the first 10bp of the window
+		if (winCount[id] > 0 and minimizers[Sortindex[s]].pos<id*winsize+5) { // force the minimizer to fall into the first 10bp of the window
 			winCount[id] -= 1;
 		}
 		//if (winCount[id] > 0) {

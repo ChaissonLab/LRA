@@ -188,14 +188,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.globalW=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}		
-		else if (ArgIs(argv[argi], "-M")) {
-			opts.minClusterSize=atoi(GetArgv(argv, argc, argi));
+		else if (ArgIs(argv[argi], "-K")) {
+			opts.globalK=atoi(GetArgv(argv, argc, argi));
 			++argi;
-		}		
-		else if (ArgIs(argv[argi], "-m")) {
-			opts.minRefinedClusterSize=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}		
+		}	
 		else if (ArgIs(argv[argi], "-f")) {
 			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
 			++argi;
@@ -204,14 +200,18 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.NumOfminimizersPerWindow=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}			
+		else if (ArgIs(argv[argi], "-m")) {
+			opts.minRefinedClusterSize=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}	
+		else if (ArgIs(argv[argi], "-M")) {
+			opts.minClusterSize=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}	
 		else if (ArgIs(argv[argi], "-F")) {
 			opts.flagRemove=atoi(GetArgv(argv, argc, argi));
 			++argi;
-		}
-		else if (ArgIs(argv[argi], "-K")) {
-			opts.globalK=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}		
+		}	
 		else if (ArgIs(argv[argi], "-H")) {
 			opts.hardClip=true;
 		}
@@ -515,7 +515,6 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 			HelpStoreLocal();
 			exit(1);
 		}
-		/*
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.globalMaxFreq = 50;
 			opts.NumOfminimizersPerWindow = 4;			
@@ -532,7 +531,6 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 			opts.globalMaxFreq = 60;
 			opts.NumOfminimizersPerWindow = 5;			
 		}
-		*/
 		else if (ArgIs(argv[argi], "-k")) {
 			opts.localK=atoi(argv[++argi]);
 			glIndex.k=opts.localK;
@@ -585,7 +583,7 @@ void RunStoreGlobal(int argc, const char* argv[],
 		}
 		else if (ArgIs(argv[argi], "-K")) {
 			++argi;
-			opts.globalW = atoi(argv[argi]);
+			opts.globalK = atoi(argv[argi]);
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.globalMaxFreq = 50;

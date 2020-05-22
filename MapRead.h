@@ -1212,7 +1212,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	int minDiagCluster = 0; // This parameter will be set inside function CleanOffDiagonal, according to anchors density
 	CleanOffDiagonal(forMatches, opts, minDiagCluster);
 
-
+	//cerr << "opts.globalK " << opts.globalK << endl;
 	vector<Cluster> clusters;
 	vector<Cluster> roughClusters;
 	int forwardStrand=0;
@@ -1327,32 +1327,32 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	}
 	*/
 
-	if (opts.dotPlot) {
-		ofstream clust("clusters-coarse.tab");
-		for (int m = 0; m < clusters.size(); m++) {
-			if (clusters[m].strand == 0) {
-				clust << clusters[m].qStart << "\t"
-							<< clusters[m].tStart << "\t"
-							<< clusters[m].qEnd   << "\t"
-							<< clusters[m].tEnd   << "\t"
-							<< m << "\t"
-							<< clusters[m].strand << "\t"
-							<< clusters[m].outerCluster << "\t"
-							<< clusters[m].matches.size() << endl;
-			}
-			else {
-				clust << clusters[m].qStart << "\t"
-							<< clusters[m].tEnd   << "\t"
-							<< clusters[m].qEnd   << "\t"
-							<< clusters[m].tStart << "\t"
-							<< m << "\t"
-							<< clusters[m].strand << "\t"
-							<< clusters[m].outerCluster << "\t"
-							<< clusters[m].matches.size() << endl;
-			}
-		}
-		clust.close();
-	}
+	// if (opts.dotPlot) {
+	// 	ofstream clust("clusters-coarse.tab");
+	// 	for (int m = 0; m < clusters.size(); m++) {
+	// 		if (clusters[m].strand == 0) {
+	// 			clust << clusters[m].qStart << "\t"
+	// 						<< clusters[m].tStart << "\t"
+	// 						<< clusters[m].qEnd   << "\t"
+	// 						<< clusters[m].tEnd   << "\t"
+	// 						<< m << "\t"
+	// 						<< clusters[m].strand << "\t"
+	// 						<< clusters[m].outerCluster << "\t"
+	// 						<< clusters[m].matches.size() << endl;
+	// 		}
+	// 		else {
+	// 			clust << clusters[m].qStart << "\t"
+	// 						<< clusters[m].tEnd   << "\t"
+	// 						<< clusters[m].qEnd   << "\t"
+	// 						<< clusters[m].tStart << "\t"
+	// 						<< m << "\t"
+	// 						<< clusters[m].strand << "\t"
+	// 						<< clusters[m].outerCluster << "\t"
+	// 						<< clusters[m].matches.size() << endl;
+	// 		}
+	// 	}
+	// 	clust.close();
+	// }
 	//
 	// remove Cluster that firstChromIndex != lastChromIndex; or remove Cluster of 0 matches;
 	//
@@ -1407,6 +1407,30 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 
 
 	if (opts.dotPlot) {
+		ofstream clust("clusters_coarse.tab");
+		for (int m = 0; m < clusters.size(); m++) {
+				if (clusters[m].strand == 0) {
+					clust << clusters[m].qStart << "\t"
+						  << clusters[m].tStart << "\t"
+						  << clusters[m].qEnd << "\t"
+						  << clusters[m].tEnd << "\t"
+						  << m << "\t"
+						  << genome.header.names[clusters[m].chromIndex]<< "\t"
+						  << clusters[m].strand << endl;
+				}
+				else {
+					clust << clusters[m].qStart << "\t"
+						  << clusters[m].tEnd << "\t"
+						  << clusters[m].qEnd << "\t"
+						  << clusters[m].tStart << "\t"
+						  << m << "\t"
+						  << genome.header.names[clusters[m].chromIndex]<< "\t"
+						  << clusters[m].strand << endl;
+				}				
+		}
+		clust.close();
+	}
+	if (opts.dotPlot) {
 		ofstream clust("splitclusters-coarse.tab");
 		for (int m = 0; m < splitclusters.size(); m++) {
 			if (splitclusters[m].strand == 0) {
@@ -1416,6 +1440,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					  << splitclusters[m].tEnd   << "\t"
 					  << m << "\t"
 					  << splitclusters[m].coarse << "\t"
+					  << genome.header.names[clusters[splitclusters[m].coarse].chromIndex]<< "\t"
 					  << splitclusters[m].strand << endl;
 			}
 			else {
@@ -1425,6 +1450,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					  << splitclusters[m].tStart   << "\t"
 					  << m << "\t"
 					  << splitclusters[m].coarse << "\t"
+					  << genome.header.names[clusters[splitclusters[m].coarse].chromIndex]<< "\t"
 					  << splitclusters[m].strand << endl;
 			}
 		}
@@ -1443,6 +1469,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						  << splitclusters[m].tEnd   << "\t"
 						  << m << "\t"
 						  << splitclusters[m].coarse << "\t"
+						  << genome.header.names[clusters[splitclusters[m].coarse].chromIndex]<< "\t"
 						  << splitclusters[m].strand << "\t"
 						  << splitclusters[m].Val << endl;
 				}
@@ -1453,6 +1480,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 						  << splitclusters[m].tStart   << "\t"
 						  << m << "\t"
 						  << splitclusters[m].coarse << "\t"
+					 	 << genome.header.names[clusters[splitclusters[m].coarse].chromIndex]<< "\t"
 						  << splitclusters[m].strand << "\t"
 						  << splitclusters[m].Val << endl;
 				}				
@@ -1471,8 +1499,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	vector<Primary_chain> Primary_chains;
 	float rate = 4;
 	if (splitclusters.size() > 10) { // mapping to repetitive region
-		rate = 1; 
+		rate = 4; 
 	}
+	//cerr << "rate: " << rate << endl;
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
@@ -1583,6 +1612,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 							  << p << "\t"
 							  << h << "\t"
 							  << Primary_chains[p].chains[h].ch[c] << "\t"
+							  << genome.header.names[clusters[ph].chromIndex]<< "\t"
 							  << clusters[ph].strand << endl;
 					} 
 					else {
@@ -1593,6 +1623,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 							  << p << "\t"
 							  << h << "\t"
 							  << Primary_chains[p].chains[h].ch[c] << "\t"
+							  << genome.header.names[clusters[ph].chromIndex]<< "\t"
 							  << clusters[ph].strand << endl;
 					}
 				}
