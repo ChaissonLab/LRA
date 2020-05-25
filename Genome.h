@@ -146,6 +146,12 @@ class Genome {
 			return nameMap[chrom];
 		}
 	}
+	void GlobalPosToChrom(long offset, long &chromPos, string &name) {
+		int index=header.Find(offset);
+		name=header.names[index];
+		chromPos=offset-header.pos[index];
+	}
+
 	char *OffsetToChrom(GenomePos offset) {
 		int chromIndex = header.Find(offset);
 		assert(chromIndex < seqs.size());

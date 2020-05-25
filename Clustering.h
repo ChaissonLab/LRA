@@ -44,32 +44,37 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 	}
 	
 	vector<bool> onDiag(matches.size(), false);
-	
+	int nOnDiag=0;
 	if (matches.size() > 1 and abs(DiagonalDifference(matches[0], matches[1], strand)) < opts.cleanMaxDiag and 
 				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[0], strand) < diagDrift )) { 
 		onDiag[0] = true;
+		nOnDiag++;
 	}
 	int m;
+	
 	for (int i = 1; i < matches.size() ; i++) {
 		if (abs(DiagonalDifference(matches[i], matches[i-1], strand)) < opts.cleanMaxDiag and 
 				(diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift )) {	
 			onDiag[i] = true;
 			onDiag[i-1] = true;
+			nOnDiag++;
 		}
 	}
 	bool prevOnDiag = false;
 	int  diagStart;
 	int  Largest_ClusterNum = 0;
-
+	ofstream diagSize("clustersize.tab");
 	for (int i = 0; i < matches.size(); i++) {
 		if (prevOnDiag == false and onDiag[i] == true) {
 			diagStart = i;
 		}
 		if (prevOnDiag == true and onDiag[i] == false) {
 			Largest_ClusterNum = max(Largest_ClusterNum, i - diagStart);
+			diagSize << i - diagStart << "\t" << i << endl;
 		}
 		prevOnDiag = onDiag[i];
 	}
+
 
 	// Set the parameter minDiagCluster according to the value of Largest_ClusterNum
 	// In this way, we won't lose small inversion.
@@ -94,8 +99,8 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 		minDiagCluster = 20;
 	}
 	*/
-	minDiagCluster=10; // used to be 5, but if use smaller kmer, should be larger
-	
+	minDiagCluster=0.05*Largest_ClusterNum; // used to be 5, but if use smaller kmer, should be larger
+
 
 	//minDiagCluster = (int) floor(Largest_ClusterNum/10);
 	//cerr << "Largest_ClusterNum: " << Largest_ClusterNum << " minDiagCluster: " << minDiagCluster << endl;
@@ -170,6 +175,24 @@ class ClusterCoordinates {
 			tovp=tEnd-tStart;
 		}
 		return ((float)qovp/(qEnd-qStart) > frac) or ((float)tovp/(tEnd-tStart) > frac);
+	}
+
+	bool OverlapsFracB(const ClusterCoordinates &b, float frac) const {
+		int ovp=0;
+		if (b.qStart >= qStart and b.qStart < qEnd) {
+			ovp=min(qEnd, b.qEnd)-b.qStart;
+		}
+		else if (b.qEnd > qStart and b.qEnd < qEnd) {
+			ovp=b.qEnd-max(qStart, b.qStart);
+		}
+		else if (b.qStart <= qStart and b.qEnd > qEnd) {
+			ovp=qEnd-qStart;
+		}
+		float denomA=qEnd-qStart;
+		float denomB=b.qEnd-b.qStart;
+		//		cout << "ovp: " << denomA << "\t" << denomB << "\t" << ovp << "\t" << ovp/denomB << endl;
+		if ( ovp/denomB > frac) { return true; }
+		else { return false; }
 	}
 
 	bool Overlaps(const ClusterCoordinates &b, float frac) const {
@@ -522,11 +545,12 @@ long GetDiag(pair<Tup, Tup> &match, int strand) {
 
 template<typename Tup>
 void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
+											 Genome &genome,
 											 GenomePos readLength, 
 											 interval_map<GenomePos, int> &xIntv, 
 											 interval_map<GenomePos, int> &yIntv,
 											 int strand=0, int outerIteration=0) {
-	int localMinClusterSize=2;
+	int localMinClusterSize=0;
 	int startClusterIndex=clusters.size();
 	if (e==s) {
 		return;
@@ -611,7 +635,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 								}
 							}
 						}
-						if (minDistance != -1 and minDistance < 1000) {
+						if (minDistance != -1 and minDistance < 4000) {
 							assert(bestDiag != -1);
 							curDiagIndex=bestDiag;
 							diagToCluster[index]=curDiagIndex;
@@ -636,7 +660,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			assert(curCluster != -1);
 			if (clusters.size() > startClusterIndex and 
 					(clusterSize=clusters[curCluster].matches.size()) > 0 
-					and GapDifference(clusters[curCluster].matches[clusterSize-1], matches[i]) > 1000) {
+					and GapDifference(clusters[curCluster].matches[clusterSize-1], matches[i]) > 5000) {
 				//
 				// This is not the first point on a diagonal, but it is too
 				// far away from the previous point. Split into a new cluster.
@@ -738,15 +762,21 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			clusters[curCluster].tEnd = max(clusters[curCluster].tEnd, matches[i].second.pos + opts.globalK);
 			clusters[curCluster].qStart = min(clusters[curCluster].qStart, matches[i].first.pos);
 			clusters[curCluster].tStart = min(clusters[curCluster].tStart, matches[i].second.pos);
-	
+			
+			string chromName;
+			long chromPos;
+			genome.GlobalPosToChrom(clusters[curCluster].tStart, chromPos, chromName);
 			/*
-			cout << curCluster << "\t" << index << "\t"  << i << "\t" << d << "\t"
+			cout << curCluster << "\t" << index << "\t"  
+					 << s << "-" << i << "-" << e << "\t" << d << "\t"
+					 << e-s << "\t"
 					 << clusters[curCluster].qStart << "\t" 
 					 << clusters[curCluster].qEnd << "\t" 
 					 << clusters[curCluster].qEnd - clusters[curCluster].qStart << "\t" 
 					 << clusters[curCluster].tStart << "\t" 
 					 << clusters[curCluster].tEnd << "\t"
 					 << clusters[curCluster].tEnd - clusters[curCluster].tEnd << "\t" 
+					 << chromName << "\t" << chromPos << "\t"
 					 << clusters[curCluster].matches.size() << "\t"
 					 << outerIteration << endl;
 			*/
@@ -778,9 +808,9 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		}
 	}
 	int nContained=0;
-	/*
+
 	for (int c=startClusterIndex; c < clusters.size(); c++) {
-		bool sizeThresh=clusters[c].matches.size() >= localMinClusterSize*2;
+		bool sizeThresh=clusters[c].matches.size() > 1;
 		bool xIntvS = contains(xIntv, clusters[c].qStart);
 		bool xIntvE = contains(xIntv, clusters[c].qEnd-1);
 		bool yIntvS = contains(yIntv, clusters[c].tStart);
@@ -797,7 +827,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	//	if (nContained > 20) { cerr << clusters.size() << "\t" << nContained << endl;}
 	//  std::cout << outerIteration << "\t" << clusters.size() << "\t" << cn << endl;
 	clusters.resize(cn);
-	*/
+
 
 			
 			//
