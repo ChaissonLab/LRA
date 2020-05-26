@@ -335,6 +335,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.cleanMaxDiag=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "--maxCandidates")) {
+			opts.maxCandidates=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
 		else {
 			if (genomeFile == "") {
 				genomeFile = argv[argi];

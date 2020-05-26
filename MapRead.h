@@ -123,7 +123,7 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 	vector<long> forDiagonals, revDiagonals;
 	vector<long> *diagPtr;
 	int nForCandidates=0, nRevCandidates=0;
-	int maxCand=10;
+	int maxCand=opts.maxCandidates;
 	vector<bool> keep(clusters.size(), true);
 	for (a=0; a < clusters.size(); a++) { 
 		

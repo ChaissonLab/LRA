@@ -63,14 +63,14 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 	bool prevOnDiag = false;
 	int  diagStart;
 	int  Largest_ClusterNum = 0;
-	ofstream diagSize("clustersize.tab");
+	//	ofstream diagSize("clustersize.tab");
 	for (int i = 0; i < matches.size(); i++) {
 		if (prevOnDiag == false and onDiag[i] == true) {
 			diagStart = i;
 		}
 		if (prevOnDiag == true and onDiag[i] == false) {
 			Largest_ClusterNum = max(Largest_ClusterNum, i - diagStart);
-			diagSize << i - diagStart << "\t" << i << endl;
+			//	diagSize << i - diagStart << "\t" << i << endl;
 		}
 		prevOnDiag = onDiag[i];
 	}
