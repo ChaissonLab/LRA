@@ -1186,7 +1186,8 @@ PassgenomeThres(int cur, GenomePos & genomeThres, FinalChain & finalchain) {
 	else return 0;
 }
 
-int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, 
+int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
+						vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, 
 						ostream *output, ostream *svsigstrm, Timing &timing, pthread_mutex_t *semaphore=NULL) {
 	string baseName = read.name;
 
@@ -1222,8 +1223,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	if (opts.dotPlot) {
 		ofstream clust("all-matches.dots");
 		for (int m=0; m < allMatches.size(); m++) {
-			clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos << "\t" << allMatches[m].first.pos+ opts.globalK << "\t" 
-				<< allMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
+			clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos 
+						<< "\t" << allMatches[m].first.pos+ opts.globalK << "\t" 
+						<< allMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
 		}
 		clust.close();
 	}
@@ -1282,6 +1284,17 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		//		cout << "roughClusters: " << c << "\t" << roughClusters[c].start << "\t" << roughClusters[c].end << endl;
 		StoreFineClusters(forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, genome, read.length, xIntv, yIntv, forwardStrand, c);
 	}
+	for (int cl=0; cl < clusters.size(); cl++) {
+		GenomePairs newm;
+		newm=clusters[cl].matches;
+	
+		CartesianSort(newm, 0, newm.size());
+		for (int ni=0; ni < newm.size(); ni++) {
+			assert(newm[ni].first.pos == clusters[cl].matches[ni].first.pos);
+			assert(newm[ni].second.pos == clusters[cl].matches[ni].second.pos);
+		}
+	}
+
 
 	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize());
 	minDiagCluster = 0; // This parameter will be set inside function CleanOffDiagonal, according to anchors density

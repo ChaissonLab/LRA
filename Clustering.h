@@ -550,6 +550,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 											 interval_map<GenomePos, int> &xIntv, 
 											 interval_map<GenomePos, int> &yIntv,
 											 int strand=0, int outerIteration=0) {
+
 	int localMinClusterSize=0;
 	int startClusterIndex=clusters.size();
 	if (e==s) {
@@ -625,7 +626,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 
 						int minDistance=-1;
 						int bestDiag=-1;
-						for (int clSearch=0; clSearch < clusters.size(); clSearch++) {
+						for (int clSearch=startClusterIndex; clSearch < clusters.size(); clSearch++) {
 							if (clusters[clSearch].matches.size() > 0) {
 								
 								int d=GapDifference(matches[i], clusters[clSearch].matches[clusters[clSearch].matches.size()-1]);
@@ -642,7 +643,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 							curCluster=curDiagIndex;
 						}
 						else {
-							//							cout << "Creating a new cluster because of diagonal drift " << index - curDiagIndex << "\t" << minDistance << endl;
+							//							cout << "Creating a new cluster because of diagonal drift " << index - curDiagIndex << "\t" << minDistance << "\t" << clusters.size() << endl;
 							diagToCluster[index] = clusters.size();
 							curDiagIndex = index;
 							
@@ -717,7 +718,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 					//
 					int minDistance=-1;
 					int bestDiag=-1;
-					for (int clSearch=0; clSearch < clusters.size(); clSearch++) {
+					for (int clSearch=startClusterIndex; clSearch < clusters.size(); clSearch++) {
 						if (clusters[clSearch].matches.size() > 0) {
 							
 							int d=GapDifference(matches[i], clusters[clSearch].matches[clusters[clSearch].matches.size()-1]);
@@ -734,8 +735,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 					}
 					else {
 
-						//						cout << "Creating a new cluster while the min distance is " << minDistance <<endl;
-						
+						//						cout << "Creating a new cluster while the min distance is " << minDistance << "\t" << clusters.size()<< endl;						
 						diagToCluster[index] = clusters.size();
 						curDiagIndex = index;
 						curCluster   = clusters.size();
@@ -750,7 +750,17 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 				d=GapDifference(clusters[curCluster].matches[clusters[curCluster].matches.size()-1], matches[i]);
 			}
 				
+			if (clusters[curCluster].matches.size() > 0) {
+				int last=clusters[curCluster].size()-1;
+				if (matches[i].first.pos != clusters[curCluster].matches[last].first.pos) {
+					assert(matches[i].first.pos >= clusters[curCluster].matches[last].first.pos);
+				}
+				else {
+					assert(matches[i].second.pos >= clusters[curCluster].matches[last].second.pos);
+				}
+			}
 			clusters[curCluster].matches.push_back(matches[i]);
+
 			/*
 			cout << curCluster << "\t" << curDiagIndex << "\t" << index <<
 			"\t" << clusters[curCluster].matches.size() << "\t" <<
