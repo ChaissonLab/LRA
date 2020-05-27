@@ -18,6 +18,7 @@
 #include "overload.h"
 #include "LinearExtend.h"
 #include "SplitClusters.h"
+#include "Timing.h"
 
 #include <iostream>
 #include <algorithm>
@@ -31,55 +32,6 @@
 
 using namespace std;
 
-class Timing {
-public:
-	vector<long> ticks;
-	vector<string> labels;
-	int index;
-	clock_t curTime;
-	void Start() {
-		index=0;
-		curTime=clock()/1000;
-	}
-	void Tick(string label) {
-		if (index +1 > ticks.size()) {
-			ticks.push_back(0);
-		}
-		long prev=ticks[index];
-		ticks[index] += clock()/1000 - curTime;
-		if (prev > ticks[index]) {
-			cerr << "Warning, tick has wrapped over long" << endl;
-		}
-		curTime=clock()/1000;
-		if (index + 1 > labels.size()) {
-			labels.push_back(label);
-		}
-		index+=1;
-	}
-	void Add(Timing &t) {
-		//
-		// Only add ticks the same size -- sometimes a thread 
-		// will be created without adding ticks.
-		//
-		if (t.ticks.size() == ticks.size()) {
-			for (int i =0; i < t.ticks.size(); i++) {
-				ticks[i] += t.ticks[i];
-			}
-		}
-	}
-	void Summarize(const string &outFileName) {
-		long total=0;
-		ofstream outFile(outFileName.c_str());
-		for (int i=0;i<ticks.size(); i++) {
-			total+= ticks[i];
-		}
-		for (int i=0; i < ticks.size(); i++) {
-			outFile << labels[i] << "\t" << ticks[i] << "\t" << ((double)ticks[i])/total << endl;
-		}
-		outFile.close();
-	}
-		
-};
 
 
 void SwapStrand (Read & read, Options & opts, Cluster & cluster) {
@@ -2194,6 +2146,14 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 			
 			baseDots.close();
 	}
+
+	timing.Tick("Final");
+	for (int a=0; a < (int) min(alignmentsOrder.size(), opts.PrintNumAln); a++){
+		for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
+			alignmentsOrder[a].SegAlignment[s]->runtime=timing.Elapsed();
+		}
+	}
+
 	if (alignmentsOrder.size() > 0 and alignmentsOrder[0].SegAlignment.size() > 0) {
 		for (int a=0; a < (int) min(alignmentsOrder.size(), opts.PrintNumAln); a++){
 			for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {

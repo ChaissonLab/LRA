@@ -39,7 +39,8 @@ HEADERS=MinCount.h \
   GlobalChain.h \
   NaiveDP.h \
   Read.h \
-  SparseDP.h
+  SparseDP.h \
+  Timing.h
 
 CXX=g++
 # -std=c++14 
