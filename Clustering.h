@@ -551,7 +551,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 											 interval_map<GenomePos, int> &yIntv,
 											 int strand=0, int outerIteration=0) {
 
-	int localMinClusterSize=0;
+	int localMinClusterSize=0; 
 	int startClusterIndex=clusters.size();
 	if (e==s) {
 		return;

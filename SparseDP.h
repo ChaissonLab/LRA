@@ -1551,7 +1551,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 			//
 			// If this chain overlap with read greater than 10%, insert it to chains
 			//
-			if (((float)(qEnd - qStart)/read.length) > 0.05) {
+			if (((float)(qEnd - qStart)/read.length) > 0.04) {
 				//
 				// Compare onechain to all the primary chains we've found. 
 				// If onechain overlaps with one primary chain over 50% ---> onechain is a secondary chain 
@@ -1889,9 +1889,10 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 
 	// Decide the rate;
 	//
-	float rate = 1;//2
+	float rate = 2;//1
+	if ((float)totalMatch / (float) read.length <= 0.01) rate = 4; //2
 	//cerr << "totalMatch/read.length: " << (float)totalMatch / (float) read.length << " rate: " << rate << endl;
-	if ((float)totalMatch / (float) read.length <= 0.1) rate = 2; 
+
 
 	// get points from FragInput and store them in H1;
 	//
