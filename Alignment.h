@@ -44,6 +44,7 @@ class Alignment {
 	char *genome;
 	int strand;
 	int order;
+	int runtime;
  	bool ISsecondary; // ISsecondary == 1 means this is a secondary chain. Otherwise it's a primary chain
  	bool Supplymentary; // Supplymentary == 1 means this is a Supplymentary alignment;
  	//int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
@@ -68,6 +69,7 @@ class Alignment {
 	}
 
 	Alignment() {
+		runtime=0;
 		flag=0;
 		mapqv=0;
 		nm=nmm=nins=ndel=0;
@@ -487,7 +489,9 @@ class Alignment {
 		out << "TD:i:" << tdel << "\t";
 		out << "NI:i:" << nins << "\t";
 		out << "TI:i:" << tins;
-
+		if (runtime > 0) {
+			out << "\tRT:i:" << runtime;
+		}
 		if (printCigar) {
 			out << "\tCG:z:";
 			char clipOp = 'S';
