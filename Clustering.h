@@ -140,7 +140,9 @@ class ClusterCoordinates {
 	GenomePos qStart, qEnd, tStart, tEnd;
 	int chromIndex;	
 	int coarseSubCluster;
+	int clusterIndex;
 	ClusterCoordinates() {
+		clusterIndex=-1;
 		qStart=-1;
 		qEnd=0;
 		tStart=-1;
@@ -563,7 +565,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		if (diag < minDiag) { minDiag = diag;}
 		if (diag > maxDiag) { maxDiag = diag;}
 	}
-	int binSize=200;
+	int binSize=50;
 	long span=maxDiag-minDiag;
 
 	//cerr << "span: " << span << " binSize: " << binSize << " minClusterSize: " << opts.minClusterSize << endl;
@@ -590,14 +592,66 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	for (int i=s; i < e; i++) {
 		long diag  = GetDiag(matches[i], strand);
 		long index = (diag - minDiag) / binSize;
-
+		//
+		// Low count bins were previously filtered out to prevent spurious clusters from forming.
+		//
 		if ( bins[index] > 0 ) {
 
 			//
 			// Need to store this match. curClusterIndex points to the diagonal index
 			// where matches are being stored. 
 			//
+			
+			int minDistance = -1;
+			int bestDiag = -1;
+			int minGap=-1;
+			int minDiag=-1;
+			int auxMinDist=-1;
+			//			cout << "Search " << i << endl;
+			for (int clSearch=startClusterIndex; clSearch < clusters.size(); clSearch++) {
+				if ( clusters[clSearch].matches.size() > 0 ) {
+					int gap  = GapDifference(matches[i], clusters[clSearch].matches[clusters[clSearch].matches.size()-1]);
+					int diag = DiagonalDifference(matches[i], clusters[clSearch].matches[clusters[clSearch].matches.size()-1], strand);
+					float diagRatio = fabs(diag/float(gap));
+					//					cout << "\t" << clSearch << "\t" << gap << "\t" << diag << "\t" << diagRatio << endl;
 
+					if ( gap < 1000 and (diagRatio < 0.2 or gap < 200))  {
+						if (minDistance == -1 or gap < minDistance ) {
+							minDistance = gap;
+							bestDiag    = clSearch;
+						}
+					}
+					if (minGap == -1 or minGap < abs(gap)) {
+						minGap = gap;
+					}
+					if (minDiag == -1 or minDiag < abs(diag)) {
+						minDiag = diag;
+					}
+				}
+			}
+			if (minDistance != -1 and minDistance < 4000) {
+				assert(bestDiag != -1);
+				curDiagIndex         = bestDiag;
+				diagToCluster[index] = curDiagIndex;
+				curCluster           = curDiagIndex;
+			}
+			else {
+				/*
+					cout << "Creating a new cluster because of diagonal drift or no cluster found " 
+						 << "\t" << minGap << "\t" << minDiag << "\t" << clusters.size() << endl;
+				*/
+				diagToCluster[index] = clusters.size();
+				curDiagIndex = index;
+				
+				curCluster   = clusters.size();								
+				clusters.push_back(Cluster(0, 0, matches[i].first.pos, 
+																	 matches[i].first.pos + opts.globalK, 
+																	 matches[i].second.pos, 
+																	 matches[i].second.pos + opts.globalK, strand));
+				clusters[clusters.size()-1].outerCluster = outerIteration;
+				clusters[clusters.size()-1].clusterIndex=clusters.size()-1;
+			}
+			/*					
 			if ( curDiagIndex != index) {
 				//
 				// The diagonal at index is not the one currently pointed to
@@ -624,132 +678,13 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 						//
 						// Too far off, need to start a new cluster.
 
-						int minDistance=-1;
-						int bestDiag=-1;
-						for (int clSearch=startClusterIndex; clSearch < clusters.size(); clSearch++) {
-							if (clusters[clSearch].matches.size() > 0) {
-								
-								int d=GapDifference(matches[i], clusters[clSearch].matches[clusters[clSearch].matches.size()-1]);
-								if (minDistance == -1 or d < minDistance) {
-									minDistance=d;
-									bestDiag=clSearch;
-								}
-							}
-						}
-						if (minDistance != -1 and minDistance < 4000) {
-							assert(bestDiag != -1);
-							curDiagIndex=bestDiag;
-							diagToCluster[index]=curDiagIndex;
-							curCluster=curDiagIndex;
-						}
-						else {
-							//							cout << "Creating a new cluster because of diagonal drift " << index - curDiagIndex << "\t" << minDistance << "\t" << clusters.size() << endl;
-							diagToCluster[index] = clusters.size();
-							curDiagIndex = index;
-							
-							curCluster   = clusters.size();								
-							clusters.push_back(Cluster(0, 0, matches[i].first.pos, 
-																				 matches[i].first.pos + opts.globalK, 
-																				 matches[i].second.pos, 
-																				 matches[i].second.pos + opts.globalK, strand));
-							clusters[clusters.size()-1].outerCluster = outerIteration;
-						}
 					}
 				}
-			}
+			*/
+				
 			int clusterSize;
 			assert(curCluster != -1);
-			if (clusters.size() > startClusterIndex and 
-					(clusterSize=clusters[curCluster].matches.size()) > 0 
-					and GapDifference(clusters[curCluster].matches[clusterSize-1], matches[i]) > 5000) {
-				//
-				// This is not the first point on a diagonal, but it is too
-				// far away from the previous point. Split into a new cluster.
-				// 
-				
-				//
-				// This diagonal may point to a new cluster, so remove it.
-				//
-				diagToCluster.erase(index);
-
-				//
-				// Finally, it is possible that this point is actually
-				// somewhat close to another diagonal but because of drift in
-				// the alignment it moves down a bit. Try and find that.
-
-				long startDiagIndex=max(0L,index-3);
-				long endDiagIndex = min(index+3, (long) bins.size());
-				
-				int newDiagIndex=-1;
-				int big=999999;
-				int minDiagGap=big;
-				for (int di=startDiagIndex; di < endDiagIndex; di++) {
-					std::map<int,int>::iterator it;
-					it=diagToCluster.find(di);
-					if (it != diagToCluster.end()) {
-						//
-						// This diagonal has a chain, look to see if the gap from
-						// the end of that chain to this current index is within
-						// the correct bound.
-						int ms=clusters[it->second].matches.size();
-						if (ms > 0) {
-							int gapDiff;
-							if (matches[i].first.pos >= clusters[it->second].matches[ms-1].first.pos and
-									((strand == 0 and matches[i].second.pos >= clusters[it->second].matches[ms-1].second.pos) or
-									 (strand == 1 and matches[i].second.pos < clusters[it->second].matches[ms-1].second.pos)) and
-									(gapDiff = GapDifference(clusters[it->second].matches[ms-1], matches[i])) < 1000) {
-								if (gapDiff < minDiagGap) {
-									newDiagIndex = it->first;
-									minDiagGap = gapDiff;
-								}
-							}
-						}
-					}
-				}
-				if (newDiagIndex != -1) {
-					curDiagIndex = newDiagIndex;
-					assert(newDiagIndex != -1);
-					diagToCluster[index] = diagToCluster[curDiagIndex];
-					curCluster = diagToCluster[index];
-				}
-				else {
-					//
-					// Start the new cluster.
-					//
-					int minDistance=-1;
-					int bestDiag=-1;
-					for (int clSearch=startClusterIndex; clSearch < clusters.size(); clSearch++) {
-						if (clusters[clSearch].matches.size() > 0) {
-							
-							int d=GapDifference(matches[i], clusters[clSearch].matches[clusters[clSearch].matches.size()-1]);
-							if (minDistance == -1 or d < minDistance) {
-								minDistance=d;
-								bestDiag=clSearch;
-							}
-						}
-					}
-					if (minDistance != -1 and minDistance < 300) {
-						assert(bestDiag != -1);
-						curDiagIndex=bestDiag;
-						diagToCluster[index]=curDiagIndex;
-					}
-					else {
-
-						//						cout << "Creating a new cluster while the min distance is " << minDistance << "\t" << clusters.size()<< endl;						
-						diagToCluster[index] = clusters.size();
-						curDiagIndex = index;
-						curCluster   = clusters.size();
-						clusters.push_back(Cluster(0,0, matches[i].first.pos, matches[i].first.pos+opts.globalK, 
-																			 matches[i].second.pos, matches[i].second.pos + opts.globalK, strand));
-						clusters[clusters.size()-1].outerCluster=outerIteration;
-					}
-				}
-			}
-			int d=0;
-			if (clusters[curCluster].matches.size() > 0) {
-				d=GapDifference(clusters[curCluster].matches[clusters[curCluster].matches.size()-1], matches[i]);
-			}
-				
+			
 			if (clusters[curCluster].matches.size() > 0) {
 				int last=clusters[curCluster].size()-1;
 				if (matches[i].first.pos != clusters[curCluster].matches[last].first.pos) {
@@ -776,9 +711,9 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			string chromName;
 			long chromPos;
 			genome.GlobalPosToChrom(clusters[curCluster].tStart, chromPos, chromName);
-			/*
+			/*			
 			cout << curCluster << "\t" << index << "\t"  
-					 << s << "-" << i << "-" << e << "\t" << d << "\t"
+					 << s << "-" << i << "-" << e << "\t" << minDistance << "\t"
 					 << e-s << "\t"
 					 << clusters[curCluster].qStart << "\t" 
 					 << clusters[curCluster].qEnd << "\t" 

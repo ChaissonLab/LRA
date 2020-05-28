@@ -92,7 +92,7 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 		}
 		
 		for (int d=0; d < diagPtr->size(); d++) {
-			if (abs((*diagPtr)[d] - diag) < 2000) {
+			if (abs((*diagPtr)[d] - diag) < 250) {
 				//				cout << "Adding to  diagonal " << diag << "\t" << clusters[ao].matches.size() << endl;
 				foundDiag=true;
 				break;
@@ -1322,6 +1322,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 							<< m << "\t"
 							<< clusters[m].strand << "\t"
 							<< clusters[m].outerCluster << "\t"
+							<< clusters[m].clusterIndex << "\t"
 							<< clusters[m].matches.size() << endl;
 			}
 			else {
@@ -1332,6 +1333,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 							<< m << "\t"
 							<< clusters[m].strand << "\t"
 							<< clusters[m].outerCluster << "\t"
+							<< clusters[m].clusterIndex << "\t"
 							<< clusters[m].matches.size() << endl;
 			}
 		}
