@@ -553,7 +553,8 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 											 interval_map<GenomePos, int> &yIntv,
 											 int strand=0, int outerIteration=0) {
 
-	int localMinClusterSize=0; 
+	int localMinClusterSize=3;
+
 	int startClusterIndex=clusters.size();
 	if (e==s) {
 		return;
@@ -570,16 +571,41 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 
 	//cerr << "span: " << span << " binSize: " << binSize << " minClusterSize: " << opts.minClusterSize << endl;
 	vector<int> bins(span/binSize + 1,0);
+	int maxBin=0;
 	for (int i=s; i < e; i++) {
 		long diag  = GetDiag(matches[i], strand);
 		long index = (diag - minDiag) / binSize;
 		bins[index] += 1;
+		if (bins[index] > maxBin) {
+			maxBin=bins[index];
+		}
 	}
 	for (int i=0; i < bins.size(); i++) {
 		if (bins[i] < localMinClusterSize) { // TODO:Jingwen: minClusterSize is too small?
 			bins[i] = 0;
 		}
 	}
+	if (maxBin < 0.0005 * readLength) {
+		//		cout << "Switching to wide bin " << maxBin << "\t" << 0.0005*readLength << endl;
+		binSize=200;
+		bins.resize(span/binSize+1);
+		std::fill(bins.begin(), bins.end(), 0);
+		
+		for (int i=s; i < e; i++) {
+			long diag  = GetDiag(matches[i], strand);
+			long index = (diag - minDiag) / binSize;
+			bins[index] += 1;
+			if (bins[index] > maxBin) {
+				maxBin=bins[index];
+			}
+		}
+	}
+	for (int i=0; i < bins.size(); i++) {
+		if (bins[i] < localMinClusterSize) { // TODO:Jingwen: minClusterSize is too small?
+			bins[i] = 0;
+		}
+	}
+	
 	/*
 	for (int i=0; i<bins.size(); i++) {
 		cout << "bin " << i << "\t" << bins[i] << endl;

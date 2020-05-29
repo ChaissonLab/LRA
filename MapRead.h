@@ -77,36 +77,43 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 	int nForCandidates=0, nRevCandidates=0;
 	int maxCand=opts.maxCandidates;
 	vector<bool> keep(clusters.size(), true);
+	std::map<long, vector<int> > diagToCluster;
 	for (a=0; a < clusters.size(); a++) { 
 		
-		int ao=clusterOrder[a];
+		int clusterIndex=clusterOrder[a];
 		float num=1.0;
 		float denom=1.0;
-		long diag=(long)clusters[ao].tStart - long(clusters[ao].qStart);
+		long diag=(long)clusters[clusterIndex].tStart - long(clusters[clusterIndex].qStart);
 		bool foundDiag=false;
-		if (clusters[ao].strand == 0) {
+		if (clusters[clusterIndex].strand == 0) {
 			diagPtr = &forDiagonals;
 		}
 		else {
 			diagPtr = &revDiagonals;
 		}
-		
-		for (int d=0; d < diagPtr->size(); d++) {
-			if (abs((*diagPtr)[d] - diag) < 250) {
-				//				cout << "Adding to  diagonal " << diag << "\t" << clusters[ao].matches.size() << endl;
-				foundDiag=true;
-				break;
+		bool encompassed=false;		
+		for (int d=0; d < diagPtr->size(); d++) {			
+			if (abs((*diagPtr)[d] - diag) < 250 ) {
+				for (int di = 0; di < diagToCluster[d].size(); di++) {
+					int c=diagToCluster[d][di];
+					if (clusters[c].Encompasses(clusters[clusterIndex],0.7)) {
+						encompassed=true;
+						break;
+					}
+				}
 			}
+			if (encompassed) break;
 		}
-		if (foundDiag == false and diagPtr->size() < maxCand) {
+		if (foundDiag == false and diagPtr->size() < maxCand and encompassed == false) {
 			(*diagPtr).push_back(diag);
-			//			cout << "Creating diagonal " << diag << "\t" << clusters[ao].matches.size() << "\t" << clusters[ao].tEnd - clusters[ao].tStart << endl;
+			//			cout << "Creating diagonal " << diag << "\t" << clusters[clusterIndex].matches.size() << "\t" << clusters[clusterIndex].tEnd - clusters[clusterIndex].tStart << endl;
+			diagToCluster[diag].push_back(clusterIndex);
 			foundDiag=true;
 		}
 
 		if (foundDiag==false) {
-			//			cout << "Discarding cluster of size " << clusters[ao].matches.size() << " on diag " << diag << endl;
-			clusters[ao].matches.resize(0);
+			//			cout << "Discarding cluster of size " << clusters[clusterIndex].matches.size() << " on diag " << diag << endl;
+			clusters[clusterIndex].matches.resize(0);
 		}
 	}
 	int c=0;
@@ -1178,7 +1185,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	// Add matches between the read and the genome.
 	//
 	CompareLists(readmm, genomemm, allMatches, opts);
-	DiagonalSort<GenomeTuple>(allMatches); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
+	vector<pair<GenomeTuple, GenomeTuple> > testMatches;
+	testMatches=allMatches;
+	// Guess that 500 is where the setup/takedown overhead of an array index is equal to sort by value.
+	DiagonalSort<GenomeTuple>(allMatches,500); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
+
 	timing.Tick("Sort minimizers");
 
 	// TODO(Jinwen): delete this after debug
@@ -1258,7 +1269,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	}
 
 
-	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize());
+	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize(), 500);
 	minDiagCluster = 0; // This parameter will be set inside function CleanOffDiagonal, according to anchors density
 	CleanOffDiagonal(revMatches, opts, minDiagCluster, 1);
 
@@ -1312,7 +1323,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		CartesianSort(clusters[c].matches, 0, clusters[c].matches.size());
 	}
 	*/
-
+	timing.Tick("Store clusters");
 	//
 	// Split clusters on x and y coordinates, vector<Cluster> splitclusters, add a member for each splitcluster to specify the original cluster it comes from
 	//
@@ -1383,7 +1394,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	SplitClusters(clusters, splitclusters);
 	DecideSplitClustersValue(clusters, splitclusters, opts);
 
-	timing.Tick("Preprocess");
+	timing.Tick("Split");
 
 	if (opts.dotPlot) {
 		ofstream clust("clusters.tab");
@@ -1509,8 +1520,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	if (splitclusters.size() > 100) { // mapping to repetitive region
 		rate = 1;  // 2
 	}
-
 	//cerr << "rate: " << rate << endl;
+
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
@@ -2157,9 +2168,12 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	}
 
 	timing.Tick("Final");
-	for (int a=0; a < (int) min(alignmentsOrder.size(), opts.PrintNumAln); a++){
-		for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
-			alignmentsOrder[a].SegAlignment[s]->runtime=timing.Elapsed();
+	if (opts.storeTiming) {
+		for (int a=0; a < (int) min(alignmentsOrder.size(), opts.PrintNumAln); a++){
+			for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
+				alignmentsOrder[a].SegAlignment[s]->runtime=timing.Elapsed();
+				alignmentsOrder[a].SegAlignment[s]->nanchors=allMatches.size();
+			}
 		}
 	}
 

@@ -259,7 +259,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.timing=GetArgv(argv, argc, argi);
 			++argi;
 		}			
+		else if (ArgIs(argv[argi], "--timeRead")) {
+			opts.storeTiming=true;
+		}
 		else if (ArgIs(argv[argi], "-CCS")) {
+			opts.customType=1;
 			opts.HighlyAccurate = true;
 			opts.maxDiag=500;
 			opts.maxGap=1500;
@@ -270,6 +274,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.maxGapBtwnAnchors=1500;
 		}
 		else if (ArgIs(argv[argi], "-CONTIG")) {
+			opts.customType=1;
 			opts.HighlyAccurate = true;
 			opts.maxDiag=500;
 			opts.maxGap=1500;
@@ -359,7 +364,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	}
 	Header header;
 	vector<GenomeTuple> genomemm;
-	LocalIndex glIndex;
+	LocalIndex glIndex(opts.localIndexWindow);
 
 
 	if (ReadIndex(indexFile, genomemm, header, opts) == 0) {
@@ -556,6 +561,11 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 			argi+=2;
 			continue;
 		}
+		else if (ArgIs(argv[argi], "--localIndexWindow")) {
+			opts.localIndexWindow=atoi(GetArgv(argv, argc, argi));
+			glIndex.StoreLocalIndexWindow(opts.localIndexWindow);
+			++argi;		
+		}
 		else if (strlen(argv[argi]) > 0 and argv[argi][0] == '-') {
 			HelpStoreLocal();
 			cout << "Invalid option " << argv[argi] << endl;
@@ -570,7 +580,7 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 		HelpStoreGlobal();
 		exit(1);
 	}
-
+	
 	glIndex.IndexFile(genome);
 	glIndex.Write(genome + ".gli");
 }
@@ -640,6 +650,10 @@ void RunStoreGlobal(int argc, const char* argv[],
 		else if (ArgIs(argv[argi], "-k") or ArgIs(argv[argi], "-w")) {
 			argi+=2;
 			continue;
+		}
+		else if (ArgIs(argv[argi], "--localIndexWindow")) {
+			opts.localIndexWindow=atoi(GetArgv(argv, argc, argi));
+			++argi;		
 		}
 		else if (ArgIs(argv[argi], "-h")) {
 			++argi;

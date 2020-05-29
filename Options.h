@@ -36,6 +36,7 @@ public:
 	bool doBandedAlignment;
 	int maxGap;
 	int maxGapBtwnAnchors;
+	int localIndexWindow;
 	bool NaiveDP;
 	bool SparseDP;
 	bool LookUpTable;
@@ -67,7 +68,11 @@ public:
 	float alnthres;
 	string timing;
 	int PrintNumAln;
+	int customType;
+	bool storeTiming;
 	Options() {
+		storeTiming=false;
+		customType=0;
 		localMatch=4;
 		localMismatch=-3;
 		localIndel=-3;
@@ -101,7 +106,7 @@ public:
 		nproc=1;
 		outfile="";
 		outsvfile="";
-		maxCandidates=3;
+		maxCandidates=10;
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
 		maxGap=2000; 
@@ -133,6 +138,7 @@ public:
 		svsigLen = 25;
 		alnthres = 0.7;
 		timing="";
+		localIndexWindow=256;
 	}
 };
 #endif
