@@ -205,7 +205,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 				alignmentsOrder[first].mapqv = 2;
 				alignmentsOrder[first+1].mapqv = 1;
 			}
-			else if (alnvaluediff <= 10 and abs(nmmdiff) <= 15 and abs(nsmallgap) <= 15) { 
+			else if (alnvaluediff <= 10 and abs(nmmdiff) <= 15 and abs(nsmallgap) <= 20) { 
 				alignmentsOrder[first].mapqv = 2;
 				alignmentsOrder[first+1].mapqv = 1;
 			}
@@ -773,7 +773,6 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 		}						
 		clusters[ph].maxDiagNum = maxDN + 20; //20
 		clusters[ph].minDiagNum = minDN - 20;//20
-		//		cerr << "clusters[ph].maxDiagNum: " << clusters[ph].maxDiagNum << " clusters[ph].minDiagNum: " << clusters[ph].minDiagNum << endl;
 		//
 		// Get shorthand access to alignment boundaries.
 		//
@@ -1522,7 +1521,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	if (splitclusters.size() > 100) { // mapping to repetitive region
 		rate = 1;  // 2
 	}
-	//	cerr << "rate: " << rate << endl;
+	//cerr << "rate: " << rate << endl;
+
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
@@ -1623,8 +1623,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 
 		for (int p = 0; p < Primary_chains.size(); p++) {
 			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
-				cerr << "p: " << p << " h: " << h << " chr: " << genome.header.names[genome.header.Find(Primary_chains[p].chains[h].tStart)] <<  
-				 " value: " << Primary_chains[p].chains[h].value << " tStart: " <<  Primary_chains[p].chains[h].tStart << endl;
+				//cerr << "p: " << p << " h: " << h << " chr: " << genome.header.names[genome.header.Find(Primary_chains[p].chains[h].tStart)] << 
+				 //" value: " << Primary_chains[p].chains[h].value << " tStart: " <<  Primary_chains[p].chains[h].tStart << endl;
 				for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
 					int ph = Primary_chains[p].chains[h].ch[c];
 					if (clusters[ph].strand == 0) {
@@ -1864,7 +1864,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				if (qe > qs and te > ts) {
 					SpaceLength = max(qe - qs, te - ts); 
 					//cerr << "SpaceLength: " << SpaceLength << "st: " << st << endl;
-					if (SpaceLength > 1000 and SpaceLength < 10000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
+					if (SpaceLength < 10000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
 						// btwnClusters have GenomePos, st, matches, coarse
 						// This function also set the "coarse" flag for RefinedClusters[cur]
 						RefineBtwnSpace(RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te, ts, st, cur);
