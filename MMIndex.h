@@ -96,7 +96,7 @@ void CompressFrequent(vector<Tup> &minimizers) {
 
 class LocalIndex {
  public:
-	int localIndexSize;
+	int localIndexWindow;
 	int k;
 	int w;
 	int maxFreq;
@@ -104,15 +104,22 @@ class LocalIndex {
 	vector<uint64_t>    seqOffsets; // seqOffsets stores actual boundaries 
 	vector<uint64_t>    tupleBoundaries; // tupleBoundaries stores the number of minimizers in the corresponding interval
 	uint64_t offset;
-	
-	LocalIndex() { 
+	void StoreLocalIndexWindow(int index_size) {
+		if (index_size != 0) {
+			localIndexWindow = min(1 << (LOCAL_POS_BITS-1), index_size);
+		}
+		else {
+			localIndexWindow = 1 << (LOCAL_POS_BITS-1) ;
+		}
+	}		
+	LocalIndex(int index_window=0) { 
 		k = 10;
 		w=5; 
 		offset=0;
 		maxFreq=5;
 		tupleBoundaries.push_back(0);
 		seqOffsets.push_back(0);
-		localIndexSize = 1 << (LOCAL_POS_BITS-1);
+		StoreLocalIndexWindow(index_window);
 	}
 	
 	LocalIndex( LocalIndex &init) { 
@@ -120,7 +127,7 @@ class LocalIndex {
 		w=init.w;
 		offset=0;
 		maxFreq=init.maxFreq;
-		localIndexSize = 1 << (LOCAL_POS_BITS-1);
+		localIndexWindow = init.localIndexWindow;
 		tupleBoundaries.push_back(0);
 		seqOffsets.push_back(0);
 	}		
@@ -129,6 +136,7 @@ class LocalIndex {
 		ofstream fout(filename.c_str(), ios::out|ios::binary);
 		fout.write((char*)&k, sizeof(int));
 		fout.write((char*)&w, sizeof(int));
+		fout.write((char*)&localIndexWindow, sizeof(int));
 		int nRegions=seqOffsets.size();
 		fout.write((char*)&nRegions, sizeof(int));
 		fout.write((char*)&seqOffsets[0], sizeof(uint64_t)*seqOffsets.size());
@@ -146,6 +154,7 @@ class LocalIndex {
 		}
 		fin.read((char*)&k, sizeof(int));
 		fin.read((char*)&w, sizeof(int));
+		fin.read((char*)&localIndexWindow, sizeof(int));
 		int nRegions;
 		fin.read((char*)&nRegions, sizeof(int));
 		seqOffsets.resize(nRegions);		
@@ -187,9 +196,9 @@ class LocalIndex {
 
 	void IndexSeq(char* seq, int seqLen) {
 		int gi = 0;
-		int nIndex = seqLen / localIndexSize;
+		int nIndex = seqLen / localIndexWindow;
 
-		if (seqLen % localIndexSize != 0) {
+		if (seqLen % localIndexWindow != 0) {
 			nIndex +=1;
 		}
 		GenomePos seqPos=0;
@@ -199,7 +208,7 @@ class LocalIndex {
 		
 		for (int i = 0; i < nIndex; i++) {	
 			locMinimizers.clear();
-			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos) seqLen, (GenomePos) seqPos+localIndexSize) - seqPos, k, w, locMinimizers, false); // canonical = false
+			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos) seqLen, (GenomePos) seqPos+localIndexWindow) - seqPos, k, w, locMinimizers, false); // canonical = false
 			//
 			// Sort minimzers by tuple value.
 			//
@@ -212,7 +221,7 @@ class LocalIndex {
 			//
 			// Update local sequence pos (index in chrom).
 			//
-			seqPos+=(GenomePos)min((int)localIndexSize, (int) (seqLen - seqPos));
+			seqPos+=(GenomePos)min((int)localIndexWindow, (int) (seqLen - seqPos));
 
 			//
 			// Add boundaries representing the end of the current interval.

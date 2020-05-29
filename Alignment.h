@@ -37,6 +37,7 @@ class Alignment {
 	char *read;
 	char *forward;
 	char *passthrough;
+	int nanchors;
 	int readLen;
 	int refLen;
 	GenomePos genomeLen;
@@ -69,6 +70,7 @@ class Alignment {
 	}
 
 	Alignment() {
+		nanchors=0;
 		runtime=0;
 		flag=0;
 		mapqv=0;
@@ -489,6 +491,9 @@ class Alignment {
 		out << "TD:i:" << tdel << "\t";
 		out << "NI:i:" << nins << "\t";
 		out << "TI:i:" << tins;
+		if (nanchors > 0) {
+			out << "\tNA:i:" << nanchors;
+		}
 		if (runtime > 0) {
 			out << "\tRT:i:" << runtime;
 		}
