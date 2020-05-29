@@ -93,7 +93,7 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 		}
 		bool encompassed=false;		
 		for (int d=0; d < diagPtr->size(); d++) {			
-			if (abs((*diagPtr)[d] - diag) < 250 ) {
+			if (abs((*diagPtr)[d] - diag) < 1000 ) {
 				for (int di = 0; di < diagToCluster[d].size(); di++) {
 					int c=diagToCluster[d][di];
 					if (clusters[c].Encompasses(clusters[clusterIndex],0.7)) {
@@ -1189,7 +1189,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	vector<pair<GenomeTuple, GenomeTuple> > testMatches;
 	testMatches=allMatches;
 	// Guess that 500 is where the setup/takedown overhead of an array index is equal to sort by value.
-	DiagonalSort<GenomeTuple>(allMatches,500); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
+	DiagonalSort<GenomeTuple>(allMatches,100); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
 
 	timing.Tick("Sort minimizers");
 
@@ -1247,29 +1247,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		wclust.close();
 
 	}
-
-	interval_map<GenomePos, int> xIntv;
-	interval_map<GenomePos, int> yIntv;
-
-	for (int c = 0; c < roughClusters.size(); c++) {
-		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
-		//		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
-		int rci = genome.header.Find(roughClusters[c].tStart);
-		//		cout << "roughClusters: " << c << "\t" << roughClusters[c].start << "\t" << roughClusters[c].end << endl;
-		StoreFineClusters(forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, genome, read.length, xIntv, yIntv, forwardStrand, c);
-	}
-	for (int cl=0; cl < clusters.size(); cl++) {
-		GenomePairs newm;
-		newm=clusters[cl].matches;
-	
-		CartesianSort(newm, 0, newm.size());
-		for (int ni=0; ni < newm.size(); ni++) {
-			assert(newm[ni].first.pos == clusters[cl].matches[ni].first.pos);
-			assert(newm[ni].second.pos == clusters[cl].matches[ni].second.pos);
-		}
-	}
-
-
+	timer.Tick("Forward-diag-rough-clusters");
 	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize(), 500);
 	minDiagCluster = 0; // This parameter will be set inside function CleanOffDiagonal, according to anchors density
 	CleanOffDiagonal(revMatches, opts, minDiagCluster, 1);
@@ -1306,6 +1284,29 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		revclust.close();
 	}
 
+
+	interval_map<GenomePos, int> xIntv;
+	interval_map<GenomePos, int> yIntv;
+	timing.Tick("Reverse-diag-rough-clusters");
+	for (int c = 0; c < roughClusters.size(); c++) {
+		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
+		//		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
+		int rci = genome.header.Find(roughClusters[c].tStart);
+		//		cout << "roughClusters: " << c << "\t" << roughClusters[c].start << "\t" << roughClusters[c].end << endl;
+		StoreFineClusters(forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, genome, read.length, xIntv, yIntv, forwardStrand, c);
+	}
+	for (int cl=0; cl < clusters.size(); cl++) {
+		GenomePairs newm;
+		newm=clusters[cl].matches;
+	
+		CartesianSort(newm, 0, newm.size());
+		for (int ni=0; ni < newm.size(); ni++) {
+			assert(newm[ni].first.pos == clusters[cl].matches[ni].first.pos);
+			assert(newm[ni].second.pos == clusters[cl].matches[ni].second.pos);
+		}
+	}
+
+
 	
 	for (int c = 0; c < revroughClusters.size(); c++) {
 		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
@@ -1324,7 +1325,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		CartesianSort(clusters[c].matches, 0, clusters[c].matches.size());
 	}
 	*/
-	timing.Tick("Store clusters");
+	timing.Tick("Fine-clusters");
 	//
 	// Split clusters on x and y coordinates, vector<Cluster> splitclusters, add a member for each splitcluster to specify the original cluster it comes from
 	//

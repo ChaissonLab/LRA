@@ -580,8 +580,12 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			maxBin=bins[index];
 		}
 	}
+	vector<int> sortedBins=bins;
+	sort(sortedBins.begin(), sortedBins.end());
+	int cutoff=sortedBins[(int)sortedBins.size()*0.8];
+	
 	for (int i=0; i < bins.size(); i++) {
-		if (bins[i] < localMinClusterSize) { // TODO:Jingwen: minClusterSize is too small?
+		if (bins[i] < cutoff) { // TODO:Jingwen: minClusterSize is too small?
 			bins[i] = 0;
 		}
 	}
