@@ -44,15 +44,14 @@ void PrintIndex(vector<Tup> &minimizers, int k) {
 	}	
 }
 
-
+// RemoveFrequent for LocalTuple, does not need bits mask
 template<typename Tup>
 void RemoveFrequent(vector<Tup> &minimizers, int maxFreq) {
 	int c=0,n=0;
 	int before=minimizers.size();
 	while(n < minimizers.size()) {
 		int ne=n;
-		while (ne < minimizers.size() && 
-					 minimizers[ne].t == minimizers[n].t) { ne++;}
+		while (ne < minimizers.size() and minimizers[ne].t == minimizers[n].t) { ne++;}
 		if (ne - n < maxFreq) {
 			int end = ne;
 			for (ne = n; ne < end; ne++, c++) {
@@ -79,13 +78,13 @@ void RemoveFrequent(vector<Tup> &minimizers, vector<bool> &remove) {
 }
 
 
-template<typename Tup>
-void CompressFrequent(vector<Tup> &minimizers) {
+template<typename Tup, typename tup>
+void CompressFrequent(vector<Tup> &minimizers, tup for_mask) {
 	int c=0,n=0;
 	int before=minimizers.size();
 	while(n < minimizers.size()) {		
 		while (n < minimizers.size() && 
-					 minimizers[n].t == minimizers[c].t) { n++;}
+					 (minimizers[n].t & for_mask) == (minimizers[c].t & for_mask)) { n++;}
 		
 		minimizers[c] = minimizers[n-1];
 		c++;
@@ -204,12 +203,12 @@ class LocalIndex {
 		GenomePos seqPos=0;
 
 		vector<LocalTuple> locMinimizers;
-		GenomePos netSize=0;
-		
+		GenomePos netSize=0;		
 		for (int i = 0; i < nIndex; i++) {	
 			locMinimizers.clear();
-			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos) seqLen, (GenomePos) seqPos+localIndexWindow) - seqPos, k, w, locMinimizers, false); // canonical = false
-			//
+			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos) seqLen, 
+							(GenomePos) seqPos+localIndexWindow) - seqPos, k, w, locMinimizers, false); // canonical = false
+			//RemoveFrequent(locMinimizers, maxFreq)
 			// Sort minimzers by tuple value.
 			//
 			sort(locMinimizers.begin(), locMinimizers.end());
@@ -298,7 +297,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 
 	while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
 		int prevMinCount = minimizers.size();
-		//		cerr << "Storing for "<< ks->name.s << " " << prevMinCount << " " << offset << endl;
+		//cerr << "Storing for "<< ks->name.s << " " << prevMinCount << " " << offset << endl;
 		StoreMinimizers<GenomeTuple, Tuple>(ks->seq.s, ks->seq.l, opts.globalK, opts.globalW, minimizers);
 		
 		for (GenomePos i=prevMinCount; i< minimizers.size(); i++) {
@@ -311,6 +310,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	gzclose(f);
 	cerr << "Sorting " << minimizers.size() << " minimizers" << endl;
 	std::sort(minimizers.begin(), minimizers.end());
+	cerr << "done Sorting" << endl;
 
 	//
 	// Get the frequency for minimizers; Store the frequency in Freq;
@@ -324,10 +324,11 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	uint32_t n = 0; uint32_t ne = 0;
 	uint32_t unremoved = 0;
 	uint32_t removed = 0;
-
+    Tuple Ai=1;
+	Tuple for_mask = ~(Ai << 63);
 	while (n < minimizers.size()) {
 		ne = n + 1;
-		while (ne < minimizers.size() && minimizers[ne].t == minimizers[n].t) {ne++;}
+		while (ne < minimizers.size() and (minimizers[ne].t & for_mask) == (minimizers[n].t & for_mask)) {ne++;}
 		if (ne - n > RANGE) { // opts.minimizerFreq*rz is the rough threshold
 			for (uint32_t i = n; i < ne; i++) {
 				Freq[i] = ne - n;
@@ -392,25 +393,6 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		}
 		baseDots.close();
 	}
- 
-/*
-	// TODO(Jingwen) Print out all the minimizer and delete this later
-	if (opts.dotPlot) {
-		stringstream outNameStrm;
-		outNameStrm << "picked.minimizers.txt";
-		ofstream baseDots(outNameStrm.str().c_str());
-		for (int m=0; m < minimizers.size(); m++) {
-			if (Remove[m] == 0) {
-				baseDots << minimizers[m].t << "\t"
-						 << minimizers[m].pos << "\t" 
-						 << minimizers[m].pos + opts.globalK << "\t"
-						 << Freq[m] << "\t" 
-						 << Remove[m] << endl;				
-			}
-		}
-		baseDots.close();
-	}
- */
 
 	//
 	// Remove too frequent minimizers;

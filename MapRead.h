@@ -393,21 +393,19 @@ void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<pair<Geno
 	// A value of 0 implies forward strand match.
 	//
 	vector<bool> strand(allMatches.size(), 0);
+	Tuple Bi=1;
+	Tuple rev_mask = Bi<<63;
+
 	int nForward=0;
 	for (int i=0; i < allMatches.size(); i++) {
 		int readPos = allMatches[i].first.pos;
 		uint64_t refPos = allMatches[i].second.pos;
-		char *genomePtr=genome.GlobalIndexToSeq(refPos);
-		//
-		// Read and genome are identical, the match is in the forward strand
-		if (strncmp(&read.seq[readPos], genomePtr, k) == 0) {
+		if ((allMatches[i].second.t & rev_mask) == 0) {
+			// the last bit is 0, the match is in the forward strand
 			nForward++;
-		}
+		} 
 		else {
-			//
-			// The k-mers are not identical, but a match was stored between
-			// readPos and *genomePtr, therefore the match must be reverse.
-			//
+			// the last bit is 1, the match is in the reverse strand
 			strand[i] = true;
 		}
 	}
@@ -429,30 +427,6 @@ void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<pair<Geno
 	}
 }
 
-// Revised: output strand for each matches
-void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<pair<GenomeTuple, GenomeTuple> > &allMatches, vector<bool> & strand) {
-	//
-	// A value of 0 implies forward strand match.
-	//
-	int nForward=0;
-	for (int i=0; i < allMatches.size(); i++) {
-		int readPos = allMatches[i].first.pos;
-		uint64_t refPos = allMatches[i].second.pos;
-		char *genomePtr=genome.GlobalIndexToSeq(refPos);
-		//
-		// Read and genome are identical, the match is in the forward strand
-		if (strncmp(&read.seq[readPos], genomePtr, k) == 0) {
-			nForward++;
-		}
-		else {
-			//
-			// The k-mers are not identical, but a match was stored between
-			// readPos and *genomePtr, therefore the match must be reverse.
-			//
-			strand[i] = true;
-		}
-	}
-}
 
 //
 // This function removes spurious anchors after SDP;
@@ -877,9 +851,10 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 				GenomePos readSegmentStart= readIndex->seqOffsets[qi];
 				GenomePos readSegmentEnd  = readIndex->seqOffsets[qi+1];
 
-				CompareLists<LocalTuple>(readIndex->minimizers.begin()+qStartBoundary, readIndex->minimizers.begin()+qEndBoundary, 
-										glIndex.minimizers.begin()+ glIndex.tupleBoundaries[lsi], 
-										glIndex.minimizers.begin()+ glIndex.tupleBoundaries[lsi+1], smallMatches, smallOpts);
+				CompareLists<LocalTuple, uint32_t>(readIndex->minimizers.begin()+qStartBoundary, 
+									readIndex->minimizers.begin()+qEndBoundary, 
+									glIndex.minimizers.begin()+ glIndex.tupleBoundaries[lsi], 
+									glIndex.minimizers.begin()+ glIndex.tupleBoundaries[lsi+1], smallMatches, smallOpts, 0, 0, false);
 				//
 				// Add refined anchors if they fall into the diagonal band and cluster box
 				//
@@ -935,7 +910,7 @@ RefineBtwnSpace(Cluster * cluster, Options & opts, Genome & genome, Read & read,
 	sort(EndGenomeTup.begin(), EndGenomeTup.end());
 	StoreMinimizers<GenomeTuple, Tuple>(strands[st] + qs, qe - qs, opts.globalK, opts.globalW, EndReadTup, false);
 	sort(EndReadTup.begin(), EndReadTup.end());
-	CompareLists(EndReadTup.begin(), EndReadTup.end(), EndGenomeTup.begin(), EndGenomeTup.end(), EndPairs, opts, maxDiagNum, minDiagNum); // By passing maxDiagNum and minDiagNum, this function 																															// filters out anchors that are outside the diagonal band;
+	CompareLists<GenomeTuple, Tuple>(EndReadTup.begin(), EndReadTup.end(), EndGenomeTup.begin(), EndGenomeTup.end(), EndPairs, opts,  maxDiagNum, minDiagNum, false); // By passing maxDiagNum and minDiagNum, this function 																															// filters out anchors that are outside the diagonal band;
 
 	for (int rm = 0; rm < EndPairs.size(); rm++) {
 		EndPairs[rm].first.pos  += qs;
@@ -1033,7 +1008,7 @@ SPLITChain(vector<Cluster> ExtendClusters, vector<SplitChain> & splitchains, vec
 // This function seperates finalchain by different strands; 
 //
 void
-SeperateChainByStrand(FinalChain & finalchain, vector<vector<int>> & finalSeperateChain, const vector<Cluster> & ExtendClusters) {
+SeparateChainByStrand(FinalChain & finalchain, vector<vector<int>> & finalSeperateChain, const vector<Cluster> & ExtendClusters) {
 
 	vector<int> sep;
 	int fl = 0;
@@ -1169,14 +1144,13 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	vector<GenomeTuple> readmm; // readmm stores minimizers
 	vector<pair<GenomeTuple, GenomeTuple> > allMatches, forMatches, revMatches, matches;
 	timing.Start();
-
 	if (opts.storeAll) {
 		Options allOpts = opts;
 		allOpts.globalW=1;
-		StoreMinimizers<GenomeTuple, Tuple>(read.seq, read.length, allOpts.globalK, allOpts.globalW, readmm);			
+		StoreMinimizers<GenomeTuple, Tuple>(read.seq, read.length, allOpts.globalK, allOpts.globalW, readmm, false);			
 	}
 	else {
-		StoreMinimizers<GenomeTuple, Tuple>(read.seq, read.length, opts.globalK, opts.globalW, readmm);
+		StoreMinimizers<GenomeTuple, Tuple>(read.seq, read.length, opts.globalK, opts.globalW, readmm, false);
 	}
 	sort(readmm.begin(), readmm.end()); //sort kmers in readmm(minimizers)
 
@@ -1184,9 +1158,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	//
 	// Add matches between the read and the genome.
 	//
-	CompareLists(readmm, genomemm, allMatches, opts);
-	vector<pair<GenomeTuple, GenomeTuple> > testMatches;
-	testMatches=allMatches;
+	CompareLists<GenomeTuple, Tuple>(readmm, genomemm, allMatches, opts);
 	// Guess that 500 is where the setup/takedown overhead of an array index is equal to sort by value.
 	DiagonalSort<GenomeTuple>(allMatches,100); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
 
@@ -1246,11 +1218,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		wclust.close();
 
 	}
-	timer.Tick("Forward-diag-rough-clusters");
+
+	timing.Tick("Forward-diag-rough-clusters");
 	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize(), 500);
 	minDiagCluster = 0; // This parameter will be set inside function CleanOffDiagonal, according to anchors density
 	CleanOffDiagonal(revMatches, opts, minDiagCluster, 1);
-
 
 	vector<Cluster> revroughClusters;
 	int reverseStrand=1;
@@ -1283,10 +1255,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		revclust.close();
 	}
 
-
 	interval_map<GenomePos, int> xIntv;
 	interval_map<GenomePos, int> yIntv;
 	timing.Tick("Reverse-diag-rough-clusters");
+
 	for (int c = 0; c < roughClusters.size(); c++) {
 		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
 		//		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
@@ -1294,6 +1266,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		//		cout << "roughClusters: " << c << "\t" << roughClusters[c].start << "\t" << roughClusters[c].end << endl;
 		StoreFineClusters(forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, genome, read.length, xIntv, yIntv, forwardStrand, c);
 	}
+
 	for (int cl=0; cl < clusters.size(); cl++) {
 		GenomePairs newm;
 		newm=clusters[cl].matches;
@@ -1305,8 +1278,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		}
 	}
 
-
-	
 	for (int c = 0; c < revroughClusters.size(); c++) {
 		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
 		//StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
@@ -2046,7 +2017,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				// INPUT: FinalChain finalchain, OUTPUT: vector<int> finalchainSeperateChain;
 				//
 				vector<vector<int>> finalSeperateChain;
-				SeperateChainByStrand(finalchain, finalSeperateChain, ExtendClusters); 
+				SeparateChainByStrand(finalchain, finalSeperateChain, ExtendClusters); 
 				int LFC = LargestFinalSeperateChain(finalSeperateChain);
 				//
 				// Refine and store the alignment; NOTICE: when filling in the space between two adjacent anchors, 

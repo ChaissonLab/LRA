@@ -20,7 +20,7 @@ void TupleToString(Tup t, int k, string &s) {
 #define LOCAL_POS_BITS 12
 class LocalTuple {
  public:
-  uint32_t t:32-LOCAL_POS_BITS;
+  uint32_t t: 32-LOCAL_POS_BITS;
   uint32_t pos: LOCAL_POS_BITS;
 	LocalTuple() {
 		t=0;
@@ -70,14 +70,20 @@ public:
 	GenomeTuple() {t=0;pos=0;} 
  	GenomeTuple(Tuple _t, GenomePos _p): t(_t), pos(_p) {}
 	bool operator<(const GenomeTuple &b) const {
-		return t < b.t;
+		Tuple Bi=1;
+		Tuple for_mask = ~(Bi<<63);
+		return (t & for_mask) < (b.t & for_mask);
 	}
 
 	friend int operator >(GenomeTuple &a, GenomeTuple &b) {
-		return a.t > b.t;
+		Tuple Bi=1;
+		Tuple for_mask = ~(Bi<<63);
+		return (a.t & for_mask) > (b.t & for_mask);
 	}
 	friend int operator!=(GenomeTuple &a, GenomeTuple &b) {
-		return a.t != b.t;
+		Tuple Bi=1;
+		Tuple for_mask = ~(Bi<<63);
+		return (a.t & for_mask) != (b.t & for_mask);
 	}
 	void ToString(int k, string &s) {
 		TupleToString(t, k, s);
