@@ -154,7 +154,30 @@ class ClusterCoordinates {
 		strand=-1;
 		coarseSubCluster = -1;
 	}
-
+	bool EncompassesInRectangle(const ClusterCoordinates &b, const float frac) {
+		int qovp=0;
+		if (b.qStart >= qStart and b.qStart < qEnd) {
+			qovp=min(qEnd, b.qEnd)-b.qStart;
+		}
+		else if (b.qEnd > qStart and b.qEnd <= qEnd) {
+			qovp=b.qEnd-max(qStart, b.qStart);
+		}
+		else if (b.qStart <= qStart and b.qEnd > qEnd) {
+			qovp=qEnd-qStart;
+		}
+		int tovp=0;
+		if (b.tStart >= tStart and b.tStart < tEnd) {
+			tovp=min(tEnd, b.tEnd)-b.tStart;
+		}
+		else if (b.tEnd > tStart and b.tEnd <= tEnd) {
+			tovp=b.tEnd-max(tStart, b.tStart);
+		}
+		else if (b.tStart <= tStart and b.tEnd > tEnd) {
+			tovp=tEnd-tStart;
+		}
+		//cout << "encompass: " << float(qovp)/(b.qEnd-b.qStart) << "\t" << float(tovp)/(b.tEnd-b.tStart) << endl;
+		return (float(qovp)/(b.qEnd-b.qStart) > frac) and (float(tovp)/(b.tEnd-b.tStart) > frac);
+	}
 	bool Encompasses(const ClusterCoordinates &b, const float frac) const {
 		int qovp=0;
 		if (b.qStart >= qStart and b.qStart < qEnd) {
@@ -294,7 +317,8 @@ class Cluster : public ClusterCoordinates {
 	bool refinespace; // refinespace == 0 means this Cluster has not been add anchors in the step of RefineBtwnSpace;
 	int outerCluster;
 	bool used;
-	Cluster() { refined=0; coarse=-1; used=0;}
+	int rank;
+	Cluster() { refined=0; coarse=-1; used=0; rank=-1;}
  Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1; refined=0;}
 
  Cluster(int s, int e, int st) : ClusterCoordinates(s,e,st) { coarse=-1; refined=0;}
@@ -572,10 +596,11 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	}
 	int binSize=50;
 	long span=maxDiag-minDiag;
-
+	//	cout << "max diag "<< maxDiag << " min: " << minDiag << endl;
 	//cerr << "span: " << span << " binSize: " << binSize << " minClusterSize: " << opts.minClusterSize << endl;
 	vector<int> bins(span/binSize + 1,0);
 	int maxBin=0;
+	int binTotal=0;
 	for (int i=s; i < e; i++) {
 		long diag  = GetDiag(matches[i], strand);
 		long index = (diag - minDiag) / binSize;
@@ -584,10 +609,24 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			maxBin=bins[index];
 		}
 	}
+
 	vector<int> sortedBins=bins;
 	sort(sortedBins.begin(), sortedBins.end());
-	int cutoff=sortedBins[(int)sortedBins.size()*0.8];
-	
+	int cumulativeSum=0;
+	int cutoff=2;
+	for (int i=sortedBins.size(); i >0; i--) {
+		cumulativeSum+= sortedBins[i-1];
+		if (float(cumulativeSum)/(e-s) > 0.9) {
+			cutoff=sortedBins[i-1];
+			break;
+		}
+	}
+	/*
+	cout << "pre cutoff " << cutoff << "\t" << e-s << endl;
+	for (int i=0; i < bins.size(); i++) {
+		cout << "bin " << i << "\t" << bins[i] << endl;
+	}
+	*/
 	for (int i=0; i < bins.size(); i++) {
 		if (bins[i] < cutoff) { // TODO:Jingwen: minClusterSize is too small?
 			bins[i] = 0;
@@ -596,6 +635,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	if (maxBin < 0.0005 * readLength) {
 		//		cout << "Switching to wide bin " << maxBin << "\t" << 0.0005*readLength << endl;
 		binSize=200;
+		localMinClusterSize=2;
 		bins.resize(span/binSize+1);
 		std::fill(bins.begin(), bins.end(), 0);
 		
@@ -613,8 +653,8 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			bins[i] = 0;
 		}
 	}
-	
-	/*
+	/*	
+	cout << "bin size: " << binSize << endl;
 	for (int i=0; i<bins.size(); i++) {
 		cout << "bin " << i << "\t" << bins[i] << endl;
 	}
@@ -745,10 +785,11 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			string chromName;
 			long chromPos;
 			genome.GlobalPosToChrom(clusters[curCluster].tStart, chromPos, chromName);
-			/*			
+			/*
 			cout << curCluster << "\t" << index << "\t"  
 					 << s << "-" << i << "-" << e << "\t" << minDistance << "\t"
-					 << e-s << "\t"
+					 << e-s << "\tcoords\t"
+           << matches[i].first.pos << "\t" << matches[i].second.pos << "\tcluster:\t"
 					 << clusters[curCluster].qStart << "\t" 
 					 << clusters[curCluster].qEnd << "\t" 
 					 << clusters[curCluster].qEnd - clusters[curCluster].qStart << "\t" 
@@ -759,7 +800,6 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 					 << clusters[curCluster].matches.size() << "\t"
 					 << outerIteration << endl;
 			*/
-	
 			assert(clusters[curCluster].tEnd >= clusters[curCluster].tStart);
 			assert(clusters[curCluster].qEnd >= clusters[curCluster].qStart);
 		}
