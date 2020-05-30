@@ -490,6 +490,7 @@ class Alignment {
 		out << "ND:i:" << ndel << "\t";
 		out << "TD:i:" << tdel << "\t";
 		out << "NI:i:" << nins << "\t";
+    out << "AS:i:" << value << "\t";
 		out << "TI:i:" << tins;
 		if (nanchors > 0) {
 			out << "\tNA:i:" << nanchors;

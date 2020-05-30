@@ -592,10 +592,11 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	}
 	int binSize=50;
 	long span=maxDiag-minDiag;
-
+	//	cout << "max diag "<< maxDiag << " min: " << minDiag << endl;
 	//cerr << "span: " << span << " binSize: " << binSize << " minClusterSize: " << opts.minClusterSize << endl;
 	vector<int> bins(span/binSize + 1,0);
 	int maxBin=0;
+	int binTotal=0;
 	for (int i=s; i < e; i++) {
 		long diag  = GetDiag(matches[i], strand);
 		long index = (diag - minDiag) / binSize;
@@ -604,10 +605,24 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			maxBin=bins[index];
 		}
 	}
+
 	vector<int> sortedBins=bins;
 	sort(sortedBins.begin(), sortedBins.end());
-	int cutoff=sortedBins[(int)sortedBins.size()*0.8];
-	
+	int cumulativeSum=0;
+	int cutoff=2;
+	for (int i=sortedBins.size(); i >0; i--) {
+		cumulativeSum+= sortedBins[i-1];
+		if (float(cumulativeSum)/(e-s) > 0.9) {
+			cutoff=sortedBins[i-1];
+			break;
+		}
+	}
+	/*
+	cout << "pre cutoff " << cutoff << "\t" << e-s << endl;
+	for (int i=0; i < bins.size(); i++) {
+		cout << "bin " << i << "\t" << bins[i] << endl;
+	}
+	*/
 	for (int i=0; i < bins.size(); i++) {
 		if (bins[i] < cutoff) { // TODO:Jingwen: minClusterSize is too small?
 			bins[i] = 0;
@@ -634,8 +649,8 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			bins[i] = 0;
 		}
 	}
-	
-	/*
+	/*	
+	cout << "bin size: " << binSize << endl;
 	for (int i=0; i<bins.size(); i++) {
 		cout << "bin " << i << "\t" << bins[i] << endl;
 	}
@@ -769,7 +784,8 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			/*
 			cout << curCluster << "\t" << index << "\t"  
 					 << s << "-" << i << "-" << e << "\t" << minDistance << "\t"
-					 << e-s << "\t"
+					 << e-s << "\tcoords\t"
+           << matches[i].first.pos << "\t" << matches[i].second.pos << "\tcluster:\t"
 					 << clusters[curCluster].qStart << "\t" 
 					 << clusters[curCluster].qEnd << "\t" 
 					 << clusters[curCluster].qEnd - clusters[curCluster].qStart << "\t" 
