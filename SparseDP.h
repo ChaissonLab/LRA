@@ -1,4 +1,4 @@
- // This program is implemented Sparse Dynamic Programming algorithm described in David Eppstein paper
+// This program is implemented Sparse Dynamic Programming algorithm described in David Eppstein paper
 // Author: Jingwen Ren
 
 #ifndef SPARSE_DP_
@@ -1340,7 +1340,8 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 //
 void 
 TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
-					const vector<Fragment_Info> & Value, unsigned int & i, vector<unsigned int> & onechain, vector<bool> & link, vector<bool> & used) {
+		   const vector<Fragment_Info> & Value, unsigned int & i, vector<unsigned int> & onechain, vector<bool> & link, 
+		   vector<bool> & used) {
 
 	long int prev_sub = Value[i].prev_sub;
 	long int prev_ind = Value[i].prev_ind;
@@ -1513,6 +1514,16 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 }
 
 //
+// Compute the # of anchors on this chain
+//
+void 
+ComputeNumOfAnchors (const vector<Cluster> & FragInput, const vector<unsigned int> & onechain, int &Num_Anchors) {
+	for (int oc = 0; oc < onechain.size(); oc++) {
+		Num_Anchors += FragInput[onechain[oc]].NumofAnchors;
+	}
+}
+
+//
 // This function is for splitClusters;
 //
 void 
@@ -1553,12 +1564,17 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 			//
 			if (((float)(qEnd - qStart)/read.length) > 0.04) {
 				//
+				// Compute the # of anchors on this chain
+				//
+				int Num_Anchors = 0;
+				ComputeNumOfAnchors (FragInput, onechain, Num_Anchors);
+				//
 				// Compare onechain to all the primary chains we've found. 
 				// If onechain overlaps with one primary chain over 50% ---> onechain is a secondary chain 
 				// If onechain overlaps with all the primary chains less than 50% ---> onechain is another primary chain
 				//
 				if (Primary_chains.size() == 0) {
-					Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv]));
+					Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv], Num_Anchors));
 					Primary_chains.push_back(Pc);
 				} 
 				else {
@@ -1569,7 +1585,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 							if (!Primary_chains[p].chains[0].OverlapsOnT(tStart, tEnd, 0.3)) {
 								if (Primary_chains[p].chains.size() < opts.NumAln) {
 									Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, 
-																				link, fragments_valueOrder[fv]));
+																				link, fragments_valueOrder[fv], Num_Anchors));
 									inserted = 1;								
 								}
 								break;
@@ -1583,7 +1599,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					}			
 					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 0) {		
 						if (Primary_chains.size() < 2) { // TODO(Jingwen): how to decide the number of Primary alignments
-							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv]));
+							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv], Num_Anchors));
 							Primary_chains.push_back(Pc);
 						}	
 						else break;		

@@ -21,8 +21,8 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 	if (!canonical) {
 		for_mask = ~(for_mask & 0);
 	}
-    cerr << "nOfBits: " << nOfBits << endl;
-    cerr << "canonical: " << canonical << "  for_mask: " << for_mask << endl;
+    // cerr << "nOfBits: " << nOfBits << endl;
+    // cerr << "canonical: " << canonical << "  for_mask: " << for_mask << endl;
 
 	int qs = 0;
 	int qe = qEnd-qBegin - 1;

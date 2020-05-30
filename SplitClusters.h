@@ -147,6 +147,7 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters) 
 
 
 void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & splitclusters, Options & opts) {
+	if (splitclusters.size() == 0) return;
 	//
 	// Compute matches bases/the Cluster length for each Cluster in clusters;
 	//
@@ -169,18 +170,45 @@ void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & spl
 		}
 		clusters[m].Val = MatNum;
 	} 
-
 	//
 	// Compute the value for each Cluster in splitclusters;
 	//
 	for (int m = 0; m < splitclusters.size(); m++) {
 		int ic = splitclusters[m].coarse;
-		float pika = (float)min(splitclusters[m].qEnd - splitclusters[m].qStart, splitclusters[m].tEnd - splitclusters[m].tStart)/(float)min(clusters[ic].qEnd - clusters[ic].qStart, clusters[ic].tEnd - clusters[ic].tStart);
+		float pika = (float)min(splitclusters[m].qEnd - splitclusters[m].qStart, splitclusters[m].tEnd - splitclusters[m].tStart) / 
+										(float)min(clusters[ic].qEnd - clusters[ic].qStart, clusters[ic].tEnd - clusters[ic].tStart);
 		splitclusters[m].Val = (int)clusters[ic].Val*pika;
 		//cerr << "m: " << m << " ic: " << ic << " length/totallenth: " << pika << 
 		//" clusters[ic].Val: " << clusters[ic].Val << endl;
 	}
-
+	//
+	// Compute # of anchors in each splitcluster
+	//
+	int m = 0;
+	int n = 1;
+	int ic_m = splitclusters[m].coarse;
+	int ic_n = splitclusters[n].coarse;
+	int matchS = 0, matchE = 0;
+	while (n < splitclusters.size()) {
+		if (ic_m == ic_n) {	
+			matchE = CartesianLowerBound<GenomeTuple>(clusters[ic_n].matches.begin(), 
+														  clusters[ic_n].matches.end(), splitclusters[n].qStart);		
+			assert(matchE >= matchS);
+			splitclusters[m].NumofAnchors = matchE - matchS;		
+			matchS = matchE;														  	
+		}
+		else {
+			matchE = clusters[ic_m].matches.size();
+			assert(matchE >= matchS);
+			splitclusters[m].NumofAnchors = matchE - matchS;		
+			matchS = 0;	
+		}
+		m = n;
+		ic_m = ic_n;
+		n++;
+		if (n < splitclusters.size()) ic_n = splitclusters[n].coarse;
+	}
+	splitclusters[n-1].NumofAnchors = clusters[ic_m].matches.size() - matchS;	
 }
 
 

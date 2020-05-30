@@ -288,6 +288,7 @@ class Cluster : public ClusterCoordinates {
 	long long int minDiagNum; // maxDiagNum and minDiagNum defines diagonal band boundary of the current cluster
 	int coarse; 
 	int Val; // Val stores the value of each Cluster;(using in SDP)
+	int NumofAnchors; // NumofAnchors stores the # of anchors of each splitcluster 
 	vector<int> matchesLengths; // store the length of each anchor 
 	bool refined; // refined == 0 means this Cluster has not been refined yet
 	bool refinespace; // refinespace == 0 means this Cluster has not been add anchors in the step of RefineBtwnSpace;
@@ -318,6 +319,7 @@ class Cluster : public ClusterCoordinates {
 		refined = 0;
 		refinespace = 0;
 		Val = 0;
+		NumofAnchors = 0;
 	}
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
@@ -329,6 +331,7 @@ class Cluster : public ClusterCoordinates {
 		maxDiagNum=0;
 		minDiagNum=0;
 		Val = 0;
+		NumofAnchors = 0;
 	}
   Cluster(GenomePos qs, GenomePos qe, GenomePos ts, GenomePos te, int st, int coa) {
 		qStart = qs;
@@ -339,6 +342,7 @@ class Cluster : public ClusterCoordinates {
 		coarse = coa;
 		Val = 0;
 		used = 0;
+		NumofAnchors = 0;
 	}
   Cluster(int st, GenomePairs::iterator gpBegin, GenomePairs::iterator gpEnd, vector<int>::iterator stBegin, vector<int>::iterator stEnd) {
   		strand = st;

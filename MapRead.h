@@ -92,7 +92,7 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 			diagPtr = &revDiagonals;
 		}
 		bool encompassed=false;		
-		for (int d=0; d < diagPtr->size(); d++) {			
+		for (int d=0; d < diagPtr->size(); d++) {	
 			if (abs((*diagPtr)[d] - diag) < 1000 ) {
 				for (int di = 0; di < diagToCluster[d].size(); di++) {
 					int c=diagToCluster[d][di];
@@ -1506,6 +1506,24 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
 
 	if (opts.dotPlot) {
+		ofstream Nclust("chain_Numofanchors");
+		for (int p = 0; p < Primary_chains.size(); p++) {
+			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
+				Nclust << Primary_chains[p].chains[h].qStart << "\t" 
+					  << Primary_chains[p].chains[h].tStart << "\t"
+					  << Primary_chains[p].chains[h].qEnd  << "\t"
+					  << Primary_chains[p].chains[h].tEnd  << "\t"
+					  << Primary_chains[p].chains[h].value << "\t"
+					  << p << "\t"
+					  << h << "\t"
+					  << genome.header.names[genome.header.Find(Primary_chains[p].chains[h].tStart)] << "\t"
+					  << Primary_chains[p].chains[h].NumOfAnchors << endl;
+			}
+		}
+		Nclust.close();
+	}	
+
+	if (opts.dotPlot) {
 		ofstream clust("Chains.tab");
 		for (int p = 0; p < Primary_chains.size(); p++) {
 			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
@@ -1521,6 +1539,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 							  << h << "\t"
 							  << Primary_chains[p].chains[h].ch[c] << "\t"
 							  << splitclusters[ph].strand << "\t"
+							  << splitclusters[ph].NumofAnchors << "\t"
 							  << splitclusters[ph].coarse << endl;
 					} 
 					else {
@@ -1533,6 +1552,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 							  << h << "\t"
 							  << Primary_chains[p].chains[h].ch[c] << "\t"
 							  << splitclusters[ph].strand << "\t"
+							  << splitclusters[ph].NumofAnchors << "\t"						
 							  << splitclusters[ph].coarse << endl;
 					}
 				}
@@ -1595,7 +1615,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		for (int p = 0; p < Primary_chains.size(); p++) {
 			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
 				//cerr << "p: " << p << " h: " << h << " chr: " << genome.header.names[genome.header.Find(Primary_chains[p].chains[h].tStart)] << 
-				 //" value: " << Primary_chains[p].chains[h].value << " tStart: " <<  Primary_chains[p].chains[h].tStart << endl;
+				//" value: " << Primary_chains[p].chains[h].value << " # of Anchors: " << Primary_chains[p].chains[h].NumOfAnchors << " tStart: " <<  Primary_chains[p].chains[h].tStart << endl;
 				for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
 					int ph = Primary_chains[p].chains[h].ch[c];
 					if (clusters[ph].strand == 0) {
