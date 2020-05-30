@@ -614,7 +614,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		}
 	}
 	if (maxBin < 0.0005 * readLength) {
-		cout << "Switching to wide bin " << maxBin << "\t" << 0.0005*readLength << endl;
+		//		cout << "Switching to wide bin " << maxBin << "\t" << 0.0005*readLength << endl;
 		binSize=200;
 		localMinClusterSize=2;
 		bins.resize(span/binSize+1);
@@ -766,7 +766,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			string chromName;
 			long chromPos;
 			genome.GlobalPosToChrom(clusters[curCluster].tStart, chromPos, chromName);
-
+			/*
 			cout << curCluster << "\t" << index << "\t"  
 					 << s << "-" << i << "-" << e << "\t" << minDistance << "\t"
 					 << e-s << "\t"
@@ -779,7 +779,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 					 << chromName << "\t" << chromPos << "\t"
 					 << clusters[curCluster].matches.size() << "\t"
 					 << outerIteration << endl;
-
+			*/
 			assert(clusters[curCluster].tEnd >= clusters[curCluster].tStart);
 			assert(clusters[curCluster].qEnd >= clusters[curCluster].qStart);
 		}
