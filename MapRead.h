@@ -1,5 +1,6 @@
 #ifndef MAP_READ_H_
 #define MAP_READ_H_
+#include <math.h>
 #include "MMIndex.h"
 #include "Genome.h"
 #include "Read.h"
@@ -80,40 +81,79 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 	std::map<long, vector<int> > diagToCluster;
 	for (a=0; a < clusters.size(); a++) { 
 		
-		int clusterIndex=clusterOrder[a];
+		int orderIndex=clusterOrder[a];
+		clusters[orderIndex].rank=a;
 		float num=1.0;
 		float denom=1.0;
-		long diag=(long)clusters[clusterIndex].tStart - long(clusters[clusterIndex].qStart);
+		long diag=(long)clusters[orderIndex].tStart - (long)clusters[orderIndex].qStart;
 		bool foundDiag=false;
-		if (clusters[clusterIndex].strand == 0) {
+		long clusterDiag;
+		if (clusters[orderIndex].strand == 0) {
 			diagPtr = &forDiagonals;
 		}
 		else {
 			diagPtr = &revDiagonals;
 		}
 		bool encompassed=false;		
-		for (int d=0; d < diagPtr->size(); d++) {			
-			if (abs((*diagPtr)[d] - diag) < 1000 ) {
-				for (int di = 0; di < diagToCluster[d].size(); di++) {
-					int c=diagToCluster[d][di];
-					if (clusters[c].Encompasses(clusters[clusterIndex],0.7)) {
-						encompassed=true;
-						break;
-					}
+		bool onDiag=false;
+		bool nearPoint=false;
+		long curClusterDiag=0;
+		for (int d=0; d < diagPtr->size(); d++) {						
+			curClusterDiag=(*diagPtr)[d];
+			assert (diagToCluster.find(curClusterDiag) != diagToCluster.end());
+			assert (diagToCluster[curClusterDiag].size() > 0);
+			for (int di = 0; di < diagToCluster[curClusterDiag].size(); di++) {
+				int c=diagToCluster[curClusterDiag][di];
+				clusterDiag=(long)clusters[c].tStart - (long) clusters[c].qStart;
+				long fey=(long)clusters[c].tStart - (long)clusters[orderIndex].tEnd;
+				long fex=(long)clusters[c].qStart - (long)clusters[orderIndex].qEnd;
+				long efy=(long)clusters[orderIndex].tStart - (long)clusters[c].tEnd;
+				long efx =(long)clusters[orderIndex].tStart - (long)clusters[c].tEnd;
+				long fe=(long) sqrt(fex*fex+fey*fey);
+				long ef=(long) sqrt(efx*efx+efy*efy);
+				long diagDist=min(fe,ef);
+					
+				if (clusters[c].EncompassesInRectangle(clusters[orderIndex],0.5)) {
+					//					cout << "cluster " << c << " encompasses " << orderIndex << endl;
+					encompassed=true;
+					break;
+				}
+				else {
+					//					cout << "cluster " << c << " does not encompass " << orderIndex << "\t" << clusters[c].tEnd-clusters[c].tStart << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
+				}					
+				if (abs(clusterDiag - diag) < 1000) {
+					onDiag = true;
+					break;
+				}
+				if (abs(diagDist) < 1000) {
+					nearPoint=true;
+					break;
 				}
 			}
-			if (encompassed) break;
+
+			if (encompassed == false and (onDiag==true or nearPoint==true)) {
+				foundDiag=true;
+				break;
+			}
+			else {
+				if (encompassed) {
+					break;
+				}
+			}
 		}
 		if (foundDiag == false and diagPtr->size() < maxCand and encompassed == false) {
 			(*diagPtr).push_back(diag);
-			//			cout << "Creating diagonal " << diag << "\t" << clusters[clusterIndex].matches.size() << "\t" << clusters[clusterIndex].tEnd - clusters[clusterIndex].tStart << endl;
-			diagToCluster[diag].push_back(clusterIndex);
+			//			cout << "Creating diagonal " << diag << "\t" << clusters[orderIndex].matches.size() << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
+			diagToCluster[diag].push_back(orderIndex);
 			foundDiag=true;
 		}
+		else if (foundDiag == true) {
+			diagToCluster[curClusterDiag].push_back(orderIndex);
+		}			
 
 		if (foundDiag==false) {
-			//			cout << "Discarding cluster of size " << clusters[clusterIndex].matches.size() << " on diag " << diag << endl;
-			clusters[clusterIndex].matches.resize(0);
+			//			cout << "Discarding cluster of size " << clusters[orderIndex].matches.size() << " on diag " << diag << endl;
+			clusters[orderIndex].matches.resize(0);
 		}
 	}
 	int c=0;
@@ -1188,7 +1228,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	vector<pair<GenomeTuple, GenomeTuple> > testMatches;
 	testMatches=allMatches;
 	// Guess that 500 is where the setup/takedown overhead of an array index is equal to sort by value.
-	DiagonalSort<GenomeTuple>(allMatches,100); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
+	DiagonalSort<GenomeTuple>(allMatches,0); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
 
 	timing.Tick("Sort minimizers");
 
@@ -1246,8 +1286,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		wclust.close();
 
 	}
-	timer.Tick("Forward-diag-rough-clusters");
-	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize(), 500);
+	timing.Tick("Forward-diag-rough-clusters");
+	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize(), 0);
 	minDiagCluster = 0; // This parameter will be set inside function CleanOffDiagonal, according to anchors density
 	CleanOffDiagonal(revMatches, opts, minDiagCluster, 1);
 
@@ -1435,6 +1475,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 						  << clusters[m].tEnd << "\t"
 						  << m << "\t"
 						  << genome.header.names[clusters[m].chromIndex]<< "\t"
+						  << clusters[m].rank << "\t"
 						  << clusters[m].strand << endl;
 				}
 				else {
@@ -1444,6 +1485,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 						  << clusters[m].tStart << "\t"
 						  << m << "\t"
 						  << genome.header.names[clusters[m].chromIndex]<< "\t"
+						  << clusters[m].rank << "\t"
 						  << clusters[m].strand << endl;
 				}				
 		}

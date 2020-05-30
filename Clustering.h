@@ -154,7 +154,30 @@ class ClusterCoordinates {
 		strand=-1;
 		coarseSubCluster = -1;
 	}
-
+	bool EncompassesInRectangle(const ClusterCoordinates &b, const float frac) {
+		int qovp=0;
+		if (b.qStart >= qStart and b.qStart < qEnd) {
+			qovp=min(qEnd, b.qEnd)-b.qStart;
+		}
+		else if (b.qEnd > qStart and b.qEnd <= qEnd) {
+			qovp=b.qEnd-max(qStart, b.qStart);
+		}
+		else if (b.qStart <= qStart and b.qEnd > qEnd) {
+			qovp=qEnd-qStart;
+		}
+		int tovp=0;
+		if (b.tStart >= tStart and b.tStart < tEnd) {
+			tovp=min(tEnd, b.tEnd)-b.tStart;
+		}
+		else if (b.tEnd > tStart and b.tEnd <= tEnd) {
+			tovp=b.tEnd-max(tStart, b.tStart);
+		}
+		else if (b.tStart <= tStart and b.tEnd > tEnd) {
+			tovp=tEnd-tStart;
+		}
+		//cout << "encompass: " << float(qovp)/(b.qEnd-b.qStart) << "\t" << float(tovp)/(b.tEnd-b.tStart) << endl;
+		return (float(qovp)/(b.qEnd-b.qStart) > frac) and (float(tovp)/(b.tEnd-b.tStart) > frac);
+	}
 	bool Encompasses(const ClusterCoordinates &b, const float frac) const {
 		int qovp=0;
 		if (b.qStart >= qStart and b.qStart < qEnd) {
@@ -293,7 +316,8 @@ class Cluster : public ClusterCoordinates {
 	bool refinespace; // refinespace == 0 means this Cluster has not been add anchors in the step of RefineBtwnSpace;
 	int outerCluster;
 	bool used;
-	Cluster() { refined=0; coarse=-1; used=0;}
+	int rank;
+	Cluster() { refined=0; coarse=-1; used=0; rank=-1;}
  Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1; refined=0;}
 
  Cluster(int s, int e, int st) : ClusterCoordinates(s,e,st) { coarse=-1; refined=0;}
@@ -590,8 +614,9 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		}
 	}
 	if (maxBin < 0.0005 * readLength) {
-		//		cout << "Switching to wide bin " << maxBin << "\t" << 0.0005*readLength << endl;
+		cout << "Switching to wide bin " << maxBin << "\t" << 0.0005*readLength << endl;
 		binSize=200;
+		localMinClusterSize=2;
 		bins.resize(span/binSize+1);
 		std::fill(bins.begin(), bins.end(), 0);
 		
@@ -741,7 +766,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 			string chromName;
 			long chromPos;
 			genome.GlobalPosToChrom(clusters[curCluster].tStart, chromPos, chromName);
-			/*			
+
 			cout << curCluster << "\t" << index << "\t"  
 					 << s << "-" << i << "-" << e << "\t" << minDistance << "\t"
 					 << e-s << "\t"
@@ -754,8 +779,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 					 << chromName << "\t" << chromPos << "\t"
 					 << clusters[curCluster].matches.size() << "\t"
 					 << outerIteration << endl;
-			*/
-	
+
 			assert(clusters[curCluster].tEnd >= clusters[curCluster].tStart);
 			assert(clusters[curCluster].qEnd >= clusters[curCluster].qStart);
 		}
