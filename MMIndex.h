@@ -204,7 +204,7 @@ class LocalIndex {
 
 		vector<LocalTuple> locMinimizers;
 		GenomePos netSize=0;		
-		for (int i = 0; i < nIndex; i++) {	
+		for (int i = 0; i < nIndex; i++) {
 			locMinimizers.clear();
 			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos) seqLen, 
 							(GenomePos) seqPos+localIndexWindow) - seqPos, k, w, locMinimizers, false); // canonical = false
@@ -284,7 +284,11 @@ void CountSort(const vector<uint32_t> & Freq, const int & RANGE, const vector<bo
 
 
 void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header, Options &opts) {	
-	
+	if (opts.localK > 10) {
+		cerr << "ERROR, local k must be at most 10." << endl;
+		exit(1);
+	}
+
 	ifstream testGenome(genome.c_str());
 	if (testGenome.good() == false or testGenome.eof()) {
 		cerr << "Cannot open target " << genome << endl;

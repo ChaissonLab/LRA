@@ -647,9 +647,13 @@ void RunStoreGlobal(int argc, const char* argv[],
 			opts.globalK=atoi(argv[argi]);
 		}		
 		//else if (ArgIs(argv[argi], "-k") or ArgIs(argv[argi], "-w") or ArgIs(argv[argi], "-f")) {
-		else if (ArgIs(argv[argi], "-k") or ArgIs(argv[argi], "-w")) {
-			argi+=2;
-			continue;
+		else if (ArgIs(argv[argi], "-k")) {
+			++argi;
+			opts.localK = atoi(argv[argi]);
+		}
+		else if (ArgIs(argv[argi], "-w")) {
+			++argi;
+			opts.localW = atoi(argv[argi]);
 		}
 		else if (ArgIs(argv[argi], "--localIndexWindow")) {
 			opts.localIndexWindow=atoi(GetArgv(argv, argc, argi));
@@ -723,6 +727,18 @@ void Usage() {
 	cout << "         local   - Build local index." << endl;
 }
 
+void InitStatic() {
+	Tuple mask=1;
+	
+	GenomeTuple::for_mask_s = ~(mask << (sizeof(mask)*8-1));
+	u_int32_t local_mask=1;
+	for (int i=0; i < LOCAL_POS_BITS; i++) {
+		LocalTuple::for_mask_s = LocalTuple::for_mask_s << 2;
+		LocalTuple::for_mask_s += 3;
+	}
+
+}
+
 int main(int argc, const char *argv[]) {
 	if (argc < 2) {
 		Usage();
@@ -730,7 +746,7 @@ int main(int argc, const char *argv[]) {
 	}
 
 	Options opts;
-
+	InitStatic();
   int argi;
 	vector<GenomeTuple>  minimizers;
 	LocalIndex lIndex;
