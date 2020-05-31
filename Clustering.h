@@ -616,7 +616,7 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	int cutoff=2;
 	for (int i=sortedBins.size(); i >0; i--) {
 		cumulativeSum+= sortedBins[i-1];
-		if (float(cumulativeSum)/(e-s) > 0.9) {
+		if (float(cumulativeSum)/(e-s) > 0.95) {
 			cutoff=sortedBins[i-1];
 			break;
 		}

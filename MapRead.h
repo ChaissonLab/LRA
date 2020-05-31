@@ -95,15 +95,49 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 			diagPtr = &revDiagonals;
 		}
 		bool encompassed=false;		
+		bool onDiag=false;
+		bool nearPoint=false;
+		long curClusterDiag=0;
+		for (int d=0; d < diagPtr->size(); d++) {						
+			curClusterDiag=(*diagPtr)[d];
+			assert (diagToCluster.find(curClusterDiag) != diagToCluster.end());
+			assert (diagToCluster[curClusterDiag].size() > 0);
+			for (int di = 0; di < diagToCluster[curClusterDiag].size(); di++) {
+				int c=diagToCluster[curClusterDiag][di];
+				clusterDiag=(long)clusters[c].tStart - (long) clusters[c].qStart;
+				long fey=(long)clusters[c].tStart - (long)clusters[orderIndex].tEnd;
+				long fex=(long)clusters[c].qStart - (long)clusters[orderIndex].qEnd;
+				long efy=(long)clusters[orderIndex].tStart - (long)clusters[c].tEnd;
+				long efx =(long)clusters[orderIndex].tStart - (long)clusters[c].tEnd;
+				long fe=(long) sqrt(fex*fex+fey*fey);
+				long ef=(long) sqrt(efx*efx+efy*efy);
+				long diagDist=min(fe,ef);
+					
+				if (clusters[c].EncompassesInRectangle(clusters[orderIndex],0.5)) {
+					//					cout << "cluster " << c << " encompasses " << orderIndex << endl;
+					encompassed=true;
+					break;
+				}
+				else {
+					//					cout << "cluster " << c << " does not encompass " << orderIndex << "\t" << clusters[c].tEnd-clusters[c].tStart << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
+				}					
+				if (abs(clusterDiag - diag) < 1000) {
+					onDiag = true;
+					break;
+				}
+				if (abs(diagDist) < 1000) {
+					nearPoint=true;
+					break;
+				}
+			}
 
-		for (int d=0; d < diagPtr->size(); d++) {	
-			if (abs((*diagPtr)[d] - diag) < 1000 ) {
-				for (int di = 0; di < diagToCluster[d].size(); di++) {
-					int c=diagToCluster[d][di];
-					if (clusters[c].Encompasses(clusters[clusterIndex],0.7)) {
-						encompassed=true;
-						break;
-					}
+			if (encompassed == false and (onDiag==true or nearPoint==true)) {
+				foundDiag=true;
+				break;
+			}
+			else {
+				if (encompassed) {
+					break;
 				}
 			}
 		}
@@ -296,6 +330,19 @@ int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, 
 	string chromSeq(&tSeq[tStart],tEnd-tStart);
 
 	int score = AffineOneGapAlign(readSeq, chromSeq, options.localMatch, options.localMismatch, options.localIndel, options.localBand, aln);
+	/*
+	cout << "aligned " << endl
+			 << readSeq << endl
+			 << chromSeq;
+	aln.genomeLen = chromSeq.size();
+	aln.read=(char*) readSeq.c_str();
+	aln.genome=(char*) chromSeq.c_str();
+
+	aln.CreateAlignmentStrings((char*) readSeq.c_str(), (char*)chromSeq.c_str(), aln.queryString, aln.alignString, aln.refString);
+	aln.prepared=true;
+	aln.PrintPairwise(cout);
+	cout << endl;
+																																																																				 */	
 	return score;
 }
 
@@ -1166,7 +1213,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	//
 	CompareLists<GenomeTuple, Tuple>(readmm, genomemm, allMatches, opts);
 	// Guess that 500 is where the setup/takedown overhead of an array index is equal to sort by value.
-	DiagonalSort<GenomeTuple>(allMatches,0); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
+	DiagonalSort<GenomeTuple>(allMatches,500); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
 
 	timing.Tick("Sort minimizers");
 

@@ -397,6 +397,41 @@ class Alignment {
 		cigar=cigarstrm.str();
 	}
 
+	void SimpleAlignStringsToCigar(string &query, string &target, string &cigar) {
+		stringstream cigarstrm;
+		int i=0;
+		int p=0;
+
+		while (i < query.size()) {
+			p=i;
+			while (i < query.size() and seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
+			
+			if (i > p) {
+				cigarstrm << i-p << '=';
+				continue;
+			}
+			while (i < query.size() and seqMap[query[i]] != seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
+			if (i > p) {
+				cigarstrm << i-p << 'X';
+				continue;
+			}
+			while (i < query.size() and query[i] == '-' and target[i] != '-') {	i++;}
+			if (i > p) {
+				cigarstrm << i-p << 'D';
+				//ndel+=i-p;
+				continue;
+			}
+			while (i < query.size() and query[i] != '-' and target[i] == '-') {	i++;}
+			if (i > p) {
+				cigarstrm << i-p << 'I';
+				//nins+=i-p;
+				continue;
+			}
+		}
+		cigar=cigarstrm.str();
+		prepared=true;
+	}
+
 	void CalculateStatistics(Options & opts, ostream *svsigstrm, const std::vector<float> & LookUpTable) {
 
 		CreateAlignmentStrings(read, genome, queryString, alignString, refString);

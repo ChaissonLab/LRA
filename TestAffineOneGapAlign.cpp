@@ -12,8 +12,7 @@ void Test(string query, string target) {
 	aln.read=(char*) query.c_str();
 	aln.genome=(char*) target.c_str();
 	//aln.CalculateStatistics(0,0);
-	aln.PrintPairwise(cout);
-	
+	aln.PrintPairwise(cout);	
 	aln.Clear();
 }
 int main(int argc, char* argv[]) {

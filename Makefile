@@ -7,7 +7,7 @@ OPT?=""
 ifneq ($(DEBUG), "")
 CCOPTS=$(CCOPTS_BASE) $(DEBUG)
 else
-CCOPTS=-O3 $(CCOPTS_BASE)  -DNDEBUG 
+CCOPTS=-O2 $(CCOPTS_BASE)  -DNDEBUG 
 endif
 STATIC=
 ifneq ($(OPT), "")
