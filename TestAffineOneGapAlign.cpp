@@ -4,10 +4,10 @@
 
 using namespace std;
 
-void Test(string query, string target) {
+void Test(const char *query, int qLen, const char* target, int tLen) {
 	Alignment aln;
 
-	AffineOneGapAlign(query, target, 4, -4, -3, 15, aln);
+	AffineOneGapAlign(query, qLen, target, tLen, 4, -4, -3, 15, aln);
 	aln.genomeLen = target.size();
 	aln.read=(char*) query.c_str();
 	aln.genome=(char*) target.c_str();

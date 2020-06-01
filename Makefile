@@ -1,4 +1,4 @@
-all:  lra alchemy2 tag tgc iik 
+all:  lra alchemy2 tgc iik 
 PROF=/home/cmb-16/mjc/shared/lib/
 #PROF=/home/cmb-16/mjc/jingwenr/software/lib
 CCOPTS_BASE=
@@ -7,7 +7,7 @@ OPT?=""
 ifneq ($(DEBUG), "")
 CCOPTS=$(CCOPTS_BASE) $(DEBUG)
 else
-CCOPTS=-O2 $(CCOPTS_BASE)  -DNDEBUG 
+CCOPTS=-O3 $(CCOPTS_BASE)  -DNDEBUG 
 endif
 STATIC=
 ifneq ($(OPT), "")

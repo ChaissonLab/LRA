@@ -314,11 +314,10 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 }
 
 
-int AlignSubstrings(string &readSeq, GenomePos &qStart, GenomePos &qEnd, string &chromSeq, GenomePos &tStart, GenomePos &tEnd,
-										vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &options) {
+int AlignSubstrings(const char *readSeq, int qLen, const char* chromSeq, int tLen,
+										vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &options, 
+										AffineAlignBuffers &buff) {
 	
-	int qLen = qEnd-qStart;
-	int tLen = tEnd-tStart;
 	int drift = abs(qLen - tLen);
 	int k = max(7, drift+1);
 	
@@ -328,7 +327,9 @@ int AlignSubstrings(string &readSeq, GenomePos &qStart, GenomePos &qEnd, string 
 												 scoreMat, pathMat, aln);*/
 	// string readSeq(&qSeq[qStart], qEnd-qStart);
 	// string chromSeq(&tSeq[tStart],tEnd-tStart);
-	int score = AffineOneGapAlign(readSeq, chromSeq, options.localMatch, options.localMismatch, options.localIndel, min(drift*2,options.localBand), aln);
+	int score = AffineOneGapAlign(readSeq, qLen, chromSeq, tLen, 
+																options.localMatch, options.localMismatch, options.localIndel, min(drift*2+1,options.localBand), 
+																aln, buff);
 	/*
 	cout << "aligned " << endl
 			 << readSeq << endl
@@ -427,25 +428,28 @@ void UpdateBoundaries(T &matches, GenomePos &qStart, GenomePos &qEnd, GenomePos 
 }
 int nSSE=0;
 void RefineSubstrings(char *read, GenomePos readSubStart, GenomePos readSubEnd, char *genome, GenomePos genomeSubStart, GenomePos genomeSubEnd, 
-											vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &opts) {
+											vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &opts,
+											AffineAlignBuffers &buff) {
 
 	aln.blocks.clear();
 	// Something wrong is happening here, just leave early
 	//	if ( readSubEnd - readSubStart > 10000 and genomeSubEnd - genomeSubStart  > 10000) { return;}
-	string readSeq(&read[readSubStart], readSubEnd - readSubStart);
-	string chromSeq(&genome[genomeSubStart],genomeSubEnd - genomeSubStart);
-	const char* readSeq_ = readSeq.c_str();
-	const char* chromSeq_ = chromSeq.c_str();
+	//	string readSeq(&read[readSubStart], readSubEnd - readSubStart);
+	//	string chromSeq(&genome[genomeSubStart],genomeSubEnd - genomeSubStart);
+	int readSeqLen = readSubEnd-readSubStart;
+	int genomeSeqLen = genomeSubEnd-genomeSubStart;
+	const char* readSeq = &read[readSubStart];
+	const char* chromSeq = &genome[genomeSubStart];
 	long qDiff= abs(readSubEnd - readSubStart);
 	long tDiff= abs(genomeSubEnd - genomeSubStart);
 	long drift=abs(qDiff-tDiff);
 
 
 	if ( drift < opts.minDiffAffine and
-			 readSeq.size() > 1000 and 
-			 chromSeq.size() > 1000 ) {
-		cout << "EDLIB:\t" << readSeq.size() << "\t" << chromSeq.size() << endl;
-		EdlibAlignResult result = edlibAlign(readSeq_ , readSubEnd - readSubStart, chromSeq_, genomeSubEnd - genomeSubStart, 
+			 readSeqLen > 20000 and 
+			 genomeSeqLen > 20000 ) {
+		//		cout << "EDLIB:\t" << readSeq.size() << "\t" << chromSeq.size() << endl;
+		EdlibAlignResult result = edlibAlign(readSeq , readSubEnd - readSubStart, chromSeq, genomeSubEnd - genomeSubStart, 
 											edlibNewAlignConfig(opts.sseBand, EDLIB_MODE_NW, EDLIB_TASK_PATH, NULL, 0));
 		if (result.alignment != NULL) {
 			int qPos = 0, tPos = 0;
@@ -466,7 +470,7 @@ void RefineSubstrings(char *read, GenomePos readSubStart, GenomePos readSubEnd, 
 		edlibFreeAlignResult(result);
 	}
 	else {
-		AlignSubstrings(readSeq, readSubStart, readSubEnd, chromSeq, genomeSubStart, genomeSubEnd, scoreMat, pathMat, aln, opts);
+		AlignSubstrings(readSeq, readSeqLen, chromSeq, genomeSeqLen, scoreMat, pathMat, aln, opts, buff);
 	}
 
 	for (int b = 0; b < aln.blocks.size(); b++) {
@@ -1164,7 +1168,8 @@ int LargestFinalSeperateChain(vector<vector<int>> &finalSeperateChain) {
 //
 void
 RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, FinalChain & finalchain, Alignment * alignment, Read & read, Genome & genome, char *strands[2], 
-				vector<int> & scoreMat, vector<Arrow> & pathMat, Options & tinyOpts, GenomePos & genomeThres) {
+														vector<int> & scoreMat, vector<Arrow> & pathMat, Options & tinyOpts, GenomePos & genomeThres,
+														AffineAlignBuffers &buff) {
 
 	if (str == 0) alignment->blocks.push_back(Block(finalchain[cur].first.pos, finalchain[cur].second.pos, finalchain.length(cur)));
 	else alignment->blocks.push_back(Block(read.length - finalchain[cur].first.pos - finalchain.length(cur), finalchain[cur].second.pos, finalchain.length(cur)));
@@ -1203,7 +1208,7 @@ RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, 
 			Alignment betweenAnchorAlignment;
 			if (tinyOpts.refineLevel & REF_DP) {						
 				RefineSubstrings(strands[str], curReadEnd, nextReadStart, genome.seqs[chromIndex], 
-												 curGenomeEnd, nextGenomeStart, scoreMat, pathMat, betweenAnchorAlignment, tinyOpts);
+												 curGenomeEnd, nextGenomeStart, scoreMat, pathMat, betweenAnchorAlignment, tinyOpts, buff);
 				int b;
 				for (b = 1; b < betweenAnchorAlignment.blocks.size(); b++) {
 					assert(betweenAnchorAlignment.blocks[b-1].qPos + betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].qPos);
@@ -1908,7 +1913,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	//
 	vector<SegAlignmentGroup> alignments;
 	AlignmentsOrder alignmentsOrder(&alignments);
-
+	AffineAlignBuffers buff;
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
@@ -2175,7 +2180,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 							int next = fl - 1;
 							if (!PassgenomeThres(cur, genomeThres, finalchain)) {
 								RefinedAlignmentbtwnAnchors(cur, next, str, chromIndex, finalchain, alignment, read, genome,
-															 strands, scoreMat, pathMat, tinyOpts, genomeThres);
+																						strands, scoreMat, pathMat, tinyOpts, genomeThres, buff);
 							}
 							fl--;
 						}
@@ -2191,7 +2196,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 							int next = fl + 1;
 							if (!PassgenomeThres(cur, genomeThres, finalchain)) {
 								RefinedAlignmentbtwnAnchors(cur, next, str, chromIndex, finalchain, alignment, read, genome,
-															strands, scoreMat, pathMat, tinyOpts, genomeThres);
+																						strands, scoreMat, pathMat, tinyOpts, genomeThres, buff);
 							}
 							fl++;
 						}	
