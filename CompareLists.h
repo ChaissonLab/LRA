@@ -11,13 +11,7 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 						typename vector<tup>::iterator tBegin, typename vector<tup>::iterator tEnd, 
 						vector<pair<tup, tup> > &result, Options &opts, long long int maxDiagNum = 0,
 						 long long int minDiagNum = 0, bool canonical=true) {
-    Tup Bi=1; Tup Ai=1;
-    int nOfBits=0;
-    while (Bi != 0) {
-        Bi = Bi << 1;
-        nOfBits++;
-    }
-	Tup for_mask = ~(Ai << (nOfBits-1));
+	Tup for_mask = tup::for_mask_s;
 	if (!canonical) {
 		for_mask = ~(for_mask & 0);
 	}
@@ -44,19 +38,19 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 	do {
 		tup startGap, endGap;
 		++iter;
-		while (qs <= qe and qBegin[qs].t < (tBegin[ts].t & for_mask)) {
+		while (qs <= qe and (qBegin[qs].t & for_mask) < (tBegin[ts].t & for_mask)) {
 			qs++;
 		}
-		startGap.t = qBegin[qs].t - (tBegin[ts].t & for_mask);
+		startGap.t = (qBegin[qs].t & for_mask) - (tBegin[ts].t & for_mask);
 		if (qs == qe) {
 			endGap = startGap;
 		}
 		else {
 			// Move past any entries guaranteed to not be in target
-			while (qe > qs and te > ts and qBegin[qe].t > (tBegin[te-1].t & for_mask)) {
+			while (qe > qs and te > ts and (qBegin[qe].t  & for_mask) > (tBegin[te-1].t & for_mask)) {
 				qe--;
 			}
-			endGap.t = (tBegin[te-1].t & for_mask) - qBegin[qe].t;
+			endGap.t = (tBegin[te-1].t & for_mask) - (qBegin[qe].t & for_mask);
 		}
 		if (startGap > endGap) {
 			//
@@ -65,14 +59,14 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 			typename vector<tup>::iterator lb;
 			lb = lower_bound(tBegin+ts, tBegin+te, qBegin[qs]);
 			ts=lb-tBegin;
-			if ((tBegin[ts].t & for_mask) == qBegin[qs].t) {
+			if ((tBegin[ts].t & for_mask) == (qBegin[qs].t & for_mask)) {
 				GenomePos tsStart=ts;
 				GenomePos tsi=ts;
-				while (tsi != te and qBegin[qs].t == (tBegin[tsi].t & for_mask)) {
+				while (tsi != te and (qBegin[qs].t & for_mask) == (tBegin[tsi].t & for_mask)) {
 					tsi++;
 				}
 				GenomePos qsStart=qs;
-				while (qs < qe and qBegin[qs+1].t == qBegin[qs].t) { qs++; }
+				while (qs < qe and (qBegin[qs+1].t & for_mask) == (qBegin[qs].t & for_mask) ) { qs++; }
 				
 				if (tsi - tsStart < opts.globalMaxFreq) {
 					for(GenomePos ti=tsStart; ti != tsi; ti++) {
@@ -93,7 +87,7 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 			//
 			typename vector<tup>::iterator ub;
 			assert(te > ts);
-			if (tBegin + te != tEnd and (tBegin[te-1].t & for_mask) == qBegin[qe].t) {
+			if (tBegin + te != tEnd and (tBegin[te-1].t & for_mask) == (qBegin[qe].t & for_mask)) {
 				// pass
 			} 
 			else {
@@ -102,12 +96,12 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 				te = ub - tBegin;
 			}
 			GenomePos teStart=te, tei=te;
-			while (tei > ts and (tBegin[tei-1].t & for_mask) == qBegin[qe].t) {
+			while (tei > ts and (tBegin[tei-1].t & for_mask) == (qBegin[qe].t & for_mask)) {
 				tei--;
 			}
 			if (tei < teStart and teStart > 0) {
 				GenomePos qeStart=qe;
-				while (qe > qs and qBegin[qe].t == qBegin[qe-1].t) { qe--;}
+				while (qe > qs and (qBegin[qe].t & for_mask) == (qBegin[qe-1].t & for_mask)) { qe--;}
 
 				if (teStart - te < opts.globalMaxFreq) {
 					for (GenomePos ti=tei; ti < teStart; ti++) {

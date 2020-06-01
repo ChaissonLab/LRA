@@ -22,6 +22,7 @@ class LocalTuple {
  public:
   uint32_t t: 32-LOCAL_POS_BITS;
   uint32_t pos: LOCAL_POS_BITS;
+	static uint32_t for_mask_s;
 	LocalTuple() {
 		t=0;
 		pos=0;
@@ -44,6 +45,7 @@ class LocalTuple {
 	}
 
 };
+u_int32_t LocalTuple::for_mask_s=0;
 
 template<typename Tup> 
 int DiagOffset(Tup &a, Tup &b) {
@@ -67,29 +69,25 @@ class GenomeTuple {
 public:
 	Tuple t; // used to store kmers, this uses a 64 bit representation of k-mers (A=00, C=01, G=10, T=11)
 	GenomePos pos; // unsigned 32 bit position in a genome (signed integers cannot index entire human genome!) 
+	static Tuple for_mask_s;
 	GenomeTuple() {t=0;pos=0;} 
  	GenomeTuple(Tuple _t, GenomePos _p): t(_t), pos(_p) {}
 	bool operator<(const GenomeTuple &b) const {
-		Tuple Bi=1;
-		Tuple for_mask = ~(Bi<<63);
-		return (t & for_mask) < (b.t & for_mask);
+		return (t & GenomeTuple::for_mask_s) < (b.t & GenomeTuple::for_mask_s);
 	}
 
 	friend int operator >(GenomeTuple &a, GenomeTuple &b) {
-		Tuple Bi=1;
-		Tuple for_mask = ~(Bi<<63);
-		return (a.t & for_mask) > (b.t & for_mask);
+		return (a.t & GenomeTuple::for_mask_s) > (b.t & GenomeTuple::for_mask_s);
 	}
 	friend int operator!=(GenomeTuple &a, GenomeTuple &b) {
-		Tuple Bi=1;
-		Tuple for_mask = ~(Bi<<63);
-		return (a.t & for_mask) != (b.t & for_mask);
+		return (a.t & GenomeTuple::for_mask_s) != (b.t & GenomeTuple::for_mask_s);
 	}
 	void ToString(int k, string &s) {
 		TupleToString(t, k, s);
 	}
 };
 
+Tuple GenomeTuple::for_mask_s=0;
 
 template< typename Tup>
 int InitMask(Tup &m, int k) {
