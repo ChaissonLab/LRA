@@ -91,8 +91,6 @@ public:
 };
 
 
-
-
 template< typename Tup>
 int InitMask(Tup &m, int k) {
 	m.t=0;

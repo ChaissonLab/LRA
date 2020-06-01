@@ -1,4 +1,4 @@
-all:  lra alchemy2 tag tgc iik
+all:  lra alchemy2 tag tgc iik 
 PROF=/home/cmb-16/mjc/shared/lib/
 #PROF=/home/cmb-16/mjc/jingwenr/software/lib
 CCOPTS_BASE=
@@ -40,7 +40,7 @@ HEADERS=MinCount.h \
   NaiveDP.h \
   Read.h \
   SparseDP.h \
-  Timing.h
+  Timing.h \
 
 CXX=g++
 # -std=c++14 
@@ -55,8 +55,14 @@ tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 tgc: TestGlobalChain.cpp GlobalChain.h Fragment.h BasicEndpoint.h PrioritySearchTree.h
 	$(CXX) -g TestGlobalChain.cpp -o tgc
 
+# edlib_: edlib.cpp edlib.h
+# 	$(CXX) -g edlib.cpp -o edlib_ 
+
+edlib/build/lib/libedlib.a:
+	cd build && cmake -D CMAKE_BUILD_TYPE=Release .. && make
+
 lra: lra.o
-	$(CXX) $(STATIC) $(CCOPTS) $^ -L $(PWD)/htslib/lib  -lhts -lz -lpthread -o $@ -Wl,-rpath,$(PWD)/htslib/lib
+	$(CXX) $(STATIC) $(CCOPTS) $^ -L $(PWD)/htslib/lib  -lhts -lz -lpthread -o $@ -Wl,-rpath,$(PWD)/htslib/lib  -I $(PWD)/edlib/include -L $(PWD)/edlib/build/lib/ -ledlib
 
 alchemy2: Alchemy2.o
 	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib  -lhts -lz -lpthread -o $@  -Wl,-rpath,$(PWD)/htslib/lib
@@ -64,8 +70,9 @@ alchemy2: Alchemy2.o
 qti: QueryTime.o
 	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
-lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a
-	$(CXX) $(CCOPTS) -c  -I htslib/include  lra.cpp
+lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a  edlib/build/lib/libedlib.a 
+	$(CXX) $(CCOPTS) -c  -I htslib/include  -I edlib/include lra.cpp 
+#  $(CXX) $(CCOPTS) -c  -I htslib/include  lra.cpp 
 
 Alchemy2.o: Alchemy2.cpp Genome.h htslib/lib/libhts.a
 	$(CXX) $(CCOPTS) -c  -I htslib/include Alchemy2.cpp

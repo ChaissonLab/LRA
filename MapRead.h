@@ -20,6 +20,7 @@
 #include "LinearExtend.h"
 #include "SplitClusters.h"
 #include "Timing.h"
+#include "edlib.h"
 
 #include <iostream>
 #include <algorithm>
@@ -313,7 +314,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 }
 
 
-int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, GenomePos &tStart, GenomePos &tEnd,
+int AlignSubstrings(string &readSeq, GenomePos &qStart, GenomePos &qEnd, string &chromSeq, GenomePos &tStart, GenomePos &tEnd,
 										vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &options) {
 	
 	int qLen = qEnd-qStart;
@@ -325,10 +326,8 @@ int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, 
 	int score = KBandAlign(&qSeq[qStart], qEnd-qStart, &tSeq[tStart], tEnd-tStart, 
 												 -5,3,2,2, k, // make these smart later.
 												 scoreMat, pathMat, aln);*/
-
-	string readSeq(&qSeq[qStart], qEnd-qStart);
-	string chromSeq(&tSeq[tStart],tEnd-tStart);
-
+	// string readSeq(&qSeq[qStart], qEnd-qStart);
+	// string chromSeq(&tSeq[tStart],tEnd-tStart);
 	int score = AffineOneGapAlign(readSeq, chromSeq, options.localMatch, options.localMismatch, options.localIndel, options.localBand, aln);
 	/*
 	cout << "aligned " << endl
@@ -431,11 +430,98 @@ void RefineSubstrings(char *read, GenomePos readSubStart, GenomePos readSubEnd, 
 											vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &opts) {
 
 	aln.blocks.clear();
-	AlignSubstrings(read, readSubStart, readSubEnd, genome, genomeSubStart, genomeSubEnd, scoreMat, pathMat, aln, opts);
+
+	string readSeq(&read[readSubStart], readSubEnd - readSubStart);
+	string chromSeq(&genome[genomeSubStart],genomeSubEnd - genomeSubStart);
+	const char* readSeq_ = readSeq.c_str();
+	const char* chromSeq_ = chromSeq.c_str();
+
+	if ( (readSubEnd - readSubStart) <= (genomeSubEnd - genomeSubStart) + opts.minDiffAffine or 
+		  opts.minDiffAffine + (readSubEnd - readSubStart) >= (genomeSubEnd - genomeSubStart) ){
+		EdlibAlignResult result = edlibAlign(readSeq_ , readSubEnd - readSubStart, chromSeq_, genomeSubEnd - genomeSubStart, 
+											edlibNewAlignConfig(opts.localBand, EDLIB_MODE_NW, EDLIB_TASK_PATH, NULL, 0));
+		if (result.alignment != NULL) {
+			int qPos = 0, tPos = 0;
+			int len_match= 0; int len_mismatch = 0;
+			int ra = 0;
+			while (ra < result.alignmentLength) {
+
+				if (result.alignment[ra] == 0) { //match
+					if (len_mismatch > 0) {
+						assert(len_match == 0);
+						aln.blocks.push_back(Block(qPos, tPos, len_mismatch));
+						qPos += len_mismatch;
+						tPos += len_mismatch;
+						len_mismatch = 0;						
+					}
+					assert(len_mismatch == 0);
+					len_match++;
+				}
+				else if (result.alignment[ra] == 1) { // insertion in target
+					assert(len_match * len_mismatch == 0);
+					if (len_match > 0) {
+						assert(len_mismatch == 0);
+						aln.blocks.push_back(Block(qPos, tPos, len_match));
+						qPos += len_match;
+						tPos += len_match;
+						len_match = 0;
+					}
+					else if (len_mismatch > 0) {
+						assert(len_match == 0);
+						aln.blocks.push_back(Block(qPos, tPos, len_mismatch));
+						qPos += len_mismatch;
+						tPos += len_mismatch;
+						len_mismatch = 0;						
+					}
+					qPos++;
+				}
+				else if (result.alignment[ra] == 2) { // insertion in query
+					assert(len_match * len_mismatch == 0);
+					if (len_match > 0 ) {
+						assert(len_mismatch == 0);
+						aln.blocks.push_back(Block(qPos, tPos, len_match));
+						qPos += len_match;
+						tPos += len_match;
+						len_match = 0;
+					}
+					else if (len_mismatch > 0) {
+						assert(len_match == 0);
+						aln.blocks.push_back(Block(qPos, tPos, len_mismatch));
+						qPos += len_mismatch;
+						tPos += len_mismatch;
+						len_mismatch = 0;						
+					}
+					tPos++;
+				}
+				else { // mismatch
+					if (len_match > 0 ) {
+						assert(len_mismatch == 0);
+						aln.blocks.push_back(Block(qPos, tPos, len_match));
+						qPos += len_match;
+						tPos += len_match;
+						len_match = 0;
+					}
+					assert(len_match == 0);
+					len_mismatch++;
+				}
+
+				ra++;
+			}
+
+		}
+		edlibFreeAlignResult(result);
+	}
+	else {
+		AlignSubstrings(readSeq, readSubStart, readSubEnd, chromSeq, genomeSubStart, genomeSubEnd, scoreMat, pathMat, aln, opts);
+	}
+
 	for (int b = 0; b < aln.blocks.size(); b++) {
 		aln.blocks[b].qPos += readSubStart;
 		aln.blocks[b].tPos += genomeSubStart;
-
+	}
+	for (int b = 1; b < aln.blocks.size(); b++) {
+		assert(aln.blocks[b-1].qPos + aln.blocks[b-1].length <= aln.blocks[b].qPos);
+		assert(aln.blocks[b-1].tPos + aln.blocks[b-1].length <= aln.blocks[b].tPos);						
 	}
 	
 }
@@ -1157,7 +1243,9 @@ RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, 
 		// find small matches between fragments in gapChain
 		int m, rg, gg;
 		SetMatchAndGaps(curReadEnd, nextReadStart, curGenomeEnd, nextGenomeStart, m, rg, gg);
+
 		if (m > 0) {
+
 			Alignment betweenAnchorAlignment;
 			if (tinyOpts.refineLevel & REF_DP) {						
 				RefineSubstrings(strands[str], curReadEnd, nextReadStart, genome.seqs[chromIndex], 
@@ -1670,8 +1758,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 
 		for (int p = 0; p < Primary_chains.size(); p++) {
 			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
-				//cerr << "p: " << p << " h: " << h << " chr: " << genome.header.names[genome.header.Find(Primary_chains[p].chains[h].tStart)] << 
-				//" value: " << Primary_chains[p].chains[h].value << " # of Anchors: " << Primary_chains[p].chains[h].NumOfAnchors << " tStart: " <<  Primary_chains[p].chains[h].tStart << endl;
+				cerr << "p: " << p << " h: " << h << " chr: " << genome.header.names[genome.header.Find(Primary_chains[p].chains[h].tStart)] << 
+				" value: " << Primary_chains[p].chains[h].value << " # of Anchors: " << Primary_chains[p].chains[h].NumOfAnchors << " tStart: " <<  Primary_chains[p].chains[h].tStart << endl;
 				for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
 					int ph = Primary_chains[p].chains[h].ch[c];
 					if (clusters[ph].strand == 0) {
