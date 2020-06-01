@@ -70,8 +70,8 @@ public:
 	int PrintNumAln;
 	int customType;
 	bool storeTiming;
-	int minDiffAffine;
 	int sseBand;
+	int globalWinsize;
 	Options() {
 		storeTiming=false;
 		customType=0;
@@ -142,7 +142,7 @@ public:
 		alnthres = 0.7;
 		timing="";
 		localIndexWindow=256;
-		minDiffAffine = 30;
+		globalWinsize = 16;
 	}
 };
 #endif

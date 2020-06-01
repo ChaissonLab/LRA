@@ -20,7 +20,6 @@
 #include "LinearExtend.h"
 #include "SplitClusters.h"
 #include "Timing.h"
-#include "edlib.h"
 
 #include <iostream>
 #include <algorithm>
@@ -314,10 +313,11 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 }
 
 
-int AlignSubstrings(const char *readSeq, int qLen, const char* chromSeq, int tLen,
+int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, GenomePos &tStart, GenomePos &tEnd,
 										vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &options, 
 										AffineAlignBuffers &buff) {
-	
+	int qLen = qEnd-qStart;
+	int tLen = tEnd-tStart;
 	int drift = abs(qLen - tLen);
 	int k = max(7, drift+1);
 	
@@ -325,8 +325,8 @@ int AlignSubstrings(const char *readSeq, int qLen, const char* chromSeq, int tLe
 	int score = KBandAlign(&qSeq[qStart], qEnd-qStart, &tSeq[tStart], tEnd-tStart, 
 												 -5,3,2,2, k, // make these smart later.
 												 scoreMat, pathMat, aln);*/
-	// string readSeq(&qSeq[qStart], qEnd-qStart);
-	// string chromSeq(&tSeq[tStart],tEnd-tStart);
+	string readSeq(&qSeq[qStart], qEnd-qStart);
+	string chromSeq(&tSeq[tStart],tEnd-tStart);
 	int score = AffineOneGapAlign(readSeq, qLen, chromSeq, tLen, 
 																options.localMatch, options.localMismatch, options.localIndel, min(drift*2+1,options.localBand), 
 																aln, buff);
@@ -430,58 +430,13 @@ int nSSE=0;
 void RefineSubstrings(char *read, GenomePos readSubStart, GenomePos readSubEnd, char *genome, GenomePos genomeSubStart, GenomePos genomeSubEnd, 
 											vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &opts,
 											AffineAlignBuffers &buff) {
-
 	aln.blocks.clear();
-	// Something wrong is happening here, just leave early
-	//	if ( readSubEnd - readSubStart > 10000 and genomeSubEnd - genomeSubStart  > 10000) { return;}
-	//	string readSeq(&read[readSubStart], readSubEnd - readSubStart);
-	//	string chromSeq(&genome[genomeSubStart],genomeSubEnd - genomeSubStart);
-	int readSeqLen = readSubEnd-readSubStart;
-	int genomeSeqLen = genomeSubEnd-genomeSubStart;
-	const char* readSeq = &read[readSubStart];
-	const char* chromSeq = &genome[genomeSubStart];
-	long qDiff= abs(readSubEnd - readSubStart);
-	long tDiff= abs(genomeSubEnd - genomeSubStart);
-	long drift=abs(qDiff-tDiff);
-
-
-	if ( drift < opts.minDiffAffine and
-			 readSeqLen > 20000 and 
-			 genomeSeqLen > 20000 ) {
-		//		cout << "EDLIB:\t" << readSeq.size() << "\t" << chromSeq.size() << endl;
-		EdlibAlignResult result = edlibAlign(readSeq , readSubEnd - readSubStart, chromSeq, genomeSubEnd - genomeSubStart, 
-											edlibNewAlignConfig(opts.sseBand, EDLIB_MODE_NW, EDLIB_TASK_PATH, NULL, 0));
-		if (result.alignment != NULL) {
-			int qPos = 0, tPos = 0;
-			int len_match= 0; int len_mismatch = 0;
-			int ra = 0;
-			while (ra < result.alignmentLength) {
-				len_match=0;
-				while (ra < result.alignmentLength and (result.alignment[ra] == 0 or result.alignment[ra] == 3)) { ra++; len_match++;}
-				if (len_match > 0) {
-					aln.blocks.push_back(Block(qPos,tPos, len_match));
-					qPos+=len_match;
-					tPos+=len_match;
-				}
-				while (ra < result.alignmentLength and result.alignment[ra] == 1) { qPos++; ra++;}
-				while (ra < result.alignmentLength and result.alignment[ra] == 2) { tPos++; ra++;}
-			}
-		}
-		edlibFreeAlignResult(result);
-	}
-	else {
-		AlignSubstrings(readSeq, readSeqLen, chromSeq, genomeSeqLen, scoreMat, pathMat, aln, opts, buff);
-	}
-
+	AlignSubstrings(read, readSubStart, readSubEnd, genome, genomeSubStart, genomeSubEnd, scoreMat, pathMat, aln, opts, buff);
 	for (int b = 0; b < aln.blocks.size(); b++) {
 		aln.blocks[b].qPos += readSubStart;
 		aln.blocks[b].tPos += genomeSubStart;
+
 	}
-	for (int b = 1; b < aln.blocks.size(); b++) {
-		assert(aln.blocks[b-1].qPos + aln.blocks[b-1].length <= aln.blocks[b].qPos);
-		assert(aln.blocks[b-1].tPos + aln.blocks[b-1].length <= aln.blocks[b].tPos);						
-	}
-	
 }
 
 void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<pair<GenomeTuple, GenomeTuple> > &allMatches,  vector<pair<GenomeTuple, GenomeTuple> > &forMatches,
