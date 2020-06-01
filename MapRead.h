@@ -328,7 +328,7 @@ int AlignSubstrings(string &readSeq, GenomePos &qStart, GenomePos &qEnd, string 
 												 scoreMat, pathMat, aln);*/
 	// string readSeq(&qSeq[qStart], qEnd-qStart);
 	// string chromSeq(&tSeq[tStart],tEnd-tStart);
-	int score = AffineOneGapAlign(readSeq, chromSeq, options.localMatch, options.localMismatch, options.localIndel, options.localBand, aln);
+	int score = AffineOneGapAlign(readSeq, chromSeq, options.localMatch, options.localMismatch, options.localIndel, min(drift*2,options.localBand), aln);
 	/*
 	cout << "aligned " << endl
 			 << readSeq << endl
@@ -425,89 +425,43 @@ void UpdateBoundaries(T &matches, GenomePos &qStart, GenomePos &qEnd, GenomePos 
 		tEnd=max(tEnd, matches[i].second.pos);
 	}
 }
-
+int nSSE=0;
 void RefineSubstrings(char *read, GenomePos readSubStart, GenomePos readSubEnd, char *genome, GenomePos genomeSubStart, GenomePos genomeSubEnd, 
 											vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &opts) {
 
 	aln.blocks.clear();
-
+	// Something wrong is happening here, just leave early
+	//	if ( readSubEnd - readSubStart > 10000 and genomeSubEnd - genomeSubStart  > 10000) { return;}
 	string readSeq(&read[readSubStart], readSubEnd - readSubStart);
 	string chromSeq(&genome[genomeSubStart],genomeSubEnd - genomeSubStart);
 	const char* readSeq_ = readSeq.c_str();
 	const char* chromSeq_ = chromSeq.c_str();
+	long qDiff= abs(readSubEnd - readSubStart);
+	long tDiff= abs(genomeSubEnd - genomeSubStart);
+	long drift=abs(qDiff-tDiff);
 
-	if ( (readSubEnd - readSubStart) <= (genomeSubEnd - genomeSubStart) + opts.minDiffAffine or 
-		  opts.minDiffAffine + (readSubEnd - readSubStart) >= (genomeSubEnd - genomeSubStart) ){
+
+	if ( drift < opts.minDiffAffine and
+			 readSeq.size() > 1000 and 
+			 chromSeq.size() > 1000 ) {
+		cout << "EDLIB:\t" << readSeq.size() << "\t" << chromSeq.size() << endl;
 		EdlibAlignResult result = edlibAlign(readSeq_ , readSubEnd - readSubStart, chromSeq_, genomeSubEnd - genomeSubStart, 
-											edlibNewAlignConfig(opts.localBand, EDLIB_MODE_NW, EDLIB_TASK_PATH, NULL, 0));
+											edlibNewAlignConfig(opts.sseBand, EDLIB_MODE_NW, EDLIB_TASK_PATH, NULL, 0));
 		if (result.alignment != NULL) {
 			int qPos = 0, tPos = 0;
 			int len_match= 0; int len_mismatch = 0;
 			int ra = 0;
 			while (ra < result.alignmentLength) {
-
-				if (result.alignment[ra] == 0) { //match
-					if (len_mismatch > 0) {
-						assert(len_match == 0);
-						aln.blocks.push_back(Block(qPos, tPos, len_mismatch));
-						qPos += len_mismatch;
-						tPos += len_mismatch;
-						len_mismatch = 0;						
-					}
-					assert(len_mismatch == 0);
-					len_match++;
+				len_match=0;
+				while (ra < result.alignmentLength and (result.alignment[ra] == 0 or result.alignment[ra] == 3)) { ra++; len_match++;}
+				if (len_match > 0) {
+					aln.blocks.push_back(Block(qPos,tPos, len_match));
+					qPos+=len_match;
+					tPos+=len_match;
 				}
-				else if (result.alignment[ra] == 1) { // insertion in target
-					assert(len_match * len_mismatch == 0);
-					if (len_match > 0) {
-						assert(len_mismatch == 0);
-						aln.blocks.push_back(Block(qPos, tPos, len_match));
-						qPos += len_match;
-						tPos += len_match;
-						len_match = 0;
-					}
-					else if (len_mismatch > 0) {
-						assert(len_match == 0);
-						aln.blocks.push_back(Block(qPos, tPos, len_mismatch));
-						qPos += len_mismatch;
-						tPos += len_mismatch;
-						len_mismatch = 0;						
-					}
-					qPos++;
-				}
-				else if (result.alignment[ra] == 2) { // insertion in query
-					assert(len_match * len_mismatch == 0);
-					if (len_match > 0 ) {
-						assert(len_mismatch == 0);
-						aln.blocks.push_back(Block(qPos, tPos, len_match));
-						qPos += len_match;
-						tPos += len_match;
-						len_match = 0;
-					}
-					else if (len_mismatch > 0) {
-						assert(len_match == 0);
-						aln.blocks.push_back(Block(qPos, tPos, len_mismatch));
-						qPos += len_mismatch;
-						tPos += len_mismatch;
-						len_mismatch = 0;						
-					}
-					tPos++;
-				}
-				else { // mismatch
-					if (len_match > 0 ) {
-						assert(len_mismatch == 0);
-						aln.blocks.push_back(Block(qPos, tPos, len_match));
-						qPos += len_match;
-						tPos += len_match;
-						len_match = 0;
-					}
-					assert(len_match == 0);
-					len_mismatch++;
-				}
-
-				ra++;
+				while (ra < result.alignmentLength and result.alignment[ra] == 1) { qPos++; ra++;}
+				while (ra < result.alignmentLength and result.alignment[ra] == 2) { tPos++; ra++;}
 			}
-
 		}
 		edlibFreeAlignResult(result);
 	}

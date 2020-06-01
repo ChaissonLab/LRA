@@ -332,6 +332,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.localBand=atoi(GetArgv(argv,argc,argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "--sseBand")) {
+			opts.sseBand=atoi(GetArgv(argv,argc,argi));
+			++argi;
+		}
 		else if (ArgIs(argv[argi], "--locIndel")) {
 			opts.localIndel=atoi(GetArgv(argv,argc,argi));
 			++argi;

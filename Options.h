@@ -71,6 +71,7 @@ public:
 	int customType;
 	bool storeTiming;
 	int minDiffAffine;
+	int sseBand;
 	Options() {
 		storeTiming=false;
 		customType=0;
@@ -78,6 +79,7 @@ public:
 		localMismatch=-3;
 		localIndel=-3;
 		localBand=15;
+		sseBand=30;
 		readStart=0;
 		readStride=1;
 		dotPlot=false;
