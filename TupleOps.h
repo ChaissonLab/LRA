@@ -87,7 +87,9 @@ public:
 	}
 };
 
+
 Tuple GenomeTuple::for_mask_s=0;
+
 
 template< typename Tup>
 int InitMask(Tup &m, int k) {
