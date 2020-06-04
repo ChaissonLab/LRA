@@ -1244,6 +1244,13 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	vector<GenomeTuple> readmm; // readmm stores minimizers
 	vector<pair<GenomeTuple, GenomeTuple> > allMatches, forMatches, revMatches, matches;
 	timing.Start();
+	//
+	// Add pointers to seq that make code more readable.
+	//
+	char *readRC;
+	CreateRC(read.seq, read.length, readRC);
+	char *strands[2] = { read.seq, readRC };
+
 	if (opts.storeAll) {
 		Options allOpts = opts;
 		allOpts.globalW=1;
@@ -1776,12 +1783,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		clust.close();
 	}
 	//
-	// Add pointers to seq that make code more readable.
-	//
-	char *readRC;
-	CreateRC(read.seq, read.length, readRC);
-	char *strands[2] = { read.seq, readRC };
-	//
 	// Build local index for refining alignments.
 	//
 	LocalIndex forwardIndex(glIndex);
@@ -1958,7 +1959,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				if (qe > qs and te > ts) {
 					SpaceLength = max(qe - qs, te - ts); 
 					//cerr << "SpaceLength: " << SpaceLength << "st: " << st << endl;
-					if (SpaceLength < 10000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
+					if (SpaceLength < 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
 						// btwnClusters have GenomePos, st, matches, coarse
 						// This function also set the "coarse" flag for RefinedClusters[cur]
 						RefineBtwnSpace(RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te, ts, st, cur);
@@ -2158,7 +2159,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					int str = finalchain.strand(start);
 					int cln = finalchain.ClusterNum(start);
 					int chromIndex = ExtendClusters[cln].chromIndex;	
-					Alignment *alignment = new Alignment(strands[str], read.seq, read.length, read.name, str, genome.seqs[chromIndex],  
+					Alignment *alignment = new Alignment(strands[str], read.seq, read.length, read.name, str, read.qual, genome.seqs[chromIndex],  
 																							 genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex, 0); 
 					alignments.back().SegAlignment.push_back(alignment);
 					vector<int> scoreMat;

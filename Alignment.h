@@ -37,6 +37,7 @@ class Alignment {
 	char *read;
 	char *forward;
 	char *passthrough;
+	char *qual;
 	int nanchors;
 	int readLen;
 	int refLen;
@@ -72,6 +73,7 @@ class Alignment {
 	Alignment() {
 		nanchors=0;
 		runtime=0;
+		qual=NULL;
 		flag=0;
 		mapqv=0;
 		nm=nmm=nins=ndel=0;
@@ -91,8 +93,10 @@ class Alignment {
 	}
  	Alignment(char *_read, char *_forward, 
 					 int _rl, string _rn, int _str, 
+						char *_qual,
 						char *_genome, GenomePos _gl, string &_chrom, int _ci, long _cl) : Alignment() { 
 		read=_read; 
+		qual=_qual;
 		forward=_forward;
 		readLen = _rl; 
 		readName= _rn;
@@ -583,17 +587,27 @@ class Alignment {
 			samStrm << "\t*\t0\t";
 			// Template length
 			samStrm << tEnd - tStart << "\t";
+			string qualStr;
 			if (opts.hardClip) {
 				string subStr;
-				subStr=string(read, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);
+				subStr=string(read, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);								
 				samStrm << subStr;
+				if (qual != NULL) {
+					qualStr = string(qual, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);
+				}
 			}
 			else {
 				string readStr(read, 0, readLen);
 				samStrm << readStr;
+				qualStr.assign(qual, readLen);
 			}
 			samStrm << "\t";
-			samStrm << "*";
+			if ( qual == NULL ) {
+				samStrm << "*";
+			}
+			else {
+				samStrm << qualStr;
+			}
 			samStrm << "\t";
 			samStrm << "NM:i:" << nm << "\t";
 			samStrm << "NX:i:" << nmm << "\t";

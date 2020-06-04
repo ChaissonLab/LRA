@@ -263,7 +263,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.storeTiming=true;
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
-			opts.customType=1;
+			opts.readType=Options::ccs;
 			opts.HighlyAccurate = true;
 			opts.maxDiag=500;
 			opts.maxGap=1500;
@@ -274,7 +274,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.maxGapBtwnAnchors=1500;
 		}
 		else if (ArgIs(argv[argi], "-CONTIG")) {
-			opts.customType=1;
+			opts.readType=Options::contig;
 			opts.HighlyAccurate = true;
 			opts.maxDiag=500;
 			opts.maxGap=1500;
@@ -437,8 +437,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 
 		pthread_t *threads = new pthread_t[opts.nproc];
-		vector<MapInfo> mapInfo(opts.nproc);
-		
+		vector<MapInfo> mapInfo(opts.nproc);		
 		pthread_mutex_t semaphore;		
 		pthread_mutex_init(&semaphore, NULL);
 		int numAligned=0;
@@ -612,6 +611,8 @@ void RunStoreGlobal(int argc, const char* argv[],
 			opts.globalK = atoi(argv[argi]);
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
+			opts.globalK = 19;
+			opts.globalW = 25;
 			opts.globalMaxFreq = 50;
 			opts.NumOfminimizersPerWindow = 4;			
 		}	
@@ -752,7 +753,7 @@ int main(int argc, const char *argv[]) {
 		Usage();
 		return 1;
 	}
-
+	
 	Options opts;
 	InitStatic();
   int argi;
