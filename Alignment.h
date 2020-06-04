@@ -52,6 +52,8 @@ class Alignment {
  	//vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains	
  	bool split;
  	int value;
+	int NumOfAnchors; 	
+
 
 	void Clear() {
 		queryString=alignString=refString="";
@@ -88,6 +90,7 @@ class Alignment {
 		order=0;
 		// Will eventually contain quality value strings.
 		passthrough=NULL;
+		NumOfAnchors=0;
 	}
  	Alignment(char *_read, char *_forward, 
 					 int _rl, string _rn, int _str, 
@@ -508,7 +511,7 @@ class Alignment {
 				 << tEnd << "\t"
 				 << (int) mapqv << "\t" 
 				 << readName << "\t" << readLen << "\t" << qStart << "\t" << qEnd << "\t"
-				 << nm << "\t" << nmm << "\t" << nins << "\t" << ndel << "\t" << value  << "\t" << flag << endl;
+				 << nm << "\t" << nmm << "\t" << nins << "\t" << ndel << "\t" << value  << "\t" << flag << "\t" << NumOfAnchors << "\t" << NumOfAnchors/(float)readLen << endl;
 	}
 
 	void PrintPAF(ostream &out, bool printCigar=false) {
@@ -626,6 +629,8 @@ public:
 	int nins;
 	bool ISsecondary;
 	float value;
+	int NumOfAnchors; 	
+
 	SegAlignmentGroup () {
 		qStart = 0;
 		qEnd = 0;
@@ -637,12 +642,13 @@ public:
 		nins = 0;
 		ISsecondary = 0;
 		value = 0;
-
+		NumOfAnchors = 0; 	
 	};
 	~SegAlignmentGroup () {};
 
 	void SetFromSegAlignment() {
 		ISsecondary = SegAlignment[0]->ISsecondary;
+		NumOfAnchors =  SegAlignment[0]->NumOfAnchors;
 		for (int s = 0; s < SegAlignment.size(); s++) {
 			qStart = min(qStart, SegAlignment[s]->qStart);
 			qEnd   = max(qEnd, SegAlignment[s]->qEnd);
