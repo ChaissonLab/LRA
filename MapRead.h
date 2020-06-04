@@ -229,7 +229,10 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 		else last = pry_index[pi+1];
 
 		if (last - first == 1) { // No secondary alignments
-			alignmentsOrder[first].mapqv = 60;
+			if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.0005) {
+				alignmentsOrder[first].mapqv = 2;
+			}
+			else {alignmentsOrder[first].mapqv = 60;}
 			alignmentsOrder[first].SetMapqv();
 		}
 		else {
@@ -240,8 +243,13 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 			float alnvaluediff = alignmentsOrder[first].value - alignmentsOrder[first+1].value;
 
 			//cerr << "nmmdiff: " << nmmdiff << " nsmallgap: " << nsmallgap << " alnvaluediff: " << alnvaluediff << endl;
+			//cerr << "alignmentsOrder[first].NumOfAnchors/(float)read.length: " << alignmentsOrder[first].NumOfAnchors/(float)read.length << endl;
 			float denom_1 = 1, denom_2 = 1;
 			if (nmmdiff == 0 and nsmallgap == 0 ) {
+				alignmentsOrder[first].mapqv = 2;
+				alignmentsOrder[first+1].mapqv = 1;
+			}
+			else if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.0005) {
 				alignmentsOrder[first].mapqv = 2;
 				alignmentsOrder[first+1].mapqv = 1;
 			}
@@ -1546,9 +1554,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 
 	////// TODO(Jingwen): customize a rate fro SparseDP
 	vector<Primary_chain> Primary_chains;
-	float rate = 2;
+	float rate = 4;
 	if (splitclusters.size() > 100) { // mapping to repetitive region
-		rate = 1;  // 2
+		rate = 2;  // 2
 	}
 	//cerr << "rate: " << rate << endl;
 
@@ -1564,7 +1572,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
 
 	if (opts.dotPlot) {
-		ofstream Nclust("chain_Numofanchors");
+		ofstream Nclust("chain_NumOfanchors");
 		for (int p = 0; p < Primary_chains.size(); p++) {
 			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
 				Nclust << Primary_chains[p].chains[h].qStart << "\t" 
@@ -1672,8 +1680,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 
 		for (int p = 0; p < Primary_chains.size(); p++) {
 			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
-				cerr << "p: " << p << " h: " << h << " chr: " << genome.header.names[genome.header.Find(Primary_chains[p].chains[h].tStart)] << 
-				" value: " << Primary_chains[p].chains[h].value << " # of Anchors: " << Primary_chains[p].chains[h].NumOfAnchors << " tStart: " <<  Primary_chains[p].chains[h].tStart << endl;
+				//cerr << "p: " << p << " h: " << h << " chr: " << genome.header.names[genome.header.Find(Primary_chains[p].chains[h].tStart)] << 
+				//" value: " << Primary_chains[p].chains[h].value << " # of Anchors: " << Primary_chains[p].chains[h].NumOfAnchors << " tStart: " <<  Primary_chains[p].chains[h].tStart << endl;
 				for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
 					int ph = Primary_chains[p].chains[h].ch[c];
 					if (clusters[ph].strand == 0) {
@@ -2114,7 +2122,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					int cln = finalchain.ClusterNum(start);
 					int chromIndex = ExtendClusters[cln].chromIndex;	
 					Alignment *alignment = new Alignment(strands[str], read.seq, read.length, read.name, str, genome.seqs[chromIndex],  
-																							 genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex, 0); 
+														 genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex, 0); 
+					alignment->NumOfAnchors = Primary_chains[p].chains[h].NumOfAnchors;
 					alignments.back().SegAlignment.push_back(alignment);
 					vector<int> scoreMat;
 					vector<Arrow> pathMat;
