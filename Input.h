@@ -12,6 +12,9 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
+#include <vector>
+#include <assert.h>
+
 KSEQ_INIT(gzFile, gzread)
 
 class Input {
@@ -201,7 +204,19 @@ class Input {
 							read.flags = b->core.flag;
 							uint8_t *q = bam_get_seq(b);
 							for (int i=0; i < read.length; i++) {read.seq[i]=seq_nt16_str[bam_seqi(q,i)];	}
-							read.qual = NULL;
+							char* qual=(char*) bam_get_qual(b);
+							if (qual[0] == 0xff) {
+								qual = new char[2];
+								qual[1] = '\0';
+								qual[0] = '*';
+							}
+							else {
+								read.qual=new char[read.length+1];
+								for (int q=0; q < read.length; q++) {
+									read.qual[q] = qual[q]+33;
+								}
+								read.qual[read.length]='\0';
+							}
 				
 							// 
 							// Eventually this will store the passthrough data

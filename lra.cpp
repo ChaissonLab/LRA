@@ -267,8 +267,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.HighlyAccurate = true;
 			opts.maxDiag=500;
 			opts.maxGap=1500;
-			opts.globalMaxFreq = 50;
-			opts.NumOfminimizersPerWindow = 4;	
+			opts.globalMaxFreq = 30;
+			opts.NumOfminimizersPerWindow = 1;	
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
 			opts.maxGapBtwnAnchors=1500;
@@ -278,8 +278,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.HighlyAccurate = true;
 			opts.maxDiag=500;
 			opts.maxGap=1500;
-			opts.globalMaxFreq = 50;
-			opts.NumOfminimizersPerWindow = 4;	
+			opts.globalMaxFreq = 30;
+			opts.NumOfminimizersPerWindow = 1;	
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
 			opts.maxGapBtwnAnchors=1500;
@@ -288,8 +288,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.HighlyAccurate = false;
 			opts.maxDiag=800;
 			opts.maxGap=2000;
-			opts.globalMaxFreq = 60;
-			opts.NumOfminimizersPerWindow = 5;
+			opts.globalMaxFreq = 50;
+			opts.NumOfminimizersPerWindow = 1;
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50; 
 			opts.maxGapBtwnAnchors=1800;
@@ -298,8 +298,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.HighlyAccurate = false;
 			opts.maxDiag=800;
 			opts.maxGap=2000;
-			opts.globalMaxFreq = 60;
-			opts.NumOfminimizersPerWindow = 5;
+			opts.globalMaxFreq = 50;
+			opts.NumOfminimizersPerWindow = 1;
 			opts.maxGapBtwnAnchors=1800;
 		}
 		else if (ArgIs(argv[argi], "-at")) {
@@ -338,10 +338,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "--locIndel")) {
 			opts.localIndel=atoi(GetArgv(argv,argc,argi));
-			++argi;
-		}
-		else if (ArgIs(argv[argi], "--minDiffAffine")) {
-			opts.minDiffAffine=atoi(GetArgv(argv,argc,argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--cleanMaxDiag")) {
@@ -536,20 +532,16 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 			exit(1);
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
-			opts.globalMaxFreq = 50;
-			opts.NumOfminimizersPerWindow = 4;			
+		
 		}	
 		else if (ArgIs(argv[argi], "-CONTIG")) {
-			opts.globalMaxFreq = 50;
-			opts.NumOfminimizersPerWindow = 4;			
+		
 		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
-			opts.globalMaxFreq = 60;
-			opts.NumOfminimizersPerWindow = 5;			
+		
 		}
 		else if (ArgIs(argv[argi], "-NANO")) {
-			opts.globalMaxFreq = 60;
-			opts.NumOfminimizersPerWindow = 5;			
+		
 		}
 		else if (ArgIs(argv[argi], "-k")) {
 			opts.localK=atoi(argv[++argi]);
@@ -559,10 +551,10 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 			opts.localW=atoi(argv[++argi]);
 			glIndex.w=opts.localW;
 		}
-		else if (ArgIs(argv[argi], "-f")) {
-			opts.localMaxFreq=atoi(argv[++argi]);
-			glIndex.maxFreq=opts.localMaxFreq;
-		}
+		// else if (ArgIs(argv[argi], "-f")) {
+		// 	opts.localMaxFreq=atoi(argv[++argi]);
+		// 	glIndex.maxFreq=opts.localMaxFreq;
+		// }
 		else if (ArgIs(argv[argi], "-K") or ArgIs(argv[argi], "-W") or ArgIs(argv[argi], "-F")
 				 or ArgIs(argv[argi], "-f") or ArgIs(argv[argi], "-n")) {
 			argi+=2;
@@ -616,17 +608,23 @@ void RunStoreGlobal(int argc, const char* argv[],
 			opts.globalMaxFreq = 50;
 			opts.NumOfminimizersPerWindow = 4;			
 		}	
+		else if (ArgIs(argv[argi], "-CONTIG")) {
+			opts.globalMaxFreq = 30;
+			opts.NumOfminimizersPerWindow = 1;	
+			opts.globalK = 17;
+			opts.globalWinsize = 18;	
+		}
 		else if (ArgIs(argv[argi], "-CLR")) {
-			opts.globalMaxFreq = 60;
-			opts.NumOfminimizersPerWindow = 5;			
+			opts.globalMaxFreq = 50;
+			opts.NumOfminimizersPerWindow = 1;	
+			opts.globalK = 15;
+			opts.globalWinsize = 16;	
 		}
 		else if (ArgIs(argv[argi], "-NANO")) {
-			opts.globalMaxFreq = 60;
-			opts.NumOfminimizersPerWindow = 5;			
-		}
-		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.globalMaxFreq = 50;
-			opts.NumOfminimizersPerWindow = 4;			
+			opts.NumOfminimizersPerWindow = 1;	
+			opts.globalK = 15;
+			opts.globalWinsize = 16;			
 		}
 		else if (ArgIs(argv[argi], "-f")) {
 			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
@@ -636,6 +634,10 @@ void RunStoreGlobal(int argc, const char* argv[],
 			opts.NumOfminimizersPerWindow=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}			
+		else if (ArgIs(argv[argi], "--globalWinsize")) {
+			opts.globalWinsize=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}					
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;
 		}

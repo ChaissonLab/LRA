@@ -361,17 +361,16 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	// Sort unremoved minimizers by frequency 
 	// Use count sort
 	//
-	int winsize = 16;
-	uint32_t sz = header.pos.back()/winsize;
-	if (header.pos.back()/winsize % winsize > 0) sz += 1;
+	uint32_t sz = header.pos.back()/opts.globalWinsize;
+	if (header.pos.back()/opts.globalWinsize % opts.globalWinsize > 0) sz += 1;
 	vector<uint32_t> Sortindex(unremoved, 0);
 	CountSort(Freq, RANGE, Remove, Sortindex);
 
 	vector<uint32_t> winCount(sz, opts.NumOfminimizersPerWindow); // 50 is a parameter that can be changed 
 
 	for (uint32_t s = 0; s < Sortindex.size(); s++) {
-		uint32_t id = minimizers[Sortindex[s]].pos/winsize;
-		if (winCount[id] > 0 and minimizers[Sortindex[s]].pos<id*winsize+5) { // force the minimizer to fall into the first 10bp of the window
+		uint32_t id = minimizers[Sortindex[s]].pos/opts.globalWinsize;
+		if (winCount[id] > 0 and minimizers[Sortindex[s]].pos<id*opts.globalWinsize+5) { // force the minimizer to fall into the first 10bp of the window
 			winCount[id] -= 1;
 		}
 		//if (winCount[id] > 0) {
@@ -404,6 +403,8 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	cerr << "Removing too frequent minimizers" << endl;
 	RemoveFrequent (minimizers, Remove); 
 	cerr << "There are " << minimizers.size() << " minimizers left" << endl;
+
+
 
 	//RemoveFrequent(minimizers, opts.globalMaxFreq);
 

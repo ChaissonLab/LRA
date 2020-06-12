@@ -599,7 +599,12 @@ class Alignment {
 			else {
 				string readStr(read, 0, readLen);
 				samStrm << readStr;
-				qualStr.assign(qual, readLen);
+				if (qual[0] == '*') {
+					qualStr = "*";
+				}
+				else {
+					qualStr.assign(qual, readLen);
+				}
 			}
 			samStrm << "\t";
 			if ( qual == NULL ) {

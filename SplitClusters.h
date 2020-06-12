@@ -187,7 +187,12 @@ void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & spl
 	int m = 0;
 	int n = 1;
 	int ic_m = splitclusters[m].coarse;
-	int ic_n = splitclusters[n].coarse;
+
+	int ic_n;
+	if (splitclusters.size() > n) {
+		ic_n = splitclusters[n].coarse;
+	}
+	
 	int matchS = 0, matchE = 0;
 	while (n < splitclusters.size()) {
 		if (ic_m == ic_n) {	
@@ -208,7 +213,10 @@ void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & spl
 		n++;
 		if (n < splitclusters.size()) ic_n = splitclusters[n].coarse;
 	}
-	splitclusters[n-1].NumofAnchors = clusters[ic_m].matches.size() - matchS;	
+	if (splitclusters.size() > 0) {	
+		splitclusters[n-1].NumofAnchors = clusters[ic_m].matches.size() - matchS;	
+	}
+	
 }
 
 

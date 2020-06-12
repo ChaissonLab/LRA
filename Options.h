@@ -71,8 +71,8 @@ public:
 	int PrintNumAln;
 	AlignType readType;
 	bool storeTiming;
-	int minDiffAffine;
 	int sseBand;
+	int globalWinsize;
 	Options() {
 		storeTiming=false;
 		readType=Options::raw;
@@ -143,7 +143,8 @@ public:
 		alnthres = 0.7;
 		timing="";
 		localIndexWindow=256;
-		minDiffAffine = 0;
+	
+		globalWinsize = 16;
 	}
 };
 #endif

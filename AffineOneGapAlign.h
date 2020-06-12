@@ -154,7 +154,7 @@ class AffineAlignBuffers {
 };
 
 
-int AffineOneGapAlign(const char* qSeq, int qLen, const char* tSeq, int tLen, int m, int mm, int indel, int k, 
+int AffineOneGapAlign(string &qSeq, int qLen, string &tSeq, int tLen, int m, int mm, int indel, int k, 
 											Alignment &aln,
 											AffineAlignBuffers &b) 
 {
