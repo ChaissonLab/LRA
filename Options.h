@@ -7,6 +7,7 @@ const unsigned int REF_DP=4;
 
 class Options {
 public:
+	enum AlignType { raw, ccs, contig};
 	int globalK;
 	int localK;
 	int globalW;
@@ -68,13 +69,13 @@ public:
 	float alnthres;
 	string timing;
 	int PrintNumAln;
-	int customType;
+	AlignType readType;
 	bool storeTiming;
 	int sseBand;
 	int globalWinsize;
 	Options() {
 		storeTiming=false;
-		customType=0;
+		readType=Options::raw;
 		localMatch=4;
 		localMismatch=-3;
 		localIndel=-3;
@@ -142,6 +143,7 @@ public:
 		alnthres = 0.7;
 		timing="";
 		localIndexWindow=256;
+	
 		globalWinsize = 16;
 	}
 };

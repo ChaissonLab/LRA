@@ -156,7 +156,6 @@ void CreateRC(char* seq, long l, char *& dest) {
   for (long i = 0; i < l; i++) {
     dest[l-i-1] = RevCompNuc[seq[i]];
   }
-
 }
 
 #endif

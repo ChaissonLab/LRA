@@ -614,11 +614,22 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 	sort(sortedBins.begin(), sortedBins.end());
 	int cumulativeSum=0;
 	int cutoff=2;
-	for (int i=sortedBins.size(); i >0; i--) {
-		cumulativeSum+= sortedBins[i-1];
-		if (float(cumulativeSum)/(e-s) > 0.95) {
-			cutoff=sortedBins[i-1];
-			break;
+	if (opts.readType == Options::raw) {
+		for (int i=sortedBins.size(); i >0; i--) {
+			cumulativeSum+= sortedBins[i-1];
+			if (float(cumulativeSum)/(e-s) > 0.95) {
+				cutoff=sortedBins[i-1];
+				break;
+			}
+		}
+	}
+	else {
+		if (opts.readType == Options::ccs) {
+			cutoff=5;
+		}
+		else {
+			assert(opts.readType == Options::contig);
+			cutoff=10;
 		}
 	}
 	/*
@@ -659,8 +670,8 @@ void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cluste
 		cout << "bin " << i << "\t" << bins[i] << endl;
 	}
 	*/
-	vector<int> diagStart, diagEnd, diagSize;
-	std::map<int, int> diagToCluster;
+	vector<long> diagStart, diagEnd, diagSize;
+	std::map<long, int> diagToCluster;
 	long curDiagIndex=-1;
 	int curCluster=-1;
 	for (int i=s; i < e; i++) {

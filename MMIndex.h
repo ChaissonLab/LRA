@@ -404,6 +404,8 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	RemoveFrequent (minimizers, Remove); 
 	cerr << "There are " << minimizers.size() << " minimizers left" << endl;
 
+
+
 	//RemoveFrequent(minimizers, opts.globalMaxFreq);
 
 }

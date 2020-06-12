@@ -45,7 +45,7 @@ class LocalTuple {
 	}
 
 };
-u_int32_t LocalTuple::for_mask_s=0;
+uint32_t LocalTuple::for_mask_s=0;
 
 template<typename Tup> 
 int DiagOffset(Tup &a, Tup &b) {

@@ -1,4 +1,4 @@
-all:  lra alchemy2 tgc iik 
+all:  lra alchemy2 tgc iik filt
 PROF=/home/cmb-16/mjc/shared/lib/
 #PROF=/home/cmb-16/mjc/jingwenr/software/lib
 CCOPTS_BASE=
@@ -7,7 +7,7 @@ OPT?=""
 ifneq ($(DEBUG), "")
 CCOPTS=$(CCOPTS_BASE) $(DEBUG)
 else
-CCOPTS=-O3 $(CCOPTS_BASE)  -DNDEBUG 
+CCOPTS=-O2 $(CCOPTS_BASE)  -DNDEBUG 
 endif
 STATIC=
 ifneq ($(OPT), "")
@@ -21,6 +21,7 @@ endif
 #  -L$(PROF) 
 
 HEADERS=MinCount.h \
+  SeqUtils.h \
   CompareLists.h \
   TupleOps.h \
   Sorting.h \
@@ -39,6 +40,7 @@ HEADERS=MinCount.h \
   GlobalChain.h \
   NaiveDP.h \
   Read.h \
+  SplitClusters.h \
   SparseDP.h \
   Timing.h \
 
@@ -80,6 +82,11 @@ Alchemy2.o: Alchemy2.cpp Genome.h htslib/lib/libhts.a
 QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
 	$(CXX) $(CCOPTS) -c  -I htslib/include QueryTime.cpp
 
+writeblock: WriteBlock.cpp
+	$(CXX) $(CCOPTS) WriteBlock.cpp -o writeblock
+
+filt: FilterKmers.cpp
+	$(CXX) $(CCOPTS) -I htslib/include FilterKmers.cpp -o filt  -L $(PWD)/htslib/lib  -lhts -lz -lpthread -o $@ -Wl,-rpath,$(PWD)/htslib/lib  
 
 IndexInformativeKmers.o: IndexInformativeKmers.cpp 
 	$(CXX) $(CCOPTS) $^ -c -I htslib -I bwa
