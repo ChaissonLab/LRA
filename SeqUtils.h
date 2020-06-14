@@ -121,7 +121,7 @@ static unsigned char RevCompNuc[] = {
   'N','N','N','N','N','N','N','N',
   'N','N','N','N','N','N','N','N',
   'N','T','N','G','N','N','N','C',
-  'N','N','N','N','N','N','N','N',
+	'N','N','N','N','N','N','N','N',
   'N','N','N','N','A','N','N','N',
   'N','N','N','N','N','N','N','N',
   'N','t','N','g','N','N','N','c',
@@ -151,11 +151,12 @@ static unsigned char RevCompNuc[] = {
 const char *binMap = "ACGT";
 
 void CreateRC(char* seq, long l, char *& dest) {
-  dest = new char[l];
+	dest = new char[l];
 
-  for (long i = 0; i < l; i++) {
-    dest[l-i-1] = RevCompNuc[seq[i]];
-  }
+	for (long i = 0; i < l; i++) {
+		dest[l-i-1] = RevCompNuc[seq[i]];
+	}
+
 }
 
 #endif

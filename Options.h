@@ -73,6 +73,8 @@ public:
 	bool storeTiming;
 	int sseBand;
 	int globalWinsize;
+	int minUniqueStretchNum;
+	int minUniqueStretchDist;
 	Options() {
 		storeTiming=false;
 		readType=Options::raw;
@@ -113,7 +115,7 @@ public:
 		maxCandidates=10;
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
-		maxGap=2000; 
+		maxGap=4000; 
 		maxGapBtwnAnchors=1000; // no larger than 2000 // used to be 1500 // 1000
 		mergeClusters=true;
 		NaiveDP=false;
@@ -143,8 +145,11 @@ public:
 		alnthres = 0.7;
 		timing="";
 		localIndexWindow=256;
-	
 		globalWinsize = 16;
+		minUniqueStretchNum = 3;
+		minUniqueStretchDist = 100;	
+	
+
 	}
 };
 #endif

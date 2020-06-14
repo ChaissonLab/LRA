@@ -1334,27 +1334,25 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
 		//		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
 		int rci = genome.header.Find(roughClusters[c].tStart);
-		//		cout << "roughClusters: " << c << "\t" << roughClusters[c].start << "\t" << roughClusters[c].end << endl;
-		StoreFineClusters(forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, genome, read.length, xIntv, yIntv, forwardStrand, c);
+		StoreFineClusters(rci, forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, genome, read.length, xIntv, yIntv, forwardStrand, c);
 	}
 
-	for (int cl=0; cl < clusters.size(); cl++) {
-		GenomePairs newm;
-		newm=clusters[cl].matches;
+	// for (int cl=0; cl < clusters.size(); cl++) {
+	// 	GenomePairs newm;
+	// 	newm=clusters[cl].matches;
 	
-		CartesianSort(newm, 0, newm.size());
-		for (int ni=0; ni < newm.size(); ni++) {
-			assert(newm[ni].first.pos == clusters[cl].matches[ni].first.pos);
-			assert(newm[ni].second.pos == clusters[cl].matches[ni].second.pos);
-		}
-	}
+	// 	CartesianSort(newm, 0, newm.size());
+	// 	for (int ni=0; ni < newm.size(); ni++) {
+	// 		assert(newm[ni].first.pos == clusters[cl].matches[ni].first.pos);
+	// 		assert(newm[ni].second.pos == clusters[cl].matches[ni].second.pos);
+	// 	}
+	// }
 
 	for (int c = 0; c < revroughClusters.size(); c++) {
 		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
 		//StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
 		int rci = genome.header.Find(revroughClusters[c].tStart);
-		//		cout << "revroughClusters: " << c << "\t" << revroughClusters[c].end - revroughClusters[c].start << "\tchr: " << genome.header.names[rci] << " " << revroughClusters[c].tStart << "\t" << revroughClusters[c].tEnd << "\t" << revroughClusters[c].qStart << "\t" << revroughClusters[c].qEnd << endl;
-		StoreFineClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, genome, read.length, xIntv, yIntv, reverseStrand, c);
+		StoreFineClusters(rci, revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, genome, read.length, xIntv, yIntv, reverseStrand, c);
 	}
 	/*
 	for (int c=0; c < clusters.size(); c++) {
@@ -1376,32 +1374,34 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	}
 
 	if (opts.dotPlot) {
-		ofstream clust("clusters-coarse-pre-remove.tab");
+		ofstream pcclust("clusters-coarse-pre-remove.tab");
 		for (int m = 0; m < clusters.size(); m++) {
 			if (clusters[m].strand == 0) {
-				clust << clusters[m].qStart << "\t"
+				pcclust << clusters[m].qStart << "\t"
 							<< clusters[m].tStart << "\t"
 							<< clusters[m].qEnd   << "\t"
 							<< clusters[m].tEnd   << "\t"
 							<< m << "\t"
+						  	<< genome.header.names[clusters[m].chromIndex]<< "\t"
 							<< clusters[m].strand << "\t"
 							<< clusters[m].outerCluster << "\t"
 							<< clusters[m].clusterIndex << "\t"
 							<< clusters[m].matches.size() << endl;
 			}
 			else {
-				clust << clusters[m].qStart << "\t"
+				pcclust << clusters[m].qStart << "\t"
 							<< clusters[m].tEnd   << "\t"
 							<< clusters[m].qEnd   << "\t"
 							<< clusters[m].tStart << "\t"
 							<< m << "\t"
+						 	<< genome.header.names[clusters[m].chromIndex]<< "\t"
 							<< clusters[m].strand << "\t"
 							<< clusters[m].outerCluster << "\t"
 							<< clusters[m].clusterIndex << "\t"
 							<< clusters[m].matches.size() << endl;
 			}
 		}
-		clust.close();
+		pcclust.close();
 	}
 
 	
@@ -1432,12 +1432,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	}
 	clusters.resize(vm);
 	if (clusters.size() == 0) return 0; // This read cannot be mapped to the genome; 
-
-	vector<Cluster> splitclusters;
-	SplitClusters(clusters, splitclusters);
-	DecideSplitClustersValue(clusters, splitclusters, opts);
-
-	timing.Tick("Split");
 
 	if (opts.dotPlot) {
 		ofstream clust("clusters.tab");
@@ -1493,6 +1487,12 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		}
 		clust.close();
 	}
+
+	vector<Cluster> splitclusters;
+	SplitClusters(clusters, splitclusters);
+	DecideSplitClustersValue(clusters, splitclusters, opts);
+
+	timing.Tick("Split");
 
 	if (opts.dotPlot) {
 		ofstream clust("splitclusters-coarse.tab");
@@ -1568,33 +1568,15 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	//cerr << "rate: " << rate << endl;
 
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
-	for (int p = 0; p < Primary_chains.size(); p++) {
-		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
-			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
-				int ph = Primary_chains[p].chains[h].ch[c];
-				splitclusters[ph].used = 1;
-			}
-		}
-	}
-	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
-
-	if (opts.dotPlot) {
-		ofstream Nclust("chain_NumOfanchors");
-		for (int p = 0; p < Primary_chains.size(); p++) {
-			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
-				Nclust << Primary_chains[p].chains[h].qStart << "\t" 
-					  << Primary_chains[p].chains[h].tStart << "\t"
-					  << Primary_chains[p].chains[h].qEnd  << "\t"
-					  << Primary_chains[p].chains[h].tEnd  << "\t"
-					  << Primary_chains[p].chains[h].value << "\t"
-					  << p << "\t"
-					  << h << "\t"
-					  << genome.header.names[genome.header.Find(Primary_chains[p].chains[h].tStart)] << "\t"
-					  << Primary_chains[p].chains[h].NumOfAnchors << endl;
-			}
-		}
-		Nclust.close();
-	}	
+	// for (int p = 0; p < Primary_chains.size(); p++) {
+	// 	for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
+	// 		for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
+	// 			int ph = Primary_chains[p].chains[h].ch[c];
+	// 			splitclusters[ph].used = 1;
+	// 		}
+	// 	}
+	// }
+	// SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
 
 	if (opts.dotPlot) {
 		ofstream clust("Chains.tab");
