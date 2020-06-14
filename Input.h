@@ -186,7 +186,11 @@ class Input {
 						read.qual = new char[ks->seq.l];
 						memcpy(read.qual, ks->qual.s, ks->seq.l);
 					}
-					
+					else {
+						read.qual = new char[2];
+						read.qual[0] = '*';
+						read.qual[1] = '\0';
+					}
 					read.passthrough=NULL;
 					readOne=true;
 				}
