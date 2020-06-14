@@ -572,7 +572,6 @@ long GetDiag(pair<Tup, Tup> &match, int strand) {
 		return (long) match.first.pos + (long) match.second.pos;
 	}
 }
-
 template<typename Tup>
 void StoreFineClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
 											 Genome &genome,
