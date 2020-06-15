@@ -1,4 +1,4 @@
-all:  lra alchemy2 tgc iik filt
+all:  lra alchemy2 tgc iik 
 PROF=/home/cmb-16/mjc/shared/lib/
 #PROF=/home/cmb-16/mjc/jingwenr/software/lib
 CCOPTS_BASE=
@@ -85,8 +85,6 @@ QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
 writeblock: WriteBlock.cpp
 	$(CXX) $(CCOPTS) WriteBlock.cpp -o writeblock
 
-filt: FilterKmers.cpp
-	$(CXX) $(CCOPTS) -I htslib/include FilterKmers.cpp -o filt  -L $(PWD)/htslib/lib  -lhts -lz -lpthread -o $@ -Wl,-rpath,$(PWD)/htslib/lib  
 
 IndexInformativeKmers.o: IndexInformativeKmers.cpp 
 	$(CXX) $(CCOPTS) $^ -c -I htslib -I bwa
