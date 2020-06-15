@@ -55,8 +55,10 @@ class Read {
 			}
 			
 			if (rhs.qual != NULL) {
-				qual = new char[length];
-				memcpy(qual, rhs.qual, length);
+				int qualLen=strlen(rhs.qual);
+				qual = new char[qualLen+1];
+				memcpy(qual, rhs.qual, qualLen);
+				qual[qualLen] = '\0';
 			}
 		}
 		if (rhs.passthrough != NULL) {
