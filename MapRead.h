@@ -79,6 +79,7 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 	int maxCand=opts.maxCandidates;
 	vector<bool> keep(clusters.size(), true);
 	std::map<long, vector<int> > diagToCluster;
+	long targetDiag=0;
 	for (a=0; a < clusters.size(); a++) { 
 		
 		int orderIndex=clusterOrder[a];
@@ -87,7 +88,8 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 		float denom=1.0;
 		long diag=(long)clusters[orderIndex].tStart - (long)clusters[orderIndex].qStart;
 		bool foundDiag=false;
-		long clusterDiag;
+		long clusterDiag, clusterEndDiag;
+		//		cerr << "processing cluster on query " << clusters[orderIndex].qStart << "\t" << clusters[orderIndex].qEnd << "\t" << diag << "\t" << orderIndex << "\t" << clusters[orderIndex].tStart << "\t" << clusters[orderIndex].tEnd << endl;
 		if (clusters[orderIndex].strand == 0) {
 			diagPtr = &forDiagonals;
 		}
@@ -98,20 +100,24 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 		bool onDiag=false;
 		bool nearPoint=false;
 		long curClusterDiag=0;
-		for (int d=0; d < diagPtr->size(); d++) {						
+		long diagDist=0;
+		long targetClusterDist=0;
+		long targetDiagDist=1000;
+		for (int d=0; d < diagPtr->size() and encompassed == false; d++) {							
 			curClusterDiag=(*diagPtr)[d];
 			assert (diagToCluster.find(curClusterDiag) != diagToCluster.end());
 			assert (diagToCluster[curClusterDiag].size() > 0);
 			for (int di = 0; di < diagToCluster[curClusterDiag].size(); di++) {
 				int c=diagToCluster[curClusterDiag][di];
 				clusterDiag=(long)clusters[c].tStart - (long) clusters[c].qStart;
+				clusterEndDiag=(long)clusters[c].tEnd - (long) clusters[c].qEnd;
 				long fey=(long)clusters[c].tStart - (long)clusters[orderIndex].tEnd;
 				long fex=(long)clusters[c].qStart - (long)clusters[orderIndex].qEnd;
 				long efy=(long)clusters[orderIndex].tStart - (long)clusters[c].tEnd;
 				long efx =(long)clusters[orderIndex].tStart - (long)clusters[c].tEnd;
 				long fe=(long) sqrt(fex*fex+fey*fey);
 				long ef=(long) sqrt(efx*efx+efy*efy);
-				long diagDist=min(fe,ef);
+				diagDist=min(fe,ef);
 					
 				if (clusters[c].EncompassesInRectangle(clusters[orderIndex],0.5)) {
 					//					cout << "cluster " << c << " encompasses " << orderIndex << endl;
@@ -121,13 +127,18 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 				else {
 					//					cout << "cluster " << c << " does not encompass " << orderIndex << "\t" << clusters[c].tEnd-clusters[c].tStart << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
 				}					
-				if (abs(clusterDiag - diag) < 1000) {
+				if ((abs(clusterDiag - diag) < 1000) or (abs(clusterEndDiag - diag) < 1000)) {
+					foundDiag=true;					
 					onDiag = true;
-					break;
+					targetDiag=curClusterDiag;
+					targetDiagDist = min(abs(clusterDiag - diag), abs(clusterEndDiag - diag));
+					//break;
 				}
 				if (abs(diagDist) < 1000) {
 					nearPoint=true;
-					break;
+					targetClusterDist=diagDist;
+					targetDiag=curClusterDiag;
+					//break;
 				}
 			}
 
@@ -143,16 +154,18 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 		}
 		if (foundDiag == false and diagPtr->size() < maxCand and encompassed == false) {
 			(*diagPtr).push_back(diag);
-			//			cout << "Creating diagonal " << diag << "\t" << clusters[orderIndex].matches.size() << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
+			//cerr << "Creating diagonal " << diag << "\t" << clusters[orderIndex].matches.size() << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
 			diagToCluster[diag].push_back(orderIndex);
 			foundDiag=true;
 		}
-		else if (foundDiag == true) {
-			diagToCluster[curClusterDiag].push_back(orderIndex);
+		else if (foundDiag == true and encompassed == false) {
+			/*			cerr << "Keeping match " << clusters[orderIndex].matches.size() << "\t" << orderIndex 
+							<< "\ton diag " << diag << "\t" << diagDist << "\t" << (int) nearPoint << "\t" << (int) encompassed << "\t" << targetDiagDist << "\t" << targetClusterDist << "\t" << clusters[orderIndex].qStart << "\t" << clusters[orderIndex].tStart << endl;*/
+			assert(targetDiag != 0);
+			diagToCluster[targetDiag].push_back(orderIndex);
 		}			
-
-		if (foundDiag==false) {
-			//			cout << "Discarding cluster of size " << clusters[orderIndex].matches.size() << " on diag " << diag << endl;
+		else {
+			//			cerr << "Discarding cluster of size " << clusters[orderIndex].matches.size() << " on diag " << diag << endl;
 			clusters[orderIndex].matches.resize(0);
 		}
 	}
@@ -229,11 +242,13 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 		else last = pry_index[pi+1];
 
 		if (last - first == 1) { // No secondary alignments
-			if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.0005) {
-				alignmentsOrder[first].mapqv = 2;
-			}
-			else {alignmentsOrder[first].mapqv = 60;}
+			alignmentsOrder[first].mapqv = 60;
 			alignmentsOrder[first].SetMapqv();
+			// if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.0005) {
+			// 	alignmentsOrder[first].mapqv = 2;
+			// }
+			// else {alignmentsOrder[first].mapqv = 60;}
+			// alignmentsOrder[first].SetMapqv();
 		}
 		else {
 			// assign mapqv to primary alignment;
@@ -249,10 +264,10 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 				alignmentsOrder[first].mapqv = 2;
 				alignmentsOrder[first+1].mapqv = 1;
 			}
-			else if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.0005) {
-				alignmentsOrder[first].mapqv = 2;
-				alignmentsOrder[first+1].mapqv = 1;
-			}
+			// else if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.0005) {
+			// 	alignmentsOrder[first].mapqv = 2;
+			// 	alignmentsOrder[first+1].mapqv = 1;
+			// }
 			else if (alnvaluediff <= 10 and abs(nmmdiff) <= 15 and abs(nsmallgap) <= 20) { 
 				alignmentsOrder[first].mapqv = 2;
 				alignmentsOrder[first+1].mapqv = 1;

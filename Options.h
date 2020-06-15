@@ -93,7 +93,7 @@ public:
 		//bestn=1;
 		globalMaxFreq=50;
 		localMaxFreq=30;
-		maxDiag=500; // We want maxDiag to be a small number  (used to be 500) //// For CCS, need to be smaller!!! //// lots of unmapped reads due to 500;
+		maxDiag=800; // We want maxDiag to be a small number  (used to be 500) //// For CCS, need to be smaller!!! //// lots of unmapped reads due to 500;
 		cleanMaxDiag=100; 
 		minDiagCluster=10; 	// used to be 20
 							// This parameter is used in CleanOffDiagonal function; It's better not to set it to a single value. 
