@@ -155,13 +155,14 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 			}*/
 		//
 		// Add hard-coded check for long matches for whole-contig alignments.
-		if (foundDiag == false and ( ( diagPtr->size() < maxCand  and encompassed == false) or (clusters[orderIndex].tEnd - clusters[orderIndex].tStart > 50000) ) ) {
+		if (foundDiag == false and 
+				( ( diagPtr->size() < maxCand  and encompassed == false) or (abs(clusters[orderIndex].tEnd - clusters[orderIndex].tStart) > 1000) ) ) {
 			(*diagPtr).push_back(diag);
 			//			cerr << "Creating diagonal " << diag << "\t" << clusters[orderIndex].matches.size() << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
 			diagToCluster[diag].push_back(orderIndex);
 			foundDiag=true;
 		}
-		else if (foundDiag == true and (encompassed == false or (clusters[orderIndex].tEnd - clusters[orderIndex].tStart > 50000) )) {
+		else if (foundDiag == true and (encompassed == false or (abs(clusters[orderIndex].tEnd - clusters[orderIndex].tStart) > 2000) )) {
 			/*			cerr << "Keeping match " << clusters[orderIndex].matches.size() << "\t" << orderIndex 
 							<< "\ton diag " << diag << "\t" << diagDist << "\t" << (int) nearPoint << "\t" << (int) encompassed << "\t" << targetDiagDist << "\t" << targetClusterDist << "\t" << clusters[orderIndex].qStart << "\t" << clusters[orderIndex].tStart << endl;*/
 			assert(targetDiag != 0);
