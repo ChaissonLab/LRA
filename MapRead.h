@@ -244,7 +244,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 		if (last - first == 1) { // No secondary alignments
 			alignmentsOrder[first].mapqv = 60;
 			alignmentsOrder[first].SetMapqv();
-			// if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.0005) {
+			// if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.00001) { // 0.0005
 			// 	alignmentsOrder[first].mapqv = 2;
 			// }
 			// else {alignmentsOrder[first].mapqv = 60;}
@@ -264,7 +264,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 				alignmentsOrder[first].mapqv = 2;
 				alignmentsOrder[first+1].mapqv = 1;
 			}
-			// else if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.0005) {
+			// else if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.00001) {
 			// 	alignmentsOrder[first].mapqv = 2;
 			// 	alignmentsOrder[first+1].mapqv = 1;
 			// }
@@ -273,7 +273,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 				alignmentsOrder[first+1].mapqv = 1;
 			}
 			else if (nmmdiff <= 0 and nsmallgap <= 0) { // nmmdiff=0 and nsmallgap=0 ==> mapqv=52
-				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 300) { 
+				if (alignmentsOrder[first].value< alignmentsOrder[first+1].value + 300) { 
 					if (nmmdiff < -20) denom_1 = 1;
 					else if (nmmdiff >= -20 and nmmdiff < -5) denom_1 = pow(0.9,20-abs(nmmdiff));  
 					else denom_1 = pow(0.7,20-abs(nmmdiff));
@@ -312,7 +312,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 				else { alignmentsOrder[first].mapqv = 60;}	
 			}
 			else { 
-				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 300) { 
+				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value+ 300) { 
 					denom_1 = pow(0.1, abs(nmmdiff));  
 					denom_2 = pow(0.1, abs(nsmallgap));  
 					int cpr=(int) (60 + 20*log10(denom_1) + 20*log10(denom_2));
@@ -974,7 +974,7 @@ RefineBtwnSpace(Cluster * cluster, Options & opts, Genome & genome, Read & read,
 	long long int diag1, diag2;
 	diag1 = 0;
 	diag2 = (long long int) (te - (ts - lrts)) - (long long int) (qe - qs); // scale diag1 and diag2 to the local coordinates
-	minDiagNum = min(diag1, diag2) - 300; // used 50 before
+	minDiagNum = min(diag1, diag2) - 300; // used 50 before //300
 	maxDiagNum = max(diag1, diag2) + 300; 
 	//
 	// Find matches in read and reference 
@@ -1244,6 +1244,13 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	// Add matches between the read and the genome.
 	//
 	CompareLists<GenomeTuple, Tuple>(readmm, genomemm, allMatches, opts);
+
+	// // check duplicate in allMatches
+	// for (int am=0; am<allMatches.size(); am++) {
+	// 	if (allMatches[am].first.t == 5413 and allMatches[am].first.pos == 47435 and allMatches[am].second.t == 5413 and allMatches[am].second.pos == 36356) {
+	// 		cerr << "before sort am: " << am << endl;
+	// 	}
+	// }
 	// Guess that 500 is where the setup/takedown overhead of an array index is equal to sort by value.
 	DiagonalSort<GenomeTuple>(allMatches,500); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
 
@@ -1260,10 +1267,15 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		clust.close();
 	}
 
+	// check duplicate in allMatches
+	// for (int am=0; am<allMatches.size(); am++) {
+	// 	if (allMatches[am].first.t == 5413 and allMatches[am].first.pos == 47435 and allMatches[am].second.t == 5413 and allMatches[am].second.pos == 36356) {
+	// 		cerr << "am: " << am << endl;
+	// 	}
+	// }
 
 	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, forMatches, revMatches);
-	int minDiagCluster = 0; // This parameter will be set inside function CleanOffDiagonal, according to anchors density
-	CleanOffDiagonal(forMatches, opts, minDiagCluster);
+	CleanOffDiagonal(forMatches, opts);
 	if (opts.dotPlot) {
 		ofstream clust("off-diag-all-matches.dots");
 		for (int m=0; m < allMatches.size(); m++) {
@@ -1306,9 +1318,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 
 	timing.Tick("Forward-diag-rough-clusters");
 	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize(), 500);
-
-	minDiagCluster = 0; // This parameter will be set inside function CleanOffDiagonal, according to anchors density
-	CleanOffDiagonal(revMatches, opts, minDiagCluster, 1);
+	CleanOffDiagonal(revMatches, opts, 1);
 
 	vector<Cluster> revroughClusters;
 	int reverseStrand=1;
@@ -1577,7 +1587,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	////// TODO(Jingwen): customize a rate fro SparseDP
 	vector<Primary_chain> Primary_chains;
 	float rate = 4;
-	if (splitclusters.size() > 100) { // mapping to repetitive region
+	if (splitclusters.size() > 10) { // mapping to repetitive region
 		rate = 2;  // 2
 	}
 	//cerr << "rate: " << rate << endl;
@@ -1958,6 +1968,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					}
 					//cerr << "right: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
 					RefineBtwnSpace(RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, rh, lrts, lrlength);
+				}
+				else {
+					RefineBtwnSpace(RefinedClusters[rh], smallOpts, genome, read, strands, qe, qe-1000, te, te-1000, st, rh);
 				}				
 			}
 			//
@@ -1991,7 +2004,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					}
 					//cerr << "left: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
 					RefineBtwnSpace(RefinedClusters[lh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lh, lrts, lrlength);
-				}				
+				}	
+				else {
+					RefineBtwnSpace(RefinedClusters[lh], smallOpts, genome, read, strands, qe, qe-1000, te, te-1000, st, lh);
+				}			
 			}
 			//
 			// Do linear extension for each anchors and avoid overlapping locations;
@@ -2119,8 +2135,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					int str = finalchain.strand(start);
 					int cln = finalchain.ClusterNum(start);
 					int chromIndex = ExtendClusters[cln].chromIndex;	
-					Alignment *alignment = new Alignment(strands[str], read.seq, read.length, read.name, str, read.qual, genome.seqs[chromIndex],  
-																							 genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex, 0); 
+					Alignment *alignment = new Alignment(Primary_chains[p].chains[h].value, strands[str], read.seq, read.length, read.name, str, read.qual, genome.seqs[chromIndex],  
+																		 genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex, 0); 
 					alignment->NumOfAnchors = Primary_chains[p].chains[h].NumOfAnchors;
 					alignments.back().SegAlignment.push_back(alignment);
 					vector<int> scoreMat;

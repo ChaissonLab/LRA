@@ -73,9 +73,29 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 						for (GenomePos qi=qsStart; qi <= qs; qi++) {
 							if (maxDiagNum != 0 and minDiagNum != 0) {
 								long long int Diag = (long long int) tBegin[ti].pos - (long long int) qBegin[qi].pos;
-								if (Diag <= maxDiagNum and Diag >= minDiagNum) result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+
+
+								if (Diag <= maxDiagNum and Diag >= minDiagNum) {
+									// //check duplicates in allMatches
+									// if (result.size() >= 0) {
+									// 	if (qBegin[qi].t == 5413 and qBegin[qi].pos == 47435
+									// 		and tBegin[ti].t == 5413 and tBegin[ti].pos == 36356) {
+									// 		cerr << "result.size(): " << result.size() << endl;
+									// 	}
+									// }
+									result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+								}
 							}
-							else result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+							else {
+								// 	// //check duplicates in allMatches
+								// if (result.size() >= 0) {
+								// 	if (qBegin[qi].t == 5413 and qBegin[qi].pos == 47435
+								// 		and tBegin[ti].t == 5413 and tBegin[ti].pos == 36356) {
+								// 		cerr << "result.size(): " << result.size() << endl;
+								// 	}
+								// }
+								result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+							}
 						}
 					}
 				}
@@ -108,9 +128,27 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 						for (GenomePos qi=qe; qi <= qeStart; qi++) {
 							if (maxDiagNum != 0 and minDiagNum != 0) {
 								long long int Diag = (long long int) tBegin[ti].pos - (long long int) qBegin[qi].pos;
-								if (Diag <= maxDiagNum and Diag >= minDiagNum) result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+								if (Diag <= maxDiagNum and Diag >= minDiagNum) {
+									// //check if the new one is a duplicate of the last one
+									// if (result.size() >= 0) {
+									// 	if (qBegin[qi].t == 5413 and qBegin[qi].pos == 47435
+									// 		and tBegin[ti].t == 5413 and tBegin[ti].pos == 36356) {
+									// 		cerr << "result.size(): " << result.size() << endl;
+									// 	}
+									// }
+									result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+								}
 							}
-							else result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+							else {
+								// //check if the new one is a duplicate of the last one
+								// if (result.size() >= 0) {
+								// 	if (qBegin[qi].t == 5413 and qBegin[qi].pos == 47435
+								// 		and tBegin[ti].t == 5413 and tBegin[ti].pos == 36356) {
+								// 		cerr << "result.size(): " << result.size() << endl;
+								// 	}
+								// }
+								result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+							}
 						}
 					}
 				}

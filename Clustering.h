@@ -6,20 +6,34 @@
 #include <boost/icl/interval_map.hpp>
 using namespace boost::icl;
 using namespace std;
+
 template<typename Tup>
-long DiagonalDifference(Tup &a, Tup &b, int strand=0, float rate=1) {
+long DiagonalDifference(Tup &a, Tup &b, int strand=0) {
 	if (strand == 0) { // forMatches
-		long aDiag = (long)a.second.pos - (long)ceil(rate*a.first.pos);
-		long bDiag = (long)b.second.pos - (long)ceil(rate*b.first.pos);
+		long aDiag = (long)a.second.pos - (long)a.first.pos;
+		long bDiag = (long)b.second.pos - (long)b.first.pos;
 		return aDiag - bDiag;		
 	}
 	else { // revMathches
-		long aDiag = ceil(rate*a.first.pos) + a.second.pos; 
-		long bDiag= ceil(rate*b.first.pos) + b.second.pos;
+		long aDiag = a.first.pos + a.second.pos; 
+		long bDiag= b.first.pos + b.second.pos;
 		return aDiag - bDiag;				
 	}
 }
 
+template<typename Tup>
+long SkewDiagonalDifference(Tup &a, Tup &b, Options &opts, int strand=0) {
+	if (strand == 0) { // forMatches
+		long aDiag = (long)a.second.pos - (long)ceil(opts.rate*a.first.pos);
+		long bDiag = (long)b.second.pos - (long)ceil(opts.rate*b.first.pos);
+		return aDiag - bDiag;		
+	}
+	else { // revMathches
+		long aDiag = ceil(opts.rate*a.first.pos) + a.second.pos; 
+		long bDiag= ceil(opts.rate*b.first.pos) + b.second.pos;
+		return aDiag - bDiag;				
+	}
+}
 
 template<typename Tup>
 long GapDifference(Tup &a, Tup &b) {
@@ -38,7 +52,7 @@ int DiagonalDrift(int curDiag, Tup &t, int strand=0) {
 
 
 template<typename Tup>
-void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minDiagCluster, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
+void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (matches.size() == 0) {
 		return;
 	}
@@ -75,7 +89,6 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 		prevOnDiag = onDiag[i];
 	}
 
-
 	// Set the parameter minDiagCluster according to the value of Largest_ClusterNum
 	// In this way, we won't lose small inversion.
 	//cerr << "Largest_ClusterNum: " << Largest_ClusterNum << endl;
@@ -99,7 +112,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int &minD
 		minDiagCluster = 20;
 	}
 	*/
-	minDiagCluster=0.05*Largest_ClusterNum; // used to be 5, but if use smaller kmer, should be larger
+	int minDiagCluster=0.05*Largest_ClusterNum; // used to be 5, but if use smaller kmer, should be larger
 
 
 	//minDiagCluster = (int) floor(Largest_ClusterNum/10);
@@ -564,12 +577,12 @@ void PrintDiagonal(vector<pair<Tup, Tup> > &matches, int strand=0) {
 }
  
 template<typename Tup>
-long GetDiag(pair<Tup, Tup> &match, int strand) {
+long GetDiag(pair<Tup, Tup> &match, int strand, Options &opts) {
 	if (strand == 0) {
-		return (long) match.second.pos - (long) ceil(1.07*match.first.pos);
+		return (long) match.second.pos - (long) ceil(opts.rate*match.first.pos);
 	}
 	else {
-		return (long) ceil(1.07*match.first.pos) + (long) match.second.pos;
+		return (long) ceil(opts.rate*match.first.pos) + (long) match.second.pos;
 	}
 }
 
@@ -587,7 +600,7 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 	// matches are stored in cartesian order;
 	//
 	if (e-s == 1) return;
-	float rate = 1.07;
+	//float rate = 1.07;
 	vector<int> match_num;
 	vector<int> pos_start;
 	int oc=1;
@@ -630,9 +643,8 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 				u_start = k;
 				u_end = k+1;					
 			}
-
 			if (match_num[k+1] == match_num[k] and 
-					abs(DiagonalDifference(matches[pos_start[k+1]], matches[pos_start[k]], strand, rate)) < (opts.maxDiag) ) { 
+					abs(SkewDiagonalDifference(matches[pos_start[k+1]], matches[pos_start[k]], opts, strand)) < opts.maxDiag) { 
 				u_end = k+2;
 				k++;
 				reset = 1;
@@ -655,6 +667,10 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 			u_maxstart = 0;
 			u_maxend = match_num.size();
 		}	
+		else if (k == match_num.size()-1 and u_maxend-u_maxstart < match_num.size()-u_start) {
+			u_maxstart = u_start;
+			u_maxend = match_num.size();			
+		}
 	}
 	//
 	// Decide the u_minDiag and u_maxDiag of the unique stretches of anchors
@@ -696,10 +712,10 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 		}
 		else {
 			vector<int> Cluster_index;
-			long u_minDiag = GetDiag(matches[c_s], strand);
-			long u_maxDiag = GetDiag(matches[c_s], strand);
+			long u_minDiag = GetDiag(matches[c_s], strand, opts);
+			long u_maxDiag = GetDiag(matches[c_s], strand, opts);
 			for (int i = c_s+1; i < c_e; i++) {
-				long diag = GetDiag(matches[i], strand);
+				long diag = GetDiag(matches[i], strand, opts);
 				if (diag < u_minDiag) { u_minDiag = diag;}
 				if (diag > u_maxDiag) { u_maxDiag = diag;}
 			}
@@ -710,8 +726,11 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 			if (c_s > s) {
 				int i = c_s - 1;
 				while (i >= s) {
-					if ( GetDiag(matches[i], strand) <= u_maxDiag+400 and GetDiag(matches[i], strand) >= u_minDiag-400 and 
-							abs(DiagonalDifference(matches[i], matches[prev_anchor], strand, rate)) < (opts.maxDiag / 2) ) {
+					//cerr << "GetDiag(matches[i], strand, opts): " << GetDiag(matches[i], strand, opts)<< endl;
+					//cerr << "abs(SkewDiagonalDifference(matches[i], matches[prev_anchor], opts, strand)): " << abs(SkewDiagonalDifference(matches[i], matches[prev_anchor], opts, strand)) << endl;
+					//assert(outerIteration!=4 or i!=195);
+					if ( GetDiag(matches[i], strand, opts) <= u_maxDiag+400 and GetDiag(matches[i], strand, opts) >= u_minDiag-400 and 
+							abs(SkewDiagonalDifference(matches[i], matches[prev_anchor], opts, strand)) < opts.maxDiag) {
 						//GapDifference(matches[i], matches[prev_anchor]) < opts.maxGap 
 						Cluster_index.push_back(i);
 						prev_anchor=i;
@@ -735,8 +754,8 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 			if (c_e < e) {
 				int i = c_e;
 				while (i < e) {
-					if ( GetDiag(matches[i], strand) <= u_maxDiag+400 and GetDiag(matches[i], strand) >= u_minDiag-400 and 
-							abs(DiagonalDifference(matches[i], matches[prev_anchor], strand, rate)) < (opts.maxDiag / 2) ) {
+					if ( GetDiag(matches[i], strand, opts) <= u_maxDiag+400 and GetDiag(matches[i], strand, opts) >= u_minDiag-400 and 
+							abs(SkewDiagonalDifference(matches[i], matches[prev_anchor], opts, strand)) < opts.maxDiag ) {
 						//GapDifference(matches[i], matches[prev_anchor]) < opts.maxGap
 						clusters.back().matches.push_back(matches[i]);	
 						prev_anchor=i;
@@ -1166,7 +1185,9 @@ void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &cl
 
 		// (TODO)Jingwen: Delete (opts.maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < opts.maxGap) in the below
 		while (ce < e and (abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) < opts.maxDiag or maxDiag == -1) 
-					  and (maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < maxGap)) {
+						//and (GapDifference(matches[ce], matches[ce-1]) < opts.maxGap)
+					  //and (maxGap == -1 or GapDifference(matches[ce], matches[ce-1]) < maxGap)
+					  ) {
 
 			qStart = min(qStart, matches[ce].first.pos);
 			qEnd   = max(qEnd, matches[ce].first.pos + opts.globalK);

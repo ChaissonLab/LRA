@@ -75,6 +75,7 @@ public:
 	int globalWinsize;
 	int minUniqueStretchNum;
 	int minUniqueStretchDist;
+	float rate; 
 	Options() {
 		storeTiming=false;
 		readType=Options::raw;
@@ -147,8 +148,8 @@ public:
 		localIndexWindow=256;
 		globalWinsize = 16;
 		minUniqueStretchNum = 3;
-		minUniqueStretchDist = 100;	
-	
+		minUniqueStretchDist = 50;	
+		rate=1;
 
 	}
 };
