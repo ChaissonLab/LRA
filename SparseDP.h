@@ -1906,7 +1906,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	// Decide the rate;
 	//
 	float rate = 2;//1
-	if ((float)totalMatch / (float) read.length <= 0.01) rate = 4; //2
+	if ((float)totalMatch / (float) read.length <= 0.005) rate = 4; //2 0.01
 	//cerr << "totalMatch/read.length: " << (float)totalMatch / (float) read.length << " rate: " << rate << endl;
 
 

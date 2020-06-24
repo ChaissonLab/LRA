@@ -259,6 +259,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.readType=Options::ccs;
 			opts.HighlyAccurate = true;
+			opts.rate_FirstSDPValue=0.2;
+			opts.rate_value=0.8;
 			// opts.maxDiag=500;
 			// opts.maxGap=1500;
 			// opts.globalMaxFreq = 30;
@@ -266,11 +268,12 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
 			opts.maxGapBtwnAnchors=1500;
-			opts.rate = 1;
 		}
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.readType=Options::contig;
 			opts.HighlyAccurate = true;
+			opts.rate_FirstSDPValue=0.1;
+			opts.rate_value=0.9;
 			// opts.maxDiag=500;
 			// opts.maxGap=1500;
 			// opts.globalMaxFreq = 30;
@@ -278,9 +281,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
 			opts.maxGapBtwnAnchors=1500;
-			opts.rate = 1;
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
+			opts.rate_FirstSDPValue=0.5;
+			opts.rate_value=0.5;			
 			opts.HighlyAccurate = false;
 			// opts.maxDiag=800;
 			// opts.maxGap=2000;
@@ -289,20 +293,17 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50; 
 			opts.maxGapBtwnAnchors=1800;
-			opts.rate = 1.015;
 		}		
 		else if (ArgIs(argv[argi], "-NANO")) {
+			opts.rate_FirstSDPValue=0.5;
+			opts.rate_value=0.5;			
+			opts.HighlyAccurate = false;
 			opts.HighlyAccurate = false;
 			// opts.maxDiag=800;
 			// opts.maxGap=2000;
 			// opts.globalMaxFreq = 50;
 			// opts.NumOfminimizersPerWindow = 1;
 			opts.maxGapBtwnAnchors=1800;
-			opts.rate = 1.07;
-		}
-		else if (ArgIs(argv[argi], "-R")) {
-			opts.rate=atoi(GetArgv(argv, argc, argi));;
-			++argi;
 		}
 		else if (ArgIs(argv[argi], "-at")) {
 			opts.alnthres=atoi(GetArgv(argv, argc, argi));

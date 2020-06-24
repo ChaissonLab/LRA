@@ -75,7 +75,11 @@ public:
 	int globalWinsize;
 	int minUniqueStretchNum;
 	int minUniqueStretchDist;
-	float rate; 
+	float slope; 
+	float rate_FirstSDPValue;
+	float rate_value;
+	long maxDrift;
+	int minTightCluster;
 	Options() {
 		storeTiming=false;
 		readType=Options::raw;
@@ -147,10 +151,13 @@ public:
 		timing="";
 		localIndexWindow=256;
 		globalWinsize = 16;
-		minUniqueStretchNum = 3;
+		minUniqueStretchNum = 1;
 		minUniqueStretchDist = 50;	
-		rate=1;
-
+		slope=1;
+		rate_FirstSDPValue=0.2;
+		rate_value=0.8;
+		maxDrift=400;
+		minTightCluster=10;
 	}
 };
 #endif

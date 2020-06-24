@@ -356,7 +356,7 @@ class Alignment {
 		int p=0;
 		nm=nmm=nins=ndel=0;
 		value=0;
-		opts.coefficient = 3;
+		opts.coefficient = 12;//3
 		while (i < query.size()) {
 			p=i;
 			while (i < query.size() and seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
@@ -519,7 +519,7 @@ class Alignment {
 				 << tEnd << "\t"
 				 << (int) mapqv << "\t" 
 				 << readName << "\t" << readLen << "\t" << qStart << "\t" << qEnd << "\t"
-				 << nm << "\t" << nmm << "\t" << nins << "\t" << ndel << "\t" << value <<  "\t" << flag << "\t" << NumOfAnchors << "\t" << NumOfAnchors/(float)readLen << endl;
+				 << nm << "\t" << nmm << "\t" << nins << "\t" << ndel << "\t" << value << "\t" << totalValue << "\t" << flag << "\t" << NumOfAnchors << "\t" << NumOfAnchors/(float)readLen << endl;
 	}
 
 	void PrintPAF(ostream &out, bool printCigar=false) {
@@ -673,7 +673,7 @@ public:
 	};
 	~SegAlignmentGroup () {};
 
-	void SetFromSegAlignment() {
+	void SetFromSegAlignment(Options &opts) {
 		ISsecondary = SegAlignment[0]->ISsecondary;
 		NumOfAnchors =  SegAlignment[0]->NumOfAnchors;
 		FirstSDPValue = SegAlignment[0]->FirstSDPValue;
@@ -687,8 +687,12 @@ public:
 			ndel += SegAlignment[s]->ndel;
 			nins += SegAlignment[s]->nins;
 			value += SegAlignment[s]->value;
+			SegAlignment[s]->totalValue = totalValue;
 		}
-		totalValue = 0.1*FirstSDPValue + 0.9*value;
+		totalValue = opts.rate_FirstSDPValue*FirstSDPValue + opts.rate_value*value;
+		for (int s = 0; s < SegAlignment.size(); s++) {
+			SegAlignment[s]->totalValue = totalValue;
+		}		
 	}
 
 	bool Overlaps(const SegAlignmentGroup &b, float frac) const {
@@ -779,7 +783,8 @@ public:
 	}
 
 	int operator()(const int i, const int j) {
-		return (*alignments)[i].value > (*alignments)[j].value;
+		//return (*alignments)[i].value > (*alignments)[j].value;
+		return (*alignments)[i].totalValue > (*alignments)[j].totalValue;
 	}
 
 	void Sort() {
