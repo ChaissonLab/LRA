@@ -33,8 +33,7 @@
 #include "TupleOps.h"
 #include "Options.h"
 #include "Clustering.h"
-#include "Read.h"
-#include "SparseDP.h"
+
 
 using std::cerr;
 using std::cout;
@@ -42,7 +41,6 @@ using std::endl;
 using std::iota;
 
 
-// This function is for fragments which are not resulting from MergeSplit step. 
 // Note: Each fragment has the same length
 void 
 ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, 
@@ -254,17 +252,14 @@ TraceBack_ForwardOnly (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, c
 
 // The input for this function is GenomePairs which is from gapPairs (from snd SDP)
 // Each fragment has the same length
-// TODO(Jingwen): create a simpler version of ProcessPoint for this SparseDP. (only forward strand)
-int SparseDP_ForwardOnly (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Options &opts, const std::vector<float> &LookUpTable, int rate = 1) {
+//
+int SparseDP_ForwardOnly (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Options &opts, 
+							const std::vector<float> &LookUpTable, int rate = 5) {
 	
 	if (FragInput.size() == 0) return 0;
-
-
 	std::vector<Point> H1;
-
 	// FragInput is vector<GenomePair>
 	// get points from FragInput and store them in H1		
-
 	for (unsigned int i = 0; i < FragInput.size(); i++) {
 
 			// insert start point s1 into H1
@@ -411,7 +406,7 @@ int SparseDP_ForwardOnly (const GenomePairs &FragInput, std::vector<unsigned int
 	// store the index of points
 	chain.clear();
 	TraceBack_ForwardOnly(SubR1, SubC1, Value, max_pos, chain);
-	std::reverse(chain.begin(), chain.end());
+	//std::reverse(chain.begin(), chain.end());
 
 	// Clear SubR and SubC
 	SubR1.Clear(eeR1);

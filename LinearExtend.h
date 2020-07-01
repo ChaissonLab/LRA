@@ -220,7 +220,6 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<uns
 			//
 			bool Ovp = 0;
 			if (chm == 1) {
-
 				CheckOverlap(clusters[cm]->matches[m], opts, Set, Ovp);
 
 				if (Ovp == 1) {

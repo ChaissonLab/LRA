@@ -80,6 +80,8 @@ public:
 	float rate_value;
 	long maxDrift;
 	int minTightCluster;
+	bool RefineBySDP;
+	int refineSpaceDiag;
 	Options() {
 		storeTiming=false;
 		readType=Options::raw;
@@ -98,7 +100,7 @@ public:
 		//bestn=1;
 		globalMaxFreq=50;
 		localMaxFreq=30;
-		maxDiag=800; // We want maxDiag to be a small number  (used to be 500) //// For CCS, need to be smaller!!! //// lots of unmapped reads due to 500;
+		maxDiag=500; // We want maxDiag to be a small number  (used to be 500) //// For CCS, need to be smaller!!! //// lots of unmapped reads due to 500;
 		cleanMaxDiag=100; 
 		minDiagCluster=10; 	// used to be 20
 							// This parameter is used in CleanOffDiagonal function; It's better not to set it to a single value. 
@@ -108,7 +110,7 @@ public:
 		minClusterSize=5; // For CCS, need to be larger!(20) // 5
 		minClusterLength=50;  // For CCS, need to be larger!(200)
 		minRefinedClusterSize=40;
-		window=0; 
+		window=2000; 
 		mergeGapped=false;
 		viewPairwise=false;
 		hardClip=false;
@@ -158,6 +160,8 @@ public:
 		rate_value=0.8;
 		maxDrift=400;
 		minTightCluster=10;
+		RefineBySDP=true;
+		refineSpaceDiag=5;
 	}
 };
 #endif
