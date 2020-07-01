@@ -144,7 +144,6 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, int stran
 	matches.resize(c);
 }
 
-
 class ClusterCoordinates {
  public:
 	int start;
@@ -715,30 +714,33 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 				if ((u_maxstart == 0 and u_maxend == 0) or (u_maxend-u_maxstart < u_end-u_start)) {
 					u_maxstart = u_start;
 					u_maxend = u_end;		
+					max_pos=Start.size(); 
 				}
 				if (Start.size() > 0) assert(u_start != Start.back());
 				Start.push_back(u_start);
 				End.push_back(u_end);		
-				max_pos= Start.size() - 1; 
+				//if ((u_maxstart == 0 and u_maxend == 0) or (u_maxend-u_maxstart < u_end-u_start)) max_pos=Start.size() - 1; 
 				k++;
 				reset = 0;
 			}
 
 		}	
 		if (reset == 1) {
-			if ((u_maxstart == 0 and u_maxend == 0)) { // the whole rough cluster is a unique linear part
+			if (u_maxstart == 0 and u_maxend == 0) { // the whole rough cluster is a unique linear part
 				u_start = 0;
 				u_end = match_num.size();
+				max_pos=Start.size(); 
 			}	
 			else if (k == match_num.size()-1 and u_maxend-u_maxstart < match_num.size()-u_start) {
-				u_end = match_num.size();				
+				u_end = match_num.size();	
+				max_pos=Start.size(); 			
 			}
 			u_maxstart = u_start;
 			u_maxend = u_end;
 			if (Start.size() > 0) assert(u_start != Start.back());
 			Start.push_back(u_start);
 			End.push_back(u_end);		
-			max_pos= Start.size() - 1; 			
+			//if ((k == match_num.size()-1 and u_maxend-u_maxstart < match_num.size()-u_start) or (u_maxstart == 0 and u_maxend == 0)) max_pos=Start.size() - 1; 			
 		}
 	}
 	//
@@ -830,7 +832,7 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 				while (i >= 0) {
 					int i_m = pos_start[End[i]-1];
 					//cerr << "Diag: " << abs(DiagonalDifference(matches[i_m], matches[prev_anchor], strand)) << endl;
-					if (End[i] - Start[i] >= (c_e-c_s) / 3 and End[i] - Start[i] >= 40) {
+					if (End[i] - Start[i] >= (c_e-c_s) / 3 and End[i] - Start[i] >= 15) {
 						addup = 2000;
 					}
 					else addup = 0;
@@ -850,7 +852,7 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 				int i = max_pos + 1;
 				while (i < Start.size()) {
 					int i_m = pos_start[Start[i]];
-					if (End[i] - Start[i] >= (c_e-c_s) / 3 and End[i] - Start[i] >= 40) {
+					if (End[i] - Start[i] >= (c_e-c_s) / 3 and End[i] - Start[i] >= 15) {
 						addup = 2000;
 					}
 					else addup = 0;
@@ -859,14 +861,13 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 						StretchOfOne.push_front(i);
 						prev_anchor = pos_start[End[i]-1];
 					}
-					i--;
+					i++;
 				}
 			}
 			//
 			// extend anchors between every two stretch of unqiue matches; Do not forget the ends;
 			//
 			assert(StretchOfOne.size() > 0);
-			cerr << "StretchOfOne.size(): " << StretchOfOne.size() << endl;
 			int prev_stretch = -1;
 			int p_s = 0, p_e = 0;
 			for (list<int>::reverse_iterator it=StretchOfOne.rbegin(); it!=StretchOfOne.rend(); ++it) {
