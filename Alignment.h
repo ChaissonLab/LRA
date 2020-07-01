@@ -356,7 +356,7 @@ class Alignment {
 		int p=0;
 		nm=nmm=nins=ndel=0;
 		value=0;
-		opts.coefficient = 12;//3
+		opts.coefficient = 3;//3
 		while (i < query.size()) {
 			p=i;
 			while (i < query.size() and seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
