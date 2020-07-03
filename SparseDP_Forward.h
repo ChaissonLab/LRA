@@ -229,23 +229,80 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 }
 
 
+// void 
+// TraceBack_ForwardOnly (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, const vector<Fragment_Info> & Value, 
+// 							unsigned int i, vector<unsigned int> & Chain) {
+
+// 	long int prev_sub = Value[i].prev_sub;
+// 	long int prev_ind = Value[i].prev_ind;
+// 	Chain.push_back(i);
+
+// 	if (prev_sub != -1 and prev_ind != -1) {
+		
+// 		// if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
+// 		// 	unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
+// 		// 	TraceBack_ForwardOnly(SubR1, SubC1, Value, SubR1[prev_sub].Dp[ind], FinalChain);
+// 		// }
+// 		if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
+// 			assert(prev_sub <  SubR1.StackSub.size());
+// 			assert(prev_ind < SubR1[prev_sub].Ep.size());
+// 			unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
+// 			assert(ind < SubR1[prev_sub].Dp.size());
+// 			i = SubR1[prev_sub].Dp[ind];
+// 			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], Chain);
+// 		}
+// 		else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
+// 			assert(prev_sub <  SubC1.StackSub.size());
+// 			assert(prev_ind < SubC1[prev_sub].Ep.size());
+// 			unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
+// 			assert(ind < SubC1[prev_sub].Dp.size());
+// 			i = SubC1[prev_sub].Dp[ind];
+// 			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], Chain);
+// 		}	
+// 		// else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
+// 		// 	unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
+// 		// 	TraceBack_ForwardOnly(SubR1, SubC1, Value, SubC1[prev_sub].Dp[ind], FinalChain);
+// 		// }	
+// 		prev_sub = Value[i].prev_sub;
+// 		prev_ind = Value[i].prev_ind;		
+// 		Chain.push_back(i);
+// 	}
+// }
+
+
+//
+// This function is for tracing back a chain;
+//
 void 
-TraceBack_ForwardOnly (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, const std::vector<Fragment_Info> & Value, unsigned int i, std::vector<unsigned int> & FinalChain) {
+TraceBack_ForwardOnly (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, const vector<Fragment_Info> & Value, 
+							unsigned int i, vector<unsigned int> & Chain) {
 
 	long int prev_sub = Value[i].prev_sub;
 	long int prev_ind = Value[i].prev_ind;
-	FinalChain.push_back(i);
+	Chain.push_back(i);
+	//cerr << "i: " << i << endl;
 
-	if (prev_sub != -1 and prev_ind != -1) {
+	while (prev_sub != -1 and prev_ind != -1) {
 		
 		if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
+			assert(prev_sub <  SubR1.StackSub.size());
+			assert(prev_ind < SubR1[prev_sub].Ep.size());
 			unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
-			TraceBack_ForwardOnly(SubR1, SubC1, Value, SubR1[prev_sub].Dp[ind], FinalChain);
+			assert(ind < SubR1[prev_sub].Dp.size());
+			i = SubR1[prev_sub].Dp[ind];
+			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], Chain);
 		}
 		else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
+			assert(prev_sub <  SubC1.StackSub.size());
+			assert(prev_ind < SubC1[prev_sub].Ep.size());
 			unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
-			TraceBack_ForwardOnly(SubR1, SubC1, Value, SubC1[prev_sub].Dp[ind], FinalChain);
+			assert(ind < SubC1[prev_sub].Dp.size());
+			i = SubC1[prev_sub].Dp[ind];
+			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], Chain);
 		}		
+		prev_sub = Value[i].prev_sub;
+		prev_ind = Value[i].prev_ind;		
+		Chain.push_back(i);
 	}
 }
 
