@@ -599,8 +599,11 @@ class Alignment {
 				string subStr;
 				subStr=string(read, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);								
 				samStrm << subStr;
-				if (qual != NULL) {
+				if (qual != NULL and strncmp(qual,"*",1) != 0) {
 					qualStr = string(qual, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);
+				}
+				else {
+					qualStr= "*";
 				}
 			}
 			else {
