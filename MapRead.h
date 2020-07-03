@@ -1399,6 +1399,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	//cerr << "opts.globalK " << opts.globalK << endl;
 	vector<Cluster> clusters;
 	vector<Cluster> roughClusters;
+	vector<Cluster> split_roughClusters;
 	int forwardStrand=0;
 	// maxDiag must be large enough for the following function "StoreDiagonalClusters". 
 	// Otherwise fragments on the same line (line with little curve) might end up in several clusters[i], instead of one clusters[i]
@@ -1407,6 +1408,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	// first let maxDiag be a small number but not too small(like 500), which also alleviate the cases where anchors are on a curvy line.
 	// Then break the clusters[i] into two if any two anchors are father than maxGap. 
 	StoreDiagonalClusters(forMatches, roughClusters, opts, 0, forMatches.size(), true, false, forwardStrand); // rough == true means only storing "start and end" in every clusters[i]
+	for (int c = 0; c < roughClusters.size(); c++) {
+		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
+		SplitRoughClustersWithGaps(forMatches, roughClusters[c], split_roughClusters, opts);
+	}
 
 	if (opts.dotPlot) {
 		ofstream clust("for-matches.dots");
@@ -1415,10 +1420,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					<< forMatches[m].second.pos + opts.globalK << "\t" << m << "\t0"<<endl;
 		}
 		clust.close();
-		ofstream wclust("roughClusters-matches.dots");
-		for (int m=0; m < roughClusters.size(); m++) {
-			int rci = genome.header.Find(roughClusters[m].tStart);
-			for (int c = roughClusters[m].start; c < roughClusters[m].end; ++c) {
+		ofstream wclust("split_roughClusters.dots");
+		for (int m=0; m < split_roughClusters.size(); m++) {
+			int rci = genome.header.Find(split_roughClusters[m].tStart);
+			for (int c = split_roughClusters[m].start; c < split_roughClusters[m].end; ++c) {
 				wclust << forMatches[c].first.pos << "\t" << forMatches[c].second.pos << "\t" << opts.globalK + forMatches[c].first.pos << "\t"
 					<< forMatches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci]<< "\t0"<<endl;				
 			}
@@ -1432,8 +1437,13 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize(), 500);
 	CleanOffDiagonal(revMatches, opts, 1);
 	vector<Cluster> revroughClusters;
+	vector<Cluster> split_revroughClusters;
 	int reverseStrand=1;
 	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), true, false, reverseStrand);
+	for (int c = 0; c < revroughClusters.size(); c++) {
+		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
+		SplitRoughClustersWithGaps(revMatches, revroughClusters[c], split_revroughClusters, opts);
+	}
 
 
 	if (opts.dotPlot) {
@@ -1444,10 +1454,10 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		}
 		rclust.close();
 
-		ofstream revclust("revroughClusters-matches.dots");
-		for (int m=0; m < revroughClusters.size(); m++) {
-			int rci = genome.header.Find(revroughClusters[m].tStart);
-			for (int c = revroughClusters[m].start; c < revroughClusters[m].end; ++c) {
+		ofstream revclust("split_revroughClusters.dots");
+		for (int m=0; m < split_revroughClusters.size(); m++) {
+			int rci = genome.header.Find(split_revroughClusters[m].tStart);
+			for (int c = split_revroughClusters[m].start; c < split_revroughClusters[m].end; ++c) {
 				revclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[c].first.pos << "\t"
 					 << revMatches[c].second.pos<< "\t" << m << "\t" << genome.header.names[rci]<<"\t0"<<endl;				
 			}
@@ -1459,20 +1469,14 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	interval_map<GenomePos, int> yIntv;
 	timing.Tick("Reverse-diag-rough-clusters");
 
-	for (int c = 0; c < roughClusters.size(); c++) {
-		int rci = genome.header.Find(roughClusters[c].tStart);
-		//EstimateDiagonalSlope(forMatches, roughClusters[c].start, roughClusters[c].end, opts, genome, rci, c, forwardStrand); 
-		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
-		//		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
-		StoreFineClusters(rci, forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, genome, read.length, xIntv, yIntv, forwardStrand, c);
+	for (int c = 0; c < split_roughClusters.size(); c++) {
+		int rci = genome.header.Find(split_roughClusters[c].tStart);
+		StoreFineClusters(rci, forMatches, clusters, opts, split_roughClusters[c].start, split_roughClusters[c].end, genome, read.length, forwardStrand, c);
 	}
 
-	for (int c = 0; c < revroughClusters.size(); c++) {
-		int rci = genome.header.Find(revroughClusters[c].tStart);
-		//EstimateDiagonalSlope(revMatches, revroughClusters[c].start, revroughClusters[c].end, opts, genome, rci, c, reverseStrand); 
-		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
-		//StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
-		StoreFineClusters(rci, revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, genome, read.length, xIntv, yIntv, reverseStrand, c);
+	for (int c = 0; c < split_revroughClusters.size(); c++) {
+		int rci = genome.header.Find(split_revroughClusters[c].tStart);
+		StoreFineClusters(rci, revMatches, clusters, opts, split_revroughClusters[c].start, split_revroughClusters[c].end, genome, read.length, reverseStrand, c);
 	}
 
 	timing.Tick("Fine-clusters");
@@ -1672,13 +1676,13 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 
 	////// TODO(Jingwen): customize a rate fro SparseDP
 	vector<Primary_chain> Primary_chains;
-	float rate = 4;
-	if (splitclusters.size() > 10) { // mapping to repetitive region
-		rate = 2;  // 2
+	if (splitclusters.size()/clusters.size() > 5) { // mapping to repetitive region
+		opts.anchor_rate = opts.anchor_rate / 2.0;
+		if (baseName == "chr1_tig00000001_arrow ") cerr << "rate: " << opts.anchor_rate << endl;
 	}
 	//cerr << "rate: " << rate << endl;
 
-	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
+	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, opts.anchor_rate);
 	// for (int p = 0; p < Primary_chains.size(); p++) {
 	// 	for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
 	// 		for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
@@ -1861,7 +1865,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	//
 	bool sparse = 0;
 	for (int p = 0; p < clusters.size(); p++) {
-		if (((float)(clusters[p].matches.size())/(clusters[p].qEnd - clusters[p].qStart)) < 0.001) sparse = 1;
+		//if (((float)(clusters[p].matches.size())/(clusters[p].qEnd - clusters[p].qStart)) < 0.001) sparse = 1;
+		if (((float)(clusters[p].Val)/(clusters[p].qEnd - clusters[p].qStart)) < 0.1) sparse = 1;
 		else sparse = 0;
 	}
 	//

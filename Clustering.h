@@ -607,35 +607,10 @@ void EstimateDiagonalSlope(vector<pair<Tup, Tup> > &matches, int s, int e, Optio
 			else {
 				opts.slope = (float)(((double)matches[cs].second.pos - (double)matches[ce-1].second.pos) / ((double)matches[ce-1].first.pos - (double)matches[cs].first.pos));
 			}
-			cerr << "outerIteration: " << outerIteration << endl; 
-			cerr << "matches[" << cs << "]: " << matches[cs].first.pos << ", " << matches[cs].second.pos << endl;
-			cerr << "matches[" << ce << "]: " << matches[ce-1].first.pos << ", " << matches[ce-1].second.pos << endl;
-			cerr << "opts.slope: " << opts.slope << endl;
-
-			if (opts.dotPlot) {
-				ofstream tightpart("tightCluster.tab", std::ofstream::app);
-				for (int h = cs; h < ce; h++) {
-					if (strand == 0) {
-						tightpart << matches[h].first.pos << "\t"
-							  << matches[h].second.pos << "\t"
-							  << matches[h].first.pos + opts.globalK << "\t"
-							  << matches[h].second.pos + opts.globalK << "\t"
-							  << genome.header.names[ri]<< "\t"
-							  << outerIteration << "\t"
-							  << strand << endl;
-					}
-					else {
-						tightpart << matches[h].first.pos << "\t"
-							  << matches[h].second.pos + opts.globalK << "\t"
-							  << matches[h].first.pos + opts.globalK << "\t"
-							  << matches[h].second.pos<< "\t"
-							  << genome.header.names[ri]<< "\t"
-							  << outerIteration << "\t"
-							  << strand << endl;					
-					}
-				}
-				tightpart.close();
-			}	
+			// cerr << "outerIteration: " << outerIteration << endl; 
+			// cerr << "matches[" << cs << "]: " << matches[cs].first.pos << ", " << matches[cs].second.pos << endl;
+			// cerr << "matches[" << ce << "]: " << matches[ce-1].first.pos << ", " << matches[ce-1].second.pos << endl;
+			// cerr << "opts.slope: " << opts.slope << endl;
 			break;
 		}
 		cs = ce;
@@ -647,8 +622,8 @@ template<typename Tup>
 void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
 											 Genome &genome,
 											 GenomePos readLength, 
-											 interval_map<GenomePos, int> &xIntv, 
-											 interval_map<GenomePos, int> &yIntv,
+											// interval_map<GenomePos, int> &xIntv, 
+											// interval_map<GenomePos, int> &yIntv,
 											 int strand=0, int outerIteration=0) {
 
 	//
@@ -748,36 +723,36 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 	//
 	int c_s = pos_start[u_maxstart], c_e = pos_start[u_maxend-1]+1;
 
-	if (opts.dotPlot) {
-		ofstream uniquematch("UniqueMatch.tab", std::ofstream::app);
-		for (int h = 0; h < Start.size(); h++) {
-			for (int he = Start[h]; he < End[h]; he++) {
-				if (strand == 0) {
-					uniquematch << matches[pos_start[he]].first.pos << "\t"
-						  << matches[pos_start[he]].second.pos << "\t"
-						  << matches[pos_start[he]].first.pos + opts.globalK << "\t"
-						  << matches[pos_start[he]].second.pos + opts.globalK << "\t"
-						  << outerIteration << "\t"
-						  << opts.slope << "\t"
-						  << h << "\t"
-						  << End[h] - Start[h] << "\t"
-						  << strand << endl;
-				}
-				else {
-					uniquematch << matches[pos_start[he]].first.pos << "\t"
-						  << matches[pos_start[he]].second.pos + opts.globalK << "\t"
-						  << matches[pos_start[he]].first.pos + opts.globalK << "\t"
-						  << matches[pos_start[he]].second.pos<< "\t"
-						  << outerIteration << "\t"
-						  << opts.slope << "\t"	
-						  << h << "\t"		
-						  << End[h] - Start[h] << "\t"		  
-						  << strand << endl;					
-				}					
-			}
-		}
-		uniquematch.close();
-	}	
+	// if (opts.dotPlot) {
+	// 	ofstream uniquematch("UniqueMatch.tab", std::ofstream::app);
+	// 	for (int h = 0; h < Start.size(); h++) {
+	// 		for (int he = Start[h]; he < End[h]; he++) {
+	// 			if (strand == 0) {
+	// 				uniquematch << matches[pos_start[he]].first.pos << "\t"
+	// 					  << matches[pos_start[he]].second.pos << "\t"
+	// 					  << matches[pos_start[he]].first.pos + opts.globalK << "\t"
+	// 					  << matches[pos_start[he]].second.pos + opts.globalK << "\t"
+	// 					  << outerIteration << "\t"
+	// 					  << opts.slope << "\t"
+	// 					  << h << "\t"
+	// 					  << End[h] - Start[h] << "\t"
+	// 					  << strand << endl;
+	// 			}
+	// 			else {
+	// 				uniquematch << matches[pos_start[he]].first.pos << "\t"
+	// 					  << matches[pos_start[he]].second.pos + opts.globalK << "\t"
+	// 					  << matches[pos_start[he]].first.pos + opts.globalK << "\t"
+	// 					  << matches[pos_start[he]].second.pos<< "\t"
+	// 					  << outerIteration << "\t"
+	// 					  << opts.slope << "\t"	
+	// 					  << h << "\t"		
+	// 					  << End[h] - Start[h] << "\t"		  
+	// 					  << strand << endl;					
+	// 			}					
+	// 		}
+	// 	}
+	// 	uniquematch.close();
+	// }	
 
 	if (c_e - c_s >= opts.minUniqueStretchNum and 
 			matches[c_e-1].first.pos + opts.globalK - matches[c_s].first.pos >= opts.minUniqueStretchDist) { 
@@ -786,28 +761,28 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 		if (c_e - c_s == e - s) { // no need to extend
 			for (int i = c_s; i < c_e; i++) {
 				clusters.back().matches.push_back(matches[i]);	
-				if (opts.dotPlot) {
-					ofstream uniquepart("UniquePart.tab", std::ofstream::app);
-					if (strand == 0) {
-						uniquepart << matches[i].first.pos << "\t"
-							  << matches[i].second.pos << "\t"
-							  << matches[i].first.pos + opts.globalK << "\t"
-							  << matches[i].second.pos + opts.globalK << "\t"
-							  << outerIteration << "\t"
-							  << opts.slope << "\t"
-							  << strand << endl;
-					}
-					else {
-						uniquepart << matches[i].first.pos << "\t"
-							  << matches[i].second.pos + opts.globalK << "\t"
-							  << matches[i].first.pos + opts.globalK << "\t"
-							  << matches[i].second.pos<< "\t"
-							  << outerIteration << "\t"
-							  << opts.slope << "\t"					  
-							  << strand << endl;					
-					}
-					uniquepart.close();
-				}			
+				// if (opts.dotPlot) {
+				// 	ofstream uniquepart("UniquePart.tab", std::ofstream::app);
+				// 	if (strand == 0) {
+				// 		uniquepart << matches[i].first.pos << "\t"
+				// 			  << matches[i].second.pos << "\t"
+				// 			  << matches[i].first.pos + opts.globalK << "\t"
+				// 			  << matches[i].second.pos + opts.globalK << "\t"
+				// 			  << outerIteration << "\t"
+				// 			  << opts.slope << "\t"
+				// 			  << strand << endl;
+				// 	}
+				// 	else {
+				// 		uniquepart << matches[i].first.pos << "\t"
+				// 			  << matches[i].second.pos + opts.globalK << "\t"
+				// 			  << matches[i].first.pos + opts.globalK << "\t"
+				// 			  << matches[i].second.pos<< "\t"
+				// 			  << outerIteration << "\t"
+				// 			  << opts.slope << "\t"					  
+				// 			  << strand << endl;					
+				// 	}
+				// 	uniquepart.close();
+				// }			
 			}	
 		}
 		else {
@@ -836,7 +811,8 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 						addup = 2000;
 					}
 					else addup = 0;
-					if (End[i] - Start[i] >= (c_e-c_s) / 20 and abs(DiagonalDifference(matches[i_m], matches[prev_anchor], strand)) < opts.maxDiag+addup) {
+					if (End[i] - Start[i] >= (c_e-c_s) / 20 
+							and abs(DiagonalDifference(matches[i_m], matches[prev_anchor], strand)) < opts.maxDiag+addup) {
 						assert(i < StretchOfOne.back());
 						StretchOfOne.push_back(i);
 						prev_anchor = pos_start[Start[i]];
@@ -897,28 +873,28 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 				for (int si = c_s; si < c_e; si++) {
 					Cluster_index.push_front(si);
 
-					if (opts.dotPlot) {
-						ofstream uniquepart("UniquePart.tab", std::ofstream::app);
-						if (strand == 0) {
-							uniquepart << matches[si].first.pos << "\t"
-								  << matches[si].second.pos << "\t"
-								  << matches[si].first.pos + opts.globalK << "\t"
-								  << matches[si].second.pos + opts.globalK << "\t"
-								  << outerIteration << "\t"
-								  << opts.slope << "\t"
-								  << strand << endl;
-						}
-						else {
-							uniquepart << matches[si].first.pos << "\t"
-								  << matches[si].second.pos + opts.globalK << "\t"
-								  << matches[si].first.pos + opts.globalK << "\t"
-								  << matches[si].second.pos<< "\t"
-								  << outerIteration << "\t"
-								  << opts.slope << "\t"					  
-								  << strand << endl;					
-						}
-						uniquepart.close();
-					}						
+					// if (opts.dotPlot) {
+					// 	ofstream uniquepart("UniquePart.tab", std::ofstream::app);
+					// 	if (strand == 0) {
+					// 		uniquepart << matches[si].first.pos << "\t"
+					// 			  << matches[si].second.pos << "\t"
+					// 			  << matches[si].first.pos + opts.globalK << "\t"
+					// 			  << matches[si].second.pos + opts.globalK << "\t"
+					// 			  << outerIteration << "\t"
+					// 			  << opts.slope << "\t"
+					// 			  << strand << endl;
+					// 	}
+					// 	else {
+					// 		uniquepart << matches[si].first.pos << "\t"
+					// 			  << matches[si].second.pos + opts.globalK << "\t"
+					// 			  << matches[si].first.pos + opts.globalK << "\t"
+					// 			  << matches[si].second.pos<< "\t"
+					// 			  << outerIteration << "\t"
+					// 			  << opts.slope << "\t"					  
+					// 			  << strand << endl;					
+					// 	}
+					// 	uniquepart.close();
+					// }						
 				}
 				for (list<int>::reverse_iterator ci = Cluster_index.rbegin(); ci != Cluster_index.rend(); ++ci) {
 					clusters.back().matches.push_back(matches[*ci]);
@@ -965,40 +941,75 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 			clusters.pop_back();
 		}
 
-		if (opts.dotPlot) {
-			ofstream fineclusters("fineclusters_byunique.tab", std::ofstream::app);
-			if (clusters.size() > 0) {
-				for (int h = 0; h < clusters.back().matches.size(); h++) {
+		// if (opts.dotPlot) {
+		// 	ofstream fineclusters("fineclusters_byunique.tab", std::ofstream::app);
+		// 	if (clusters.size() > 0) {
+		// 		for (int h = 0; h < clusters.back().matches.size(); h++) {
 
-					if (strand == 0) {
-					   fineclusters << clusters.back().matches[h].first.pos << "\t"
-							  << clusters.back().matches[h].second.pos << "\t"
-							  << clusters.back().matches[h].first.pos + opts.globalK << "\t"
-							  << clusters.back().matches[h].second.pos + opts.globalK << "\t"
-							  << outerIteration << "\t"
-							  << clusters.size() - 1 << "\t"
-							  << strand << endl;
-					}
-					else {
-						fineclusters << clusters.back().matches[h].first.pos << "\t"
-							  << clusters.back().matches[h].second.pos + opts.globalK << "\t"
-							  << clusters.back().matches[h].first.pos + opts.globalK << "\t"
-							  << clusters.back().matches[h].second.pos<< "\t"
-							  << outerIteration << "\t"
-							  << clusters.size() - 1 << "\t"
-							  << strand << endl;					
-					}
-				}				
-			}
-			fineclusters.close();
-		}	
+		// 			if (strand == 0) {
+		// 			   fineclusters << clusters.back().matches[h].first.pos << "\t"
+		// 					  << clusters.back().matches[h].second.pos << "\t"
+		// 					  << clusters.back().matches[h].first.pos + opts.globalK << "\t"
+		// 					  << clusters.back().matches[h].second.pos + opts.globalK << "\t"
+		// 					  << outerIteration << "\t"
+		// 					  << clusters.size() - 1 << "\t"
+		// 					  << strand << endl;
+		// 			}
+		// 			else {
+		// 				fineclusters << clusters.back().matches[h].first.pos << "\t"
+		// 					  << clusters.back().matches[h].second.pos + opts.globalK << "\t"
+		// 					  << clusters.back().matches[h].first.pos + opts.globalK << "\t"
+		// 					  << clusters.back().matches[h].second.pos<< "\t"
+		// 					  << outerIteration << "\t"
+		// 					  << clusters.size() - 1 << "\t"
+		// 					  << strand << endl;					
+		// 			}
+		// 		}				
+		// 	}
+		// 	fineclusters.close();
+		// }	
 	}
 	else {
 		return;
 	}
 }
 
-void SplitClustersWithGaps(vector<Cluster> &clusters, vector<Cluster> &split, Options &opts ) {
+void 
+SplitRoughClustersWithGaps(GenomePairs &matches, Cluster &OriginalClusters, vector<Cluster> &split, Options &opts) {
+
+	if (OriginalClusters.end - OriginalClusters.start == 0) {
+		return;
+	}
+	int split_cs = OriginalClusters.start;
+	GenomePos split_qStart = matches[split_cs].first.pos;
+	GenomePos split_tStart = matches[split_cs].second.pos;
+	GenomePos split_qEnd = split_qStart + opts.globalK; 
+	GenomePos split_tEnd = split_tStart + opts.globalK;
+
+	for (int m=OriginalClusters.start+1; m < OriginalClusters.end; m++) {
+		int gap=GapDifference(matches[m], matches[m-1]);
+
+		if (gap > opts.maxGap) {
+			// cout << "GAP: " << gap << "\t" << m << "\t" << clusters[c].matches.size() << "\t" << clusters[c].matches[m].second.pos - clusters[c].matches[m-1].second.pos << "\t" << clusters[c].matches[m].first.pos - clusters[c].matches[m-1].first.pos << endl;
+			split.push_back(Cluster(split_cs, m, split_qStart, split_tStart, split_qEnd, split_tEnd, OriginalClusters.strand));
+			split_qStart = matches[m].first.pos;
+			split_tStart = matches[m].second.pos;
+			split_qEnd = split_qStart + opts.globalK; 
+			split_tEnd = split_tStart + opts.globalK;
+			split_cs = m;
+		}
+		else {
+			split_qStart = min(split_qStart, matches[m].first.pos);
+			split_tStart = min(split_tStart, matches[m].second.pos);
+			split_qEnd = max(split_qEnd, matches[m].first.pos + opts.globalK);
+			split_tEnd = max(split_tEnd, matches[m].second.pos + opts.globalK);
+		}
+	}
+	int last=OriginalClusters.end;
+	split.push_back(Cluster(split_cs, last, split_qStart, split_tStart, split_qEnd, split_tEnd, OriginalClusters.strand));
+}
+
+void SplitClustersWithGaps(vector<Cluster> &clusters, vector<Cluster> &split, Options &opts) {
 	int curSplit=-1;
 
 	for (int c=0; c < clusters.size(); c++) {

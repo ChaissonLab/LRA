@@ -82,6 +82,7 @@ public:
 	int minTightCluster;
 	bool RefineBySDP;
 	int refineSpaceDiag;
+	float anchor_rate;
 	Options() {
 		storeTiming=false;
 		readType=Options::raw;
@@ -122,7 +123,7 @@ public:
 		maxCandidates=10;
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
-		maxGap=4000; 
+		maxGap=5000; 
 		maxGapBtwnAnchors=1000; // no larger than 2000 // used to be 1500 // 1000
 		mergeClusters=true;
 		NaiveDP=false;
@@ -144,7 +145,7 @@ public:
 		minBinNum = 3;
 		HighlyAccurate = false;
 		splitdist = 100000;
-		coefficient = 18; 
+		coefficient = 18;  
 		//minimizerFreq = 50;
 		NumOfminimizersPerWindow = 5;
 		Printsvsig=false;
@@ -162,6 +163,7 @@ public:
 		minTightCluster=10;
 		RefineBySDP=true;
 		refineSpaceDiag=5;
+		anchor_rate=1;
 	}
 };
 #endif
