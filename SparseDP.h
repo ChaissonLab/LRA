@@ -2037,68 +2037,66 @@ int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary
 
 	for (unsigned int i = 0; i < FragInput.size(); i++) {
 
-		if (FragInput[i].used == 0) {
-			// insert start point s1 into H1
-			Point s1;
-			H1.push_back(s1);
-			H1.back().ind = 1; // start
-			H1.back().inv = 1; // forward direction
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].qStart; 
-			H1.back().se.second = FragInput[i].tStart;	
-			if (FragInput[i].strand == 0) {
-				H1.back().orient = 1; 
-			}
-			else {
-				H1.back().orient = 0; 				
-			}
+		// insert start point s1 into H1
+		Point s1;
+		H1.push_back(s1);
+		H1.back().ind = 1; // start
+		H1.back().inv = 1; // forward direction
+		H1.back().frag_num = i;
+		H1.back().se.first = FragInput[i].qStart; 
+		H1.back().se.second = FragInput[i].tStart;	
+		if (FragInput[i].strand == 0) {
+			H1.back().orient = 1; 
+		}
+		else {
+			H1.back().orient = 0; 				
+		}
 
 
-			// insert end point e1 into H1
-			Point e1;
-			H1.push_back(e1);
-			H1.back().ind = 0; // end
-			H1.back().inv = 1; // forward direction		
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].qEnd;
-			H1.back().se.second = FragInput[i].tEnd;
-			if (FragInput[i].strand == 0) {
-				H1.back().orient = 1; 
-			}
-			else {
-				H1.back().orient = 0; 				
-			}
+		// insert end point e1 into H1
+		Point e1;
+		H1.push_back(e1);
+		H1.back().ind = 0; // end
+		H1.back().inv = 1; // forward direction		
+		H1.back().frag_num = i;
+		H1.back().se.first = FragInput[i].qEnd;
+		H1.back().se.second = FragInput[i].tEnd;
+		if (FragInput[i].strand == 0) {
+			H1.back().orient = 1; 
+		}
+		else {
+			H1.back().orient = 0; 				
+		}
 
-			// insert start point s2 into H1
-			Point s2;
-			H1.push_back(s2);
-			H1.back().ind = 1; // start
-			H1.back().inv = 0; // backward direction
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].qStart; 
-			H1.back().se.second = FragInput[i].tEnd;	
-			if (FragInput[i].strand == 0) {
-				H1.back().orient = 1; 
-			}
-			else {
-				H1.back().orient = 0; 				
-			}
+		// insert start point s2 into H1
+		Point s2;
+		H1.push_back(s2);
+		H1.back().ind = 1; // start
+		H1.back().inv = 0; // backward direction
+		H1.back().frag_num = i;
+		H1.back().se.first = FragInput[i].qStart; 
+		H1.back().se.second = FragInput[i].tEnd;	
+		if (FragInput[i].strand == 0) {
+			H1.back().orient = 1; 
+		}
+		else {
+			H1.back().orient = 0; 				
+		}
 
 
-			// insert end point e2 into H1
-			Point e2;
-			H1.push_back(e2);
-			H1.back().ind = 0; // end
-			H1.back().inv = 0; // backward direction		
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].qEnd;
-			H1.back().se.second = FragInput[i].tStart;	
-			if (FragInput[i].strand == 0) {
-				H1.back().orient = 1; 
-			}
-			else {
-				H1.back().orient = 0; 				
-			}
+		// insert end point e2 into H1
+		Point e2;
+		H1.push_back(e2);
+		H1.back().ind = 0; // end
+		H1.back().inv = 0; // backward direction		
+		H1.back().frag_num = i;
+		H1.back().se.first = FragInput[i].qEnd;
+		H1.back().se.second = FragInput[i].tStart;	
+		if (FragInput[i].strand == 0) {
+			H1.back().orient = 1; 
+		}
+		else {
+			H1.back().orient = 0; 				
 		}
 	}
 

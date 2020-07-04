@@ -123,7 +123,7 @@ public:
 		maxCandidates=10;
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
-		maxGap=5000; 
+		maxGap=500000;  
 		maxGapBtwnAnchors=1000; // no larger than 2000 // used to be 1500 // 1000
 		mergeClusters=true;
 		NaiveDP=false;
@@ -163,7 +163,7 @@ public:
 		minTightCluster=10;
 		RefineBySDP=true;
 		refineSpaceDiag=5;
-		anchor_rate=1;
+		anchor_rate=1.0;
 	}
 };
 #endif
