@@ -66,8 +66,8 @@ alchemy2: Alchemy2.o
 qti: QueryTime.o
 	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
-lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a  edlib/build/lib/libedlib.a 
-	$(CXX) $(CCOPTS) -c  -I htslib/include  -I edlib/edlib/include lra.cpp 
+lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a  
+	$(CXX) $(CCOPTS) -c  -I htslib/include  lra.cpp 
 #  $(CXX) $(CCOPTS) -c  -I htslib/include  lra.cpp 
 
 Alchemy2.o: Alchemy2.cpp Genome.h htslib/lib/libhts.a
