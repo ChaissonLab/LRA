@@ -1028,7 +1028,7 @@ SplitRoughClustersWithGaps(GenomePairs &matches, Cluster &OriginalClusters, vect
 
 		if (gap > opts.maxGap /*or diag_gap > opts.maxGap*/) {
 			// cerr << "GAP: " << gap << "\t" << m << "\t" << clusters[c].matches.size() << "\t" << clusters[c].matches[m].second.pos - clusters[c].matches[m-1].second.pos << "\t" << clusters[c].matches[m].first.pos - clusters[c].matches[m-1].first.pos << endl;
-			if ( (m-split_cs) > opts.minClusterSize) split.push_back(Cluster(split_cs, m, split_qStart, split_tStart, split_qEnd, split_tEnd, OriginalClusters.strand));
+			if ( (m-split_cs) > opts.minClusterSize) split.push_back(Cluster(split_cs, m, split_qStart, split_qEnd, split_tStart, split_tEnd, OriginalClusters.strand));
 			split_qStart = matches[m].first.pos;
 			split_tStart = matches[m].second.pos;
 			split_qEnd = split_qStart + opts.globalK; 
@@ -1043,7 +1043,7 @@ SplitRoughClustersWithGaps(GenomePairs &matches, Cluster &OriginalClusters, vect
 		}
 	}
 	int last=OriginalClusters.end;
-	split.push_back(Cluster(split_cs, last, split_qStart, split_tStart, split_qEnd, split_tEnd, OriginalClusters.strand));
+	split.push_back(Cluster(split_cs, last, split_qStart, split_qEnd, split_tStart, split_tEnd, OriginalClusters.strand));
 }
 
 void SplitClustersWithGaps(vector<Cluster> &clusters, vector<Cluster> &split, Options &opts) {
