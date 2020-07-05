@@ -1247,7 +1247,7 @@ RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, 
 		if (tinyOpts.RefineBySDP == true and min(read_dist, genome_dist) >= 500) {
 			GenomePairs BtwnPairs;
 			vector<unsigned int> BtwnChain;
-			tinyOpts.refineSpaceDiag = 5;
+			tinyOpts.refineSpaceDiag = 30;
 			RefineSpace(0, BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, str);
 
@@ -1260,6 +1260,26 @@ RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, 
 			btc_curReadEnd = curReadEnd;
 			btc_curGenomeEnd = curGenomeEnd;
 
+			if (tinyOpts.dotPlot) {
+				ofstream pSclust("BtwnPairs.tab", std::ofstream::app);
+				for (int bp = BtwnPairs.size()-1; bp >= 0; bp--) {
+					if (str == 0) {
+						pSclust << BtwnPairs[bp].first.pos << "\t"
+							  << BtwnPairs[bp].second.pos << "\t"
+							  << BtwnPairs[bp].first.pos + tinyOpts.globalK << "\t"
+							  << BtwnPairs[bp].second.pos + tinyOpts.globalK << "\t"
+							  << str << endl;
+					}
+					else {
+						pSclust << read.length - BtwnPairs[bp].first.pos - tinyOpts.globalK << "\t"
+							  << BtwnPairs[bp].second.pos + tinyOpts.globalK << "\t"
+							  << read.length - BtwnPairs[bp].first.pos << "\t"
+							  << BtwnPairs[bp].second.pos << "\t"
+							  << str << endl;					
+					}					
+				}
+				pSclust.close();
+			}	
 			for (int btc = BtwnChain.size()-1; btc >= 0; btc--) {
 
 				if (tinyOpts.dotPlot) {
@@ -1370,16 +1390,16 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 
 	timing.Tick("Sort minimizers");
 
-	// TODO(Jinwen): delete this after debug
-	// if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
-	// 	ofstream clust("all-matches.dots");
-	// 	for (int m=0; m < allMatches.size(); m++) {
-	// 		clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos 
-	// 					<< "\t" << allMatches[m].first.pos+ opts.globalK << "\t" 
-	// 					<< allMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
-	// 	}
-	// 	clust.close();
-	// }
+	//TODO(Jinwen): delete this after debug
+	if (opts.dotPlot) {
+		ofstream clust("all-matches.dots");
+		for (int m=0; m < allMatches.size(); m++) {
+			clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos 
+						<< "\t" << allMatches[m].first.pos+ opts.globalK << "\t" 
+						<< allMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
+		}
+		clust.close();
+	}
 
 	// check duplicate in allMatches
 	// for (int am=0; am<allMatches.size(); am++) {
@@ -1568,8 +1588,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		cpclust.close();
 	}
 	
-	// ClusterOrder fineClusterOrder(&clusters, 1);  // has some bug (delete clusters which should be kept)
-	// RemoveOverlappingClusters(clusters, fineClusterOrder.index, opts);
+	ClusterOrder fineClusterOrder(&clusters, 1);  // has some bug (delete clusters which should be kept)
+	RemoveOverlappingClusters(clusters, fineClusterOrder.index, opts);
 
 	/*
 	for (int co=0; co < clusters.size(); co++) {
@@ -1723,12 +1743,13 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	//
 
 	////// TODO(Jingwen): customize a rate fro SparseDP
+	//cerr << "clusters.size(): " << clusters.size() << endl;
+	//cerr << "splitclusters.size(): " << splitclusters.size() << endl;
 	vector<Primary_chain> Primary_chains;
 	float rate = opts.anchor_rate;
-	if (splitclusters.size()/clusters.size() > 4) { // mapping to repetitive region
+	if (splitclusters.size()/clusters.size() > 20) { // mapping to repetitive region
 		rate = rate / 2.0;
 	}
-	//if (baseName == "chr1/tig00000001|arrow") cerr << "READ rate: " << rate << endl;
 	//cerr << "rate: " << rate << endl;
 
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
