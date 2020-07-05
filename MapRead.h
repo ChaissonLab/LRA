@@ -558,7 +558,7 @@ void RemovePairedIndels (FinalChain &chain) {
 	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
 	vector<int> SV;
 	vector<int> SVpos;
-	vector<int> SVgenome;
+	vector<long> SVgenome;
 	int s = 0, e = 0;
 
 	//
@@ -581,13 +581,13 @@ void RemovePairedIndels (FinalChain &chain) {
 								(long int)(chain[c-1].first.pos + chain[c-1].second.pos));
 				if (abs(Gap) > 30) {
 					SV.push_back(Gap);	
-					SVgenome.push_back(chain[c].first.pos);
+					SVgenome.push_back(chain[c].second.pos);
 					SVpos.push_back(c);
 				}				
 			}
 		}
 		else {
-			SVgenome.push_back(chain[c].first.pos);
+			SVgenome.push_back(chain[c].second.pos);
 			SVpos.push_back(c);
 			SV.push_back(0);
 		}
@@ -598,13 +598,15 @@ void RemovePairedIndels (FinalChain &chain) {
 	// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
 	//
 	for (int c = 1; c < SV.size(); c++) {
-		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(10*SV[c]) and 
+		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(2*SV[c]) and 
 				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 100 
 				and abs(SV[c]) != 0 and SV[c-1] != 0) { 
 			//
 			// remove anchors from SVpos[c-1] to SV[c];
 			//
-			for (int i = SVpos[c-1]; i < SVpos[c]; i++) remove[i] = true;
+			for (int i = SVpos[c-1]; i < SVpos[c]; i++) {
+				if (chain.length(i) < 100) remove[i] = true;
+			}
 		} 
 	}
 
@@ -649,7 +651,7 @@ void RemovePairedIndels (GenomePairs &matches, vector<unsigned int> &chain) {
 	// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
 	//
 	for (int c = 1; c < SV.size(); c++) {
-		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(10*SV[c]) and 
+		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(2*SV[c]) and 
 				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 100 
 				and abs(SV[c]) != 0 and SV[c-1] != 0) { 
 			//
@@ -1270,9 +1272,9 @@ RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, 
 								  << str << endl;
 						}
 						else {
-							Sclust << BtwnPairs[BtwnChain[btc]].first.pos << "\t"
+							Sclust << read.length - BtwnPairs[BtwnChain[btc]].first.pos - tinyOpts.globalK << "\t"
 								  << BtwnPairs[BtwnChain[btc]].second.pos + tinyOpts.globalK << "\t"
-								  << BtwnPairs[BtwnChain[btc]].first.pos + tinyOpts.globalK << "\t"
+								  << read.length - BtwnPairs[BtwnChain[btc]].first.pos << "\t"
 								  << BtwnPairs[BtwnChain[btc]].second.pos << "\t"
 								  << str << endl;					
 						}
@@ -1413,7 +1415,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
 		SplitRoughClustersWithGaps(forMatches, roughClusters[c], split_roughClusters, opts, 0);
 	}
-	cerr << "roughClusters.size(): " << roughClusters.size() << " split_roughClusters.size(): " << split_roughClusters.size()<< endl;
+	//cerr << "roughClusters.size(): " << roughClusters.size() << " split_roughClusters.size(): " << split_roughClusters.size()<< endl;
 	if (opts.dotPlot) {
 		ofstream clust("for-matches.dots");
 		for (int m=0; m < forMatches.size(); m++) {
@@ -1454,7 +1456,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
 		SplitRoughClustersWithGaps(revMatches, revroughClusters[c], split_revroughClusters, opts, 1);
 	}
-	cerr << "revroughClusters.size(): " << revroughClusters.size() << " split_revroughClusters.dots: " << split_revroughClusters.size()<< endl;
+	//cerr << "revroughClusters.size(): " << revroughClusters.size() << " split_revroughClusters.dots: " << split_revroughClusters.size()<< endl;
 
 
 	if (opts.dotPlot) {
@@ -1498,7 +1500,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		StoreFineClusters(rci, revMatches, clusters, opts, split_revroughClusters[c].start, split_revroughClusters[c].end, genome, read.length, reverseStrand, c);
 	}
 
-	cerr << "clusters.size(): " <<  clusters.size() << endl;
+	//cerr << "clusters.size(): " <<  clusters.size() << endl;
 	timing.Tick("Fine-clusters");
 	//
 	// Split clusters on x and y coordinates, vector<Cluster> splitclusters, add a member for each splitcluster to specify the original cluster it comes from
