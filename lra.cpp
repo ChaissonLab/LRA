@@ -276,7 +276,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.rate_FirstSDPValue=0;
 			opts.rate_value=1;
 			opts.anchor_rate=2.0;
-			cleanMaxDiag=400;
+			opts.cleanMaxDiag=400;
+			opts.maxGap=500000;
 			// opts.maxDiag=500;
 			// opts.maxGap=1500;
 			// opts.globalMaxFreq = 30;
@@ -624,7 +625,7 @@ void RunStoreGlobal(int argc, const char* argv[],
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.globalK = 17;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 60;
+			opts.globalMaxFreq = 80;
 			opts.globalWinsize = 18;
 			opts.NumOfminimizersPerWindow = 1;		
 		}
