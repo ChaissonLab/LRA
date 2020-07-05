@@ -49,7 +49,7 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 //ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H3, std::vector<info> & V, StackOfSubProblems & SubR, StackOfSubProblems & SubC,
 //				  std::vector<Fragment_Info> & Value, Options & opts, const std::vector<float> & LookUpTable, int rate) {
 
-
+	bool step_sdp = 1;
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
 		long int ForwardDiag = static_cast<long int>(H1[i].se.second) - static_cast<long int>(H1[i].se.first);
@@ -95,7 +95,7 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 						//cerr << "Start to compute the maximization structure.\n";
 
 						SubR1[j].now = SubR1[j].Eb[*t];
-						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts); // TODO(Jingwen) anything change for SubC????
+						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts, step_sdp); // TODO(Jingwen) anything change for SubC????
 						SubR1[j].last = SubR1[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -106,7 +106,7 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 						
 
-						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts) + opts.globalK * rate; 
+						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step_sdp) + opts.globalK * rate; 
 						SubR1[j].Ep[i1] = i2;							
 
 						//cerr << "SubR1[" << j << "].Ev[" << i1 << "]: " << SubR1[j].Ev[i1] << ", SubR1[" << j << "].Ep[" << i1 << "]: " << SubR1[j].Ep[i1] << "\n"; 
@@ -172,7 +172,7 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 						//cerr << "SubC1[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
 						//cerr << "Start to compute the maximization structure.\n";
 						SubC1[j].now = SubC1[j].Eb[*t]; 
-						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts); 
+						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts, step_sdp); 
 						SubC1[j].last = SubC1[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -186,7 +186,7 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 	//					SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK; 
 	//					SubC1[j].Ep[i1] = i2;							
 
-						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK * rate; 
+						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step_sdp) + opts.globalK * rate; 
 						SubC1[j].Ep[i1] = i2;							
 
 						//cerr << "SubC1[" << j << "].Ev[" << i1 << "]: " << SubC1[j].Ev[i1] << ", SubC1[" << j << "].Ep[" << i1 << "]: " << SubC1[j].Ep[i1] << "\n"; 
