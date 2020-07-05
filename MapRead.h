@@ -1260,7 +1260,7 @@ RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, 
 
 			for (int btc = BtwnChain.size()-1; btc >= 0; btc--) {
 
-				if (tinyOpts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+				if (tinyOpts.dotPlot) {
 					ofstream Sclust("SparseDP_Forward.tab", std::ofstream::app);
 						if (str == 0) {
 							Sclust << BtwnPairs[BtwnChain[btc]].first.pos << "\t"
@@ -1413,23 +1413,23 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
 		SplitRoughClustersWithGaps(forMatches, roughClusters[c], split_roughClusters, opts, 0);
 	}
-	if (read.name == "chr1/tig00000001|arrow") //cerr << "roughClusters.size(): " << roughClusters.size() << " split_roughClusters.size(): " << split_roughClusters.size()<< endl;
-	if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+	cerr << "roughClusters.size(): " << roughClusters.size() << " split_roughClusters.size(): " << split_roughClusters.size()<< endl;
+	if (opts.dotPlot) {
 		ofstream clust("for-matches.dots");
 		for (int m=0; m < forMatches.size(); m++) {
 			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"
 					<< forMatches[m].second.pos + opts.globalK << "\t" << m << "\t0"<<endl;
 		}
 		clust.close();
-		// ofstream rclust("roughClusters.dots");
-		// for (int m=0; m < roughClusters.size(); m++) {
-		// 	int rci = genome.header.Find(roughClusters[m].tStart);
-		// 	for (int c = roughClusters[m].start; c < roughClusters[m].end; ++c) {
-		// 		rclust << forMatches[c].first.pos << "\t" << forMatches[c].second.pos << "\t" << opts.globalK + forMatches[c].first.pos << "\t"
-		// 			<< forMatches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci]<< "\t0"<<endl;				
-		// 	}
-		// }
-		//rclust.close();
+		ofstream rclust("roughClusters.dots");
+		for (int m=0; m < roughClusters.size(); m++) {
+			int rci = genome.header.Find(roughClusters[m].tStart);
+			for (int c = roughClusters[m].start; c < roughClusters[m].end; ++c) {
+				rclust << forMatches[c].first.pos << "\t" << forMatches[c].second.pos << "\t" << opts.globalK + forMatches[c].first.pos << "\t"
+					<< forMatches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci]<< "\t0"<<endl;				
+			}
+		}
+		rclust.close();
 		ofstream wclust("split_roughClusters.dots");
 		for (int m=0; m < split_roughClusters.size(); m++) {
 			int rci = genome.header.Find(split_roughClusters[m].tStart);
@@ -1454,38 +1454,38 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
 		SplitRoughClustersWithGaps(revMatches, revroughClusters[c], split_revroughClusters, opts, 1);
 	}
-	if (read.name == "chr1/tig00000001|arrow") //cerr << "revroughClusters.size(): " << revroughClusters.size() << " revroughClusters.size(): " << revroughClusters.size()<< endl;
+	cerr << "revroughClusters.size(): " << revroughClusters.size() << " split_revroughClusters.dots: " << split_revroughClusters.size()<< endl;
 
 
-	if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+	if (opts.dotPlot) {
 		ofstream rclust("rev-matches.dots");
 		for (int m=0; m < revMatches.size(); m++) {			
 			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[m].first.pos << "\t"
 					 << revMatches[m].second.pos << "\t0"<<endl;
 		}
 		rclust.close();
-		// ofstream revsclust("revroughClusters.dots");
-		// for (int m=0; m < revroughClusters.size(); m++) {
-		// 	int rci = genome.header.Find(revroughClusters[m].tStart);
-		// 	for (int c = revroughClusters[m].start; c < revroughClusters[m].end; ++c) {
-		// 		revsclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[c].first.pos << "\t"
-		// 			 << revMatches[c].second.pos<< "\t" << m << "\t" << genome.header.names[rci]<<"\t0"<<endl;				
-		// 	}
-		// }
-		//revsclust.close();
-		ofstream revclust("split_revroughClusters.dots");
-		for (int m=0; m < split_revroughClusters.size(); m++) {
-			int rci = genome.header.Find(split_revroughClusters[m].tStart);
-			for (int c = split_revroughClusters[m].start; c < split_revroughClusters[m].end; ++c) {
-				revclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[c].first.pos << "\t"
+		ofstream revsclust("revroughClusters.dots");
+		for (int m=0; m < revroughClusters.size(); m++) {
+			int rci = genome.header.Find(revroughClusters[m].tStart);
+			for (int c = revroughClusters[m].start; c < revroughClusters[m].end; ++c) {
+				revsclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[c].first.pos << "\t"
 					 << revMatches[c].second.pos<< "\t" << m << "\t" << genome.header.names[rci]<<"\t0"<<endl;				
 			}
 		}
-		revclust.close();
+		revsclust.close();
+		ofstream srevclust("split_revroughClusters.dots");
+		for (int m=0; m < split_revroughClusters.size(); m++) {
+			int rci = genome.header.Find(split_revroughClusters[m].tStart);
+			for (int c = split_revroughClusters[m].start; c < split_revroughClusters[m].end; ++c) {
+				srevclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[c].first.pos << "\t"
+					 << revMatches[c].second.pos<< "\t" << m << "\t" << genome.header.names[rci]<<"\t0"<<endl;				
+			}
+		}
+		srevclust.close();
 	}
 
-	interval_map<GenomePos, int> xIntv;
-	interval_map<GenomePos, int> yIntv;
+	//interval_map<GenomePos, int> xIntv;
+	//interval_map<GenomePos, int> yIntv;
 	timing.Tick("Reverse-diag-rough-clusters");
 
 	for (int c = 0; c < split_roughClusters.size(); c++) {
@@ -1498,7 +1498,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		StoreFineClusters(rci, revMatches, clusters, opts, split_revroughClusters[c].start, split_revroughClusters[c].end, genome, read.length, reverseStrand, c);
 	}
 
-	if (read.name == "chr1/tig00000001|arrow") //cerr << "clusters.size(): " <<  clusters.size() << endl;
+	cerr << "clusters.size(): " <<  clusters.size() << endl;
 	timing.Tick("Fine-clusters");
 	//
 	// Split clusters on x and y coordinates, vector<Cluster> splitclusters, add a member for each splitcluster to specify the original cluster it comes from
@@ -1539,12 +1539,12 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	// 	pcclust.close();
 	// }
 
-	if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
-		ofstream pclust("clusters-coarse-pre-remove.tab");
+	if (opts.dotPlot) {
+		ofstream cpclust("clusters-coarse-pre-remove.tab");
 		for (int m = 0; m < clusters.size(); m++) {
 			for (int n = 0; n < clusters[m].matches.size(); n++) {
 				if (clusters[m].strand == 0) {
-					pclust << clusters[m].matches[n].first.pos << "\t"
+					cpclust << clusters[m].matches[n].first.pos << "\t"
 						  << clusters[m].matches[n].second.pos << "\t"
 						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
 						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
@@ -1553,7 +1553,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 						  << clusters[m].strand << endl;
 				}
 				else {
-					pclust << clusters[m].matches[n].first.pos << "\t"
+					cpclust << clusters[m].matches[n].first.pos << "\t"
 						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
 						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
 						  << clusters[m].matches[n].second.pos << "\t"
@@ -1563,11 +1563,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				}				
 			}
 		}
-		pclust.close();
+		cpclust.close();
 	}
 	
-	ClusterOrder fineClusterOrder(&clusters, 1);
-	RemoveOverlappingClusters(clusters, fineClusterOrder.index, opts);
+	// ClusterOrder fineClusterOrder(&clusters, 1);  // has some bug (delete clusters which should be kept)
+	// RemoveOverlappingClusters(clusters, fineClusterOrder.index, opts);
 
 	/*
 	for (int co=0; co < clusters.size(); co++) {
@@ -1594,7 +1594,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	clusters.resize(vm);
 	if (clusters.size() == 0) return 0; // This read cannot be mapped to the genome; 
 
-	if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+	if (opts.dotPlot) {
 		ofstream clust("clusters.tab");
 		for (int m = 0; m < clusters.size(); m++) {
 			for (int n = 0; n < clusters[m].matches.size(); n++) {
@@ -1622,7 +1622,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	}
 
 
-	if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+	if (opts.dotPlot) {
 		ofstream clust("clusters_coarse.tab");
 		for (int m = 0; m < clusters.size(); m++) {
 				if (clusters[m].strand == 0) {
@@ -1655,7 +1655,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 
 	timing.Tick("Split");
 
-	if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+	if (opts.dotPlot) {
 		ofstream clust("splitclusters-coarse.tab");
 		for (int m = 0; m < splitclusters.size(); m++) {
 			if (splitclusters[m].strand == 0) {
@@ -1683,7 +1683,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	}
 
 
-	if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+	if (opts.dotPlot) {
 		ofstream clust("splitclusters-decideval.tab");
 		for (int m = 0; m < splitclusters.size(); m++) {
 			if (splitclusters[m].Val !=0) {
@@ -1740,7 +1740,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	// }
 	// SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
 
-	if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+	if (opts.dotPlot) {
 		ofstream clust("Chains.tab");
 		for (int p = 0; p < Primary_chains.size(); p++) {
 			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
@@ -1826,7 +1826,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		}
 	}
 
-	if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+	if (opts.dotPlot) {
 		ofstream clust("CoarseChains.tab");
 
 		for (int p = 0; p < Primary_chains.size(); p++) {
@@ -1863,7 +1863,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		clust.close();
 	}	
 
-	if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+	if (opts.dotPlot) {
 		ofstream clust("clusters_1stSDP.tab");
 		for (int m = 0; m < clusters.size(); m++) {
 			for (int n = 0; n < clusters[m].matches.size(); n++) {
@@ -1963,7 +1963,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		}
 	}
 
-	if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+	if (opts.dotPlot) {
 		ofstream clust("RefinedClusters.tab", std::ofstream::app);
 
 		for (int p = 0; p < RefinedClusters.size(); p++) {
@@ -2161,7 +2161,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				SizeExtendClusters += ExtendClusters[ep].matches.size();
 			}	
 
-			if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+			if (opts.dotPlot) {
 				ofstream clust("ExtendClusters.tab", std::ofstream::app);
 				for (int ep = 0; ep < ExtendClusters.size(); ep++) {
 					for (int eh = 0; eh < ExtendClusters[ep].matches.size(); eh++) {	
@@ -2225,7 +2225,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				//RemoveSpuriousAnchors(finalchain, smallOpts);
 				RemovePairedIndels(finalchain);
 				if (finalchain.size() == 0) continue; // cannot be mapped to the genome!
-				if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+				if (opts.dotPlot) {
 					ofstream clust("SparseDP.tab", std::ofstream::app);
 					for (int ep = 0; ep < finalchain.chain.size(); ep++) {
 						if (finalchain.strand(ep) == 0) {
@@ -2350,36 +2350,36 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	SimpleMapQV(alignmentsOrder, read);
 
 	timing.Tick("Local-SDP");
-	// if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
-	// 		ofstream baseDots("alignment.dots");
-	// 		for (int a=0; a < (int) alignmentsOrder.size(); a++){
-	// 			for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
+	if (opts.dotPlot) {
+			ofstream baseDots("alignment.dots");
+			for (int a=0; a < (int) alignmentsOrder.size(); a++){
+				for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
 
-	// 				for (int c = 0; c < alignmentsOrder[a].SegAlignment[s]->blocks.size(); c++) {
-	// 					if (alignmentsOrder[a].SegAlignment[s]->strand == 0) {
-	// 						baseDots << alignmentsOrder[a].SegAlignment[s]->blocks[c].qPos << "\t" 
-	// 								 << alignmentsOrder[a].SegAlignment[s]->blocks[c].tPos << "\t" 
-	// 								 << alignmentsOrder[a].SegAlignment[s]->blocks[c].qPos + alignmentsOrder[a].SegAlignment[s]->blocks[c].length << "\t" 
-	// 								 << alignmentsOrder[a].SegAlignment[s]->blocks[c].tPos + alignmentsOrder[a].SegAlignment[s]->blocks[c].length << "\t"
-	// 								 << a << "\t"
-	// 								 << s << "\t"
-	// 								 << alignmentsOrder[a].SegAlignment[s]->strand << endl;							
-	// 					} 
-	// 					else {
-	// 						baseDots << read.length - alignmentsOrder[a].SegAlignment[s]->blocks[c].qPos - alignmentsOrder[a].SegAlignment[s]->blocks[c].length << "\t" 
-	// 								 << alignmentsOrder[a].SegAlignment[s]->blocks[c].tPos + alignmentsOrder[a].SegAlignment[s]->blocks[c].length << "\t" 
-	// 								 << read.length - alignmentsOrder[a].SegAlignment[s]->blocks[c].qPos << "\t" 
-	// 								 << alignmentsOrder[a].SegAlignment[s]->blocks[c].tPos << "\t"
-	// 								 << a << "\t"
-	// 								 << s << "\t"
-	// 								 << alignmentsOrder[a].SegAlignment[s]->strand << endl;
-	// 					}
-	// 				}		
-	// 			}
-	// 		}
+					for (int c = 0; c < alignmentsOrder[a].SegAlignment[s]->blocks.size(); c++) {
+						if (alignmentsOrder[a].SegAlignment[s]->strand == 0) {
+							baseDots << alignmentsOrder[a].SegAlignment[s]->blocks[c].qPos << "\t" 
+									 << alignmentsOrder[a].SegAlignment[s]->blocks[c].tPos << "\t" 
+									 << alignmentsOrder[a].SegAlignment[s]->blocks[c].qPos + alignmentsOrder[a].SegAlignment[s]->blocks[c].length << "\t" 
+									 << alignmentsOrder[a].SegAlignment[s]->blocks[c].tPos + alignmentsOrder[a].SegAlignment[s]->blocks[c].length << "\t"
+									 << a << "\t"
+									 << s << "\t"
+									 << alignmentsOrder[a].SegAlignment[s]->strand << endl;							
+						} 
+						else {
+							baseDots << read.length - alignmentsOrder[a].SegAlignment[s]->blocks[c].qPos - alignmentsOrder[a].SegAlignment[s]->blocks[c].length << "\t" 
+									 << alignmentsOrder[a].SegAlignment[s]->blocks[c].tPos + alignmentsOrder[a].SegAlignment[s]->blocks[c].length << "\t" 
+									 << read.length - alignmentsOrder[a].SegAlignment[s]->blocks[c].qPos << "\t" 
+									 << alignmentsOrder[a].SegAlignment[s]->blocks[c].tPos << "\t"
+									 << a << "\t"
+									 << s << "\t"
+									 << alignmentsOrder[a].SegAlignment[s]->strand << endl;
+						}
+					}		
+				}
+			}
 			
-	// 		baseDots.close();
-	// }
+			baseDots.close();
+	}
 
 	timing.Tick("Final");
 	if (opts.storeTiming) {
