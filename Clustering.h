@@ -831,11 +831,11 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 					// cerr << "matches[prev_anchor].first.pos: " << matches[prev_anchor].first.pos << " matches[prev_anchor].second.pos: " << matches[prev_anchor].second.pos << endl;
 					// cerr << "prev_anchor: " << prev_anchor << endl;
 				
-					if (/*End[i] - Start[i] >= (c_e-c_s) / 3 and */ End[i] - Start[i] >= 15) {
+					if (/*End[i] - Start[i] >= (c_e-c_s) / 3 and */ End[i] - Start[i] >= 15) { // stretches of above 15 unqiue anchors are pretty trustworthy
 						addup = 50000;
 					}
 					else addup = 0;
-					if (End[i] - Start[i] >= (c_e-c_s) / 20 
+					if ( (End[i] - Start[i] >= (c_e-c_s) / 20 or End[i] - Start[i] >= 15) 
 							and abs(DiagonalDifference(matches[i_m], matches[prev_anchor], strand)) < opts.maxDiag+addup) {
 						assert(i < StretchOfOne.back());
 						StretchOfOne.push_back(i);
@@ -863,7 +863,8 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 						addup = 50000;
 					}
 					else addup = 0;
-					if (End[i] - Start[i] >= (c_e-c_s) / 20 and abs(DiagonalDifference(matches[i_m], matches[prev_anchor], strand)) < opts.maxDiag+addup) {
+					if ((End[i] - Start[i] >= (c_e-c_s) / 20 or End[i] - Start[i] >= 15) 
+							and abs(DiagonalDifference(matches[i_m], matches[prev_anchor], strand)) < opts.maxDiag+addup) {
 						assert(i > StretchOfOne.front());
 						StretchOfOne.push_front(i);
 						prev_anchor = pos_start[End[i]-1];
