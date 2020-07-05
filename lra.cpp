@@ -53,24 +53,24 @@ void HelpMap() {
 	cout << "Options:" << endl
 			 << "   -CCS (flag) Align CCS reads. " << endl
 			 << "   -CLR (flag) Align CLR reads. " << endl
-			 << "   -NANO (flag) Align Nanopore reads. " << endl
+			 << "   -ONT (flag) Align Nanopore reads. " << endl
 			 << "   -CONTIG (flag) Align large contigs." << endl
 			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' PAF, 'pc' PAF with cigar, 'a' pairwise alignment." << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
-     		 << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
-			 << "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
-			 << "   -m  m(int)  Do not align clusters with fewer than m refined"<< endl
-			 << "               matches (40). Typically m > 3*M" << endl
+     		 << "   -Flag  F(int)  Skip reads with any flags in F set (bam input only)." << endl
+     		 << "   -t  n(int)   Use n threads (1)" << endl
+			 //<< "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
+			//<< "   -m  m(int)  Do not align clusters with fewer than m refined"<< endl
+			// << "               matches (40). Typically m > 3*M" << endl
 			 << "   -a  (flag)  Query all positions in a read, not just minimizers. " << endl
-			 << "               This is 10-20% slower, with an increase in specificity. " << endl
-			 << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl
+			 //<< "               This is 10-20% slower, with an increase in specificity. " << endl
+			 // << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl
 			 << "   -SV  (int) (path to svsig file)  Print sv signatures for each alignment with length above the given threshold (DEFAULT:25). And the path of output svsig file" << endl
 			 //<< "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl
 			 //<< "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
 			// << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
 			// << "	-T 	(flag)  Use log LookUpTable when gap length is larger than 501." << endl
-			 << "   -at  (float) a float in (0, 1), Threshold to decide secondary alignments based on chaining value." << endl
-		     << "   -t  n(int)   Use n threads (1)" << endl
+			 << "   -at  (float) a float in (0, 1), Threshold to decide secondary alignments based on chaining value (DEFAULT:0.7)." << endl
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
 			 << "   -d 	(flag)  Enable dotPlot" << endl
@@ -80,7 +80,7 @@ void HelpMap() {
 	cout << "Examples: " << endl
 			 << "Aligning CCS reads:  lra align -CCS -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
 			 << "Aligning CLR reads:  lra align -CLR -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
-			 << "Aligning Nanopore reads:  lra align -NANO -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl;
+			 << "Aligning Nanopore reads:  lra align -ONT -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl;
 
 }
 
@@ -278,6 +278,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.anchor_rate=2.0;
 			opts.cleanMaxDiag=400;
 			opts.maxGap=500000;
+			opts.NumAln=2;
+   			opts.PrintNumAln = 1;
 			// opts.maxDiag=500;
 			// opts.maxGap=1500;
 			// opts.globalMaxFreq = 30;
@@ -301,7 +303,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			//opts.minClusterLength=50; 
 			opts.maxGapBtwnAnchors=1800;
 		}		
-		else if (ArgIs(argv[argi], "-NANO")) {
+		else if (ArgIs(argv[argi], "-ONT")) {
 			// opts.rate_FirstSDPValue=0.5;
 			// opts.rate_value=0.5;		
 			opts.rate_FirstSDPValue=0;
@@ -495,10 +497,10 @@ void HelpStoreIndex() {
 			 << "  Global index options " << endl
 			 << "	-CCS (flag) Index for aligning CCS reads" << endl
 			 << "	-CLR (flag) Index for aligning CLR reads" << endl
-			 << "	-NANO (flag) Index for aligning Nanopore reads" << endl
+			 << "	-ONT (flag) Index for aligning Nanopore reads" << endl
 			 << "   -CONTIG (flag) Index for aligning large contigs" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
-			 << "   -F (int) Maximum minimizer frequency (200)." << endl
+			 << "   -F (int) Maximum minimizer frequency (DEFAULT: 80)." << endl
 			 << "   -K (int) Word size" << endl
 			 << "  Local index options: "<< endl
 			 << "   -w (int) Local minimizer window size (10)." << endl
@@ -512,17 +514,17 @@ void HelpStoreGlobal() {
 	cout << "Options: " << endl
 			 << "   -CCS (flag) Index for aligning CCS reads" << endl
 			 << "   -CLR (flag) Index for aligning CLR reads" << endl
-			 << "   -NANO (flag) Index for aligning Nanopore reads" << endl
+			 << "   -ONT (flag) Index for aligning Nanopore reads" << endl
 			 << "   -CONTIG (flag) Index for aligning large contigs" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
-			 << "   -f (int) Maximum minimizer frequency. (default: 60 for CLR and NANO reads; 50 for CCS reads)" << endl
-			 << "   -n (int) Maximum minimizers allowed in per 100bp window. (default: 5 for CLR and NANO reads; 4 for CCS reads)" << endl
+			 << "   -F (int) Maximum minimizer frequency. (default: 60 for CLR and NANO reads; 50 for CCS reads)" << endl
 			 << "   -K (int) Word size" << endl
 			 << "   -h Print help." << endl;	
 	cout << "Examples: " << endl
 			 << "Index reference for aligning CCS reads: lra index -CCS ref.fa" << endl
 			 << "Index reference for aligning CLR reads: lra index -CLR ref.fa" << endl
-			 << "Index reference for aligning Nanopore reads: lra index -NANO ref.fa" << endl;
+			 << "Index reference for aligning Nanopore reads: lra index -ONT ref.fa" << endl
+			 << "Index reference for aligning contig: lra index -CONTIG ref.fa" << endl;
 }
 
 void HelpStoreLocal() {
@@ -553,7 +555,7 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 		else if (ArgIs(argv[argi], "-CLR")) {
 		
 		}
-		else if (ArgIs(argv[argi], "-NANO")) {
+		else if (ArgIs(argv[argi], "-ONT")) {
 		
 		}
 		else if (ArgIs(argv[argi], "-k")) {
@@ -636,7 +638,7 @@ void RunStoreGlobal(int argc, const char* argv[],
 			opts.globalWinsize = 16;
 			opts.NumOfminimizersPerWindow = 1;		
 		}
-		else if (ArgIs(argv[argi], "-NANO")) {
+		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.globalK = 15;
 			opts.globalW = 10;
 			opts.globalMaxFreq = 80;
