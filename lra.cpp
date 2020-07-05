@@ -276,6 +276,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.rate_FirstSDPValue=0;
 			opts.rate_value=1;
 			opts.anchor_rate=2.0;
+			cleanMaxDiag=400;
 			// opts.maxDiag=500;
 			// opts.maxGap=1500;
 			// opts.globalMaxFreq = 30;
