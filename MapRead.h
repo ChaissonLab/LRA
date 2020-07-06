@@ -67,6 +67,126 @@ void SetMatchAndGaps(GenomePos qs, GenomePos qe, GenomePos ts, GenomePos te, int
 	tg=te-ts+1-m;
 }
 
+// Contain changes from master branch 
+// void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOrder, Options &opts) {
+// 	int a=0;
+// 	int ovp=a;
+
+// 	if (clusters.size() == 0) {
+// 		return;
+// 	}
+// 	vector<long> forDiagonals, revDiagonals;
+// 	vector<long> *diagPtr;
+// 	int nForCandidates=0, nRevCandidates=0;
+// 	int maxCand=opts.maxCandidates;
+// 	vector<bool> keep(clusters.size(), true);
+// 	std::map<long, vector<int> > diagToCluster;
+// 	long targetDiag=0;
+// 	for (a=0; a < clusters.size(); a++) { 
+		
+// 		int orderIndex=clusterOrder[a];
+// 		clusters[orderIndex].rank=a;
+// 		float num=1.0;
+// 		float denom=1.0;
+// 		long diag=(long)clusters[orderIndex].tStart - (long)clusters[orderIndex].qStart;
+// 		bool foundDiag=false;
+// 		long clusterDiag, clusterEndDiag;
+// 		//		cerr << "processing cluster on query " << clusters[orderIndex].qStart << "\t" << clusters[orderIndex].qEnd << "\t" << diag << "\t" << orderIndex << "\t" << clusters[orderIndex].tStart << "\t" << clusters[orderIndex].tEnd << endl;
+// 		if (clusters[orderIndex].strand == 0) {
+// 			diagPtr = &forDiagonals;
+// 		}
+// 		else {
+// 			diagPtr = &revDiagonals;
+// 		}
+// 		bool encompassed=false;		
+// 		bool onDiag=false;
+// 		bool nearPoint=false;
+// 		long curClusterDiag=0;
+// 		long diagDist=0;
+// 		long targetClusterDist=0;
+// 		long targetDiagDist=1000;
+// 		for (int d=0; d < diagPtr->size() and encompassed == false; d++) {							
+// 			curClusterDiag=(*diagPtr)[d];
+// 			assert (diagToCluster.find(curClusterDiag) != diagToCluster.end());
+// 			assert (diagToCluster[curClusterDiag].size() > 0);
+// 			for (int di = 0; di < diagToCluster[curClusterDiag].size(); di++) {
+// 				int c=diagToCluster[curClusterDiag][di];
+// 				clusterDiag=(long)clusters[c].tStart - (long) clusters[c].qStart;
+// 				clusterEndDiag=(long)clusters[c].tEnd - (long) clusters[c].qEnd;
+// 				long fey=(long)clusters[c].tStart - (long)clusters[orderIndex].tEnd;
+// 				long fex=(long)clusters[c].qStart - (long)clusters[orderIndex].qEnd;
+// 				long efy=(long)clusters[orderIndex].tStart - (long)clusters[c].tEnd;
+// 				long efx =(long)clusters[orderIndex].tStart - (long)clusters[c].tEnd;
+// 				long fe=(long) sqrt(fex*fex+fey*fey);
+// 				long ef=(long) sqrt(efx*efx+efy*efy);
+// 				diagDist=min(fe,ef);
+					
+// 				if (clusters[c].EncompassesInRectangle(clusters[orderIndex],0.5)) {
+// 					//					cout << "cluster " << c << " encompasses " << orderIndex << endl;
+// 					encompassed=true;
+// 					break;
+// 				}
+// 				else {
+// 					//					cout << "cluster " << c << " does not encompass " << orderIndex << "\t" << clusters[c].tEnd-clusters[c].tStart << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
+// 				}					
+// 				if ((abs(clusterDiag - diag) < 1000) or (abs(clusterEndDiag - diag) < 1000)) {
+// 					foundDiag=true;					
+// 					onDiag = true;
+// 					targetDiag=curClusterDiag;
+// 					targetDiagDist = min(abs(clusterDiag - diag), abs(clusterEndDiag - diag));
+// 					//break;
+// 				}
+// 				if (abs(diagDist) < 1000) {
+// 					nearPoint=true;
+// 					targetClusterDist=diagDist;
+// 					targetDiag=curClusterDiag;
+// 					//break;
+// 				}
+// 			}
+// 		}
+// 		/*
+
+// 			if (encompassed == false and (onDiag==true or nearPoint==true)) {
+// 				foundDiag=true;
+// 				break;
+// 			}
+// 			else {
+// 				if (encompassed) {
+// 					break;
+// 				}
+// 			}
+// 			}*/
+// 		//
+// 		// Add hard-coded check for long matches for whole-contig alignments.
+// 		if (foundDiag == false and 
+// 				( ( diagPtr->size() < maxCand  and encompassed == false) or (abs(clusters[orderIndex].tEnd - clusters[orderIndex].tStart) > 1000) ) ) {
+// 			(*diagPtr).push_back(diag);
+// 		 //cerr << "Creating diagonal " << diag << "\t" << clusters[orderIndex].matches.size() << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
+// 			diagToCluster[diag].push_back(orderIndex);
+// 			foundDiag=true;
+// 		}
+// 		else if (foundDiag == true and (encompassed == false or (abs(clusters[orderIndex].tEnd - clusters[orderIndex].tStart) > 2000) )) { // change from master
+// 		//else if (foundDiag == true and encompassed == false) {
+// 			/*			cerr << "Keeping match " << clusters[orderIndex].matches.size() << "\t" << orderIndex 
+// 							<< "\ton diag " << diag << "\t" << diagDist << "\t" << (int) nearPoint << "\t" << (int) encompassed << "\t" << targetDiagDist << "\t" << targetClusterDist << "\t" << clusters[orderIndex].qStart << "\t" << clusters[orderIndex].tStart << endl;*/
+// 			assert(targetDiag != 0);
+// 			diagToCluster[targetDiag].push_back(orderIndex);
+// 		}			
+// 		else {
+// 			//			cerr << "Discarding cluster of size " << clusters[orderIndex].matches.size() << " on diag " << diag << endl;
+// 			clusters[orderIndex].matches.resize(0);
+// 		}
+// 	}
+// 	int c=0;
+// 	for (int i=0; i < clusters.size(); i++) {
+// 		if (clusters[i].matches.size() > 0) {
+// 			clusters[c] = clusters[i];
+// 			c++;
+// 		}
+// 	}
+// 	clusters.resize(c);
+// }
+
 void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOrder, Options &opts) {
 	int a=0;
 	int ovp=a;
@@ -142,8 +262,6 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 					//break;
 				}
 			}
-		}
-		/*
 
 			if (encompassed == false and (onDiag==true or nearPoint==true)) {
 				foundDiag=true;
@@ -154,18 +272,14 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 					break;
 				}
 			}
-			}*/
-		//
-		// Add hard-coded check for long matches for whole-contig alignments.
-		if (foundDiag == false and 
-				( ( diagPtr->size() < maxCand  and encompassed == false) or (abs(clusters[orderIndex].tEnd - clusters[orderIndex].tStart) > 1000) ) ) {
+		}
+		if (foundDiag == false and diagPtr->size() < maxCand and encompassed == false) {
 			(*diagPtr).push_back(diag);
-		 //cerr << "Creating diagonal " << diag << "\t" << clusters[orderIndex].matches.size() << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
+			//cerr << "Creating diagonal " << diag << "\t" << clusters[orderIndex].matches.size() << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
 			diagToCluster[diag].push_back(orderIndex);
 			foundDiag=true;
 		}
-		else if (foundDiag == true and (encompassed == false or (abs(clusters[orderIndex].tEnd - clusters[orderIndex].tStart) > 2000) )) { // change from master
-		//else if (foundDiag == true and encompassed == false) {
+		else if (foundDiag == true and encompassed == false) {
 			/*			cerr << "Keeping match " << clusters[orderIndex].matches.size() << "\t" << orderIndex 
 							<< "\ton diag " << diag << "\t" << diagDist << "\t" << (int) nearPoint << "\t" << (int) encompassed << "\t" << targetDiagDist << "\t" << targetClusterDist << "\t" << clusters[orderIndex].qStart << "\t" << clusters[orderIndex].tStart << endl;*/
 			assert(targetDiag != 0);
@@ -185,6 +299,7 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 	}
 	clusters.resize(c);
 }
+
 
 /*
 void SimpleMapQV(vector<SegAlignmentGroup> &alignments) {
