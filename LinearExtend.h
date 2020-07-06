@@ -413,7 +413,7 @@ TrimOverlappedAnchors(vector<Cluster> & extCluster) {
 			
 			if (overlap_r > 0 or overlap_g > 0) {
 				overlap = max(overlap_r, overlap_g);
-				extCluster[c].matches[prev].first.pos += overlap+1;
+				if (extCluster[c].strand == 1) extCluster[c].matches[prev].first.pos += overlap+1;
 				extCluster[c].matchesLengths[prev] -= overlap+1;
 				if (lr == 1 and extCluster[c].strand == 0) assert(extCluster[c].matches[cur].first.pos >= extCluster[c].matches[prev].first.pos + extCluster[c].matchesLengths[prev]);
 				if (lr == 1 and extCluster[c].strand == 1) assert(extCluster[c].matches[cur].first.pos + extCluster[c].matchesLengths[cur] <= extCluster[c].matches[prev].first.pos);
