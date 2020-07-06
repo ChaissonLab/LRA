@@ -1244,7 +1244,7 @@ RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, 
 	if (curGenomeEnd <= nextGenomeStart) {
 		long read_dist = nextReadStart - curReadEnd;
 		long genome_dist = nextGenomeStart - curGenomeEnd;
-		if (tinyOpts.RefineBySDP == true and min(read_dist, genome_dist) >= 500) {
+		if (tinyOpts.RefineBySDP == true and min(read_dist, genome_dist) >= 300) {
 			GenomePairs BtwnPairs;
 			vector<unsigned int> BtwnChain;
 			tinyOpts.refineSpaceDiag = 30;
