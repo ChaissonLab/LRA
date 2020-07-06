@@ -638,8 +638,9 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 template<typename Tup>
 void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
 				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, std::vector<Fragment_Info> & Value, Options & opts, 
-				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, float & rate, bool step) { // std::vector<ClusterCoordinates> & FragInput
+				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, float & rate) { // std::vector<ClusterCoordinates> & FragInput
 
+	bool step_sdp = 0;
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
 		long int ForwardDiag = static_cast<long int>(H1[i].se.second) - static_cast<long int>(H1[i].se.first);
@@ -688,7 +689,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "Start to compute the maximization structure.\n";
 
 						SubR1[j].now = SubR1[j].Eb[*t];
-						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts, step); // TODO(Jingwen) anything change for SubC????
+						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts, step_sdp); // TODO(Jingwen) anything change for SubC????
 						SubR1[j].last = SubR1[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -699,7 +700,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 						
 
-						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step) + FragInput[ii].Val*rate;
+						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step_sdp) + FragInput[ii].Val*rate;
 																//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR1[j].Ep[i1] = i2;							
 
@@ -768,7 +769,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "SubC1[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
 						//cerr << "Start to compute the maximization structure.\n";
 						SubC1[j].now = SubC1[j].Eb[*t]; 
-						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts, step); 
+						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts, step_sdp); 
 						SubC1[j].last = SubC1[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -782,7 +783,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 	//					SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK; 
 	//					SubC1[j].Ep[i1] = i2;							
 
-						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step) + FragInput[ii].Val*rate;
+						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step_sdp) + FragInput[ii].Val*rate;
 																//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC1[j].Ep[i1] = i2;							
 
@@ -852,7 +853,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "Start to compute the maximization structure.\n";
 
 						SubR2[j].now = SubR2[j].Eb[*t];
-						Maximization (SubR2[j].now, SubR2[j].last, SubR2[j].Di, SubR2[j].Ei, SubR2[j].Dv, SubR2[j].Db, SubR2[j].Block, SubR2[j].S_1, LookUpTable, opts, step); // TODO(Jingwen) anything change for SubC????
+						Maximization (SubR2[j].now, SubR2[j].last, SubR2[j].Di, SubR2[j].Ei, SubR2[j].Dv, SubR2[j].Db, SubR2[j].Block, SubR2[j].S_1, LookUpTable, opts, step_sdp); // TODO(Jingwen) anything change for SubC????
 						SubR2[j].last = SubR2[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -862,7 +863,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Ei that BackDiag is in----i1: " << i1 << "\n";
 						//cerr << "the index in Di which is the best candidate for BackDiag ---- i2: " << i2 << "\n";
 
-						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts, step) + FragInput[ii].Val*rate;
+						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts, step_sdp) + FragInput[ii].Val*rate;
 																	//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR2[j].Ep[i1] = i2;							
 
@@ -924,7 +925,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "SubC2[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
 						//cerr << "Start to compute the maximization structure.\n";
 						SubC2[j].now = SubC2[j].Eb[*t]; 
-						Maximization (SubC2[j].now, SubC2[j].last, SubC2[j].Di, SubC2[j].Ei, SubC2[j].Dv, SubC2[j].Db, SubC2[j].Block, SubC2[j].S_1, LookUpTable, opts, step); 
+						Maximization (SubC2[j].now, SubC2[j].last, SubC2[j].Di, SubC2[j].Ei, SubC2[j].Dv, SubC2[j].Db, SubC2[j].Block, SubC2[j].S_1, LookUpTable, opts, step_sdp); 
 						SubC2[j].last = SubC2[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -936,7 +937,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 					
 
-						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step) + FragInput[ii].Val*rate;
+						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step_sdp) + FragInput[ii].Val*rate;
 																	//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC2[j].Ep[i1] = i2;							
 
@@ -988,8 +989,8 @@ template<typename Tup>
 void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
 				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, std::vector<Fragment_Info> & Value, Options & opts, 
 				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, SplitChain & inputChain, 
-				 	const vector<unsigned int> & MatchStart, float & rate, bool step) { // std::vector<ClusterCoordinates> & FragInput
-
+				 	const vector<unsigned int> & MatchStart, float & rate) { // std::vector<ClusterCoordinates> & FragInput
+	bool step_sdp = 1;
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
 		long int ForwardDiag = static_cast<long int>(H1[i].se.second) - static_cast<long int>(H1[i].se.first);
@@ -1039,7 +1040,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "Start to compute the maximization structure.\n";
 
 						SubR1[j].now = SubR1[j].Eb[*t];
-						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts, step); // TODO(Jingwen) anything change for SubC????
+						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts, step_sdp); // TODO(Jingwen) anything change for SubC????
 						SubR1[j].last = SubR1[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -1050,7 +1051,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 						
 
-						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step) + 
+						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step_sdp) + 
 																rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
 																//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR1[j].Ep[i1] = i2;							
@@ -1120,7 +1121,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "SubC1[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
 						//cerr << "Start to compute the maximization structure.\n";
 						SubC1[j].now = SubC1[j].Eb[*t]; 
-						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts, step); 
+						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts, step_sdp); 
 						SubC1[j].last = SubC1[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -1134,7 +1135,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 	//					SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK; 
 	//					SubC1[j].Ep[i1] = i2;							
 
-						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step) + 
+						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step_sdp) + 
 																	rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
 																//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC1[j].Ep[i1] = i2;							
@@ -1205,7 +1206,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "Start to compute the maximization structure.\n";
 
 						SubR2[j].now = SubR2[j].Eb[*t];
-						Maximization (SubR2[j].now, SubR2[j].last, SubR2[j].Di, SubR2[j].Ei, SubR2[j].Dv, SubR2[j].Db, SubR2[j].Block, SubR2[j].S_1, LookUpTable, opts, step); // TODO(Jingwen) anything change for SubC????
+						Maximization (SubR2[j].now, SubR2[j].last, SubR2[j].Di, SubR2[j].Ei, SubR2[j].Dv, SubR2[j].Db, SubR2[j].Block, SubR2[j].S_1, LookUpTable, opts, step_sdp); // TODO(Jingwen) anything change for SubC????
 						SubR2[j].last = SubR2[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -1215,7 +1216,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Ei that BackDiag is in----i1: " << i1 << "\n";
 						//cerr << "the index in Di which is the best candidate for BackDiag ---- i2: " << i2 << "\n";
 
-						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts, step) + 
+						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts, step_sdp) + 
 														rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
 																	//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR2[j].Ep[i1] = i2;							
@@ -1278,7 +1279,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "SubC2[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
 						//cerr << "Start to compute the maximization structure.\n";
 						SubC2[j].now = SubC2[j].Eb[*t]; 
-						Maximization (SubC2[j].now, SubC2[j].last, SubC2[j].Di, SubC2[j].Ei, SubC2[j].Dv, SubC2[j].Db, SubC2[j].Block, SubC2[j].S_1, LookUpTable, opts, step); 
+						Maximization (SubC2[j].now, SubC2[j].last, SubC2[j].Di, SubC2[j].Ei, SubC2[j].Dv, SubC2[j].Db, SubC2[j].Block, SubC2[j].S_1, LookUpTable, opts, step_sdp); 
 						SubC2[j].last = SubC2[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -1290,7 +1291,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 					
 
-						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step) + 
+						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step_sdp) + 
 														rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
 																	//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC2[j].Ep[i1] = i2;							
@@ -1412,55 +1413,6 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 	}
 }
 
-/*
-//
-// This function is for tracing back a chain;
-//
-void 
-TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
-					const vector<Fragment_Info> & Value, unsigned int & i, vector<unsigned int> & Chain) {
-
-	long int prev_sub = Value[i].prev_sub;
-	long int prev_ind = Value[i].prev_ind;
-	Chain.push_back(i);
-	//cerr << "i: " << i << endl;
-
-	if (prev_sub != -1 and prev_ind != -1) {
-		
-		if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
-			assert(prev_sub <  SubR1.StackSub.size());
-			assert(prev_ind < SubR1[prev_sub].Ep.size());
-			unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
-			assert(ind < SubR1[prev_sub].Dp.size());
-			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], Chain);
-		}
-		else if (Value[i].prev == 1 and Value[i].inv == 0) { // The previous subproblem is SubR2
-			assert(prev_sub <  SubR2.StackSub.size());
-			assert(prev_ind < SubR2[prev_sub].Ep.size());
-			unsigned int ind = SubR2[prev_sub].Ep[prev_ind];
-			assert(ind < SubR2[prev_sub].Dp.size());
-			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR2[prev_sub].Dp[ind], Chain);
-		}
-		else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
-			assert(prev_sub <  SubC1.StackSub.size());
-			assert(prev_ind < SubC1[prev_sub].Ep.size());
-			unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
-			assert(ind < SubC1[prev_sub].Dp.size());
-			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], Chain);
-		}		
-		else { // The previous subproblem is SubC2
-			assert(prev_sub < SubC2.StackSub.size());
-			assert(prev_ind < SubC2[prev_sub].Ep.size());
-			unsigned int ind = SubC2[prev_sub].Ep[prev_ind];
-			assert(ind < SubC2[prev_sub].Dp.size());
-			TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC2[prev_sub].Dp[ind], Chain);
-		}
-
-	}
-}
-*/
-
-
 //
 // This function is for tracing back a chain;
 //
@@ -1562,7 +1514,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 			//
 			// If this chain overlap with read greater than 10%, insert it to chains
 			//
-			if (((float)(qEnd - qStart)/read.length) > 0.04) {
+			if (((float)(qEnd - qStart)/read.length) > 0.01) {
 				//
 				// Compute the # of anchors on this chain
 				//
@@ -1614,281 +1566,14 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 	}
 }
 
-/*
-// (KEEPKEEP)
-// The input for this function is GenomePairs which is NOT from Merge_Split step
-// Each fragment has the same length ----> change to different length
-int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Options &opts, const std::vector<float> &LookUpTable, bool ReverseOnly = 1, int rate = 1) {
-
-	if (FragInput.matches.size() == 0) return 0;
-
-	std::vector<Point> H1;
-	// get points from FragInput and store them in H1			
-	for (unsigned int i = 0; i < FragInput.matches.size(); i++) {
-
-		if (FragInput.strand == 0) {
-			// insert start point s1 into H1
-			Point s1;
-			H1.push_back(s1);
-			H1.back().ind = 1; // start
-			H1.back().inv = 1; // forward direction
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput.matches[i].first.pos;
-			H1.back().se.second = FragInput.matches[i].second.pos;	
-			H1.back().orient = 1; // the point comes from a forward oriented anchor
-
-			// insert end point e1 into H1
-			Point e1;
-			H1.push_back(e1);
-			H1.back().ind = 0; // end
-			H1.back().inv = 1; // forward direction		
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput.matches[i].first.pos + FragInput.matchesLengths[i];
-			H1.back().se.second = FragInput.matches[i].second.pos + FragInput.matchesLengths[i];	
-			H1.back().orient = 1; // the point comes from a forward oriented anchor				
-		}
-		else if (ReverseOnly == 0) {
-			// insert start point s1 into H1
-			Point s1;
-			H1.push_back(s1);
-			H1.back().ind = 1; // start
-			H1.back().inv = 1; // forward direction
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput.matches[i].first.pos;
-			H1.back().se.second = FragInput.matches[i].second.pos;		
-			H1.back().orient = 0; // the point comes from a reverse oriented anchor
-
-
-			// insert end point e1 into H1
-			Point e1;
-			H1.push_back(e1);
-			H1.back().ind = 0; // end
-			H1.back().inv = 1; // forward direction		
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput.matches[i].first.pos + FragInput.matchesLengths[i];
-			H1.back().se.second = FragInput.matches[i].second.pos + FragInput.matchesLengths[i];
-			H1.back().orient = 0; // the point comes from a reverse oriented anchor
-
-
-			// insert start point s2 into H1
-			Point s2;
-			H1.push_back(s2);
-			H1.back().ind = 1; // start
-			H1.back().inv = 0; // backward direction
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput.matches[i].first.pos;
-			H1.back().se.second = FragInput.matches[i].second.pos + FragInput.matchesLengths[i]; 
-			H1.back().orient = 0; // the point comes from a reverse oriented anchor
-
-
-			// insert end point e2 into H1
-			Point e2;
-			H1.push_back(e2);
-			H1.back().ind = 0; // end
-			H1.back().inv = 0; // backward direction		
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput.matches[i].first.pos + FragInput.matchesLengths[i];
-			H1.back().se.second = FragInput.matches[i].second.pos;	
-			H1.back().orient = 0; // the point comes from a reverse oriented anchor
-		} 
-		else {
-			// insert start point s2 into H1
-			Point s2;
-			H1.push_back(s2);
-			H1.back().ind = 1; // start
-			H1.back().inv = 0; // backward direction
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput.matches[i].first.pos;
-			H1.back().se.second = FragInput.matches[i].second.pos + FragInput.matchesLengths[i]; 
-			H1.back().orient = 0; // the point comes from a reverse oriented anchor
-
-
-			// insert end point e2 into H1
-			Point e2;
-			H1.push_back(e2);
-			H1.back().ind = 0; // end
-			H1.back().inv = 0; // backward direction		
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput.matches[i].first.pos + FragInput.matchesLengths[i];
-			H1.back().se.second = FragInput.matches[i].second.pos;	
-			H1.back().orient = 0; // the point comes from a reverse oriented anchor			
-		}
-	}
-
-
-	clock_t begin = std::clock();
-
-	//Sort the point by row
-	sort(H1.begin(), H1.end(), SortByRowOp<Point>()); // with same q and t coordinates, end point < start point
-
-	//cerr << "H1: " << H1 << endl;
-	std::vector<unsigned int> H2(H1.size());
-	//std::vector<unsigned int> H3(H1.size()); // TODO(Jingwen): Probably don't need this
-	iota(H2.begin(), H2.end(), 0);
-	//iota(H3.begin(), H3.end(), 0);
-
-	//Sort the point by column 
-	sort(H2.begin(), H2.end(), SortByColOp<Point, unsigned int>(H1));
-	//sort(H3.begin(), H3.end(), SortByBackDiagOp<Point, unsigned int>(H1));
-
-	
-
-	std::vector<info> Row;
-	std::vector<info> Col;
-	GetRowInfo(H1, Row);
-	GetColInfo(H1, H2, Col);
-	//cerr << "Row: " << Row << "\n";
-	//cerr << "Col: " << Col << "\n";
-
-	unsigned int n1 = 0;
-	unsigned int m1 = 0;
-	unsigned int n2 = 0;
-	unsigned int m2 = 0;
-	//std::vector<Subproblem> SubR;
-	//std::vector<Subproblem> SubC;
-	StackOfSubProblems SubR1;
-	StackOfSubProblems SubC1;
-	int eeR1 = 0, eeC1 = 0;
-
-	StackOfSubProblems SubR2;
-	StackOfSubProblems SubC2;
-	int eeR2 = 0, eeC2 = 0;
-
-	//cerr << "DivideSubByRow\n";
-	DivideSubProbByRow1(H1, Row, 0, Row.size(), n1, SubR1, eeR1);
-	//cerr << "SubR: " << SubR << endl;
-
-	//cerr << "DivideSubByCol\n";
-	DivideSubProbByCol1(H1, H2, Col, 0, Col.size(), m1, SubC1, eeC1);
-	//cerr << "SubC: " << SubC << endl;
-
-	DivideSubProbByRow2(H1, Row, 0, Row.size(), n2, SubR2, eeR2);	
-	DivideSubProbByCol2(H1, H2, Col, 0, Col.size(), m2, SubC2, eeC2);
-
-
-	// Get SS_A_R1, SS_B_R1, SS_A_R2 and SS_B_R2 for each fragment
-	std::vector<Fragment_Info> Value(FragInput.matches.size());
-	for (unsigned int t = 0; t < Row.size(); ++t) {
-		for (unsigned int tt = Row[t].pstart; tt < Row[t].pend; ++tt) {
-			//cerr << "Row H tt: " << tt << endl;
-			unsigned int ii = H1[tt].frag_num;
-			//cerr << "Row Value ii: " << ii << endl<< endl;
-
-			if (H1[tt].ind == 1 and H1[tt].inv == 1) { //H1[tt] is a start point (s1)
-				Value[ii].SS_B_R1 = Row[t].SS_B1;
-				Value[ii].counter_B_R1 = Row[t].SS_B1.size();
-				Value[ii].val = FragInput.matchesLengths[ii] * rate;
-				Value[ii].orient = H1[tt].orient;
-			}
-			else if (H1[tt].ind == 0 and H1[tt].inv == 1) { // H1[tt] is an end point (e1)
-				Value[ii].SS_A_R1 = Row[t].SS_A1;
-				Value[ii].counter_A_R1 = Row[t].SS_A1.size();
-				//Value[ii].val = opts.globalK * rate; 
-				//Value[ii].orient = H1[tt].orient;
-			}
-			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
-				Value[ii].SS_B_R2 = Row[t].SS_B2;
-				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
-				Value[ii].val = FragInput.matchesLengths[ii] * rate; //This is not redundant, because not every match has four points, some may have only two (s2, e2)
-				Value[ii].orient = H1[tt].orient;
-			}
-			else { // H1[tt] is an end point (e2)
-				Value[ii].SS_A_R2 = Row[t].SS_A2;
-				Value[ii].counter_A_R2 = Row[t].SS_A2.size();
-				//Value[ii].val = opts.globalK * rate;
-				//Value[ii].orient = H1[tt].orient;			
-			}
-		}
-	}
-
-
-	// Get SS_A_C1, SS_B_C1, SS_A_C2 and SS_B_C2 for each fragment
-	for (unsigned int t = 0; t < Col.size(); ++t) {
-		for (unsigned int tt = Col[t].pstart; tt < Col[t].pend; ++tt) { 
-
-			unsigned int ii = H1[H2[tt]].frag_num;
-
-			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
-				Value[ii].SS_B_C1 = Col[t].SS_B1;
-				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
-				Value[ii].val = FragInput.matchesLengths[ii] * rate;
-				Value[ii].orient = H1[H2[tt]].orient;
-			}
-			else if (H1[H2[tt]].ind == 0 and H1[H2[tt]].inv == 1) { // H1[H2[tt]] is an end point (e1)
-				Value[ii].SS_A_C1 = Col[t].SS_A1;
-				Value[ii].counter_A_C1 = Col[t].SS_A1.size();
-				//Value[ii].val = opts.globalK * rate;
-				//Value[ii].orient = H1[H2[tt]].orient;
-			}
-			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
-				Value[ii].SS_B_C2 = Col[t].SS_B2;
-				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
-				Value[ii].val = FragInput.matchesLengths[ii] * rate;
-				Value[ii].orient = H1[H2[tt]].orient;				
-			}
-			else { // H1[H2[tt]] is an end point (e2)
-				Value[ii].SS_A_C2 = Col[t].SS_A2;
-				Value[ii].counter_A_C2 = Col[t].SS_A2.size();
-				//Value[ii].val = opts.globalK * rate;
-				//Value[ii].orient = H1[H2[tt]].orient;			
-			}
-
-		}
-	}
-
-
-	//cerr << "Value: " << Value << endl;
-	
-
-	//cerr << "ProcessPoint\n";
-
-	//ProcessPoint(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, rate);
-	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, rate);		
-
-	
-	//cerr << "end\n";
-
-	// find the max_value for the FinalChain 
-	unsigned int  l = 0;
-	float max_value = 0;
-	unsigned int max_pos = 0;
-	while (l < Value.size()) {
-		if (Value[l].val > max_value) {
-			max_value = Value[l].val;
-			max_pos = l;
-		}
-		++l;
-	}
-	
-	//cerr << "TraceBack\n";
-	// Trace back to get the FinalChain
-	// store the index of points
-	chain.clear();
-	TraceBack(SubR1, SubC1, SubR2, SubC2, Value, max_pos, chain);
-	std::reverse(chain.begin(), chain.end());
-
-	// Clear SubR and SubC
-	SubR1.Clear(eeR1);
-	SubC1.Clear(eeC1);
-	SubR2.Clear(eeR2);
-	SubC2.Clear(eeC2);
-
-	// get the time for the program
-	clock_t end = std::clock();
-	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-	//cerr << "Time: " << elapsed_secs << endl;
-	return 0;
-}
-*/
-
-
 //
 // The input for this function is splitchains[st] and ExtendClusters
 // Tackle with fragments of different lengths;
 // This SDP needs to insert 4 points for only anchors in the overlapping region between Clusters;
 // This SDP needs to increase the cost for linking 2 anchors of different directions;
 //
-int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain & finalchain, Options & opts, const vector<float> & LookUpTable, Read & read) {
+int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain & finalchain, Options & opts, 
+			 const vector<float> & LookUpTable, Read & read) {
 
 	if (inputChain.size() == 0) return 0;
 	//
@@ -1906,7 +1591,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	// Decide the rate;
 	//
 	float rate = 2;//1
-	if ((float)totalMatch / (float) read.length <= 0.01) rate = 4; //2
+	if ((float)totalMatch / (float) read.length <= 0.005) rate = 4; //2 0.01
 	//cerr << "totalMatch/read.length: " << (float)totalMatch / (float) read.length << " rate: " << rate << endl;
 
 
@@ -2301,8 +1986,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	//cerr << "Value: " << Value << endl;
 	//cerr << "ProcessPoint\n";
 	finalchain.InitializeOtherParts (MatchStart, totalMatch, Value);
-	bool step = 1;
-	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, inputChain, MatchStart, rate, step); 
+	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, inputChain, MatchStart, rate); 
 
 	//
 	// find the max_value for the FinalChain 
@@ -2344,7 +2028,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 // fragments of different lengths
 // This SDP needs to insert 4 points for any anchors
 //
-int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, Options & opts, const vector<float> & LookUpTable, Read & read, float & rate) {
+int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, Options & opts, const vector<float> & LookUpTable, Read & read, float & rate) {
 
 	if (FragInput.size() == 0) return 0;
 	if (Primary_chains.size() != 0 and Primary_chains[0].chains.size() == opts.NumAln) return 0;
@@ -2353,69 +2037,73 @@ int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary
 	// get points from FragInput and store them in H1		
 
 	for (unsigned int i = 0; i < FragInput.size(); i++) {
+		if (FragInput[i].qEnd > FragInput[i].qStart + 2 and FragInput[i].tEnd > FragInput[i].tStart + 2) {
+			FragInput[i].qStart += 1;
+			FragInput[i].qEnd -= 1;
+			FragInput[i].tStart += 1;
+			FragInput[i].tEnd -= 1;			
+		}
 
-		if (FragInput[i].used == 0) {
-			// insert start point s1 into H1
-			Point s1;
-			H1.push_back(s1);
-			H1.back().ind = 1; // start
-			H1.back().inv = 1; // forward direction
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].qStart; 
-			H1.back().se.second = FragInput[i].tStart;	
-			if (FragInput[i].strand == 0) {
-				H1.back().orient = 1; 
-			}
-			else {
-				H1.back().orient = 0; 				
-			}
-
-
-			// insert end point e1 into H1
-			Point e1;
-			H1.push_back(e1);
-			H1.back().ind = 0; // end
-			H1.back().inv = 1; // forward direction		
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].qEnd;
-			H1.back().se.second = FragInput[i].tEnd;
-			if (FragInput[i].strand == 0) {
-				H1.back().orient = 1; 
-			}
-			else {
-				H1.back().orient = 0; 				
-			}
-
-			// insert start point s2 into H1
-			Point s2;
-			H1.push_back(s2);
-			H1.back().ind = 1; // start
-			H1.back().inv = 0; // backward direction
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].qStart; 
-			H1.back().se.second = FragInput[i].tEnd;	
-			if (FragInput[i].strand == 0) {
-				H1.back().orient = 1; 
-			}
-			else {
-				H1.back().orient = 0; 				
-			}
+		// insert start point s1 into H1
+		Point s1;
+		H1.push_back(s1);
+		H1.back().ind = 1; // start
+		H1.back().inv = 1; // forward direction
+		H1.back().frag_num = i;
+		H1.back().se.first = FragInput[i].qStart; 
+		H1.back().se.second = FragInput[i].tStart;	
+		if (FragInput[i].strand == 0) {
+			H1.back().orient = 1; 
+		}
+		else {
+			H1.back().orient = 0; 				
+		}
 
 
-			// insert end point e2 into H1
-			Point e2;
-			H1.push_back(e2);
-			H1.back().ind = 0; // end
-			H1.back().inv = 0; // backward direction		
-			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].qEnd;
-			H1.back().se.second = FragInput[i].tStart;	
-			if (FragInput[i].strand == 0) {
-				H1.back().orient = 1; 
-			}
-			else {
-				H1.back().orient = 0; 				
-			}
+		// insert end point e1 into H1
+		Point e1;
+		H1.push_back(e1);
+		H1.back().ind = 0; // end
+		H1.back().inv = 1; // forward direction		
+		H1.back().frag_num = i;
+		H1.back().se.first = FragInput[i].qEnd;
+		H1.back().se.second = FragInput[i].tEnd;
+		if (FragInput[i].strand == 0) {
+			H1.back().orient = 1; 
+		}
+		else {
+			H1.back().orient = 0; 				
+		}
+
+		// insert start point s2 into H1
+		Point s2;
+		H1.push_back(s2);
+		H1.back().ind = 1; // start
+		H1.back().inv = 0; // backward direction
+		H1.back().frag_num = i;
+		H1.back().se.first = FragInput[i].qStart; 
+		H1.back().se.second = FragInput[i].tEnd;	
+		if (FragInput[i].strand == 0) {
+			H1.back().orient = 1; 
+		}
+		else {
+			H1.back().orient = 0; 				
+		}
+
+
+		// insert end point e2 into H1
+		Point e2;
+		H1.push_back(e2);
+		H1.back().ind = 0; // end
+		H1.back().inv = 0; // backward direction		
+		H1.back().frag_num = i;
+		H1.back().se.first = FragInput[i].qEnd;
+		H1.back().se.second = FragInput[i].tStart;	
+		if (FragInput[i].strand == 0) {
+			H1.back().orient = 1; 
+		}
+		else {
+			H1.back().orient = 0; 				
 		}
 	}
 
@@ -2540,8 +2228,7 @@ int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary
 
 	//cerr << "Value: " << Value << endl;
 	//cerr << "ProcessPoint\n";
-	bool step = 0;
-	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, rate, step);	
+	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, rate);	
 
 	//
 	// Trace back chains; There are two parameters: PrimaryAln, SecondaryAln
@@ -2562,7 +2249,272 @@ int SparseDP (const vector<Cluster> & FragInput, vector<Primary_chain> & Primary
 	return 0;
 }
 
+/*
+// (KEEPKEEP)
+// The input for this function is GenomePairs which is NOT from Merge_Split step
+// Each fragment has the same length ----> change to different length
+int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Options &opts, const std::vector<float> &LookUpTable, bool ReverseOnly = 1, int rate = 1) {
 
+	if (FragInput.matches.size() == 0) return 0;
+
+	std::vector<Point> H1;
+	// get points from FragInput and store them in H1			
+	for (unsigned int i = 0; i < FragInput.matches.size(); i++) {
+
+		if (FragInput.strand == 0) {
+			// insert start point s1 into H1
+			Point s1;
+			H1.push_back(s1);
+			H1.back().ind = 1; // start
+			H1.back().inv = 1; // forward direction
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput.matches[i].first.pos;
+			H1.back().se.second = FragInput.matches[i].second.pos;	
+			H1.back().orient = 1; // the point comes from a forward oriented anchor
+
+			// insert end point e1 into H1
+			Point e1;
+			H1.push_back(e1);
+			H1.back().ind = 0; // end
+			H1.back().inv = 1; // forward direction		
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput.matches[i].first.pos + FragInput.matchesLengths[i];
+			H1.back().se.second = FragInput.matches[i].second.pos + FragInput.matchesLengths[i];	
+			H1.back().orient = 1; // the point comes from a forward oriented anchor				
+		}
+		else if (ReverseOnly == 0) {
+			// insert start point s1 into H1
+			Point s1;
+			H1.push_back(s1);
+			H1.back().ind = 1; // start
+			H1.back().inv = 1; // forward direction
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput.matches[i].first.pos;
+			H1.back().se.second = FragInput.matches[i].second.pos;		
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+
+
+			// insert end point e1 into H1
+			Point e1;
+			H1.push_back(e1);
+			H1.back().ind = 0; // end
+			H1.back().inv = 1; // forward direction		
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput.matches[i].first.pos + FragInput.matchesLengths[i];
+			H1.back().se.second = FragInput.matches[i].second.pos + FragInput.matchesLengths[i];
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+
+
+			// insert start point s2 into H1
+			Point s2;
+			H1.push_back(s2);
+			H1.back().ind = 1; // start
+			H1.back().inv = 0; // backward direction
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput.matches[i].first.pos;
+			H1.back().se.second = FragInput.matches[i].second.pos + FragInput.matchesLengths[i]; 
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+
+
+			// insert end point e2 into H1
+			Point e2;
+			H1.push_back(e2);
+			H1.back().ind = 0; // end
+			H1.back().inv = 0; // backward direction		
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput.matches[i].first.pos + FragInput.matchesLengths[i];
+			H1.back().se.second = FragInput.matches[i].second.pos;	
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+		} 
+		else {
+			// insert start point s2 into H1
+			Point s2;
+			H1.push_back(s2);
+			H1.back().ind = 1; // start
+			H1.back().inv = 0; // backward direction
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput.matches[i].first.pos;
+			H1.back().se.second = FragInput.matches[i].second.pos + FragInput.matchesLengths[i]; 
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor
+
+
+			// insert end point e2 into H1
+			Point e2;
+			H1.push_back(e2);
+			H1.back().ind = 0; // end
+			H1.back().inv = 0; // backward direction		
+			H1.back().frag_num = i;
+			H1.back().se.first = FragInput.matches[i].first.pos + FragInput.matchesLengths[i];
+			H1.back().se.second = FragInput.matches[i].second.pos;	
+			H1.back().orient = 0; // the point comes from a reverse oriented anchor			
+		}
+	}
+
+
+	clock_t begin = std::clock();
+
+	//Sort the point by row
+	sort(H1.begin(), H1.end(), SortByRowOp<Point>()); // with same q and t coordinates, end point < start point
+
+	//cerr << "H1: " << H1 << endl;
+	std::vector<unsigned int> H2(H1.size());
+	//std::vector<unsigned int> H3(H1.size()); // TODO(Jingwen): Probably don't need this
+	iota(H2.begin(), H2.end(), 0);
+	//iota(H3.begin(), H3.end(), 0);
+
+	//Sort the point by column 
+	sort(H2.begin(), H2.end(), SortByColOp<Point, unsigned int>(H1));
+	//sort(H3.begin(), H3.end(), SortByBackDiagOp<Point, unsigned int>(H1));
+
+	
+
+	std::vector<info> Row;
+	std::vector<info> Col;
+	GetRowInfo(H1, Row);
+	GetColInfo(H1, H2, Col);
+	//cerr << "Row: " << Row << "\n";
+	//cerr << "Col: " << Col << "\n";
+
+	unsigned int n1 = 0;
+	unsigned int m1 = 0;
+	unsigned int n2 = 0;
+	unsigned int m2 = 0;
+	//std::vector<Subproblem> SubR;
+	//std::vector<Subproblem> SubC;
+	StackOfSubProblems SubR1;
+	StackOfSubProblems SubC1;
+	int eeR1 = 0, eeC1 = 0;
+
+	StackOfSubProblems SubR2;
+	StackOfSubProblems SubC2;
+	int eeR2 = 0, eeC2 = 0;
+
+	//cerr << "DivideSubByRow\n";
+	DivideSubProbByRow1(H1, Row, 0, Row.size(), n1, SubR1, eeR1);
+	//cerr << "SubR: " << SubR << endl;
+
+	//cerr << "DivideSubByCol\n";
+	DivideSubProbByCol1(H1, H2, Col, 0, Col.size(), m1, SubC1, eeC1);
+	//cerr << "SubC: " << SubC << endl;
+
+	DivideSubProbByRow2(H1, Row, 0, Row.size(), n2, SubR2, eeR2);	
+	DivideSubProbByCol2(H1, H2, Col, 0, Col.size(), m2, SubC2, eeC2);
+
+
+	// Get SS_A_R1, SS_B_R1, SS_A_R2 and SS_B_R2 for each fragment
+	std::vector<Fragment_Info> Value(FragInput.matches.size());
+	for (unsigned int t = 0; t < Row.size(); ++t) {
+		for (unsigned int tt = Row[t].pstart; tt < Row[t].pend; ++tt) {
+			//cerr << "Row H tt: " << tt << endl;
+			unsigned int ii = H1[tt].frag_num;
+			//cerr << "Row Value ii: " << ii << endl<< endl;
+
+			if (H1[tt].ind == 1 and H1[tt].inv == 1) { //H1[tt] is a start point (s1)
+				Value[ii].SS_B_R1 = Row[t].SS_B1;
+				Value[ii].counter_B_R1 = Row[t].SS_B1.size();
+				Value[ii].val = FragInput.matchesLengths[ii] * rate;
+				Value[ii].orient = H1[tt].orient;
+			}
+			else if (H1[tt].ind == 0 and H1[tt].inv == 1) { // H1[tt] is an end point (e1)
+				Value[ii].SS_A_R1 = Row[t].SS_A1;
+				Value[ii].counter_A_R1 = Row[t].SS_A1.size();
+				//Value[ii].val = opts.globalK * rate; 
+				//Value[ii].orient = H1[tt].orient;
+			}
+			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
+				Value[ii].SS_B_R2 = Row[t].SS_B2;
+				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
+				Value[ii].val = FragInput.matchesLengths[ii] * rate; //This is not redundant, because not every match has four points, some may have only two (s2, e2)
+				Value[ii].orient = H1[tt].orient;
+			}
+			else { // H1[tt] is an end point (e2)
+				Value[ii].SS_A_R2 = Row[t].SS_A2;
+				Value[ii].counter_A_R2 = Row[t].SS_A2.size();
+				//Value[ii].val = opts.globalK * rate;
+				//Value[ii].orient = H1[tt].orient;			
+			}
+		}
+	}
+
+
+	// Get SS_A_C1, SS_B_C1, SS_A_C2 and SS_B_C2 for each fragment
+	for (unsigned int t = 0; t < Col.size(); ++t) {
+		for (unsigned int tt = Col[t].pstart; tt < Col[t].pend; ++tt) { 
+
+			unsigned int ii = H1[H2[tt]].frag_num;
+
+			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
+				Value[ii].SS_B_C1 = Col[t].SS_B1;
+				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
+				Value[ii].val = FragInput.matchesLengths[ii] * rate;
+				Value[ii].orient = H1[H2[tt]].orient;
+			}
+			else if (H1[H2[tt]].ind == 0 and H1[H2[tt]].inv == 1) { // H1[H2[tt]] is an end point (e1)
+				Value[ii].SS_A_C1 = Col[t].SS_A1;
+				Value[ii].counter_A_C1 = Col[t].SS_A1.size();
+				//Value[ii].val = opts.globalK * rate;
+				//Value[ii].orient = H1[H2[tt]].orient;
+			}
+			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
+				Value[ii].SS_B_C2 = Col[t].SS_B2;
+				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
+				Value[ii].val = FragInput.matchesLengths[ii] * rate;
+				Value[ii].orient = H1[H2[tt]].orient;				
+			}
+			else { // H1[H2[tt]] is an end point (e2)
+				Value[ii].SS_A_C2 = Col[t].SS_A2;
+				Value[ii].counter_A_C2 = Col[t].SS_A2.size();
+				//Value[ii].val = opts.globalK * rate;
+				//Value[ii].orient = H1[H2[tt]].orient;			
+			}
+
+		}
+	}
+
+
+	//cerr << "Value: " << Value << endl;
+	
+
+	//cerr << "ProcessPoint\n";
+
+	//ProcessPoint(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, rate);
+	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, rate);		
+
+	
+	//cerr << "end\n";
+
+	// find the max_value for the FinalChain 
+	unsigned int  l = 0;
+	float max_value = 0;
+	unsigned int max_pos = 0;
+	while (l < Value.size()) {
+		if (Value[l].val > max_value) {
+			max_value = Value[l].val;
+			max_pos = l;
+		}
+		++l;
+	}
+	
+	//cerr << "TraceBack\n";
+	// Trace back to get the FinalChain
+	// store the index of points
+	chain.clear();
+	TraceBack(SubR1, SubC1, SubR2, SubC2, Value, max_pos, chain);
+	std::reverse(chain.begin(), chain.end());
+
+	// Clear SubR and SubC
+	SubR1.Clear(eeR1);
+	SubC1.Clear(eeC1);
+	SubR2.Clear(eeR2);
+	SubC2.Clear(eeC2);
+
+	// get the time for the program
+	clock_t end = std::clock();
+	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+	//cerr << "Time: " << elapsed_secs << endl;
+	return 0;
+}
+*/
 
 
 

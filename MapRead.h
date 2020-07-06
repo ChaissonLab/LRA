@@ -13,6 +13,7 @@
 #include "GlobalChain.h"
 #include "TupleOps.h"
 #include "SparseDP.h"
+#include "SparseDP_Forward.h"
 #include "Merge.h"
 #include "MergeAnchors.h"
 #include "Chain.h"
@@ -89,6 +90,7 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 		long diag=(long)clusters[orderIndex].tStart - (long)clusters[orderIndex].qStart;
 		bool foundDiag=false;
 		long clusterDiag, clusterEndDiag;
+		//		cerr << "processing cluster on query " << clusters[orderIndex].qStart << "\t" << clusters[orderIndex].qEnd << "\t" << diag << "\t" << orderIndex << "\t" << clusters[orderIndex].tStart << "\t" << clusters[orderIndex].tEnd << endl;
 		if (clusters[orderIndex].strand == 0) {
 			diagPtr = &forDiagonals;
 		}
@@ -102,7 +104,7 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 		long diagDist=0;
 		long targetClusterDist=0;
 		long targetDiagDist=1000;
-		for (int d=0; d < diagPtr->size() and encompassed == false; d++) {						
+		for (int d=0; d < diagPtr->size() and encompassed == false; d++) {							
 			curClusterDiag=(*diagPtr)[d];
 			assert (diagToCluster.find(curClusterDiag) != diagToCluster.end());
 			assert (diagToCluster[curClusterDiag].size() > 0);
@@ -127,17 +129,17 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 					//					cout << "cluster " << c << " does not encompass " << orderIndex << "\t" << clusters[c].tEnd-clusters[c].tStart << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
 				}					
 				if ((abs(clusterDiag - diag) < 1000) or (abs(clusterEndDiag - diag) < 1000)) {
-					foundDiag=true;
+					foundDiag=true;					
 					onDiag = true;
 					targetDiag=curClusterDiag;
 					targetDiagDist = min(abs(clusterDiag - diag), abs(clusterEndDiag - diag));
-					//					break;
+					//break;
 				}
 				if (abs(diagDist) < 1000) {
 					nearPoint=true;
 					targetClusterDist=diagDist;
 					targetDiag=curClusterDiag;
-					//					break;
+					//break;
 				}
 			}
 		}
@@ -158,11 +160,12 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 		if (foundDiag == false and 
 				( ( diagPtr->size() < maxCand  and encompassed == false) or (abs(clusters[orderIndex].tEnd - clusters[orderIndex].tStart) > 1000) ) ) {
 			(*diagPtr).push_back(diag);
-			//			cerr << "Creating diagonal " << diag << "\t" << clusters[orderIndex].matches.size() << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
+		 //cerr << "Creating diagonal " << diag << "\t" << clusters[orderIndex].matches.size() << "\t" << clusters[orderIndex].tEnd - clusters[orderIndex].tStart << endl;
 			diagToCluster[diag].push_back(orderIndex);
 			foundDiag=true;
 		}
-		else if (foundDiag == true and (encompassed == false or (abs(clusters[orderIndex].tEnd - clusters[orderIndex].tStart) > 2000) )) {
+		else if (foundDiag == true and (encompassed == false or (abs(clusters[orderIndex].tEnd - clusters[orderIndex].tStart) > 2000) )) { // change from master
+		//else if (foundDiag == true and encompassed == false) {
 			/*			cerr << "Keeping match " << clusters[orderIndex].matches.size() << "\t" << orderIndex 
 							<< "\ton diag " << diag << "\t" << diagDist << "\t" << (int) nearPoint << "\t" << (int) encompassed << "\t" << targetDiagDist << "\t" << targetClusterDist << "\t" << clusters[orderIndex].qStart << "\t" << clusters[orderIndex].tStart << endl;*/
 			assert(targetDiag != 0);
@@ -199,7 +202,6 @@ void SimpleMapQV(vector<SegAlignmentGroup> &alignments) {
 		ovp=a+1;
 		float num=1.0;
 		float denom=1.0;
-
 		while (ovp < alignments.size() and alignments[a].Overlaps(alignments[ovp], 0.9) ) {
 			int nmDiff = alignments[a].nm - alignments[ovp].nm;
 			if (nmDiff < 10) {
@@ -246,18 +248,20 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 		else last = pry_index[pi+1];
 
 		if (last - first == 1) { // No secondary alignments
-			if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.0005) {
-				alignmentsOrder[first].mapqv = 2;
-			}
-			else {alignmentsOrder[first].mapqv = 60;}
+			alignmentsOrder[first].mapqv = 60;
 			alignmentsOrder[first].SetMapqv();
+			// if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.00001) { // 0.0005
+			// 	alignmentsOrder[first].mapqv = 2;
+			// }
+			// else {alignmentsOrder[first].mapqv = 60;}
+			// alignmentsOrder[first].SetMapqv();
 		}
 		else {
 			// assign mapqv to primary alignment;
 			int nmmdiff = alignmentsOrder[first].nmm - alignmentsOrder[first+1].nmm;
 			int nsmallgap = (alignmentsOrder[first].ndel + alignmentsOrder[first].nins) - 
 								(alignmentsOrder[first+1].ndel + alignmentsOrder[first+1].nins);
-			float alnvaluediff = alignmentsOrder[first].value - alignmentsOrder[first+1].value;
+			float alnvaluediff = alignmentsOrder[first].totalValue - alignmentsOrder[first+1].totalValue;
 
 			//cerr << "nmmdiff: " << nmmdiff << " nsmallgap: " << nsmallgap << " alnvaluediff: " << alnvaluediff << endl;
 			//cerr << "alignmentsOrder[first].NumOfAnchors/(float)read.length: " << alignmentsOrder[first].NumOfAnchors/(float)read.length << endl;
@@ -266,16 +270,16 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 				alignmentsOrder[first].mapqv = 2;
 				alignmentsOrder[first+1].mapqv = 1;
 			}
-			else if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.0005) {
-				alignmentsOrder[first].mapqv = 2;
-				alignmentsOrder[first+1].mapqv = 1;
-			}
-			else if (alnvaluediff <= 10 and abs(nmmdiff) <= 15 and abs(nsmallgap) <= 20) { 
+			// else if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.00001) {
+			// 	alignmentsOrder[first].mapqv = 2;
+			// 	alignmentsOrder[first+1].mapqv = 1;
+			// }
+			else if (alnvaluediff <= 20 and abs(nmmdiff) <= 20 and abs(nsmallgap) <= 20) { //10 & 15 & 20
 				alignmentsOrder[first].mapqv = 2;
 				alignmentsOrder[first+1].mapqv = 1;
 			}
 			else if (nmmdiff <= 0 and nsmallgap <= 0) { // nmmdiff=0 and nsmallgap=0 ==> mapqv=52
-				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 300) { 
+				if (alignmentsOrder[first].totalValue < alignmentsOrder[first+1].totalValue + 300) { 
 					if (nmmdiff < -20) denom_1 = 1;
 					else if (nmmdiff >= -20 and nmmdiff < -5) denom_1 = pow(0.9,20-abs(nmmdiff));  
 					else denom_1 = pow(0.7,20-abs(nmmdiff));
@@ -288,7 +292,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 				else { alignmentsOrder[first].mapqv = 60;}			
 			}
 			else if (nmmdiff <= 0 and nsmallgap >= 0) { // when nsmallgap=30 and nmmdiff=0; mapqv=0
-				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 300) { 
+				if (alignmentsOrder[first].totalValue < alignmentsOrder[first+1].totalValue + 300) { 
 					if (nmmdiff < -20) denom_1 = 1;
 					else if (nmmdiff >= -20 and nmmdiff < -5) denom_1 = pow(0.9,20-abs(nmmdiff));  
 					else denom_1 = pow(0.7,20-abs(nmmdiff));
@@ -301,7 +305,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 				else { alignmentsOrder[first].mapqv = 60;}					
 			}
 			else if (nmmdiff >= 0 and nsmallgap <= 0) { // when nsmallgap=0 and nmmdiff=30, mapqv=0
-				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 300) { 
+				if (alignmentsOrder[first].totalValue < alignmentsOrder[first+1].totalValue + 300) { 
 					denom_1 = pow(0.1, abs(nmmdiff));  
 
 					if (nsmallgap < -20) denom_2 = 1;
@@ -314,7 +318,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 				else { alignmentsOrder[first].mapqv = 60;}	
 			}
 			else { 
-				if (alignmentsOrder[first].value < alignmentsOrder[first+1].value + 300) { 
+				if (alignmentsOrder[first].totalValue < alignmentsOrder[first+1].totalValue + 300) { 
 					denom_1 = pow(0.1, abs(nmmdiff));  
 					denom_2 = pow(0.1, abs(nsmallgap));  
 					int cpr=(int) (60 + 20*log10(denom_1) + 20*log10(denom_2));
@@ -362,7 +366,6 @@ int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, 
 	aln.genomeLen = chromSeq.size();
 	aln.read=(char*) readSeq.c_str();
 	aln.genome=(char*) chromSeq.c_str();
-
 	aln.CreateAlignmentStrings((char*) readSeq.c_str(), (char*)chromSeq.c_str(), aln.queryString, aln.alignString, aln.refString);
 	aln.prepared=true;
 	aln.PrintPairwise(cout);
@@ -552,47 +555,6 @@ void RemoveSpuriousAnchors(FinalChain & chain, Options & opts) {
 	chain.resize(m);
 }
 
-// //
-// // This function removes paired indels in the finalchain after SDP;
-// //
-// void RemovePairedIndels (FinalChain & chain, Options & opts) {
-
-// 	if (chain.size() < 3) return;
-// 	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
-
-// 	for (int c = 1; c < chain.size() - 1; c++) {
-
-// 		if (chain.strand(c-1) == chain.strand(c) and chain.strand(c) == chain.strand(c+1)) {
-// 			int prevGap, nextGap;
-// 			if (chain.strand(c) == 0) {
-// 				prevGap = (int)(((long int)chain[c-1].second.pos - (long int)chain[c-1].first.pos) 
-// 								- ((long int)chain[c].second.pos - (long int)chain[c].first.pos));
-// 				nextGap = (int)(((long int)chain[c].second.pos - (long int)chain[c].first.pos) 
-// 								- ((long int)chain[c+1].second.pos - (long int)chain[c+1].first.pos));
-// 			}
-// 			else {
-// 				prevGap = (int)((long int)(chain[c-1].first.pos + chain[c-1].second.pos) 
-// 								- (long int)(chain[c].first.pos + chain[c].second.pos));
-// 				nextGap = (int)((long int)(chain[c].first.pos + chain[c].second.pos) 
-// 								- (long int)(chain[c+1].first.pos + chain[c+1].second.pos));
-// 			}
-// 			if (sign(prevGap)!= sign(nextGap) and abs(prevGap) + abs(nextGap) > abs(prevGap + nextGap)
-// 					and chain.length(c) < opts.maxRemovePairedIndelsLength) { // the second condition filter out when prevGap == 0 or nextGap == 0
-// 				remove[c] = true;
-// 			}	
-// 		}
-// 	}
-
-// 	int m = 0;
-// 	for (int i = 0; i < chain.size(); i++) {
-// 		if (remove[i] == false) {
-// 			chain.chain[m] = chain.chain[i];
-// 			m++;
-// 		}
-// 	}
-// 	chain.resize(m);
-// }
-
 //
 // This function removes paired indels in the finalchain after SDP;
 //
@@ -602,7 +564,7 @@ void RemovePairedIndels (FinalChain &chain) {
 	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
 	vector<int> SV;
 	vector<int> SVpos;
-	vector<int> SVgenome;
+	vector<long> SVgenome;
 	int s = 0, e = 0;
 
 	//
@@ -625,13 +587,13 @@ void RemovePairedIndels (FinalChain &chain) {
 								(long int)(chain[c-1].first.pos + chain[c-1].second.pos));
 				if (abs(Gap) > 30) {
 					SV.push_back(Gap);	
-					SVgenome.push_back(chain[c].first.pos);
+					SVgenome.push_back(chain[c].second.pos);
 					SVpos.push_back(c);
 				}				
 			}
 		}
 		else {
-			SVgenome.push_back(chain[c].first.pos);
+			SVgenome.push_back(chain[c].second.pos);
 			SVpos.push_back(c);
 			SV.push_back(0);
 		}
@@ -642,13 +604,15 @@ void RemovePairedIndels (FinalChain &chain) {
 	// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
 	//
 	for (int c = 1; c < SV.size(); c++) {
-		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(10*SV[c]) and 
+		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(2*SV[c]) and 
 				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 100 
 				and abs(SV[c]) != 0 and SV[c-1] != 0) { 
 			//
 			// remove anchors from SVpos[c-1] to SV[c];
 			//
-			for (int i = SVpos[c-1]; i < SVpos[c]; i++) remove[i] = true;
+			for (int i = SVpos[c-1]; i < SVpos[c]; i++) {
+				if (chain.length(i) < 100) remove[i] = true;
+			}
 		} 
 	}
 
@@ -663,10 +627,61 @@ void RemovePairedIndels (FinalChain &chain) {
 }
 
 //
+// This function removes paired indels in the finalchain after SDP;
+//
+void RemovePairedIndels (GenomePairs &matches, vector<unsigned int> &chain) {
+
+ 	if (chain.size() < 2) return;
+	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
+	vector<int> SV;
+	vector<int> SVpos;
+	vector<int> SVgenome;
+	int s = 0, e = 0;
+
+	//
+	// Store SVs in vector SV; Store the anchor just after the SV[c] in SVpos[c];
+	//
+	for (int c = 1; c < chain.size(); c++) {
+		int Gap = (int)(((long)matches[chain[c]].second.pos - (long)matches[chain[c]].first.pos) - 
+					    ((long)matches[chain[c-1]].second.pos - (long)matches[chain[c-1]].first.pos));
+
+		if (abs(Gap) > 30) {
+			SV.push_back(Gap);	
+			SVgenome.push_back(matches[chain[c]].second.pos);
+			SVpos.push_back(c);
+		}
+	}
+
+	//
+	// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
+	// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
+	//
+	for (int c = 1; c < SV.size(); c++) {
+		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(2*SV[c]) and 
+				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 100 
+				and abs(SV[c]) != 0 and SV[c-1] != 0) { 
+			//
+			// remove anchors from SVpos[c-1] to SV[c];
+			//
+			for (int i = SVpos[c-1]; i < SVpos[c]; i++) remove[i] = true;
+		} 
+	}
+
+	int m = 0;
+	for (int i = 0; i < chain.size(); i++) {
+		if (remove[i] == false) {
+			chain[m] = chain[i];
+			m++;
+		}
+	}
+	chain.resize(m);
+}
+
+//
 // This function switches index in splitclusters back 
 //
 int
-switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_chains, vector<Cluster> & clusters) {
+switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_chains, vector<Cluster> & clusters, Genome &genome) {
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
 			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
@@ -708,24 +723,25 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 		}
 	}
 	//
-	// Remove those Primary_chains which align across chromosome (or very large gap), but overlap a lot on read coordinates;
+	// Remove those Primary_chains which align across chromosome, but overlap a lot on read coordinates;
 	//
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		vector<bool> remove(Primary_chains[p].chains.size(), 0);
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
  			int c = 1;
+ 			int c_cur, c_prev;
 			while (c < Primary_chains[p].chains[h].ch.size()) {
-				int c_cur = Primary_chains[p].chains[h].ch[c];
-				int c_prev = Primary_chains[p].chains[h].ch[c-1];
-				long int clustlen = max(clusters[c_prev].qEnd - clusters[c_prev].qStart, clusters[c_cur].qEnd-clusters[c_cur].qStart);
-				long int clustdist = 0, overlap_q = 0;
+				c_cur = Primary_chains[p].chains[h].ch[c];
+				c_prev = Primary_chains[p].chains[h].ch[c-1];
+				long clustlen = max(clusters[c_prev].qEnd - clusters[c_prev].qStart, clusters[c_cur].qEnd-clusters[c_cur].qStart);
+				long clustdist = 0, overlap_q = 0;
 				if (Primary_chains[p].chains[h].link[c-1] == 0) {
 					if (clusters[c_prev].tStart > clusters[c_cur].tEnd) clustdist = clusters[c_prev].tStart - clusters[c_cur].tEnd;
 				}
 				else {
 					if (clusters[c_cur].tStart > clusters[c_prev].tEnd) clustdist = clusters[c_cur].tStart - clusters[c_prev].tEnd;
 				}
-				if (clustdist >= 100000) {
+				if (clustdist > min(genome.lengths[clusters[c_cur].chromIndex], genome.lengths[clusters[c_prev].chromIndex])) {
 					if (clusters[c_prev].qStart < clusters[c_cur].qEnd) {
 						overlap_q = min(clusters[c_prev].qEnd, clusters[c_cur].qEnd)-max(clusters[c_prev].qStart, clusters[c_cur].qStart);
 						//cerr << "clustlen: " << clustlen << " overlap_q: " << overlap_q << endl; 
@@ -869,15 +885,29 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 			int matchStart = CartesianTargetLowerBound<GenomeTuple>(clusters[ph].matches.begin(), clusters[ph].matches.end(), 
 																		genomeLocalIndexStart);
 
-			int matchEnd = CartesianTargetUpperBound<GenomeTuple>(clusters[ph].matches.begin(), clusters[ph].matches.end(), 
+			int matchEnd = CartesianTargetUpperBound<GenomeTuple>(clusters[ph].matches.begin()+matchStart, clusters[ph].matches.end(), 
 																		genomeLocalIndexEnd);
+			matchEnd += matchStart;
+			//assert(matchEnd > matchStart);
+			if (matchEnd == clusters[ph].matches.size()) matchEnd--;
 			//
 			// If there is no overlap with this cluster
 			//
 			if (matchStart >= clusters[ph].matches.size()) {
 				continue;
 			}
+			GenomePos prev_readEnd = 0;
+			GenomePos prev_readStart = read.length;
 			GenomePos readStart = clusters[ph].matches[matchStart].first.pos;
+			GenomePos readEnd=clusters[ph].matches[matchEnd].first.pos;
+			if (readStart == readEnd) { // there is a gap
+				if (lsi > ls and readStart > prev_readEnd) {
+					readStart = prev_readEnd;
+				} 
+			}
+			//
+			// Expand boundaries of read to match.
+			//
 			if (lsi == ls) {
 				if (readStart < smallOpts.window) {
 					readStart = 0;
@@ -886,15 +916,6 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 					readStart -= smallOpts.window;
 				}
 			}
-			GenomePos readEnd;
-			if (matchEnd > matchStart) {
-				readEnd = clusters[ph].matches[matchEnd - 1].first.pos;
-			}
-			else {
-				readEnd = clusters[ph].matches[matchStart].first.pos + opts.globalK;
-			}
-			//
-			// Expand boundaries of read to match.
 			if (lsi == le) {
 				if (readEnd + smallOpts.window > read.length) {
 					readEnd = read.length; 
@@ -903,16 +924,18 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 					readEnd += smallOpts.window;	
 				}
 			}			
+			if (readStart > readEnd) continue; // tandem repear -- get picked up by 3rd SDP;
+			//cerr << "readStart: " << readStart << " readEnd: " << readEnd << " ph: " << ph << endl;
 			//
 			// when readStart > readEnd, it means that the refine strategy does not work well due to a tandem repeat;
 			// Re-find readStart and readEnd based on maxdiag and mindiag
 			//
-			if (readStart > readEnd) {
-				if (genomeLocalIndexStart <= clusters[ph].maxDiagNum) readStart = 0;
-				else readStart = genomeLocalIndexStart - clusters[ph].maxDiagNum;
-				if (genomeLocalIndexEnd <= clusters[ph].minDiagNum) readEnd = 0;
-				else readEnd = genomeLocalIndexEnd - clusters[ph].minDiagNum;
-			}
+			// if (readStart > readEnd) {
+			// 	if (genomeLocalIndexStart <= clusters[ph].maxDiagNum) readStart = 0;
+			// 	else readStart = genomeLocalIndexStart - clusters[ph].maxDiagNum;
+			// 	if (genomeLocalIndexEnd <= clusters[ph].minDiagNum) readEnd = 0;
+			// 	else readEnd = genomeLocalIndexEnd - clusters[ph].minDiagNum;
+			// }
 
 			//
 			// Find the boundaries where in the query the matches should be added.
@@ -937,7 +960,8 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 				//
 				AppendValues<LocalPairs>(refinedclusters[ph].matches, smallMatches.begin(), smallMatches.end(), readSegmentStart, 
 										genomeLocalIndexStart,clusters[ph].maxDiagNum, clusters[ph].minDiagNum, clusters[ph].qStart, 
-										clusters[ph].qEnd, clusters[ph].tStart-chromOffset, clusters[ph].tEnd-chromOffset);
+										clusters[ph].qEnd, clusters[ph].tStart-chromOffset, clusters[ph].tEnd-chromOffset, 
+										prev_readStart, prev_readEnd);
 			}
 		}
 		if (refinedclusters[ph].matches.size() == 0) continue;
@@ -952,13 +976,44 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 	return 0;
 }
 
+int RefineSpace(bool consider_str, GenomePairs &EndPairs, Options & opts, Genome & genome, Read & read, char *strands[2], int &ChromIndex, GenomePos qe, 
+				GenomePos qs, GenomePos te, GenomePos ts, bool st, GenomePos lrts=0, GenomePos lrlength=0) {
+	//
+	// Decide the diagonal band for this space
+	//
+	long long int minDiagNum, maxDiagNum; 
+	long long int diag1, diag2;
+	diag1 = 0;
+	diag2 = (long long int) (te - (ts - lrts)) - (long long int) (qe - qs); // scale diag1 and diag2 to the local coordinates
+	minDiagNum = min(diag1, diag2) - opts.refineSpaceDiag; 
+	maxDiagNum = max(diag1, diag2) + opts.refineSpaceDiag; 
+
+	vector<GenomeTuple> EndReadTup, EndGenomeTup;
+	StoreMinimizers<GenomeTuple, Tuple>(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength, opts.globalK, opts.globalW, 
+											EndGenomeTup, false);
+	sort(EndGenomeTup.begin(), EndGenomeTup.end());
+	StoreMinimizers<GenomeTuple, Tuple>(strands[st] + qs, qe - qs, opts.globalK, opts.globalW, EndReadTup, false);
+	sort(EndReadTup.begin(), EndReadTup.end());
+	CompareLists<GenomeTuple, Tuple>(EndReadTup.begin(), EndReadTup.end(), EndGenomeTup.begin(), EndGenomeTup.end(), EndPairs, 
+										opts,  maxDiagNum, minDiagNum, false); // By passing maxDiagNum and minDiagNum, this function
+										// filters out anchors that are outside the diagonal band;
+
+	for (int rm = 0; rm < EndPairs.size(); rm++) {
+		EndPairs[rm].first.pos += qs;
+		EndPairs[rm].second.pos += ts-lrts;
+		assert(EndPairs[rm].first.pos < read.length);
+		if (consider_str == true and st == 1) EndPairs[rm].first.pos = read.length - EndPairs[rm].first.pos - opts.globalK;
+		
+	}	
+	return 0;
+}
 
 //
 // This function find anchors btwn two adjacent Clusters;
 //
 int 			
-RefineBtwnSpace(Cluster * cluster, Options & opts, Genome & genome, Read & read, char *strands[2], GenomePos qe, GenomePos qs, 
-							GenomePos te, GenomePos ts, bool st, int &cur, GenomePos lrts=0, GenomePos lrlength=0) {
+RefineBtwnSpace(Cluster *cluster, Options &opts, Genome &genome, Read &read, char *strands[2], GenomePos qe, GenomePos qs, 
+							GenomePos te, GenomePos ts, bool st, GenomePos lrts=0, GenomePos lrlength=0) {
 
 	int ChromIndex = cluster->chromIndex;
 	// 
@@ -970,32 +1025,11 @@ RefineBtwnSpace(Cluster * cluster, Options & opts, Genome & genome, Read & read,
 		qe = read.length - t;
 	}
 	//
-	// Decide the diagonal band for this space
-	//
-	long long int minDiagNum, maxDiagNum; 
-	long long int diag1, diag2;
-	diag1 = 0;
-	diag2 = (long long int) (te - (ts - lrts)) - (long long int) (qe - qs); // scale diag1 and diag2 to the local coordinates
-	minDiagNum = min(diag1, diag2) - 300; // used 50 before
-	maxDiagNum = max(diag1, diag2) + 300; 
-	//
 	// Find matches in read and reference 
 	//
-	vector<GenomeTuple> EndReadTup, EndGenomeTup;
 	GenomePairs EndPairs;
-	StoreMinimizers<GenomeTuple, Tuple>(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength, opts.globalK, opts.globalW, EndGenomeTup, false);
-	sort(EndGenomeTup.begin(), EndGenomeTup.end());
-	StoreMinimizers<GenomeTuple, Tuple>(strands[st] + qs, qe - qs, opts.globalK, opts.globalW, EndReadTup, false);
-	sort(EndReadTup.begin(), EndReadTup.end());
-	CompareLists<GenomeTuple, Tuple>(EndReadTup.begin(), EndReadTup.end(), EndGenomeTup.begin(), EndGenomeTup.end(), EndPairs, opts,  maxDiagNum, minDiagNum, false); // By passing maxDiagNum and minDiagNum, this function 																															// filters out anchors that are outside the diagonal band;
-
-	for (int rm = 0; rm < EndPairs.size(); rm++) {
-		EndPairs[rm].first.pos  += qs;
-		EndPairs[rm].second.pos += ts-lrts;
-		assert(EndPairs[rm].first.pos < read.length);
-		if (st == 1) EndPairs[rm].first.pos  = read.length - EndPairs[rm].first.pos - opts.globalK;
-		
-	}	
+	opts.refineSpaceDiag = 300;
+	RefineSpace(1, EndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, st, lrts, lrlength);
 
 	if (EndPairs.size() > 0) {
 		cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end());  // TODO(Jingwen): Time consuming???????
@@ -1143,13 +1177,48 @@ int LargestFinalSeperateChain(vector<vector<int>> &finalSeperateChain) {
 	return maxi;	
 }
 
+void 
+RefineByLinearAlignment(GenomePos &btc_curReadEnd, GenomePos &btc_curGenomeEnd, GenomePos &btc_nextReadStart, GenomePos &btc_nextGenomeStart, 
+						int & str, int & chromIndex, Alignment * alignment, Read & read, Genome & genome, char *strands[2], 
+						vector<int> & scoreMat, vector<Arrow> & pathMat, Options & tinyOpts, GenomePos & genomeThres,
+						AffineAlignBuffers &buff) {
+	//
+	// find small matches between fragments in gapChain
+	int m, rg, gg;
+	SetMatchAndGaps(btc_curReadEnd, btc_nextReadStart, btc_curGenomeEnd, btc_nextGenomeStart, m, rg, gg);
+
+	if (m > 0) {
+		Alignment betweenAnchorAlignment;
+		if (tinyOpts.refineLevel & REF_DP) {						
+			RefineSubstrings(strands[str], btc_curReadEnd, btc_nextReadStart, genome.seqs[chromIndex], 
+											 btc_curGenomeEnd, btc_nextGenomeStart, scoreMat, pathMat, betweenAnchorAlignment, tinyOpts, buff);
+			int b;
+			for (b = 1; b < betweenAnchorAlignment.blocks.size(); b++) {
+				assert(betweenAnchorAlignment.blocks[b-1].qPos + betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].qPos);
+				assert(betweenAnchorAlignment.blocks[b-1].tPos + betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].tPos);						
+			}
+			alignment->blocks.insert(alignment->blocks.end(), betweenAnchorAlignment.blocks.begin(), betweenAnchorAlignment.blocks.end());
+			//
+			// Debug
+			//
+			for (int bb = 1; bb < alignment->blocks.size(); bb++) {
+				assert(alignment->blocks[bb-1].qPos + alignment->blocks[bb-1].length <= alignment->blocks[bb].qPos);
+				assert(alignment->blocks[bb-1].tPos + alignment->blocks[bb-1].length <= alignment->blocks[bb].tPos);	
+			}
+			betweenAnchorAlignment.blocks.clear();
+		}
+	}	
+	genomeThres = 0;	
+}
+
+
 //
 // This function creates the alignment for a "segment"(one big chunk) on the chain;
 //
 void
-RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, FinalChain & finalchain, Alignment * alignment, Read & read, Genome & genome, char *strands[2], 
-														vector<int> & scoreMat, vector<Arrow> & pathMat, Options & tinyOpts, GenomePos & genomeThres,
-														AffineAlignBuffers &buff) {
+RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, FinalChain & finalchain, Alignment * alignment, 
+							Read & read, Genome & genome, char *strands[2], vector<int> & scoreMat, vector<Arrow> & pathMat, 
+							Options & tinyOpts, GenomePos & genomeThres, AffineAlignBuffers &buff, const vector<float> & LookUpTable) {
 
 	if (str == 0) alignment->blocks.push_back(Block(finalchain[cur].first.pos, finalchain[cur].second.pos, finalchain.length(cur)));
 	else alignment->blocks.push_back(Block(read.length - finalchain[cur].first.pos - finalchain.length(cur), finalchain[cur].second.pos, finalchain.length(cur)));
@@ -1176,30 +1245,99 @@ RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, 
 		curGenomeEnd = finalchain[cur].second.pos + finalchain.length(cur);
 		nextGenomeStart = finalchain[next].second.pos;
 	}
-	//assert(curGenomeEnd <= nextGenomeStart);
+	assert(curReadEnd <= nextReadStart);
+	
 	if (curGenomeEnd <= nextGenomeStart) {
-		//
-		// find small matches between fragments in gapChain
-		int m, rg, gg;
-		SetMatchAndGaps(curReadEnd, nextReadStart, curGenomeEnd, nextGenomeStart, m, rg, gg);
+		long read_dist = nextReadStart - curReadEnd;
+		long genome_dist = nextGenomeStart - curGenomeEnd;
+		if (tinyOpts.RefineBySDP == true and min(read_dist, genome_dist) >= 300) {
+			GenomePairs BtwnPairs;
+			vector<unsigned int> BtwnChain;
+			tinyOpts.refineSpaceDiag = 30;
+			RefineSpace(0, BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
+							curGenomeEnd, str);
 
-		if (m > 0) {
+			SparseDP_ForwardOnly(BtwnPairs, BtwnChain, tinyOpts, LookUpTable, 6);
+			RemovePairedIndels(BtwnPairs, BtwnChain);
+			//
+			// Use linear alignment to ligand the gap between local SDP chain;
+			//
+			GenomePos btc_curReadEnd, btc_nextReadStart, btc_curGenomeEnd, btc_nextGenomeStart;
+			btc_curReadEnd = curReadEnd;
+			btc_curGenomeEnd = curGenomeEnd;
 
-			Alignment betweenAnchorAlignment;
-			if (tinyOpts.refineLevel & REF_DP) {						
-				RefineSubstrings(strands[str], curReadEnd, nextReadStart, genome.seqs[chromIndex], 
-												 curGenomeEnd, nextGenomeStart, scoreMat, pathMat, betweenAnchorAlignment, tinyOpts, buff);
-				int b;
-				for (b = 1; b < betweenAnchorAlignment.blocks.size(); b++) {
-					assert(betweenAnchorAlignment.blocks[b-1].qPos + betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].qPos);
-					assert(betweenAnchorAlignment.blocks[b-1].tPos + betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].tPos);						
+			if (tinyOpts.dotPlot) {
+				ofstream pSclust("BtwnPairs.tab", std::ofstream::app);
+				for (int bp = BtwnPairs.size()-1; bp >= 0; bp--) {
+					if (str == 0) {
+						pSclust << BtwnPairs[bp].first.pos << "\t"
+							  << BtwnPairs[bp].second.pos << "\t"
+							  << BtwnPairs[bp].first.pos + tinyOpts.globalK << "\t"
+							  << BtwnPairs[bp].second.pos + tinyOpts.globalK << "\t"
+							  << str << endl;
+					}
+					else {
+						pSclust << read.length - BtwnPairs[bp].first.pos - tinyOpts.globalK << "\t"
+							  << BtwnPairs[bp].second.pos + tinyOpts.globalK << "\t"
+							  << read.length - BtwnPairs[bp].first.pos << "\t"
+							  << BtwnPairs[bp].second.pos << "\t"
+							  << str << endl;					
+					}					
 				}
+				pSclust.close();
+			}	
+			for (int btc = BtwnChain.size()-1; btc >= 0; btc--) {
 
-				alignment->blocks.insert(alignment->blocks.end(), betweenAnchorAlignment.blocks.begin(), betweenAnchorAlignment.blocks.end());
-				betweenAnchorAlignment.blocks.clear();
+				if (tinyOpts.dotPlot) {
+					ofstream Sclust("SparseDP_Forward.tab", std::ofstream::app);
+						if (str == 0) {
+							Sclust << BtwnPairs[BtwnChain[btc]].first.pos << "\t"
+								  << BtwnPairs[BtwnChain[btc]].second.pos << "\t"
+								  << BtwnPairs[BtwnChain[btc]].first.pos + tinyOpts.globalK << "\t"
+								  << BtwnPairs[BtwnChain[btc]].second.pos + tinyOpts.globalK << "\t"
+								  << str << endl;
+						}
+						else {
+							Sclust << read.length - BtwnPairs[BtwnChain[btc]].first.pos - tinyOpts.globalK << "\t"
+								  << BtwnPairs[BtwnChain[btc]].second.pos + tinyOpts.globalK << "\t"
+								  << read.length - BtwnPairs[BtwnChain[btc]].first.pos << "\t"
+								  << BtwnPairs[BtwnChain[btc]].second.pos << "\t"
+								  << str << endl;					
+						}
+					Sclust.close();
+				}			
+
+				btc_nextGenomeStart = BtwnPairs[BtwnChain[btc]].second.pos;
+				btc_nextReadStart = BtwnPairs[BtwnChain[btc]].first.pos;
+				RefineByLinearAlignment(btc_curReadEnd, btc_curGenomeEnd, btc_nextReadStart, btc_nextGenomeStart, str, chromIndex, 
+										alignment, read, genome, strands, scoreMat, pathMat, tinyOpts, genomeThres, buff);				
+
+				alignment->blocks.push_back(Block(BtwnPairs[BtwnChain[btc]].first.pos, BtwnPairs[BtwnChain[btc]].second.pos, 
+													tinyOpts.globalK));
+
+				// This is for debugging
+				if (alignment->blocks.size() > 1) {
+					int last=alignment->blocks.size();
+					assert(alignment->blocks[last-2].qPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].qPos);
+					assert(alignment->blocks[last-2].tPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].tPos);
+				}	
+				btc_curReadEnd = btc_nextReadStart + tinyOpts.globalK;
+				btc_curGenomeEnd = btc_nextGenomeStart + tinyOpts.globalK;			
 			}
-		}	
-		genomeThres = 0;		
+			//
+			// Add the linear alignment after the last anchor on BtwnChain;
+			//
+			btc_nextGenomeStart = nextGenomeStart;
+			btc_nextReadStart = nextReadStart;			
+			if (btc_nextGenomeStart > btc_curGenomeEnd and btc_nextReadStart > btc_curReadEnd) {
+				RefineByLinearAlignment(btc_curReadEnd, btc_curGenomeEnd, btc_nextReadStart, btc_nextGenomeStart, str, chromIndex, 
+										alignment, read, genome, strands, scoreMat, pathMat, tinyOpts, genomeThres, buff);					
+			}
+		}
+		else {
+			RefineByLinearAlignment(curReadEnd, curGenomeEnd, nextReadStart, nextGenomeStart, str, chromIndex, 
+										alignment, read, genome, strands, scoreMat, pathMat, tinyOpts, genomeThres, buff);				
+		}
 	}
 	else genomeThres = curGenomeEnd;
 }
@@ -1246,12 +1384,19 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	// Add matches between the read and the genome.
 	//
 	CompareLists<GenomeTuple, Tuple>(readmm, genomemm, allMatches, opts);
+
+	// // check duplicate in allMatches
+	// for (int am=0; am<allMatches.size(); am++) {
+	// 	if (allMatches[am].first.t == 5413 and allMatches[am].first.pos == 47435 and allMatches[am].second.t == 5413 and allMatches[am].second.pos == 36356) {
+	// 		cerr << "before sort am: " << am << endl;
+	// 	}
+	// }
 	// Guess that 500 is where the setup/takedown overhead of an array index is equal to sort by value.
 	DiagonalSort<GenomeTuple>(allMatches,500); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
 
 	timing.Tick("Sort minimizers");
 
-	// TODO(Jinwen): delete this after debug
+	//TODO(Jinwen): delete this after debug
 	if (opts.dotPlot) {
 		ofstream clust("all-matches.dots");
 		for (int m=0; m < allMatches.size(); m++) {
@@ -1262,22 +1407,28 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		clust.close();
 	}
 
+	// check duplicate in allMatches
+	// for (int am=0; am<allMatches.size(); am++) {
+	// 	if (allMatches[am].first.t == 5413 and allMatches[am].first.pos == 47435 and allMatches[am].second.t == 5413 and allMatches[am].second.pos == 36356) {
+	// 		cerr << "am: " << am << endl;
+	// 	}
+	// }
 
 	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, forMatches, revMatches);
-	int minDiagCluster = 0; // This parameter will be set inside function CleanOffDiagonal, according to anchors density
-	CleanOffDiagonal(forMatches, opts, minDiagCluster);
-	if (opts.dotPlot) {
-		ofstream clust("off-diag-all-matches.dots");
-		for (int m=0; m < allMatches.size(); m++) {
-			clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos << "\t" << allMatches[m].first.pos+ opts.globalK << "\t" 
-				<< allMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
-		}
-		clust.close();
-	}
+	CleanOffDiagonal(forMatches, opts);
+	// if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+	// 	ofstream clust("off-diag-all-matches.dots");
+	// 	for (int m=0; m < allMatches.size(); m++) {
+	// 		clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos << "\t" << allMatches[m].first.pos+ opts.globalK << "\t" 
+	// 			<< allMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
+	// 	}
+	// 	clust.close();
+	// }
 
 	//cerr << "opts.globalK " << opts.globalK << endl;
 	vector<Cluster> clusters;
 	vector<Cluster> roughClusters;
+	vector<Cluster> split_roughClusters;
 	int forwardStrand=0;
 	// maxDiag must be large enough for the following function "StoreDiagonalClusters". 
 	// Otherwise fragments on the same line (line with little curve) might end up in several clusters[i], instead of one clusters[i]
@@ -1285,8 +1436,12 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	// The strategy we are taking: 
 	// first let maxDiag be a small number but not too small(like 500), which also alleviate the cases where anchors are on a curvy line.
 	// Then break the clusters[i] into two if any two anchors are father than maxGap. 
-	StoreDiagonalClusters(forMatches, roughClusters, opts, 0, forMatches.size(), true, false, forwardStrand); // rough == true means only storing "start and end" in every clusters[i]
-
+	StoreDiagonalClusters(forMatches, roughClusters, opts, 0, forMatches.size(), forwardStrand); // rough == true means only storing "start and end" in every clusters[i]
+	for (int c = 0; c < roughClusters.size(); c++) {
+		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
+		SplitRoughClustersWithGaps(forMatches, roughClusters[c], split_roughClusters, opts, 0);
+	}
+	//cerr << "roughClusters.size(): " << roughClusters.size() << " split_roughClusters.size(): " << split_roughClusters.size()<< endl;
 	if (opts.dotPlot) {
 		ofstream clust("for-matches.dots");
 		for (int m=0; m < forMatches.size(); m++) {
@@ -1294,10 +1449,19 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					<< forMatches[m].second.pos + opts.globalK << "\t" << m << "\t0"<<endl;
 		}
 		clust.close();
-		ofstream wclust("roughClusters-matches.dots");
+		ofstream rclust("roughClusters.dots");
 		for (int m=0; m < roughClusters.size(); m++) {
 			int rci = genome.header.Find(roughClusters[m].tStart);
 			for (int c = roughClusters[m].start; c < roughClusters[m].end; ++c) {
+				rclust << forMatches[c].first.pos << "\t" << forMatches[c].second.pos << "\t" << opts.globalK + forMatches[c].first.pos << "\t"
+					<< forMatches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci]<< "\t0"<<endl;				
+			}
+		}
+		rclust.close();
+		ofstream wclust("split_roughClusters.dots");
+		for (int m=0; m < split_roughClusters.size(); m++) {
+			int rci = genome.header.Find(split_roughClusters[m].tStart);
+			for (int c = split_roughClusters[m].start; c < split_roughClusters[m].end; ++c) {
 				wclust << forMatches[c].first.pos << "\t" << forMatches[c].second.pos << "\t" << opts.globalK + forMatches[c].first.pos << "\t"
 					<< forMatches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci]<< "\t0"<<endl;				
 			}
@@ -1307,22 +1471,19 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	}
 
 	timing.Tick("Forward-diag-rough-clusters");
+
 	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize(), 500);
-
-	minDiagCluster = 0; // This parameter will be set inside function CleanOffDiagonal, according to anchors density
-	CleanOffDiagonal(revMatches, opts, minDiagCluster, 1);
-
+	CleanOffDiagonal(revMatches, opts, 1);
 	vector<Cluster> revroughClusters;
+	vector<Cluster> split_revroughClusters;
 	int reverseStrand=1;
-	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), true, false, reverseStrand);
-
-	vector<int> ci(revroughClusters.size());
-	for (int c = 0 ; c < revroughClusters.size(); c++ ) {
-		
-		for (int cii=revroughClusters[c].start; cii< revroughClusters[c].end; ++cii) {
-			ci.push_back(c);
-		}
+	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), reverseStrand);
+	for (int c = 0; c < revroughClusters.size(); c++) {
+		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
+		SplitRoughClustersWithGaps(revMatches, revroughClusters[c], split_revroughClusters, opts, 1);
 	}
+	//cerr << "revroughClusters.size(): " << revroughClusters.size() << " split_revroughClusters.dots: " << split_revroughClusters.size()<< endl;
+
 
 	if (opts.dotPlot) {
 		ofstream rclust("rev-matches.dots");
@@ -1331,58 +1492,41 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					 << revMatches[m].second.pos << "\t0"<<endl;
 		}
 		rclust.close();
-
-		ofstream revclust("revroughClusters-matches.dots");
+		ofstream revsclust("revroughClusters.dots");
 		for (int m=0; m < revroughClusters.size(); m++) {
 			int rci = genome.header.Find(revroughClusters[m].tStart);
 			for (int c = revroughClusters[m].start; c < revroughClusters[m].end; ++c) {
-				revclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[c].first.pos << "\t"
+				revsclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[c].first.pos << "\t"
 					 << revMatches[c].second.pos<< "\t" << m << "\t" << genome.header.names[rci]<<"\t0"<<endl;				
 			}
 		}
-		revclust.close();
+		revsclust.close();
+		ofstream srevclust("split_revroughClusters.dots");
+		for (int m=0; m < split_revroughClusters.size(); m++) {
+			int rci = genome.header.Find(split_revroughClusters[m].tStart);
+			for (int c = split_revroughClusters[m].start; c < split_revroughClusters[m].end; ++c) {
+				srevclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[c].first.pos << "\t"
+					 << revMatches[c].second.pos<< "\t" << m << "\t" << genome.header.names[rci]<<"\t0"<<endl;				
+			}
+		}
+		srevclust.close();
 	}
 
-	interval_map<GenomePos, int> xIntv;
-	interval_map<GenomePos, int> yIntv;
+	//interval_map<GenomePos, int> xIntv;
+	//interval_map<GenomePos, int> yIntv;
 	timing.Tick("Reverse-diag-rough-clusters");
 
-	for (int c = 0; c < roughClusters.size(); c++) {
-		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
-		//		StoreDiagonalClusters(forMatches, clusters, opts, roughclusters[c].start, roughclusters[c].end, false, false, forwardStrand);
-		int rci = genome.header.Find(roughClusters[c].tStart);
-		//		cout << "roughClusters: " << c << "\t" << roughClusters[c].start << "\t" << roughClusters[c].end << endl;
-		StoreFineClusters(forMatches, clusters, opts, roughClusters[c].start, roughClusters[c].end, genome, read.length, xIntv, yIntv, forwardStrand, c);
+	for (int c = 0; c < split_roughClusters.size(); c++) {
+		int rci = genome.header.Find(split_roughClusters[c].tStart);
+		StoreFineClusters(rci, forMatches, clusters, opts, split_roughClusters[c].start, split_roughClusters[c].end, genome, read.length, forwardStrand, c);
 	}
 
-	for (int cl=0; cl < clusters.size(); cl++) {
-		GenomePairs newm;
-		newm=clusters[cl].matches;
-	
-		CartesianSort(newm, 0, newm.size());
-		for (int ni=0; ni < newm.size(); ni++) {
-			assert(newm[ni].first.pos == clusters[cl].matches[ni].first.pos);
-			assert(newm[ni].second.pos == clusters[cl].matches[ni].second.pos);
-		}
+	for (int c = 0; c < split_revroughClusters.size(); c++) {
+		int rci = genome.header.Find(split_revroughClusters[c].tStart);
+		StoreFineClusters(rci, revMatches, clusters, opts, split_revroughClusters[c].start, split_revroughClusters[c].end, genome, read.length, reverseStrand, c);
 	}
 
-	for (int c = 0; c < revroughClusters.size(); c++) {
-		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
-		//StoreDiagonalClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, false, false, reverseStrand);
-		int rci = genome.header.Find(revroughClusters[c].tStart);
-		//		cout << "revroughClusters: " << c << "\t" << revroughClusters[c].end - revroughClusters[c].start << "\tchr: " << genome.header.names[rci] << " " << revroughClusters[c].tStart << "\t" << revroughClusters[c].tEnd << "\t" << revroughClusters[c].qStart << "\t" << revroughClusters[c].qEnd << endl;
-		StoreFineClusters(revMatches, clusters, opts, revroughClusters[c].start, revroughClusters[c].end, genome, read.length, xIntv, yIntv, reverseStrand, c);
-	}
-	/*
-	for (int c=0; c < clusters.size(); c++) {
-		cout << "cluster\t" << c << "\t" << clusters[c].qStart << "\t" << clusters[c].qEnd << "\t" << clusters[c].tStart << "\t" << clusters[c].tEnd << "\t" << clusters[c].matches.size() << endl;
-	}
-	*/
-	/*	
-	for (int c=0; c < clusters.size(); c++) { 
-		CartesianSort(clusters[c].matches, 0, clusters[c].matches.size());
-	}
-	*/
+	//cerr << "clusters.size(): " <<  clusters.size() << endl;
 	timing.Tick("Fine-clusters");
 	//
 	// Split clusters on x and y coordinates, vector<Cluster> splitclusters, add a member for each splitcluster to specify the original cluster it comes from
@@ -1392,37 +1536,65 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		return 0; // This read cannot be mapped to the genome; 
 	}
 
+	// if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
+	// 	ofstream pcclust("clusters-coarse-pre-remove.tab");
+	// 	for (int m = 0; m < clusters.size(); m++) {
+	// 		if (clusters[m].strand == 0) {
+	// 			pcclust << clusters[m].qStart << "\t"
+	// 						<< clusters[m].tStart << "\t"
+	// 						<< clusters[m].qEnd   << "\t"
+	// 						<< clusters[m].tEnd   << "\t"
+	// 						<< m << "\t"
+	// 					  	<< genome.header.names[clusters[m].chromIndex]<< "\t"
+	// 						<< clusters[m].strand << "\t"
+	// 						<< clusters[m].outerCluster << "\t"
+	// 						<< clusters[m].clusterIndex << "\t"
+	// 						<< clusters[m].matches.size() << endl;
+	// 		}
+	// 		else {
+	// 			pcclust << clusters[m].qStart << "\t"
+	// 						<< clusters[m].tEnd   << "\t"
+	// 						<< clusters[m].qEnd   << "\t"
+	// 						<< clusters[m].tStart << "\t"
+	// 						<< m << "\t"
+	// 					 	<< genome.header.names[clusters[m].chromIndex]<< "\t"
+	// 						<< clusters[m].strand << "\t"
+	// 						<< clusters[m].outerCluster << "\t"
+	// 						<< clusters[m].clusterIndex << "\t"
+	// 						<< clusters[m].matches.size() << endl;
+	// 		}
+	// 	}
+	// 	pcclust.close();
+	// }
+
 	if (opts.dotPlot) {
-		ofstream clust("clusters-coarse-pre-remove.tab");
+		ofstream cpclust("clusters-coarse-pre-remove.tab");
 		for (int m = 0; m < clusters.size(); m++) {
-			if (clusters[m].strand == 0) {
-				clust << clusters[m].qStart << "\t"
-							<< clusters[m].tStart << "\t"
-							<< clusters[m].qEnd   << "\t"
-							<< clusters[m].tEnd   << "\t"
-							<< m << "\t"
-							<< clusters[m].strand << "\t"
-							<< clusters[m].outerCluster << "\t"
-							<< clusters[m].clusterIndex << "\t"
-							<< clusters[m].matches.size() << endl;
-			}
-			else {
-				clust << clusters[m].qStart << "\t"
-							<< clusters[m].tEnd   << "\t"
-							<< clusters[m].qEnd   << "\t"
-							<< clusters[m].tStart << "\t"
-							<< m << "\t"
-							<< clusters[m].strand << "\t"
-							<< clusters[m].outerCluster << "\t"
-							<< clusters[m].clusterIndex << "\t"
-							<< clusters[m].matches.size() << endl;
+			for (int n = 0; n < clusters[m].matches.size(); n++) {
+				if (clusters[m].strand == 0) {
+					cpclust << clusters[m].matches[n].first.pos << "\t"
+						  << clusters[m].matches[n].second.pos << "\t"
+						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
+						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
+						  << m << "\t"
+						  << genome.header.names[clusters[m].chromIndex]<< "\t"
+						  << clusters[m].strand << endl;
+				}
+				else {
+					cpclust << clusters[m].matches[n].first.pos << "\t"
+						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
+						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
+						  << clusters[m].matches[n].second.pos << "\t"
+						  << m << "\t"
+						  << genome.header.names[clusters[m].chromIndex]<< "\t"
+						  << clusters[m].strand << endl;
+				}				
 			}
 		}
-		clust.close();
+		cpclust.close();
 	}
-
 	
-	ClusterOrder fineClusterOrder(&clusters, 1);
+	ClusterOrder fineClusterOrder(&clusters, 1);  // has some bug (delete clusters which should be kept)
 	RemoveOverlappingClusters(clusters, fineClusterOrder.index, opts);
 	if (opts.dotPlot) {
 		ofstream clust("clusters-post-remove.tab");
@@ -1454,12 +1626,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	}
 	clusters.resize(vm);
 	if (clusters.size() == 0) return 0; // This read cannot be mapped to the genome; 
-
-	vector<Cluster> splitclusters;
-	SplitClusters(clusters, splitclusters);
-	DecideSplitClustersValue(clusters, splitclusters, opts);
-
-	timing.Tick("Split");
 
 	if (opts.dotPlot) {
 		ofstream clust("clusters.tab");
@@ -1515,6 +1681,12 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		}
 		clust.close();
 	}
+
+	vector<Cluster> splitclusters;
+	SplitClusters(clusters, splitclusters);
+	DecideSplitClustersValue(clusters, splitclusters, opts);
+
+	timing.Tick("Split");
 
 	if (opts.dotPlot) {
 		ofstream clust("splitclusters-coarse.tab");
@@ -1582,41 +1754,25 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	//
 
 	////// TODO(Jingwen): customize a rate fro SparseDP
+	//cerr << "clusters.size(): " << clusters.size() << endl;
+	//cerr << "splitclusters.size(): " << splitclusters.size() << endl;
 	vector<Primary_chain> Primary_chains;
-	float rate = 4;
-	if (splitclusters.size() > 100) { // mapping to repetitive region
-		rate = 2;  // 2
+	float rate = opts.anchor_rate;
+	if (splitclusters.size()/clusters.size() > 20) { // mapping to repetitive region
+		rate = rate / 2.0;
 	}
 	//cerr << "rate: " << rate << endl;
 
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
-	for (int p = 0; p < Primary_chains.size(); p++) {
-		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
-			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
-				int ph = Primary_chains[p].chains[h].ch[c];
-				splitclusters[ph].used = 1;
-			}
-		}
-	}
-	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
-
-	if (opts.dotPlot) {
-		ofstream Nclust("chain_NumOfanchors");
-		for (int p = 0; p < Primary_chains.size(); p++) {
-			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
-				Nclust << Primary_chains[p].chains[h].qStart << "\t" 
-					  << Primary_chains[p].chains[h].tStart << "\t"
-					  << Primary_chains[p].chains[h].qEnd  << "\t"
-					  << Primary_chains[p].chains[h].tEnd  << "\t"
-					  << Primary_chains[p].chains[h].value << "\t"
-					  << p << "\t"
-					  << h << "\t"
-					  << genome.header.names[genome.header.Find(Primary_chains[p].chains[h].tStart)] << "\t"
-					  << Primary_chains[p].chains[h].NumOfAnchors << endl;
-			}
-		}
-		Nclust.close();
-	}	
+	// for (int p = 0; p < Primary_chains.size(); p++) {
+	// 	for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
+	// 		for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
+	// 			int ph = Primary_chains[p].chains[h].ch[c];
+	// 			splitclusters[ph].used = 1;
+	// 		}
+	// 	}
+	// }
+	// SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
 
 	if (opts.dotPlot) {
 		ofstream clust("Chains.tab");
@@ -1656,7 +1812,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		clust.close();
 	}	
 
-	switchindex(splitclusters, Primary_chains, clusters);
+	switchindex(splitclusters, Primary_chains, clusters, genome);
 	timing.Tick("Sparse DP - clusters");
 	//
 	// Remove Clusters in "clusters" that are not on the chains;
@@ -1790,7 +1946,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	//
 	bool sparse = 0;
 	for (int p = 0; p < clusters.size(); p++) {
-		if (((float)(clusters[p].matches.size())/(clusters[p].qEnd - clusters[p].qStart)) < 0.005) sparse = 1;
+		//if (((float)(clusters[p].matches.size())/(clusters[p].qEnd - clusters[p].qStart)) < 0.001) sparse = 1;
+		if (((float)(clusters[p].Val)/(clusters[p].qEnd - clusters[p].qStart)) < 0.1) sparse = 1;
 		else sparse = 0;
 	}
 	//
@@ -1947,7 +2104,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					if (SpaceLength < 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
 						// btwnClusters have GenomePos, st, matches, coarse
 						// This function also set the "coarse" flag for RefinedClusters[cur]
-						RefineBtwnSpace(RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te, ts, st, cur);
+						RefineBtwnSpace(RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te, ts, st);
 					}
 				}
 				c++;
@@ -1971,7 +2128,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 			//cerr << "right  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 			if (qe > qs and te > ts) {
 				SpaceLength = max(qe - qs, te - ts); 
-				if (SpaceLength < 10000 and te+500 < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (1000, 6000)
+				if (SpaceLength < 50000 and te+500 < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (1000, 6000)
 					GenomePos lrts=0, lrlength=0;
 					if (st==0) {
 						lrts=0;
@@ -1982,8 +2139,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 						lrlength=lrts;						
 					}
 					//cerr << "right: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
-					RefineBtwnSpace(RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, rh, lrts, lrlength);
-				}				
+					RefineBtwnSpace(RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
+				}
+				// else {
+				// 	RefineBtwnSpace(RefinedClusters[rh], smallOpts, genome, read, strands, qe, qe-1000, te, te-1000, st);
+				// }				
 			}
 			//
 			// Find matches at the left end
@@ -2004,7 +2164,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 			//cerr << "left  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 			if (qe > qs and te > ts) {
 				SpaceLength = max(qe - qs, te - ts);
-				if (SpaceLength < 10000 and te+500 < genome.lengths[RefinedClusters[lh]->chromIndex]) { // used (1000, 6000)
+				if (SpaceLength < 50000 and te+500 < genome.lengths[RefinedClusters[lh]->chromIndex]) { // used (1000, 6000)
 					GenomePos lrts=0, lrlength=0;
 					if (st==0) { 
 						if (ts>500) lrts=500;
@@ -2015,8 +2175,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 						lrlength=500;						
 					}
 					//cerr << "left: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
-					RefineBtwnSpace(RefinedClusters[lh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lh, lrts, lrlength);
-				}				
+					RefineBtwnSpace(RefinedClusters[lh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
+				}	
+				// else {
+				// 	RefineBtwnSpace(RefinedClusters[lh], smallOpts, genome, read, strands, qe, qe-1000, te, te-1000, st);						
+				// }			
 			}
 			//
 			// Do linear extension for each anchors and avoid overlapping locations;
@@ -2144,8 +2307,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					int str = finalchain.strand(start);
 					int cln = finalchain.ClusterNum(start);
 					int chromIndex = ExtendClusters[cln].chromIndex;	
-					Alignment *alignment = new Alignment(strands[str], read.seq, read.length, read.name, str, read.qual, genome.seqs[chromIndex],  
-																							 genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex, 0); 
+					Alignment *alignment = new Alignment(Primary_chains[p].chains[h].value, strands[str], read.seq, read.length, read.name, str, read.qual, genome.seqs[chromIndex],  
+																		 genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex, 0); 
 					alignment->NumOfAnchors = Primary_chains[p].chains[h].NumOfAnchors;
 					alignments.back().SegAlignment.push_back(alignment);
 					vector<int> scoreMat;
@@ -2166,14 +2329,17 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 							int cur = fl;
 							int next = fl - 1;
 							if (!PassgenomeThres(cur, genomeThres, finalchain)) {
+								//
+								// Check the distance between two anchors. If the distance is too large, refine anchors and apply 3rd SDP;
+								// Otherwise apply linear alignment. 
 								RefinedAlignmentbtwnAnchors(cur, next, str, chromIndex, finalchain, alignment, read, genome,
-																						strands, scoreMat, pathMat, tinyOpts, genomeThres, buff);
+															strands, scoreMat, pathMat, tinyOpts, genomeThres, buff, LookUpTable);
 							}
 							fl--;
 						}
 						if (!PassgenomeThres(start, genomeThres, finalchain)) {
 							alignment->blocks.push_back(Block(finalchain[start].first.pos, finalchain[start].second.pos, 
-																	finalchain.length(start)));
+																finalchain.length(start)));
 						}
 					}
 					else {
@@ -2183,7 +2349,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 							int next = fl + 1;
 							if (!PassgenomeThres(cur, genomeThres, finalchain)) {
 								RefinedAlignmentbtwnAnchors(cur, next, str, chromIndex, finalchain, alignment, read, genome,
-																						strands, scoreMat, pathMat, tinyOpts, genomeThres, buff);
+															strands, scoreMat, pathMat, tinyOpts, genomeThres, buff, LookUpTable);
 							}
 							fl++;
 						}	
@@ -2210,7 +2376,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					alignment->CalculateStatistics(smallOpts,svsigstrm, LookUpTable);
 				}
 			}
-			alignments.back().SetFromSegAlignment();
+			alignments.back().SetFromSegAlignment(smallOpts);
 		}
 		alignmentsOrder.Update(&alignments);
 	}	

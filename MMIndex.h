@@ -380,8 +380,6 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 			Remove[Sortindex[s]] = 1;
 		}
 	}
-
-
 	// TODO(Jingwen) Print out all the minimizer and delete this later
 	if (opts.dotPlot) {
 		stringstream outNameStrm;
@@ -403,11 +401,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	cerr << "Removing too frequent minimizers" << endl;
 	RemoveFrequent (minimizers, Remove); 
 	cerr << "There are " << minimizers.size() << " minimizers left" << endl;
-
-
-
 	//RemoveFrequent(minimizers, opts.globalMaxFreq);
-
 }
 
 

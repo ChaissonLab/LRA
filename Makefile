@@ -57,14 +57,8 @@ tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 tgc: TestGlobalChain.cpp GlobalChain.h Fragment.h BasicEndpoint.h PrioritySearchTree.h
 	$(CXX) -g TestGlobalChain.cpp -o tgc
 
-# edlib_: edlib.cpp edlib.h
-# 	$(CXX) -g edlib.cpp -o edlib_ 
-
-edlib/build/lib/libedlib.a:
-	cd edlib/build && cmake -D CMAKE_BUILD_TYPE=Release .. && make
-
 lra: lra.o
-	$(CXX) $(STATIC) $(CCOPTS) $^ -L $(PWD)/htslib/lib  -lhts -lz -lpthread -o $@ -Wl,-rpath,$(PWD)/htslib/lib  -L $(PWD)/edlib/build/lib/ -ledlib
+	$(CXX) $(STATIC) $(CCOPTS) $^ -L $(PWD)/htslib/lib  -lhts -lz -lpthread -o $@ -Wl,-rpath,$(PWD)/htslib/lib  
 
 alchemy2: Alchemy2.o
 	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib  -lhts -lz -lpthread -o $@  -Wl,-rpath,$(PWD)/htslib/lib
@@ -72,8 +66,8 @@ alchemy2: Alchemy2.o
 qti: QueryTime.o
 	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
-lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a  edlib/build/lib/libedlib.a 
-	$(CXX) $(CCOPTS) -c  -I htslib/include  -I edlib/edlib/include lra.cpp 
+lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a  
+	$(CXX) $(CCOPTS) -c  -I htslib/include  lra.cpp 
 #  $(CXX) $(CCOPTS) -c  -I htslib/include  lra.cpp 
 
 Alchemy2.o: Alchemy2.cpp Genome.h htslib/lib/libhts.a
@@ -84,7 +78,6 @@ QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
 
 writeblock: WriteBlock.cpp
 	$(CXX) $(CCOPTS) WriteBlock.cpp -o writeblock
-
 
 IndexInformativeKmers.o: IndexInformativeKmers.cpp 
 	$(CXX) $(CCOPTS) $^ -c -I htslib -I bwa

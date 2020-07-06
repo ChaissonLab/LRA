@@ -53,24 +53,24 @@ void HelpMap() {
 	cout << "Options:" << endl
 			 << "   -CCS (flag) Align CCS reads. " << endl
 			 << "   -CLR (flag) Align CLR reads. " << endl
-			 << "   -NANO (flag) Align Nanopore reads. " << endl
+			 << "   -ONT (flag) Align Nanopore reads. " << endl
 			 << "   -CONTIG (flag) Align large contigs." << endl
 			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' PAF, 'pc' PAF with cigar, 'a' pairwise alignment." << endl
 			 << "   -H          Use hard-clipping for SAM output format" << endl
-     		 << "   -F  F(int)  Skip reads with any flags in F set (bam input only)." << endl
-			 << "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
-			 << "   -m  m(int)  Do not align clusters with fewer than m refined"<< endl
-			 << "               matches (40). Typically m > 3*M" << endl
+     		 << "   -Flag  F(int)  Skip reads with any flags in F set (bam input only)." << endl
+     		 << "   -t  n(int)   Use n threads (1)" << endl
+			 //<< "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
+			//<< "   -m  m(int)  Do not align clusters with fewer than m refined"<< endl
+			// << "               matches (40). Typically m > 3*M" << endl
 			 << "   -a  (flag)  Query all positions in a read, not just minimizers. " << endl
-			 << "               This is 10-20% slower, with an increase in specificity. " << endl
-			 << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl
+			 //<< "               This is 10-20% slower, with an increase in specificity. " << endl
+			 // << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl
 			 << "   -SV  (int) (path to svsig file)  Print sv signatures for each alignment with length above the given threshold (DEFAULT:25). And the path of output svsig file" << endl
 			 //<< "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl
 			 //<< "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
 			// << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
 			// << "	-T 	(flag)  Use log LookUpTable when gap length is larger than 501." << endl
-			 << "   -at  (float) a float in (0, 1), Threshold to decide secondary alignments based on chaining value." << endl
-		     << "   -t  n(int)   Use n threads (1)" << endl
+			 << "   -at  (float) a float in (0, 1), Threshold to decide secondary alignments based on chaining value (DEFAULT:0.7)." << endl
 			 << "   --start  (int)   Start aligning at this read." << endl
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
 			 << "   -d 	(flag)  Enable dotPlot" << endl
@@ -80,7 +80,7 @@ void HelpMap() {
 	cout << "Examples: " << endl
 			 << "Aligning CCS reads:  lra align -CCS -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
 			 << "Aligning CLR reads:  lra align -CLR -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
-			 << "Aligning Nanopore reads:  lra align -NANO -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl;
+			 << "Aligning Nanopore reads:  lra align -ONT -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl;
 
 }
 
@@ -192,11 +192,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.globalK=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}	
-		else if (ArgIs(argv[argi], "-f")) {
+		else if (ArgIs(argv[argi], "-F")) {
 			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}	
-		else if (ArgIs(argv[argi], "-n")) {
+		else if (ArgIs(argv[argi], "-N")) {
 			opts.NumOfminimizersPerWindow=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}			
@@ -208,7 +208,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.minClusterSize=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}	
-		else if (ArgIs(argv[argi], "-F")) {
+		else if (ArgIs(argv[argi], "-Flag")) {
 			opts.flagRemove=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}	
@@ -246,12 +246,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.NumAln=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}		
-		else if (ArgIs(argv[argi], "-R")) {
-			opts.mergeClusters=true;
-		}
-		else if (ArgIs(argv[argi], "-N")) {
-			opts.NaiveDP = true;
-		}
 		else if (ArgIs(argv[argi], "-S")) {
 			opts.SparseDP = true;
 		}
@@ -265,10 +259,13 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.readType=Options::ccs;
 			opts.HighlyAccurate = true;
-			opts.maxDiag=500;
-			opts.maxGap=1500;
-			opts.globalMaxFreq = 30;
-			opts.NumOfminimizersPerWindow = 1;	
+			opts.rate_FirstSDPValue=0;
+			opts.rate_value=1;
+			opts.anchor_rate=4.0;
+			// opts.maxDiag=500;
+			// opts.maxGap=1500;
+			// opts.globalMaxFreq = 30;
+			// opts.NumOfminimizersPerWindow = 1;	
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
 			opts.maxGapBtwnAnchors=1500;
@@ -276,30 +273,48 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.readType=Options::contig;
 			opts.HighlyAccurate = true;
-			opts.maxDiag=500;
-			opts.maxGap=1500;
-			opts.globalMaxFreq = 30;
-			opts.NumOfminimizersPerWindow = 1;	
+			opts.rate_FirstSDPValue=0;
+			opts.rate_value=1;
+			opts.anchor_rate=2.0;
+			opts.cleanMaxDiag=400;
+			opts.maxGap=500000;
+			opts.NumAln=2;
+   			opts.PrintNumAln = 1;
+			// opts.maxDiag=500;
+			// opts.maxGap=1500;
+			// opts.globalMaxFreq = 30;
+			// opts.NumOfminimizersPerWindow = 1;	
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
 			opts.maxGapBtwnAnchors=1500;
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
+			opts.rate_FirstSDPValue=0;
+			opts.rate_value=1;		
+			// opts.rate_FirstSDPValue=0;
+			// opts.rate_value=1;	
 			opts.HighlyAccurate = false;
-			opts.maxDiag=800;
-			opts.maxGap=2000;
-			opts.globalMaxFreq = 50;
-			opts.NumOfminimizersPerWindow = 1;
+			opts.anchor_rate=4.0;
+			// opts.maxDiag=800;
+			// opts.maxGap=2000;
+			// opts.globalMaxFreq = 50;
+			// opts.NumOfminimizersPerWindow = 1;
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50; 
 			opts.maxGapBtwnAnchors=1800;
 		}		
-		else if (ArgIs(argv[argi], "-NANO")) {
+		else if (ArgIs(argv[argi], "-ONT")) {
+			// opts.rate_FirstSDPValue=0.5;
+			// opts.rate_value=0.5;		
+			opts.rate_FirstSDPValue=0;
+			opts.rate_value=1;	
 			opts.HighlyAccurate = false;
-			opts.maxDiag=800;
-			opts.maxGap=2000;
-			opts.globalMaxFreq = 50;
-			opts.NumOfminimizersPerWindow = 1;
+			opts.HighlyAccurate = false;
+			opts.anchor_rate=4.0;
+			// opts.maxDiag=800;
+			// opts.maxGap=2000;
+			// opts.globalMaxFreq = 50;
+			// opts.NumOfminimizersPerWindow = 1;
 			opts.maxGapBtwnAnchors=1800;
 		}
 		else if (ArgIs(argv[argi], "-at")) {
@@ -482,10 +497,10 @@ void HelpStoreIndex() {
 			 << "  Global index options " << endl
 			 << "	-CCS (flag) Index for aligning CCS reads" << endl
 			 << "	-CLR (flag) Index for aligning CLR reads" << endl
-			 << "	-NANO (flag) Index for aligning Nanopore reads" << endl
+			 << "	-ONT (flag) Index for aligning Nanopore reads" << endl
 			 << "   -CONTIG (flag) Index for aligning large contigs" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
-			 << "   -F (int) Maximum minimizer frequency (200)." << endl
+			 << "   -F (int) Maximum minimizer frequency (DEFAULT: 80)." << endl
 			 << "   -K (int) Word size" << endl
 			 << "  Local index options: "<< endl
 			 << "   -w (int) Local minimizer window size (10)." << endl
@@ -499,17 +514,17 @@ void HelpStoreGlobal() {
 	cout << "Options: " << endl
 			 << "   -CCS (flag) Index for aligning CCS reads" << endl
 			 << "   -CLR (flag) Index for aligning CLR reads" << endl
-			 << "   -NANO (flag) Index for aligning Nanopore reads" << endl
+			 << "   -ONT (flag) Index for aligning Nanopore reads" << endl
 			 << "   -CONTIG (flag) Index for aligning large contigs" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
-			 << "   -f (int) Maximum minimizer frequency. (default: 60 for CLR and NANO reads; 50 for CCS reads)" << endl
-			 << "   -n (int) Maximum minimizers allowed in per 100bp window. (default: 5 for CLR and NANO reads; 4 for CCS reads)" << endl
+			 << "   -F (int) Maximum minimizer frequency. (default: 60 for CLR and NANO reads; 50 for CCS reads)" << endl
 			 << "   -K (int) Word size" << endl
 			 << "   -h Print help." << endl;	
 	cout << "Examples: " << endl
 			 << "Index reference for aligning CCS reads: lra index -CCS ref.fa" << endl
 			 << "Index reference for aligning CLR reads: lra index -CLR ref.fa" << endl
-			 << "Index reference for aligning Nanopore reads: lra index -NANO ref.fa" << endl;
+			 << "Index reference for aligning Nanopore reads: lra index -ONT ref.fa" << endl
+			 << "Index reference for aligning contig: lra index -CONTIG ref.fa" << endl;
 }
 
 void HelpStoreLocal() {
@@ -540,7 +555,7 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 		else if (ArgIs(argv[argi], "-CLR")) {
 		
 		}
-		else if (ArgIs(argv[argi], "-NANO")) {
+		else if (ArgIs(argv[argi], "-ONT")) {
 		
 		}
 		else if (ArgIs(argv[argi], "-k")) {
@@ -551,12 +566,12 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 			opts.localW=atoi(argv[++argi]);
 			glIndex.w=opts.localW;
 		}
-		// else if (ArgIs(argv[argi], "-f")) {
-		// 	opts.localMaxFreq=atoi(argv[++argi]);
-		// 	glIndex.maxFreq=opts.localMaxFreq;
-		// }
+		else if (ArgIs(argv[argi], "-f")) {
+			opts.localMaxFreq=atoi(argv[++argi]);
+			glIndex.maxFreq=opts.localMaxFreq;
+		}
 		else if (ArgIs(argv[argi], "-K") or ArgIs(argv[argi], "-W") or ArgIs(argv[argi], "-F")
-				 or ArgIs(argv[argi], "-f") or ArgIs(argv[argi], "-n")) {
+				 or ArgIs(argv[argi], "-N")) {
 			argi+=2;
 			continue;
 		}
@@ -603,34 +618,38 @@ void RunStoreGlobal(int argc, const char* argv[],
 			opts.globalK = atoi(argv[argi]);
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
-			opts.globalK = 19;
-			opts.globalW = 25;
-			opts.globalMaxFreq = 50;
-			opts.NumOfminimizersPerWindow = 4;			
+			opts.globalK = 17;
+			opts.globalW = 10;
+			opts.globalMaxFreq = 60;
+			opts.globalWinsize = 18;
+			opts.NumOfminimizersPerWindow = 1;			
 		}	
 		else if (ArgIs(argv[argi], "-CONTIG")) {
-			opts.globalMaxFreq = 30;
-			opts.NumOfminimizersPerWindow = 1;	
 			opts.globalK = 17;
-			opts.globalWinsize = 18;	
+			opts.globalW = 10;
+			opts.globalMaxFreq = 80;
+			opts.globalWinsize = 18;
+			opts.NumOfminimizersPerWindow = 1;		
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
-			opts.globalMaxFreq = 50;
-			opts.NumOfminimizersPerWindow = 1;	
 			opts.globalK = 15;
-			opts.globalWinsize = 16;	
+			opts.globalW = 10;
+			opts.globalMaxFreq = 80;
+			opts.globalWinsize = 16;
+			opts.NumOfminimizersPerWindow = 1;		
 		}
-		else if (ArgIs(argv[argi], "-NANO")) {
-			opts.globalMaxFreq = 50;
-			opts.NumOfminimizersPerWindow = 1;	
+		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.globalK = 15;
-			opts.globalWinsize = 16;			
+			opts.globalW = 10;
+			opts.globalMaxFreq = 80;
+			opts.globalWinsize = 16;
+			opts.NumOfminimizersPerWindow = 1;			
 		}
-		else if (ArgIs(argv[argi], "-f")) {
+		else if (ArgIs(argv[argi], "-F")) {
 			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}	
-		else if (ArgIs(argv[argi], "-n")) {
+		else if (ArgIs(argv[argi], "-N")) {
 			opts.NumOfminimizersPerWindow=atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}			
@@ -640,6 +659,9 @@ void RunStoreGlobal(int argc, const char* argv[],
 		}					
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;
+		}
+		else if (ArgIs(argv[argi], "-RefineBySDP")) {
+			opts.RefineBySDP = true;
 		}
 		else if (ArgIs(argv[argi], "-i")) {
 			++argi;
@@ -657,14 +679,9 @@ void RunStoreGlobal(int argc, const char* argv[],
 			++argi;
 			opts.globalK=atoi(argv[argi]);
 		}		
-		//else if (ArgIs(argv[argi], "-k") or ArgIs(argv[argi], "-w") or ArgIs(argv[argi], "-f")) {
-		else if (ArgIs(argv[argi], "-k")) {
-			++argi;
-			opts.localK = atoi(argv[argi]);
-		}
-		else if (ArgIs(argv[argi], "-w")) {
-			++argi;
-			opts.localW = atoi(argv[argi]);
+		else if (ArgIs(argv[argi], "-k") or ArgIs(argv[argi], "-w") or ArgIs(argv[argi], "-f")) {
+			argi+=2;
+			continue;
 		}
 		else if (ArgIs(argv[argi], "--localIndexWindow")) {
 			opts.localIndexWindow=atoi(GetArgv(argv, argc, argi));

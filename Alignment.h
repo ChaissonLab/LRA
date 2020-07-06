@@ -52,9 +52,10 @@ class Alignment {
  	//int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
  	//vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains	
  	bool split;
- 	int value;
+ 	float value;
+ 	float totalValue;
+ 	float FirstSDPValue;
 	int NumOfAnchors; 	
-
 
 	void Clear() {
 		queryString=alignString=refString="";
@@ -89,15 +90,18 @@ class Alignment {
 		Supplymentary=0;
 		split=0;
 		value=0;
+		totalValue=0;
+		FirstSDPValue=0;
 		order=0;
 		// Will eventually contain quality value strings.
 		passthrough=NULL;
 		NumOfAnchors=0;
 	}
- 	Alignment(char *_read, char *_forward, 
+ 	Alignment(float _FirstSDPValue, char *_read, char *_forward, 
 					 int _rl, string _rn, int _str, 
 						char *_qual,
 						char *_genome, GenomePos _gl, string &_chrom, int _ci, long _cl) : Alignment() { 
+ 		FirstSDPValue = _FirstSDPValue;
 		read=_read; 
 		qual=_qual;
 		forward=_forward;
@@ -352,7 +356,7 @@ class Alignment {
 		int p=0;
 		nm=nmm=nins=ndel=0;
 		value=0;
-		opts.coefficient = 3;
+		opts.coefficient = 3;//3
 		while (i < query.size()) {
 			p=i;
 			while (i < query.size() and seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
@@ -515,7 +519,7 @@ class Alignment {
 				 << tEnd << "\t"
 				 << (int) mapqv << "\t" 
 				 << readName << "\t" << readLen << "\t" << qStart << "\t" << qEnd << "\t"
-				 << nm << "\t" << nmm << "\t" << nins << "\t" << ndel << "\t" << value  << "\t" << flag << "\t" << NumOfAnchors << "\t" << NumOfAnchors/(float)readLen << endl;
+				 << nm << "\t" << nmm << "\t" << nins << "\t" << ndel << "\t" << value << "\t" << totalValue << "\t" << flag << "\t" << NumOfAnchors << "\t" << NumOfAnchors/(float)readLen << endl;
 	}
 
 	void PrintPAF(ostream &out, bool printCigar=false) {
@@ -532,7 +536,7 @@ class Alignment {
 		out << "ND:i:" << ndel << "\t";
 		out << "TD:i:" << tdel << "\t";
 		out << "NI:i:" << nins << "\t";
-    out << "AS:i:" << value << "\t";
+    	out << "AS:i:" << value << "\t";
 		out << "TI:i:" << tins;
 		if (nanchors > 0) {
 			out << "\tNA:i:" << nanchors;
@@ -595,8 +599,11 @@ class Alignment {
 				string subStr;
 				subStr=string(read, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);								
 				samStrm << subStr;
-				if (qual != NULL) {
+				if (qual != NULL and strncmp(qual,"*",1) != 0) {
 					qualStr = string(qual, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);
+				}
+				else {
+					qualStr= "*";
 				}
 			}
 			else {
@@ -648,6 +655,8 @@ public:
 	int nins;
 	bool ISsecondary;
 	float value;
+	float totalValue;
+	float FirstSDPValue;
 	int NumOfAnchors; 	
 
 	SegAlignmentGroup () {
@@ -661,13 +670,16 @@ public:
 		nins = 0;
 		ISsecondary = 0;
 		value = 0;
+		totalValue = 0;
+		FirstSDPValue = 0;
 		NumOfAnchors = 0; 	
 	};
 	~SegAlignmentGroup () {};
 
-	void SetFromSegAlignment() {
+	void SetFromSegAlignment(Options &opts) {
 		ISsecondary = SegAlignment[0]->ISsecondary;
 		NumOfAnchors =  SegAlignment[0]->NumOfAnchors;
+		FirstSDPValue = SegAlignment[0]->FirstSDPValue;
 		for (int s = 0; s < SegAlignment.size(); s++) {
 			qStart = min(qStart, SegAlignment[s]->qStart);
 			qEnd   = max(qEnd, SegAlignment[s]->qEnd);
@@ -678,7 +690,12 @@ public:
 			ndel += SegAlignment[s]->ndel;
 			nins += SegAlignment[s]->nins;
 			value += SegAlignment[s]->value;
+			SegAlignment[s]->totalValue = totalValue;
 		}
+		totalValue = opts.rate_FirstSDPValue*FirstSDPValue + opts.rate_value*value;
+		for (int s = 0; s < SegAlignment.size(); s++) {
+			SegAlignment[s]->totalValue = totalValue;
+		}		
 	}
 
 	bool Overlaps(const SegAlignmentGroup &b, float frac) const {
@@ -769,7 +786,8 @@ public:
 	}
 
 	int operator()(const int i, const int j) {
-		return (*alignments)[i].value > (*alignments)[j].value;
+		//return (*alignments)[i].value > (*alignments)[j].value;
+		return (*alignments)[i].totalValue > (*alignments)[j].totalValue;
 	}
 
 	void Sort() {

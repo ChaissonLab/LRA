@@ -53,7 +53,6 @@ class DiagonalSortOp {
 template<typename Tup>
 void DiagonalSort(typename vector<pair<Tup, Tup> >::iterator begin, typename vector<pair<Tup, Tup> >::iterator end, int minRange=0) {
 	if (minRange == 0 or end-begin < minRange) {
-
 		sort(begin, end, DiagonalSortOp<Tup>());
 	}
 	else {

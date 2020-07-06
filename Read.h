@@ -53,7 +53,6 @@ class Read {
 				seq = new char[length];
 				memcpy(seq, rhs.seq, length);
 			}
-			
 			if (rhs.qual != NULL) {
 				int qualLen=strlen(rhs.qual);
 				qual = new char[qualLen+1];

@@ -33,8 +33,7 @@
 #include "TupleOps.h"
 #include "Options.h"
 #include "Clustering.h"
-#include "Read.h"
-#include "SparseDP.h"
+
 
 using std::cerr;
 using std::cout;
@@ -42,7 +41,6 @@ using std::endl;
 using std::iota;
 
 
-// This function is for fragments which are not resulting from MergeSplit step. 
 // Note: Each fragment has the same length
 void 
 ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, 
@@ -51,7 +49,7 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 //ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H3, std::vector<info> & V, StackOfSubProblems & SubR, StackOfSubProblems & SubC,
 //				  std::vector<Fragment_Info> & Value, Options & opts, const std::vector<float> & LookUpTable, int rate) {
 
-
+	bool step_sdp = 1;
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
 		long int ForwardDiag = static_cast<long int>(H1[i].se.second) - static_cast<long int>(H1[i].se.first);
@@ -97,7 +95,7 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 						//cerr << "Start to compute the maximization structure.\n";
 
 						SubR1[j].now = SubR1[j].Eb[*t];
-						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts); // TODO(Jingwen) anything change for SubC????
+						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts, step_sdp); // TODO(Jingwen) anything change for SubC????
 						SubR1[j].last = SubR1[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -108,7 +106,7 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 						
 
-						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts) + opts.globalK * rate; 
+						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step_sdp) + opts.globalK * rate; 
 						SubR1[j].Ep[i1] = i2;							
 
 						//cerr << "SubR1[" << j << "].Ev[" << i1 << "]: " << SubR1[j].Ev[i1] << ", SubR1[" << j << "].Ep[" << i1 << "]: " << SubR1[j].Ep[i1] << "\n"; 
@@ -174,7 +172,7 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 						//cerr << "SubC1[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
 						//cerr << "Start to compute the maximization structure.\n";
 						SubC1[j].now = SubC1[j].Eb[*t]; 
-						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts); 
+						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts, step_sdp); 
 						SubC1[j].last = SubC1[j].Eb[*t];
 
 						//cerr << "retrieve the value from the maximization structure\n";
@@ -188,7 +186,7 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 	//					SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK; 
 	//					SubC1[j].Ep[i1] = i2;							
 
-						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK * rate; 
+						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step_sdp) + opts.globalK * rate; 
 						SubC1[j].Ep[i1] = i2;							
 
 						//cerr << "SubC1[" << j << "].Ev[" << i1 << "]: " << SubC1[j].Ev[i1] << ", SubC1[" << j << "].Ep[" << i1 << "]: " << SubC1[j].Ep[i1] << "\n"; 
@@ -231,40 +229,94 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 }
 
 
+// void 
+// TraceBack_ForwardOnly (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, const vector<Fragment_Info> & Value, 
+// 							unsigned int i, vector<unsigned int> & Chain) {
+
+// 	long int prev_sub = Value[i].prev_sub;
+// 	long int prev_ind = Value[i].prev_ind;
+// 	Chain.push_back(i);
+
+// 	if (prev_sub != -1 and prev_ind != -1) {
+		
+// 		// if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
+// 		// 	unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
+// 		// 	TraceBack_ForwardOnly(SubR1, SubC1, Value, SubR1[prev_sub].Dp[ind], FinalChain);
+// 		// }
+// 		if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
+// 			assert(prev_sub <  SubR1.StackSub.size());
+// 			assert(prev_ind < SubR1[prev_sub].Ep.size());
+// 			unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
+// 			assert(ind < SubR1[prev_sub].Dp.size());
+// 			i = SubR1[prev_sub].Dp[ind];
+// 			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], Chain);
+// 		}
+// 		else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
+// 			assert(prev_sub <  SubC1.StackSub.size());
+// 			assert(prev_ind < SubC1[prev_sub].Ep.size());
+// 			unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
+// 			assert(ind < SubC1[prev_sub].Dp.size());
+// 			i = SubC1[prev_sub].Dp[ind];
+// 			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], Chain);
+// 		}	
+// 		// else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
+// 		// 	unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
+// 		// 	TraceBack_ForwardOnly(SubR1, SubC1, Value, SubC1[prev_sub].Dp[ind], FinalChain);
+// 		// }	
+// 		prev_sub = Value[i].prev_sub;
+// 		prev_ind = Value[i].prev_ind;		
+// 		Chain.push_back(i);
+// 	}
+// }
+
+
+//
+// This function is for tracing back a chain;
+//
 void 
-TraceBack_ForwardOnly (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, const std::vector<Fragment_Info> & Value, unsigned int i, std::vector<unsigned int> & FinalChain) {
+TraceBack_ForwardOnly (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, const vector<Fragment_Info> & Value, 
+							unsigned int i, vector<unsigned int> & Chain) {
 
 	long int prev_sub = Value[i].prev_sub;
 	long int prev_ind = Value[i].prev_ind;
-	FinalChain.push_back(i);
+	Chain.push_back(i);
+	//cerr << "i: " << i << endl;
 
-	if (prev_sub != -1 and prev_ind != -1) {
+	while (prev_sub != -1 and prev_ind != -1) {
 		
 		if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
+			assert(prev_sub <  SubR1.StackSub.size());
+			assert(prev_ind < SubR1[prev_sub].Ep.size());
 			unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
-			TraceBack_ForwardOnly(SubR1, SubC1, Value, SubR1[prev_sub].Dp[ind], FinalChain);
+			assert(ind < SubR1[prev_sub].Dp.size());
+			i = SubR1[prev_sub].Dp[ind];
+			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], Chain);
 		}
 		else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
+			assert(prev_sub <  SubC1.StackSub.size());
+			assert(prev_ind < SubC1[prev_sub].Ep.size());
 			unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
-			TraceBack_ForwardOnly(SubR1, SubC1, Value, SubC1[prev_sub].Dp[ind], FinalChain);
+			assert(ind < SubC1[prev_sub].Dp.size());
+			i = SubC1[prev_sub].Dp[ind];
+			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], Chain);
 		}		
+		prev_sub = Value[i].prev_sub;
+		prev_ind = Value[i].prev_ind;		
+		Chain.push_back(i);
 	}
 }
 
 
 // The input for this function is GenomePairs which is from gapPairs (from snd SDP)
 // Each fragment has the same length
-// TODO(Jingwen): create a simpler version of ProcessPoint for this SparseDP. (only forward strand)
-int SparseDP_ForwardOnly (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Options &opts, const std::vector<float> &LookUpTable, int rate = 1) {
+//
+int SparseDP_ForwardOnly (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Options &opts, 
+							const std::vector<float> &LookUpTable, int rate = 5) {
 	
 	if (FragInput.size() == 0) return 0;
-
-
 	std::vector<Point> H1;
-
 	// FragInput is vector<GenomePair>
 	// get points from FragInput and store them in H1		
-
 	for (unsigned int i = 0; i < FragInput.size(); i++) {
 
 			// insert start point s1 into H1
@@ -411,7 +463,7 @@ int SparseDP_ForwardOnly (const GenomePairs &FragInput, std::vector<unsigned int
 	// store the index of points
 	chain.clear();
 	TraceBack_ForwardOnly(SubR1, SubC1, Value, max_pos, chain);
-	std::reverse(chain.begin(), chain.end());
+	//std::reverse(chain.begin(), chain.end());
 
 	// Clear SubR and SubC
 	SubR1.Clear(eeR1);

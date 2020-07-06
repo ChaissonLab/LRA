@@ -73,6 +73,16 @@ public:
 	bool storeTiming;
 	int sseBand;
 	int globalWinsize;
+	int minUniqueStretchNum;
+	int minUniqueStretchDist;
+	float slope; 
+	float rate_FirstSDPValue;
+	float rate_value;
+	long maxDrift;
+	int minTightCluster;
+	bool RefineBySDP;
+	int refineSpaceDiag;
+	float anchor_rate;
 	Options() {
 		storeTiming=false;
 		readType=Options::raw;
@@ -101,7 +111,7 @@ public:
 		minClusterSize=5; // For CCS, need to be larger!(20) // 5
 		minClusterLength=50;  // For CCS, need to be larger!(200)
 		minRefinedClusterSize=40;
-		window=0; 
+		window=2000; 
 		mergeGapped=false;
 		viewPairwise=false;
 		hardClip=false;
@@ -113,7 +123,7 @@ public:
 		maxCandidates=10;
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
-		maxGap=2000; 
+		maxGap=10000;  
 		maxGapBtwnAnchors=1000; // no larger than 2000 // used to be 1500 // 1000
 		mergeClusters=true;
 		NaiveDP=false;
@@ -135,7 +145,7 @@ public:
 		minBinNum = 3;
 		HighlyAccurate = false;
 		splitdist = 100000;
-		coefficient = 18; 
+		coefficient = 18;  
 		//minimizerFreq = 50;
 		NumOfminimizersPerWindow = 5;
 		Printsvsig=false;
@@ -143,8 +153,17 @@ public:
 		alnthres = 0.7;
 		timing="";
 		localIndexWindow=256;
-	
 		globalWinsize = 16;
+		minUniqueStretchNum = 1;
+		minUniqueStretchDist = 50;	
+		slope=1;
+		rate_FirstSDPValue=0.2;
+		rate_value=0.8;
+		maxDrift=400;
+		minTightCluster=10;
+		RefineBySDP=true;
+		refineSpaceDiag=5;
+		anchor_rate=1.0;
 	}
 };
 #endif
