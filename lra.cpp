@@ -263,7 +263,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.rate_value=1;
 			opts.anchor_rate=4.0;
 			// opts.maxDiag=500;
-			// opts.maxGap=1500;
+			opts.maxGap=5000;
+			opts.NumAln=3;
+   			opts.PrintNumAln = 1;
 			// opts.globalMaxFreq = 30;
 			// opts.NumOfminimizersPerWindow = 1;	
 			//opts.minClusterSize=5; 
@@ -291,12 +293,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.rate_FirstSDPValue=0;
 			opts.rate_value=1;		
+			opts.NumAln=3;
+   			opts.PrintNumAln = 1;
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
 			opts.HighlyAccurate = false;
 			opts.anchor_rate=4.0;
 			// opts.maxDiag=800;
-			// opts.maxGap=2000;
+			opts.maxGap=5000;
 			// opts.globalMaxFreq = 50;
 			// opts.NumOfminimizersPerWindow = 1;
 			//opts.minClusterSize=5; 
@@ -306,13 +310,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-ONT")) {
 			// opts.rate_FirstSDPValue=0.5;
 			// opts.rate_value=0.5;		
+			opts.NumAln=3;
+   			opts.PrintNumAln = 1;
 			opts.rate_FirstSDPValue=0;
 			opts.rate_value=1;	
 			opts.HighlyAccurate = false;
-			opts.HighlyAccurate = false;
 			opts.anchor_rate=4.0;
 			// opts.maxDiag=800;
-			// opts.maxGap=2000;
+			opts.maxGap=5000;
 			// opts.globalMaxFreq = 50;
 			// opts.NumOfminimizersPerWindow = 1;
 			opts.maxGapBtwnAnchors=1800;

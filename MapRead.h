@@ -1371,8 +1371,8 @@ RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, 
 			tinyOpts.refineSpaceDiag = 30;
 			RefineSpace(0, BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, str);
-
-			SparseDP_ForwardOnly(BtwnPairs, BtwnChain, tinyOpts, LookUpTable, 6);
+			tinyOpts.coefficient=9;
+			SparseDP_ForwardOnly(BtwnPairs, BtwnChain, tinyOpts, LookUpTable, 1); //6
 			RemovePairedIndels(BtwnPairs, BtwnChain);
 			//
 			// Use linear alignment to ligand the gap between local SDP chain;
