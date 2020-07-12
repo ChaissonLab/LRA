@@ -691,7 +691,7 @@ void RemovePairedIndels (FinalChain &chain) {
 				int Gap = (int)(((long int)chain[c].second.pos - (long int)chain[c].first.pos) - 
 							    ((long int)chain[c-1].second.pos - (long int)chain[c-1].first.pos));
 
-				if (abs(Gap) > 30) {
+				if (abs(Gap) > 30) { //30
 					SV.push_back(Gap);	
 					SVgenome.push_back(chain[c].second.pos);
 					SVpos.push_back(c);
@@ -700,7 +700,7 @@ void RemovePairedIndels (FinalChain &chain) {
 			else {
 				int Gap = (int)((long int)(chain[c].first.pos + chain[c].second.pos) - 
 								(long int)(chain[c-1].first.pos + chain[c-1].second.pos));
-				if (abs(Gap) > 30) {
+				if (abs(Gap) > 30) { //30
 					SV.push_back(Gap);	
 					SVgenome.push_back(chain[c].second.pos);
 					SVpos.push_back(c);
@@ -714,21 +714,31 @@ void RemovePairedIndels (FinalChain &chain) {
 		}
 	}
 
-	//
-	// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
-	// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
-	//
 	for (int c = 1; c < SV.size(); c++) {
-		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(2*SV[c]) and 
-				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 100 
-				and abs(SV[c]) != 0 and SV[c-1] != 0) { 
+		//
+		// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
+		// The last condition is to ensure both SV[c] and SV[c-1] are not zeros.
+		//
+		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(2*max(SV[c], SV[c-1])) and 
+				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 300  // 100
+				and SV[c] != 0 and SV[c-1] != 0) { 
 			//
 			// remove anchors from SVpos[c-1] to SV[c];
 			//
 			for (int i = SVpos[c-1]; i < SVpos[c]; i++) {
-				if (chain.length(i) < 100) remove[i] = true;
+				if (chain.length(i) < 2000) remove[i] = true; // 200
 			}
 		} 
+		else if (abs(SVgenome[c] - SVgenome[c-1]) < 300 // If two gaps of same typeare too close (<300bp)
+				and sign(SV[c]) == sign(SV[c-1]) 
+				and SV[c] != 0 and SV[c-1] != 0) {
+			//
+			// remove anchors from SVpos[c-1] to SV[c];
+			//
+			for (int i = SVpos[c-1]; i < SVpos[c]; i++) {
+				remove[i] = true; 
+			}
+		}
 	}
 
 	int m = 0;
@@ -767,12 +777,13 @@ void RemovePairedIndels (GenomePairs &matches, vector<unsigned int> &chain) {
 		}
 	}
 
-	//
-	// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
-	// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
-	//
+
 	for (int c = 1; c < SV.size(); c++) {
-		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(2*SV[c]) and 
+		//
+		// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
+		// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
+		//
+		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(2*max(SV[c], SV[c-1])) and 
 				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 100 
 				and abs(SV[c]) != 0 and SV[c-1] != 0) { 
 			//
@@ -780,6 +791,16 @@ void RemovePairedIndels (GenomePairs &matches, vector<unsigned int> &chain) {
 			//
 			for (int i = SVpos[c-1]; i < SVpos[c]; i++) remove[i] = true;
 		} 
+		else if (abs(SVgenome[c] - SVgenome[c-1]) < 300 // If two gaps of same typeare too close (<600bp)
+				and sign(SV[c]) == sign(SV[c-1]) 
+				and SV[c] != 0 and SV[c-1] != 0) {
+			//
+			// remove anchors from SVpos[c-1] to SV[c];
+			//
+			for (int i = SVpos[c-1]; i < SVpos[c]; i++) {
+				remove[i] = true; 
+			}
+		}
 	}
 
 	int m = 0;
@@ -1313,13 +1334,24 @@ RefineByLinearAlignment(GenomePos &btc_curReadEnd, GenomePos &btc_curGenomeEnd, 
 				assert(betweenAnchorAlignment.blocks[b-1].tPos + betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].tPos);						
 			}
 			alignment->blocks.insert(alignment->blocks.end(), betweenAnchorAlignment.blocks.begin(), betweenAnchorAlignment.blocks.end());
+			if (tinyOpts.dotPlot) {
+				ofstream Lclust("LinearAlignment.tab", std::ofstream::app);
+				for (b = 0; b < betweenAnchorAlignment.blocks.size(); b++) {
+					Lclust << betweenAnchorAlignment.blocks[b].qPos << "\t"
+						  << betweenAnchorAlignment.blocks[b].tPos << "\t"
+						  << betweenAnchorAlignment.blocks[b].qPos + betweenAnchorAlignment.blocks[b].length << "\t"
+						  << betweenAnchorAlignment.blocks[b].tPos + betweenAnchorAlignment.blocks[b].length << "\t"
+						  << str << endl;
+				}
+				Lclust.close();
+			}	
 			//
 			// Debug
 			//
-			for (int bb = 1; bb < alignment->blocks.size(); bb++) {
-				assert(alignment->blocks[bb-1].qPos + alignment->blocks[bb-1].length <= alignment->blocks[bb].qPos);
-				assert(alignment->blocks[bb-1].tPos + alignment->blocks[bb-1].length <= alignment->blocks[bb].tPos);	
-			}
+			// for (int bb = 1; bb < alignment->blocks.size(); bb++) {
+			// 	assert(alignment->blocks[bb-1].qPos + alignment->blocks[bb-1].length <= alignment->blocks[bb].qPos);
+			// 	assert(alignment->blocks[bb-1].tPos + alignment->blocks[bb-1].length <= alignment->blocks[bb].tPos);	
+			// }
 			betweenAnchorAlignment.blocks.clear();
 		}
 	}	
@@ -1331,7 +1363,7 @@ RefineByLinearAlignment(GenomePos &btc_curReadEnd, GenomePos &btc_curGenomeEnd, 
 // This function creates the alignment for a "segment"(one big chunk) on the chain;
 //
 void
-RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, FinalChain & finalchain, Alignment * alignment, 
+RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, FinalChain & finalchain, Alignment *alignment, 
 							Read & read, Genome & genome, char *strands[2], vector<int> & scoreMat, vector<Arrow> & pathMat, 
 							Options & tinyOpts, GenomePos & genomeThres, AffineAlignBuffers &buff, const vector<float> & LookUpTable) {
 
@@ -1365,15 +1397,29 @@ RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, 
 	if (curGenomeEnd <= nextGenomeStart) {
 		long read_dist = nextReadStart - curReadEnd;
 		long genome_dist = nextGenomeStart - curGenomeEnd;
-		if (tinyOpts.RefineBySDP == true and min(read_dist, genome_dist) >= 300) {
+		//
+		// The linear alignment is more suitable to find a big gap; 
+		//
+		if (tinyOpts.RefineBySDP == true and abs(read_dist-genome_dist) < 500 and min(read_dist, genome_dist) >= 300) { 
 			GenomePairs BtwnPairs;
 			vector<unsigned int> BtwnChain;
-			tinyOpts.refineSpaceDiag = 30;
+			tinyOpts.refineSpaceDiag = 30; //30
 			RefineSpace(0, BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, str);
-			tinyOpts.coefficient=9;
-			SparseDP_ForwardOnly(BtwnPairs, BtwnChain, tinyOpts, LookUpTable, 1); //6
-			RemovePairedIndels(BtwnPairs, BtwnChain);
+			GenomePairs ExtendBtwnPairs;
+			vector<int> ExtendBtwnPairsMatchesLength;
+			LinearExtend(BtwnPairs, ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, tinyOpts, genome, read, chromIndex);
+			TrimOverlappedAnchors(ExtendBtwnPairs, ExtendBtwnPairsMatchesLength);
+			tinyOpts.coefficient=9;//9
+			// 
+			// insert the previous anchor also;
+			//
+			// ExtendBtwnPairs.push_back(GenomePair(GenomeTuple(0, curReadEnd-finalchain.length(cur)), 
+			// 									 GenomeTuple(0, curGenomeEnd-finalchain.length(cur))));
+			// ExtendBtwnPairsMatchesLength.push_back(finalchain.length(cur));
+
+			SparseDP_ForwardOnly(ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, BtwnChain, tinyOpts, LookUpTable, 1); //6
+			RemovePairedIndels(ExtendBtwnPairs, BtwnChain);
 			//
 			// Use linear alignment to ligand the gap between local SDP chain;
 			//
@@ -1400,35 +1446,56 @@ RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, 
 					}					
 				}
 				pSclust.close();
+
+				ofstream eSclust("ExtendBtwnPairs.tab", std::ofstream::app);
+				for (int bp = ExtendBtwnPairs.size()-1; bp >= 0; bp--) {
+					if (str == 0) {
+						eSclust << ExtendBtwnPairs[bp].first.pos << "\t"
+							  << ExtendBtwnPairs[bp].second.pos << "\t"
+							  << ExtendBtwnPairs[bp].first.pos + ExtendBtwnPairsMatchesLength[bp] << "\t"
+							  << ExtendBtwnPairs[bp].second.pos + ExtendBtwnPairsMatchesLength[bp] << "\t"
+							  << str << endl;
+					}
+					else {
+						eSclust << read.length - ExtendBtwnPairs[bp].first.pos - ExtendBtwnPairsMatchesLength[bp] << "\t"
+							  << ExtendBtwnPairs[bp].second.pos + ExtendBtwnPairsMatchesLength[bp] << "\t"
+							  << read.length - ExtendBtwnPairs[bp].first.pos << "\t"
+							  << ExtendBtwnPairs[bp].second.pos << "\t"
+							  << str << endl;					
+					}					
+				}
+				eSclust.close();
 			}	
-			for (int btc = BtwnChain.size()-1; btc >= 0; btc--) {
+			int btc_end = BtwnChain.size()-1;
+			//if (BtwnChain.back() == ExtendBtwnPairs.size()-1) btc_end -= 1; // this one in ExtendBtwnPairs is the previous anchor;
+			for (int btc = btc_end; btc >= 0; btc--) {
 
 				if (tinyOpts.dotPlot) {
 					ofstream Sclust("SparseDP_Forward.tab", std::ofstream::app);
 						if (str == 0) {
-							Sclust << BtwnPairs[BtwnChain[btc]].first.pos << "\t"
-								  << BtwnPairs[BtwnChain[btc]].second.pos << "\t"
-								  << BtwnPairs[BtwnChain[btc]].first.pos + tinyOpts.globalK << "\t"
-								  << BtwnPairs[BtwnChain[btc]].second.pos + tinyOpts.globalK << "\t"
+							Sclust << ExtendBtwnPairs[BtwnChain[btc]].first.pos << "\t"
+								  << ExtendBtwnPairs[BtwnChain[btc]].second.pos << "\t"
+								  << ExtendBtwnPairs[BtwnChain[btc]].first.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] << "\t"
+								  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] << "\t"
 								  << str << endl;
 						}
 						else {
-							Sclust << read.length - BtwnPairs[BtwnChain[btc]].first.pos - tinyOpts.globalK << "\t"
-								  << BtwnPairs[BtwnChain[btc]].second.pos + tinyOpts.globalK << "\t"
-								  << read.length - BtwnPairs[BtwnChain[btc]].first.pos << "\t"
-								  << BtwnPairs[BtwnChain[btc]].second.pos << "\t"
+							Sclust << read.length - ExtendBtwnPairs[BtwnChain[btc]].first.pos - ExtendBtwnPairsMatchesLength[BtwnChain[btc]] << "\t"
+								  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] << "\t"
+								  << read.length - ExtendBtwnPairs[BtwnChain[btc]].first.pos << "\t"
+								  << ExtendBtwnPairs[BtwnChain[btc]].second.pos << "\t"
 								  << str << endl;					
 						}
 					Sclust.close();
 				}			
 
-				btc_nextGenomeStart = BtwnPairs[BtwnChain[btc]].second.pos;
-				btc_nextReadStart = BtwnPairs[BtwnChain[btc]].first.pos;
+				btc_nextGenomeStart = ExtendBtwnPairs[BtwnChain[btc]].second.pos;
+				btc_nextReadStart = ExtendBtwnPairs[BtwnChain[btc]].first.pos;
 				RefineByLinearAlignment(btc_curReadEnd, btc_curGenomeEnd, btc_nextReadStart, btc_nextGenomeStart, str, chromIndex, 
 										alignment, read, genome, strands, scoreMat, pathMat, tinyOpts, genomeThres, buff);				
 
-				alignment->blocks.push_back(Block(BtwnPairs[BtwnChain[btc]].first.pos, BtwnPairs[BtwnChain[btc]].second.pos, 
-													tinyOpts.globalK));
+				alignment->blocks.push_back(Block(ExtendBtwnPairs[BtwnChain[btc]].first.pos, ExtendBtwnPairs[BtwnChain[btc]].second.pos, 
+													ExtendBtwnPairsMatchesLength[BtwnChain[btc]]));
 
 				// This is for debugging
 				if (alignment->blocks.size() > 1) {
@@ -1436,8 +1503,8 @@ RefinedAlignmentbtwnAnchors(int & cur, int & next, int & str, int & chromIndex, 
 					assert(alignment->blocks[last-2].qPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].qPos);
 					assert(alignment->blocks[last-2].tPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].tPos);
 				}	
-				btc_curReadEnd = btc_nextReadStart + tinyOpts.globalK;
-				btc_curGenomeEnd = btc_nextGenomeStart + tinyOpts.globalK;			
+				btc_curReadEnd = btc_nextReadStart + ExtendBtwnPairsMatchesLength[BtwnChain[btc]];
+				btc_curGenomeEnd = btc_nextGenomeStart + ExtendBtwnPairsMatchesLength[BtwnChain[btc]];			
 			}
 			//
 			// Add the linear alignment after the last anchor on BtwnChain;
@@ -2055,7 +2122,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	tinyOpts.globalMaxFreq=3;
 	tinyOpts.maxDiag=5;
 	tinyOpts.minDiagCluster=2;
-	tinyOpts.globalK=smallOpts.globalK-3;
 	//
 	// Decide whether the number of anchors in each Cluster is enough to skip refining step;
 	//
@@ -2082,6 +2148,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		smallOpts.maxDiag=50;
 		smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large
 		smallOpts.minDiagCluster=3; // used to be 3
+		tinyOpts.globalK=smallOpts.globalK-3;
 
 		REFINEclusters(clusters, refinedclusters, genome, read,  glIndex, localIndexes, smallOpts, opts);
 		// refinedclusters have GenomePos, chromIndex, coarse, matches, strand, refinespace;
@@ -2091,6 +2158,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		clusters.clear();
 	}
 	else {
+		tinyOpts.globalK=smallOpts.globalK-8;
 		//// TODO(Jingwen): write a function to determine the chromIndex and subtract chromOffSet from t coord.
 		for (int s = 0; s < clusters.size(); s++) {	
 

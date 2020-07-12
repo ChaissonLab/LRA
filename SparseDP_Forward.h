@@ -43,7 +43,7 @@ using std::iota;
 
 // Note: Each fragment has the same length
 void 
-ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, 
+ProcessPoint_ForwardOnly (const std::vector<Point> & H1, const vector<int> &MatchLengths, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, 
 							std::vector<Fragment_Info> & Value, Options & opts, const std::vector<float> & LookUpTable, int rate) {
 
 //ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H3, std::vector<info> & V, StackOfSubProblems & SubR, StackOfSubProblems & SubC,
@@ -106,7 +106,7 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 						
 
-						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step_sdp) + opts.globalK * rate; 
+						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step_sdp) + MatchLengths[ii] * rate; //opts.globalK * rate; 
 						SubR1[j].Ep[i1] = i2;							
 
 						//cerr << "SubR1[" << j << "].Ev[" << i1 << "]: " << SubR1[j].Ev[i1] << ", SubR1[" << j << "].Ep[" << i1 << "]: " << SubR1[j].Ep[i1] << "\n"; 
@@ -186,7 +186,7 @@ ProcessPoint_ForwardOnly (const std::vector<Point> & H1, std::vector<info> & V, 
 	//					SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK; 
 	//					SubC1[j].Ep[i1] = i2;							
 
-						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step_sdp) + opts.globalK * rate; 
+						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step_sdp) + MatchLengths[ii] * rate; //opts.globalK * rate; 
 						SubC1[j].Ep[i1] = i2;							
 
 						//cerr << "SubC1[" << j << "].Ev[" << i1 << "]: " << SubC1[j].Ev[i1] << ", SubC1[" << j << "].Ep[" << i1 << "]: " << SubC1[j].Ep[i1] << "\n"; 
@@ -310,13 +310,13 @@ TraceBack_ForwardOnly (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, c
 // The input for this function is GenomePairs which is from gapPairs (from snd SDP)
 // Each fragment has the same length
 //
-int SparseDP_ForwardOnly (const GenomePairs &FragInput, std::vector<unsigned int> &chain, Options &opts, 
+int SparseDP_ForwardOnly (const GenomePairs &FragInput, const vector<int> &MatchLengths, std::vector<unsigned int> &chain, Options &opts, 
 							const std::vector<float> &LookUpTable, int rate = 5) {
 	
 	if (FragInput.size() == 0) return 0;
 	std::vector<Point> H1;
 	// FragInput is vector<GenomePair>
-	// get points from FragInput and store them in H1		
+	// get points from FragInput and store them in H1
 	for (unsigned int i = 0; i < FragInput.size(); i++) {
 
 			// insert start point s1 into H1
@@ -335,8 +335,8 @@ int SparseDP_ForwardOnly (const GenomePairs &FragInput, std::vector<unsigned int
 			H1.back().ind = 0; // end
 			H1.back().inv = 1; // forward direction		
 			H1.back().frag_num = i;
-			H1.back().se.first = FragInput[i].first.pos + opts.globalK;
-			H1.back().se.second = FragInput[i].second.pos + opts.globalK;					
+			H1.back().se.first = FragInput[i].first.pos + MatchLengths[i];
+			H1.back().se.second = FragInput[i].second.pos + MatchLengths[i];					
 		
 	}
 	
@@ -404,7 +404,7 @@ int SparseDP_ForwardOnly (const GenomePairs &FragInput, std::vector<unsigned int
 			if (H1[tt].ind == 1 and H1[tt].inv == 1) { //H1[tt] is a start point (s1)
 				Value[ii].SS_B_R1 = Row[t].SS_B1;
 				Value[ii].counter_B_R1 = Row[t].SS_B1.size();
-				Value[ii].val = opts.globalK * rate;
+				Value[ii].val = MatchLengths[ii]*rate; //opts.globalK * rate;
 				Value[ii].orient = H1[tt].orient;
 			}
 			else if (H1[tt].ind == 0 and H1[tt].inv == 1) { // H1[tt] is an end point (e1)
@@ -425,7 +425,7 @@ int SparseDP_ForwardOnly (const GenomePairs &FragInput, std::vector<unsigned int
 			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
 				Value[ii].SS_B_C1 = Col[t].SS_B1;
 				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
-				Value[ii].val = opts.globalK * rate;
+				Value[ii].val = MatchLengths[ii]*rate; // opts.globalK * rate;
 			}
 			else if (H1[H2[tt]].ind == 0 and H1[H2[tt]].inv == 1) { // H1[H2[tt]] is an end point (e1)
 				Value[ii].SS_A_C1 = Col[t].SS_A1;
@@ -441,7 +441,7 @@ int SparseDP_ForwardOnly (const GenomePairs &FragInput, std::vector<unsigned int
 
 	//cerr << "ProcessPoint\n";
 
-	ProcessPoint_ForwardOnly(H1, Row, SubR1, SubC1, Value, opts, LookUpTable, rate);
+	ProcessPoint_ForwardOnly(H1, MatchLengths, Row, SubR1, SubC1, Value, opts, LookUpTable, rate);
 
 	
 	//cerr << "end\n";
