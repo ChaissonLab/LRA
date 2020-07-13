@@ -719,7 +719,7 @@ void RemovePairedIndels (FinalChain &chain) {
 		// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
 		// The last condition is to ensure both SV[c] and SV[c-1] are not zeros.
 		//
-		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(2*max(SV[c], SV[c-1])) and 
+		if (abs(SVgenome[c] - SVgenome[c-1]) < 2*max(abs(SV[c]), abs(SV[c-1])) and 
 				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 300  // 100
 				and SV[c] != 0 and SV[c-1] != 0) { 
 			//
@@ -729,7 +729,7 @@ void RemovePairedIndels (FinalChain &chain) {
 				if (chain.length(i) < 2000) remove[i] = true; // 200
 			}
 		} 
-		else if (abs(SVgenome[c] - SVgenome[c-1]) < 300 // If two gaps of same typeare too close (<300bp)
+		else if (abs(SVgenome[c] - SVgenome[c-1]) < 600 // If two gaps of same typeare too close (<600bp)
 				and sign(SV[c]) == sign(SV[c-1]) 
 				and SV[c] != 0 and SV[c-1] != 0) {
 			//
@@ -783,8 +783,8 @@ void RemovePairedIndels (GenomePairs &matches, vector<unsigned int> &chain) {
 		// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
 		// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
 		//
-		if (abs(SVgenome[c] - SVgenome[c-1]) < abs(2*max(SV[c], SV[c-1])) and 
-				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 100 
+		if (abs(SVgenome[c] - SVgenome[c-1]) < 2*max(abs(SV[c]), abs(SV[c-1])) and 
+				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 300 
 				and abs(SV[c]) != 0 and SV[c-1] != 0) { 
 			//
 			// remove anchors from SVpos[c-1] to SV[c];
