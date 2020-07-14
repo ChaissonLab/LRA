@@ -386,17 +386,17 @@ TrimOverlappedAnchors(vector<Cluster> & extCluster) {
 					extCluster[c].matches[cur].first.pos >= extCluster[c].matches[prev].first.pos + extCluster[c].matchesLengths[prev] - 30) {
 
 					overlap_r = extCluster[c].matches[prev].first.pos + extCluster[c].matchesLengths[prev] - extCluster[c].matches[cur].first.pos;
-					assert(overlap_r <= 30); assert(overlap_r > 0);
+					assert(overlap_r <= 30); //assert(overlap_r > 0);
 					lr = 1;
 				}				
 			}
 			else {
-				if (extCluster[c].matches[cur].first.pos + extCluster[c].matchesLengths[cur] >= extCluster[c].matches[prev].first.pos
+				if (extCluster[c].matches[cur].first.pos + extCluster[c].matchesLengths[cur] > extCluster[c].matches[prev].first.pos
 					and 
-					extCluster[c].matches[cur].first.pos + extCluster[c].matchesLengths[cur] < extCluster[c].matches[prev].first.pos + 30) {
+					extCluster[c].matches[cur].first.pos + extCluster[c].matchesLengths[cur] <= extCluster[c].matches[prev].first.pos + 30) {
 
 					overlap_r = extCluster[c].matches[cur].first.pos + extCluster[c].matchesLengths[cur] - extCluster[c].matches[prev].first.pos;
-					assert(overlap_r <= 30); assert(overlap_r > 0);
+					assert(overlap_r <= 30); //assert(overlap_r > 0);
 					lr = 1;
 				}				
 			}
