@@ -719,24 +719,27 @@ void RemovePairedIndels (FinalChain &chain) {
 		// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
 		// The last condition is to ensure both SV[c] and SV[c-1] are not zeros.
 		//
-		if (abs(SVgenome[c] - SVgenome[c-1]) < 2*max(abs(SV[c]), abs(SV[c-1])) and 
-				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 300  // 100
-				and SV[c] != 0 and SV[c-1] != 0) { 
-			//
-			// remove anchors from SVpos[c-1] to SV[c];
-			//
-			for (int i = SVpos[c-1]; i < SVpos[c]; i++) {
-				if (chain.length(i) < 2000) remove[i] = true; // 200
-			}
+		int blink = max(abs(SV[c]), abs(SV[c-1]));
+		if (sign(SV[c]) != sign(SV[c-1]) and SV[c] != 0 and SV[c-1] != 0 and abs(SV[c] + SV[c-1]) < 300) { 
+			if ((sign(SV[c]) == true and abs(SVgenome[c] - SVgenome[c-1]) < 2*blink) // SV[c] is ins
+				or (sign(SV[c]) == false and abs(SVgenome[c] - SV[c] - SVgenome[c-1]) < 2*blink)) { // SV[c] is del
+				//
+				// remove anchors from SVpos[c-1] to SV[c];
+				//
+				for (int i = SVpos[c-1]; i < SVpos[c]; i++) {
+					if (chain.length(i) < 2000) remove[i] = true; // 200
+				}
+			}			
 		} 
-		else if (abs(SVgenome[c] - SVgenome[c-1]) < 600 // If two gaps of same typeare too close (<600bp)
-				and sign(SV[c]) == sign(SV[c-1]) 
-				and SV[c] != 0 and SV[c-1] != 0) {
-			//
-			// remove anchors from SVpos[c-1] to SV[c];
-			//
-			for (int i = SVpos[c-1]; i < SVpos[c]; i++) {
-				remove[i] = true; 
+		else if (sign(SV[c]) == sign(SV[c-1]) and SV[c] != 0 and SV[c-1] != 0) { // If two gaps of same typeare too close (<600bp)
+			if ((sign(SV[c]) == true and abs(SVgenome[c] - SVgenome[c-1]) < 600) // insertion
+				or (sign(SV[c]) == false and abs(SVgenome[c] - SV[c] - SVgenome[c-1]) < 600)) { //deletion
+				//
+				// remove anchors from SVpos[c-1] to SV[c];
+				//
+				for (int i = SVpos[c-1]; i < SVpos[c]; i++) {
+					remove[i] = true; 
+				}
 			}
 		}
 	}
@@ -777,29 +780,31 @@ void RemovePairedIndels (GenomePairs &matches, vector<unsigned int> &chain) {
 		}
 	}
 
-
 	for (int c = 1; c < SV.size(); c++) {
 		//
 		// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
 		// The third condition is to ensure both SV[c] and SV[c-1] are not zeros.
 		//
-		if (abs(SVgenome[c] - SVgenome[c-1]) < 2*max(abs(SV[c]), abs(SV[c-1])) and 
-				sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 300 
-				and abs(SV[c]) != 0 and SV[c-1] != 0) { 
-			//
-			// remove anchors from SVpos[c-1] to SV[c];
-			//
-			for (int i = SVpos[c-1]; i < SVpos[c]; i++) remove[i] = true;
-		} 
-		else if (abs(SVgenome[c] - SVgenome[c-1]) < 300 // If two gaps of same typeare too close (<600bp)
-				and sign(SV[c]) == sign(SV[c-1]) 
-				and SV[c] != 0 and SV[c-1] != 0) {
-			//
-			// remove anchors from SVpos[c-1] to SV[c];
-			//
-			for (int i = SVpos[c-1]; i < SVpos[c]; i++) {
-				remove[i] = true; 
-			}
+		int blink = max(abs(SV[c]), abs(SV[c-1])) ;
+		if (sign(SV[c]) != sign(SV[c-1]) and abs(SV[c] + SV[c-1]) < 300 and abs(SV[c]) != 0 and SV[c-1] != 0) { 
+			if ((sign(SV[c]) == true and abs(SVgenome[c] - SVgenome[c-1]) < 2*blink) // SV[c] is ins
+				or (sign(SV[c]) == false and abs(SVgenome[c] - SV[c] - SVgenome[c-1]) < 2*blink)) { // SV[c] is del
+				//
+				// remove anchors from SVpos[c-1] to SV[c];
+				//
+				for (int i = SVpos[c-1]; i < SVpos[c]; i++) remove[i] = true;
+			}	
+		}
+		else if (sign(SV[c]) == sign(SV[c-1]) and SV[c] != 0 and SV[c-1] != 0) {
+			if ((sign(SV[c]) == true and abs(SVgenome[c] - SVgenome[c-1]) < 300) // insertion
+				or (sign(SV[c]) == false and abs(SVgenome[c] - SV[c] - SVgenome[c-1]) < 300)) { //deletion
+				//
+				// remove anchors from SVpos[c-1] to SV[c];
+				//
+				for (int i = SVpos[c-1]; i < SVpos[c]; i++) {
+					remove[i] = true; 
+				}
+			}			
 		}
 	}
 
