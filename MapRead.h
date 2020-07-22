@@ -2133,7 +2133,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	bool sparse = 0;
 	for (int p = 0; p < clusters.size(); p++) {
 		//if (((float)(clusters[p].matches.size())/(clusters[p].qEnd - clusters[p].qStart)) < 0.001) sparse = 1;
-		if (((float)(clusters[p].Val)/(clusters[p].qEnd - clusters[p].qStart)) < 0.1) sparse = 1;
+		if (((float)(clusters[p].Val)/(clusters[p].qEnd - clusters[p].qStart)) < 0.01 and read.length <= 500000) sparse = 1;
 		else sparse = 0;
 	}
 	//

@@ -1335,10 +1335,9 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 	}
 }
 
-
 //
 // This function is for tracing back such a chain that every anchor on this chain is unused;
-//
+// No recursive; 
 void 
 TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
 		   const vector<Fragment_Info> & Value, unsigned int & i, vector<unsigned int> & onechain, vector<bool> & link, 
@@ -1349,14 +1348,13 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 	if (used[i] == 0) {
 		onechain.push_back(i);
 		used[i] = 1;
-	
-		if (prev_sub != -1 and prev_ind != -1) {
 
+		while (prev_sub != -1 and prev_ind != -1) {
 			if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
 				unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
 				if (used[SubR1[prev_sub].Dp[ind]] == 0) {
 					link.push_back(0);
-					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], onechain, link, used);					
+					i = SubR1[prev_sub].Dp[ind];
 				}
 				else {
 					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
@@ -1364,54 +1362,148 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 					}
 					onechain.clear();
 					link.clear();
+					break;
 				}
-			}
+			}	
 			else if (Value[i].prev == 1 and Value[i].inv == 0) { // The previous subproblem is SubR2
 				unsigned int ind = SubR2[prev_sub].Ep[prev_ind];
 				if (used[SubR2[prev_sub].Dp[ind]] == 0) {
 					link.push_back(1);
-					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR2[prev_sub].Dp[ind], onechain, link, used);
+					i = SubR2[prev_sub].Dp[ind];
 				}
 				else {
 					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
 						used[onechain[lu]] = 0;
 					}
 					onechain.clear();	
-					link.clear();				
+					link.clear();	
+					break;			
 				}
 			}
 			else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
 				unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
 				if (used[SubC1[prev_sub].Dp[ind]] == 0) {
 					link.push_back(0);
-					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], onechain, link, used);
+					i = SubC1[prev_sub].Dp[ind];
 				}
 				else {
 					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
 						used[onechain[lu]] = 0;
 					}
 					onechain.clear();	
-					link.clear();					
+					link.clear();	
+					break;				
 				}
 			}		
 			else { // The previous subproblem is SubC2
 				unsigned int ind = SubC2[prev_sub].Ep[prev_ind];
 				if (used[SubC2[prev_sub].Dp[ind]] == 0) {
 					link.push_back(1);
-					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC2[prev_sub].Dp[ind], onechain, link, used);
+					i = SubC2[prev_sub].Dp[ind];
 				}
 				else {
 					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
 						used[onechain[lu]] = 0;
 					}
 					onechain.clear();	
-					link.clear();				
+					link.clear();	
+					break;			
 				}
+			}		
+			prev_sub = Value[i].prev_sub;
+			prev_ind = Value[i].prev_ind;
+			if (used[i] == 0) {
+				onechain.push_back(i);
+				used[i] = 1;
 			}
-
-		}
-	}
+			else {
+				for (unsigned int lu = 0; lu < onechain.size(); lu++) {
+					used[onechain[lu]] = 0;
+				}
+				onechain.clear();	
+				link.clear();	
+				break;		
+			}	
+		}	
+	}	
 }
+
+// //
+// // This function is for tracing back such a chain that every anchor on this chain is unused;
+// // recursive form 
+// void 
+// TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
+// 		   const vector<Fragment_Info> & Value, unsigned int & i, vector<unsigned int> & onechain, vector<bool> & link, 
+// 		   vector<bool> & used) {
+
+// 	long int prev_sub = Value[i].prev_sub;
+// 	long int prev_ind = Value[i].prev_ind;
+// 	if (used[i] == 0) {
+// 		onechain.push_back(i);
+// 		used[i] = 1;
+	
+// 		if (prev_sub != -1 and prev_ind != -1) {
+
+// 			if (Value[i].prev == 1 and Value[i].inv == 1) { // The previous subproblem is SubR1
+// 				unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
+// 				if (used[SubR1[prev_sub].Dp[ind]] == 0) {
+// 					link.push_back(0);
+// 					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], onechain, link, used);					
+// 				}
+// 				else {
+// 					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
+// 						used[onechain[lu]] = 0;
+// 					}
+// 					onechain.clear();
+// 					link.clear();
+// 				}
+// 			}
+// 			else if (Value[i].prev == 1 and Value[i].inv == 0) { // The previous subproblem is SubR2
+// 				unsigned int ind = SubR2[prev_sub].Ep[prev_ind];
+// 				if (used[SubR2[prev_sub].Dp[ind]] == 0) {
+// 					link.push_back(1);
+// 					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR2[prev_sub].Dp[ind], onechain, link, used);
+// 				}
+// 				else {
+// 					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
+// 						used[onechain[lu]] = 0;
+// 					}
+// 					onechain.clear();	
+// 					link.clear();				
+// 				}
+// 			}
+// 			else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
+// 				unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
+// 				if (used[SubC1[prev_sub].Dp[ind]] == 0) {
+// 					link.push_back(0);
+// 					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], onechain, link, used);
+// 				}
+// 				else {
+// 					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
+// 						used[onechain[lu]] = 0;
+// 					}
+// 					onechain.clear();	
+// 					link.clear();					
+// 				}
+// 			}		
+// 			else { // The previous subproblem is SubC2
+// 				unsigned int ind = SubC2[prev_sub].Ep[prev_ind];
+// 				if (used[SubC2[prev_sub].Dp[ind]] == 0) {
+// 					link.push_back(1);
+// 					TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC2[prev_sub].Dp[ind], onechain, link, used);
+// 				}
+// 				else {
+// 					for (unsigned int lu = 0; lu < onechain.size(); lu++) {
+// 						used[onechain[lu]] = 0;
+// 					}
+// 					onechain.clear();	
+// 					link.clear();				
+// 				}
+// 			}
+
+// 		}
+// 	}
+// }
 
 //
 // This function is for tracing back a chain;
