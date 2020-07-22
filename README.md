@@ -4,7 +4,7 @@ Much of the functionality is still rolling out for lra, but your feedback is wel
 
 Installation:
 
-`git clone --recursive https://github.com/ChaissonLab/LRA.git`
+`git clone --recursive https://github.com/ChaissonLab/LRA.git -b master`
 
 `make`
 
