@@ -496,7 +496,7 @@ TrimOverlappedAnchors(GenomePairs &ExtendPairs, vector<int> &ExtendPairsMatchesL
 	//
 	LongAnchors longanchors(&ExtendPairs, &ExtendPairsMatchesLengths, 0);
 	for (int ln = 0; ln < ExtendPairs.size(); ln++) {
-		if (ExtendPairsMatchesLengths[ln] >= 20) { 
+		if (ExtendPairsMatchesLengths[ln] >= 50) { 
 			longanchors.anchorIndex.push_back(ln);
 		}
 	}
@@ -520,10 +520,10 @@ TrimOverlappedAnchors(GenomePairs &ExtendPairs, vector<int> &ExtendPairsMatchesL
 		//
 		if (ExtendPairs[cur].first.pos < ExtendPairs[prev].first.pos + ExtendPairsMatchesLengths[prev] 
 			and 
-			ExtendPairs[cur].first.pos >= ExtendPairs[prev].first.pos + ExtendPairsMatchesLengths[prev] - 5) {
+			ExtendPairs[cur].first.pos >= ExtendPairs[prev].first.pos + ExtendPairsMatchesLengths[prev] - 30) {
 
 			overlap_r = ExtendPairs[prev].first.pos + ExtendPairsMatchesLengths[prev] - ExtendPairs[cur].first.pos;
-			assert(overlap_r <= 5); assert(overlap_r > 0);
+			assert(overlap_r <= 30); assert(overlap_r > 0);
 			lr = 1;
 		}				
 		//
@@ -531,16 +531,17 @@ TrimOverlappedAnchors(GenomePairs &ExtendPairs, vector<int> &ExtendPairsMatchesL
 		//
 		if (ExtendPairs[cur].second.pos < ExtendPairs[prev].second.pos + ExtendPairsMatchesLengths[prev] 
 			and 
-			ExtendPairs[cur].second.pos >= ExtendPairs[prev].second.pos + ExtendPairsMatchesLengths[prev] - 5) {
+			ExtendPairs[cur].second.pos >= ExtendPairs[prev].second.pos + ExtendPairsMatchesLengths[prev] - 30) {
 
 			overlap_g = ExtendPairs[prev].second.pos + ExtendPairsMatchesLengths[prev] - ExtendPairs[cur].second.pos;
-			assert(overlap_g <= 5); assert(overlap_g > 0);
+			assert(overlap_g <= 30); assert(overlap_g > 0);
 			lg = 1;
 		}
 		
 		if (overlap_r > 0 or overlap_g > 0) {
 			overlap = max(overlap_r, overlap_g);
 			ExtendPairsMatchesLengths[prev] -= overlap+1;
+			assert(ExtendPairsMatchesLengths[prev]>=0);
 			if (lr == 1) assert(ExtendPairs[cur].first.pos >= ExtendPairs[prev].first.pos + ExtendPairsMatchesLengths[prev]);
 			if (lg == 1) assert(ExtendPairs[cur].second.pos >= ExtendPairs[prev].second.pos + ExtendPairsMatchesLengths[prev]);
 		
