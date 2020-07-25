@@ -317,7 +317,7 @@ int SparseDP_ForwardOnly (const GenomePairs &FragInput, const vector<int> &Match
 	std::vector<Point> H1;
 	// FragInput is vector<GenomePair>
 	// get points from FragInput and store them in H1
-	for (unsigned int i = 0; i < FragInput.size(); i++) {
+	for (unsigned int i = 0; i < FragInput.size(); i++) { 
 
 			// insert start point s1 into H1
 			Point s1;
