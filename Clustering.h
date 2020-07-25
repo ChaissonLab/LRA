@@ -831,7 +831,7 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 					// cerr << "prev_anchor: " << prev_anchor << endl;
 				
 					if (/*End[i] - Start[i] >= (c_e-c_s) / 3 and */ End[i] - Start[i] >= 15) { // stretches of above 15 unqiue anchors are pretty trustworthy
-						addup = 50000;
+						addup = 500000; //50000
 					}
 					else addup = 0;
 					if ( (End[i] - Start[i] >= (c_e-c_s) / 20 or End[i] - Start[i] >= 15) 
