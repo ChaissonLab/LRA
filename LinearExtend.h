@@ -358,7 +358,7 @@ TrimOverlappedAnchors(vector<Cluster> & extCluster) {
 		LongAnchors longanchors(&(extCluster[c].matches), &(extCluster[c].matchesLengths), extCluster[c].strand);
 		//LongAnchors longanchors(extCluster[c].matches&extCluster[c]);
 		for (int ln = 0; ln < extCluster[c].matches.size(); ln++) {
-			if (extCluster[c].matchesLengths[ln] >= 50) { // 500
+			if (extCluster[c].matchesLengths[ln] >= 100) { // 50
 				longanchors.anchorIndex.push_back(ln);
 			}
 		}
@@ -386,7 +386,7 @@ TrimOverlappedAnchors(vector<Cluster> & extCluster) {
 					extCluster[c].matches[cur].first.pos >= extCluster[c].matches[prev].first.pos + extCluster[c].matchesLengths[prev] - 30) {
 
 					overlap_r = extCluster[c].matches[prev].first.pos + extCluster[c].matchesLengths[prev] - extCluster[c].matches[cur].first.pos;
-					assert(overlap_r <= 30); //assert(overlap_r > 0);
+					assert(overlap_r <= 60); //assert(overlap_r > 0);//30
 					lr = 1;
 				}				
 			}
@@ -396,7 +396,7 @@ TrimOverlappedAnchors(vector<Cluster> & extCluster) {
 					extCluster[c].matches[cur].first.pos + extCluster[c].matchesLengths[cur] <= extCluster[c].matches[prev].first.pos + 30) {
 
 					overlap_r = extCluster[c].matches[cur].first.pos + extCluster[c].matchesLengths[cur] - extCluster[c].matches[prev].first.pos;
-					assert(overlap_r <= 30); //assert(overlap_r > 0);
+					assert(overlap_r <= 60); //assert(overlap_r > 0);
 					lr = 1;
 				}				
 			}
@@ -408,7 +408,7 @@ TrimOverlappedAnchors(vector<Cluster> & extCluster) {
 				extCluster[c].matches[cur].second.pos >= extCluster[c].matches[prev].second.pos + extCluster[c].matchesLengths[prev] - 30) {
 
 				overlap_g = extCluster[c].matches[prev].second.pos + extCluster[c].matchesLengths[prev] - extCluster[c].matches[cur].second.pos;
-				assert(overlap_g <= 30); assert(overlap_g > 0);
+				assert(overlap_g <= 60); assert(overlap_g > 0);
 				lg = 1;
 			}
 			

@@ -279,10 +279,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.rate_value=1;
 			opts.anchor_rate=2.0;
 			opts.cleanMaxDiag=400;
-			opts.maxGap=500000;
+			opts.maxGap=30000;//30000
 			opts.NumAln=2;
    			opts.PrintNumAln = 1;
-			// opts.maxDiag=500;
+   			opts.predefined_coefficient=15;	
+			opts.maxDiag=500; //500
 			// opts.maxGap=1500;
 			// opts.globalMaxFreq = 30;
 			// opts.NumOfminimizersPerWindow = 1;	
@@ -632,9 +633,9 @@ void RunStoreGlobal(int argc, const char* argv[],
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.globalK = 17;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 80;
+			opts.globalMaxFreq = 80;//80
 			opts.globalWinsize = 18;
-			opts.NumOfminimizersPerWindow = 1;		
+			opts.NumOfminimizersPerWindow = 1;	
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.globalK = 15;

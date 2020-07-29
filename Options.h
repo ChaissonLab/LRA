@@ -83,6 +83,7 @@ public:
 	bool RefineBySDP;
 	int refineSpaceDiag;
 	float anchor_rate;
+	int predefined_coefficient;
 	Options() {
 		storeTiming=false;
 		readType=Options::raw;
@@ -164,6 +165,7 @@ public:
 		RefineBySDP=true;
 		refineSpaceDiag=5;
 		anchor_rate=1.0;
+		predefined_coefficient=12;
 	}
 };
 #endif
