@@ -903,51 +903,51 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 	//
 	// Remove those Primary_chains which align across chromosome, but overlap a lot on read coordinates;
 	//
-	for (int p = 0; p < Primary_chains.size(); p++) {
-		//vector<bool> remove(Primary_chains[p].chains.size(), 0);
-		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
-			vector<bool> remove(Primary_chains[p].chains[h].ch.size(), 0);
- 			int c = 1;
- 			int c_cur, c_prev;
-			while (c < Primary_chains[p].chains[h].ch.size()) {
-				c_cur = Primary_chains[p].chains[h].ch[c];
-				c_prev = Primary_chains[p].chains[h].ch[c-1];
-				long clustlen = max(clusters[c_prev].qEnd - clusters[c_prev].qStart, clusters[c_cur].qEnd-clusters[c_cur].qStart);
-				long clustdist = 0, overlap_q = 0;
-				if (Primary_chains[p].chains[h].link[c-1] == 0) {
-					if (clusters[c_prev].tStart > clusters[c_cur].tEnd) clustdist = clusters[c_prev].tStart - clusters[c_cur].tEnd;
-				}
-				else {
-					if (clusters[c_cur].tStart > clusters[c_prev].tEnd) clustdist = clusters[c_cur].tStart - clusters[c_prev].tEnd;
-				}
-				if (clustdist > min(genome.lengths[clusters[c_cur].chromIndex], genome.lengths[clusters[c_prev].chromIndex])) {
-					if (clusters[c_prev].qStart < clusters[c_cur].qEnd) {
-						overlap_q = min(clusters[c_prev].qEnd, clusters[c_cur].qEnd)-max(clusters[c_prev].qStart, clusters[c_cur].qStart);
-						//cerr << "clustlen: " << clustlen << " overlap_q: " << overlap_q << endl; 
-						if (overlap_q > 0 and overlap_q / (float) clustlen > 0.5) {
-							remove[c] = 1;
-						}
-					}
-				}
-				c++;
-			}	
-			int cq = 0;
-			int lq = 0;
-			for (int cr = 0; cr < Primary_chains[p].chains[h].ch.size(); cr++) {	
-				if (remove[cr] == 0) {
-					Primary_chains[p].chains[h].ch[cq] = Primary_chains[p].chains[h].ch[cr];
-					cq++;
-					if (cr >= 1){
-						Primary_chains[p].chains[h].link[lq] = Primary_chains[p].chains[h].link[cr-1];
-						lq++;
-					}
-				}
+	// for (int p = 0; p < Primary_chains.size(); p++) {
+	// 	//vector<bool> remove(Primary_chains[p].chains.size(), 0);
+	// 	for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
+	// 		vector<bool> remove(Primary_chains[p].chains[h].ch.size(), 0);
+ // 			int c = 1;
+ // 			int c_cur, c_prev;
+	// 		while (c < Primary_chains[p].chains[h].ch.size()) {
+	// 			c_cur = Primary_chains[p].chains[h].ch[c];
+	// 			c_prev = Primary_chains[p].chains[h].ch[c-1];
+	// 			long clustlen = max(clusters[c_prev].qEnd - clusters[c_prev].qStart, clusters[c_cur].qEnd-clusters[c_cur].qStart);
+	// 			long clustdist = 0, overlap_q = 0;
+	// 			if (Primary_chains[p].chains[h].link[c-1] == 0) {
+	// 				if (clusters[c_prev].tStart > clusters[c_cur].tEnd) clustdist = clusters[c_prev].tStart - clusters[c_cur].tEnd;
+	// 			}
+	// 			else {
+	// 				if (clusters[c_cur].tStart > clusters[c_prev].tEnd) clustdist = clusters[c_cur].tStart - clusters[c_prev].tEnd;
+	// 			}
+	// 			if (clustdist > min(genome.lengths[clusters[c_cur].chromIndex], genome.lengths[clusters[c_prev].chromIndex])) {
+	// 				if (clusters[c_prev].qStart < clusters[c_cur].qEnd) {
+	// 					overlap_q = min(clusters[c_prev].qEnd, clusters[c_cur].qEnd)-max(clusters[c_prev].qStart, clusters[c_cur].qStart);
+	// 					//cerr << "clustlen: " << clustlen << " overlap_q: " << overlap_q << endl; 
+	// 					if (overlap_q > 0 and overlap_q / (float) clustlen > 0.5) {
+	// 						remove[c] = 1;
+	// 					}
+	// 				}
+	// 			}
+	// 			c++;
+	// 		}	
+	// 		int cq = 0;
+	// 		int lq = 0;
+	// 		for (int cr = 0; cr < Primary_chains[p].chains[h].ch.size(); cr++) {	
+	// 			if (remove[cr] == 0) {
+	// 				Primary_chains[p].chains[h].ch[cq] = Primary_chains[p].chains[h].ch[cr];
+	// 				cq++;
+	// 				if (cr >= 1){
+	// 					Primary_chains[p].chains[h].link[lq] = Primary_chains[p].chains[h].link[cr-1];
+	// 					lq++;
+	// 				}
+	// 			}
 
-			}
-			Primary_chains[p].chains[h].ch.resize(cq);
-			Primary_chains[p].chains[h].link.resize(lq);
-		}
-	}	
+	// 		}
+	// 		Primary_chains[p].chains[h].ch.resize(cq);
+	// 		Primary_chains[p].chains[h].link.resize(lq);
+	// 	}
+	// }	
 	return 0;
 }
 
@@ -1855,7 +1855,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		cpclust.close();
 	}
 	
-	ClusterOrder fineClusterOrder(&clusters, 1);  // has some bug (delete clusters which should be kept)
+	ClusterOrder fineClusterOrder(&clusters, 1);  // has some bug (delete clusters which should be kept -- cluster9_scaffold_58.fasta and cluster18_contig_234.fasta)
 	RemoveOverlappingClusters(clusters, fineClusterOrder.index, opts);
 	if (opts.dotPlot) {
 		ofstream clust("clusters-post-remove.tab");
