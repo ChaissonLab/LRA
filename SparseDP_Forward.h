@@ -311,7 +311,7 @@ TraceBack_ForwardOnly (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, c
 // Each fragment has the same length
 //
 int SparseDP_ForwardOnly (const GenomePairs &FragInput, const vector<int> &MatchLengths, std::vector<unsigned int> &chain, Options &opts, 
-							const std::vector<float> &LookUpTable, int rate = 5) {
+							const std::vector<float> &LookUpTable, float &inv_value, int &inv_NumOfAnchors, int rate = 5) {
 	
 	if (FragInput.size() == 0) return 0;
 	std::vector<Point> H1;
@@ -458,6 +458,8 @@ int SparseDP_ForwardOnly (const GenomePairs &FragInput, const vector<int> &Match
 		++l;
 	}
 	
+	inv_value = max_value;
+	inv_NumOfAnchors = chain.size();
 	//cerr << "TraceBack\n";
 	// Trace back to get the FinalChain
 	// store the index of points

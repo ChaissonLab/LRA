@@ -443,6 +443,13 @@ class Alignment {
 		prepared=true;
 	}
 
+	void UpdateParameters(bool &str, Options &opts, const std::vector<float> & LookUpTable, ostream *svsigstrm, char *strands[2]) {
+		read = strands[str];
+		strand = str;
+		nblocks = blocks.size();
+		CalculateStatistics(opts, svsigstrm, LookUpTable);
+	}
+
 	void CalculateStatistics(Options & opts, ostream *svsigstrm, const std::vector<float> & LookUpTable) {
 
 		CreateAlignmentStrings(read, genome, queryString, alignString, refString);

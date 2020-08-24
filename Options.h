@@ -84,6 +84,8 @@ public:
 	int refineSpaceDiag;
 	float anchor_rate;
 	int predefined_coefficient;
+	float anchorstoosparse;
+
 	Options() {
 		storeTiming=false;
 		readType=Options::raw;
@@ -166,6 +168,7 @@ public:
 		refineSpaceDiag=5;
 		anchor_rate=1.0;
 		predefined_coefficient=12;
+		anchorstoosparse=0.02;
 	}
 };
 #endif

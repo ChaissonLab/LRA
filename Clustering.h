@@ -785,31 +785,6 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 			for (int i = c_s; i < c_e; i++) {
 				clusters.back().matches.push_back(matches[i]);				
 			}	
-
-			// if (opts.dotPlot) {
-			// 	ofstream uniquepart("UniquePart.tab", std::ofstream::app);
-			// 	for (int i = c_s; i < c_e; i++) {
-			// 		if (strand == 0) {
-			// 			uniquepart << matches[i].first.pos << "\t"
-			// 				  << matches[i].second.pos << "\t"
-			// 				  << matches[i].first.pos + opts.globalK << "\t"
-			// 				  << matches[i].second.pos + opts.globalK << "\t"
-			// 				  << outerIteration << "\t"
-			// 				  << opts.slope << "\t"
-			// 				  << strand << endl;
-			// 		}
-			// 		else {
-			// 			uniquepart << matches[i].first.pos << "\t"
-			// 				  << matches[i].second.pos + opts.globalK << "\t"
-			// 				  << matches[i].first.pos + opts.globalK << "\t"
-			// 				  << matches[i].second.pos<< "\t"
-			// 				  << outerIteration << "\t"
-			// 				  << opts.slope << "\t"					  
-			// 				  << strand << endl;					
-			// 		}				
-		 //        }
-			// 	uniquepart.close();
-			// }
 		}
 		else {
 			//

@@ -284,6 +284,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
    			opts.PrintNumAln = 1;
    			opts.predefined_coefficient=15;	
 			opts.maxDiag=500; //500
+			opts.anchorstoosparse=0.03;
 			// opts.maxGap=1500;
 			// opts.globalMaxFreq = 30;
 			// opts.NumOfminimizersPerWindow = 1;	

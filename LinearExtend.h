@@ -432,11 +432,11 @@ TrimOverlappedAnchors(vector<Cluster> & extCluster) {
 // Input: GenomePairs pairs; Output: GenomePairs ExtendPairs; vector<int> ExtendPairsMatchesLength;
 // NOTE: Only forward strand;
 //
-void LinearExtend(GenomePairs &pairs, GenomePairs & Extendpairs, vector<int> &ExtendpairsMatchesLength, Options &opts, Genome &genome, Read &read, int &chromIndex) {
+void LinearExtend(GenomePairs * pairs, GenomePairs & Extendpairs, vector<int> &ExtendpairsMatchesLength, Options &opts, Genome &genome, Read &read, int &chromIndex) {
 	//
 	// Sort each Cluster
 	//
-	DiagonalSort<GenomeTuple>(pairs.begin(), pairs.end());
+	DiagonalSort<GenomeTuple>((*pairs).begin(), (*pairs).end());
 	//
 	// Linear Extension;
 	// NOTICE: anchors have the same strand;
@@ -445,41 +445,41 @@ void LinearExtend(GenomePairs &pairs, GenomePairs & Extendpairs, vector<int> &Ex
 	int m = 0;
 	int strand = 0;
 	int mat = 0;
-	while (n < pairs.size()) {
+	while (n < (*pairs).size()) {
 
 		long long int curDiag, nextDiag;
-		curDiag = (long long int) pairs[n-1].first.pos - (long long int) pairs[n-1].second.pos;
-		nextDiag = (long long int) pairs[n].first.pos - (long long int) pairs[n].second.pos;
+		curDiag = (long long int) (*pairs)[n-1].first.pos - (long long int) (*pairs)[n-1].second.pos;
+		nextDiag = (long long int) (*pairs)[n].first.pos - (long long int) (*pairs)[n].second.pos;
 
 		if (curDiag == nextDiag) { // those two anchors are on the same diagonal
 
-			if (pairs[n].first.pos < pairs[n-1].first.pos + opts.globalK) { // anchor n-1 and anchor n are overlapped
+			if ((*pairs)[n].first.pos < (*pairs)[n-1].first.pos + opts.globalK) { // anchor n-1 and anchor n are overlapped
 				n++;
 			}
 			else { //  anchor n-1 and anchor n are not overlapped; Need to extend after anchor n-1
 				GenomePos qe, te;
-				Checkbp(pairs[n-1], pairs[n], genome, read, chromIndex, qe, te, strand, opts, mat);
-				if (qe == pairs[n].first.pos and te == pairs[n].second.pos) {
+				Checkbp((*pairs)[n-1], (*pairs)[n], genome, read, chromIndex, qe, te, strand, opts, mat);
+				if (qe == (*pairs)[n].first.pos and te == (*pairs)[n].second.pos) {
 					n++;
 				}
 				else {
-					Extendpairs.push_back(GenomePair(GenomeTuple(0, pairs[m].first.pos), GenomeTuple(0, pairs[m].second.pos)));
-					ExtendpairsMatchesLength.push_back(qe - pairs[m].first.pos);
+					Extendpairs.push_back(GenomePair(GenomeTuple(0, (*pairs)[m].first.pos), GenomeTuple(0, (*pairs)[m].second.pos)));
+					ExtendpairsMatchesLength.push_back(qe - (*pairs)[m].first.pos);
 					m = n;
 					n++;
 				}
 			}
 		}
 		else {
-			Extendpairs.push_back(GenomePair(GenomeTuple(0, pairs[m].first.pos), GenomeTuple(0, pairs[m].second.pos)));
-			ExtendpairsMatchesLength.push_back(pairs[n-1].first.pos + opts.globalK - pairs[m].first.pos);
+			Extendpairs.push_back(GenomePair(GenomeTuple(0, (*pairs)[m].first.pos), GenomeTuple(0, (*pairs)[m].second.pos)));
+			ExtendpairsMatchesLength.push_back((*pairs)[n-1].first.pos + opts.globalK - (*pairs)[m].first.pos);
 			m = n;
 			n++;
 		}
 	}
-	if (n == pairs.size()) { // and m != n-1
-		Extendpairs.push_back(GenomePair(GenomeTuple(0, pairs[m].first.pos), GenomeTuple(0, pairs[m].second.pos)));
-		ExtendpairsMatchesLength.push_back(pairs[n-1].first.pos + opts.globalK - pairs[m].first.pos);		
+	if (n == (*pairs).size()) { // and m != n-1
+		Extendpairs.push_back(GenomePair(GenomeTuple(0, (*pairs)[m].first.pos), GenomeTuple(0, (*pairs)[m].second.pos)));
+		ExtendpairsMatchesLength.push_back((*pairs)[n-1].first.pos + opts.globalK - (*pairs)[m].first.pos);		
 	}
 }
 
