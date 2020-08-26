@@ -11,6 +11,7 @@
 #include <sstream>
 #include <algorithm>
 #include <math.h>       
+#include <string>
 using namespace std;
 const unsigned int READ_UNMAPPED=0x4;
 const unsigned int READ_REVERSE=0x10;
@@ -56,13 +57,14 @@ class Alignment {
  	float totalValue;
  	float FirstSDPValue;
 	int NumOfAnchors; 	
+	int typeofaln; // 0 -> Primary; 1->secondary; 3-> inversion
+	GenomePos qStart, qEnd, tStart, tEnd;
+
 
 	void Clear() {
 		queryString=alignString=refString="";
 		blocks.clear();
 	}
-	GenomePos qStart, qEnd, tStart, tEnd;
-
 	void SetSecondary() {
 		flag = flag | READ_SECONDARY;
 	}
@@ -96,6 +98,7 @@ class Alignment {
 		// Will eventually contain quality value strings.
 		passthrough=NULL;
 		NumOfAnchors=0;
+		typeofaln=0;
 	}
  	Alignment(float _FirstSDPValue, char *_read, char *_forward, 
 					 int _rl, string _rn, int _str, 
@@ -112,7 +115,7 @@ class Alignment {
 		genomeLen = _gl;
 		chrom=_chrom;
 		chromIndex=_ci;
-
+		typeofaln=0;
 	}
 
 	int GetQStart() const {
@@ -544,7 +547,16 @@ class Alignment {
 		out << "TD:i:" << tdel << "\t";
 		out << "NI:i:" << nins << "\t";
     	out << "AS:i:" << value << "\t";
-		out << "TI:i:" << tins;
+		out << "TI:i:" << tins << "\t";
+		if (typeofaln == 0) {
+			out << "TP:A:" << "P\t";
+		}
+		else if (typeofaln == 1) {
+			out << "TP:A:" << "S\t";
+		}
+		else {
+			out << "TP:A:" << "I\t";
+		}
 		if (nanchors > 0) {
 			out << "\tNA:i:" << nanchors;
 		}
@@ -787,6 +799,7 @@ public:
 			if ((*alignments)[i].ISsecondary == 1) {
 				for (int z = 0; z < (*alignments)[i].SegAlignment.size(); z++) {
 					(*alignments)[i].SegAlignment[z]->flag = (*alignments)[i].SegAlignment[z]->flag | READ_SECONDARY;
+					if ((*alignments)[i].SegAlignment[z]->typeofaln != 3) (*alignments)[i].SegAlignment[z]->typeofaln = 2;
 				}
 			}
 		}

@@ -1483,7 +1483,8 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			//
 			// try finding seeds in the inversed direction
 			//
-			if ((for_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse) { // try inversion
+			if ((for_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse 
+					and alignments.back().SegAlignment.back()->blocks.size() >=5 ) { // try inversion
 				//BtwnPairs.clear();
 				GenomePos temp = curReadEnd;
 				curReadEnd = read.length - nextReadStart;
@@ -2679,6 +2680,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				// found in the spaces before insert them into the alignment if necessary;
 				// INPUT: vector<int> finalchainSeperateStrand; OUTPUT: Alignment *alignment;
 				//
+				int ad = alignments.back().SegAlignment.size();
 				for (int fsc = 0; fsc < finalSeperateChain.size(); fsc++) {
 
 					assert(finalSeperateChain[fsc].size() == 2);
@@ -2782,6 +2784,39 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					//
 					alignments.back().SegAlignment.back()->UpdateParameters(str, smallOpts, LookUpTable, svsigstrm, strands);
 				}
+				//
+				// Decide the inversion flag for each segment alignment; seek +,-,+ or -,+,-
+				//
+				int js = ad+2;
+				while (js < alignments.back().SegAlignment.size()) {
+					if ((alignments.back().SegAlignment[js-2]->strand == 0 and alignments.back().SegAlignment[js-1]->strand == 1
+						and alignments.back().SegAlignment[js]->strand == 0) or ((alignments.back().SegAlignment[js-2]->strand == 1 
+						and alignments.back().SegAlignment[js-1]->strand == 0 and alignments.back().SegAlignment[js]->strand == 1))) {
+
+						//
+						// inversion cannot be too far (<10,000) from alignments at both sides;
+						//
+						if (alignments.back().SegAlignment[js-1]->tStart > alignments.back().SegAlignment[js-2]->tEnd + 10000
+							or alignments.back().SegAlignment[js]->tStart > alignments.back().SegAlignment[js-1]->tEnd + 10000) {
+							js++;
+							continue;
+						}
+						//
+						// length requirements; 
+						//
+						else if (alignments.back().SegAlignment[js]->nm < 500 or alignments.back().SegAlignment[js-1]->nm < 500
+								or alignments.back().SegAlignment[js-2]->nm < 40 or alignments.back().SegAlignment[js-2]->nm > 15000) {
+							js++;
+							continue;
+						}
+						else if (alignments.back().SegAlignment[js-2]->typeofaln != 3) {
+
+							alignments.back().SegAlignment[js-1]->typeofaln=3;
+						}
+					}
+					js++;
+				}
+
 			}
 			alignments.back().SetFromSegAlignment(smallOpts);
 		}
