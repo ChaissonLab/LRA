@@ -31,6 +31,7 @@
 #include <thread>
 #include <thread>
 #include <climits>
+#include <map>
 
 using namespace std;
 
@@ -899,6 +900,70 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 	  		Primary_chains[p].chains[h].ch.resize(pdist);			
 		}
 	}
+	//
+	// For cases like chain = {22, 125, 19, 125, 16, 17, 125, 57, 125}, compress multiple 125 to one 125;
+	//
+	for (int p = 0; p < Primary_chains.size(); p++) {
+		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
+			std::map<int, int> appeartimes;
+			std::map<int, int> start_pos;
+			std::map<int, int> end_pos;
+			for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++){
+				int ats = Primary_chains[p].chains[h].ch[c];
+				if (appeartimes.count(ats) > 0) {
+					appeartimes[ats] += 1;
+					end_pos[ats] = c + 1;
+				}
+				else {
+					appeartimes[ats] = 1;
+					start_pos[ats] = c;
+					end_pos[ats] = c + 1;
+				}
+			}	
+
+			if (start_pos.size() == 0) {continue;}
+
+			vector<tuple<int, int> > start_end;
+			for (std::map<int,int>::iterator ait=start_pos.begin(); ait!=start_pos.end(); ++ait) {
+				if (end_pos[ait->first] > ait->second + 1) {
+					start_end.push_back(make_tuple(ait->second, end_pos[ait->first]));					
+				}
+			}
+			sort(start_end.begin(), start_end.end());
+
+			vector<unsigned int> newch;
+			vector<bool> newlink;
+			int ste = 0;
+			int nc = 0;
+			int cur_ste_end = 0;
+			while (ste < start_end.size()) {
+				while (nc <= get<0>(start_end[ste])) {
+					newch.push_back(Primary_chains[p].chains[h].ch[nc]);
+					if (newch.size() > 1) {
+						newlink.push_back(Primary_chains[p].chains[h].link[nc-1]);
+					}
+					nc++;					
+				}
+				nc = get<1>(start_end[ste]);
+				//newch.push_back(Primary_chains[p].chains[h].ch[nc]); // add the end
+				ste++;
+			}
+			while (nc < Primary_chains[p].chains[h].ch.size()) {
+				newch.push_back(Primary_chains[p].chains[h].ch[nc]);
+				if (newch.size() > 1) {
+					newlink.push_back(Primary_chains[p].chains[h].link[nc-1]);
+				}
+				nc++;
+			}
+			Primary_chains[p].chains[h].ch = newch;
+			int snch = newch.size(); int snlink = newlink.size();
+			Primary_chains[p].chains[h].ch.resize(snch);
+			Primary_chains[p].chains[h].link = newlink;
+			Primary_chains[p].chains[h].link.resize(snlink);
+		}
+	}	
+
+
 	//
 	// Remove those Primary_chains which align across chromosome, but overlap a lot on read coordinates;
 	//
