@@ -1,0 +1,5 @@
+{
+	"ref" : "/panfs/qcb-panasas/jingwenr/reference/CONTIG/human_hs37d5.fasta",
+	"path" : "/panfs/qcb-panasas/jingwenr/master/LRA/call_assembly_SVs/calls/",
+	"centromere" : "/panfs/qcb-panasas/jingwenr/master/LRA/call_assembly_SVs/hg19_centromere.bed"
+}
