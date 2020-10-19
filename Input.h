@@ -81,7 +81,7 @@ class Input {
 		nReads=0;
 		istream *strmPtr;
 		doInit = false;
-		if (filename == "-") {
+		if (filename == "-" or filename == "stdin") {
 			strmPtr = &std::cin;
 		}
 		else {
@@ -90,7 +90,6 @@ class Input {
 			strmPtr = &strm;
 		}
 		if (StreamIsFasta(*strmPtr) or StreamIsFastq(*strmPtr) ) {
-
 			inputType=0;
 			if (ks != NULL) {
 				kseq_destroy(ks);
@@ -200,8 +199,8 @@ class Input {
 				bam1_t *b = bam_init1();
 				res= sam_read1(htsfp, samHeader, b);
 				while (res > 0 and readOne == false) {
-					if (res > 0) {
-						if ((b->core.flag & flagRemove) == 0) {							
+					if (res > 0) {	
+					if ((b->core.flag & flagRemove) == 0) {							
 							read.length = b->core.l_qseq;			
 							read.seq = new char[read.length];
 							read.name = string(bam_get_qname(b));
