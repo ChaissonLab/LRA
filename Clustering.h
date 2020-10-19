@@ -4,8 +4,6 @@
 #include <vector>
 #include <climits>
 #include <list>
-#include <boost/icl/interval_map.hpp>
-using namespace boost::icl;
 using namespace std;
 
 template<typename Tup>
