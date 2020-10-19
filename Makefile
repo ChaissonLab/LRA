@@ -1,4 +1,4 @@
-all:  lra alchemy2 tgc iik 
+all:  lra 
 PROF=/home/cmb-16/mjc/shared/lib/
 #PROF=/home/cmb-16/mjc/jingwenr/software/lib
 CCOPTS_BASE=
