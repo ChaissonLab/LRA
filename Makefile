@@ -47,9 +47,6 @@ HEADERS=MinCount.h \
 CXX=g++
 # -std=c++14 
 
-htslib/lib/libhts.a:
-	cd htslib && autoheader && autoconf && ./configure --disable-s3 --disable-lzma --disable-bz2 --prefix=$(PWD)/htslib/ && make -j 4 && make install
-
 tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 	$(CXX) -g TestAffineOneGapAlign.cpp -o tag 
 # -D _MAT_PRINT_
@@ -58,7 +55,7 @@ tgc: TestGlobalChain.cpp GlobalChain.h Fragment.h BasicEndpoint.h PrioritySearch
 	$(CXX) -g TestGlobalChain.cpp -o tgc
 
 lra: lra.o
-	$(CXX) $(STATIC) $(CCOPTS) $^ -L $(PWD)/htslib/lib  -lhts -lz -lpthread -o $@ -Wl,-rpath,$(PWD)/htslib/lib  
+	$(CXX) $(STATIC) $(CCOPTS) $^ -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib  -lhts -lz -lpthread -ldeflate -lbz2 -lhts -o $@ 
 
 alchemy2: Alchemy2.o
 	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib  -lhts -lz -lpthread -o $@  -Wl,-rpath,$(PWD)/htslib/lib
@@ -66,8 +63,8 @@ alchemy2: Alchemy2.o
 qti: QueryTime.o
 	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
 
-lra.o: lra.cpp $(HEADERS) htslib/lib/libhts.a  
-	$(CXX) $(CCOPTS) -c  -I htslib/include  lra.cpp 
+lra.o: lra.cpp $(HEADERS) 
+	$(CXX) $(CCOPTS) -c  -I $(CONDA_PREFIX)/include/  lra.cpp 
 #  $(CXX) $(CCOPTS) -c  -I htslib/include  lra.cpp 
 
 Alchemy2.o: Alchemy2.cpp Genome.h htslib/lib/libhts.a
