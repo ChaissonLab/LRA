@@ -11,14 +11,14 @@ Install from github: `git clone --recursive https://github.com/ChaissonLab/LRA.g
 ## <a name="started"></a>General Usage
 1. LRA needs to first build a two-tiered minimizer indexes (global and local) for the reference before mapping. Both can be built at once using commands:
 ```sh
-lra index \-CCS/CLR/ONT/CONTIG ref.fa
+lra index -CCS/CLR/ONT/CONTIG ref.fa
 ```
 LRA has different parameters setting for the index when aligning reads from different sequencing instruments (CCS/CLR/ONT/CONTIG). You can also custimize the parameters. Details see `lra index --help`. LRA takes a few minutes to index the human reference genome
 
 Alternatively the global and local indexes may be built separately: 
 ```sh
-lra global -CCS/CLR/ONT/CONTIG ref.fa
-lra local -CCS/CLR/ONT/CONTIG ref.fa
+`lra global -CCS/CLR/ONT/CONTIG ref.fa`
+`lra local -CCS/CLR/ONT/CONTIG ref.fa`
 ```
 
 2. LRA takes reads fasta, fastq, sam, or bam format in the mapping step. The output format can be SAM, PAF, BED, and pairwise alignment. Details see `lra align --help`. The usage of multiple threads can be specified by `-t`. LRA uses the same base algorithm for mapping all datatypes with different parameters settings. It is recommended to choose among `CCS/CLR/ONT/CONTIG` based on the accuracy and average length of the input reads. 
@@ -35,7 +35,7 @@ lra align -CCS/CLR/ONT/CONTIG ref.fa read.fa -t 16 -p b > output.bed
 LRA uses a set of customized tags in SAM and PAF output.
 
 |Tag|Type  |Description                                  						|
-|--:|:----:|:-------------------------------------------------------------------|
+|:--|:----:|:-------------------------------------------------------------------|
 |NM |i |Number of matches in the alignment                                      |
 |NX |i |Number of mismatches in the alignment                                   |
 |ND |i |Number of bases of deletions in the alignment                           |
