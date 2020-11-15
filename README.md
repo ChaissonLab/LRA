@@ -17,16 +17,16 @@ LRA has different parameters setting for the index when aligning reads from diff
 
 Alternatively the global and local indexes may be built separately: 
 ```sh
-lra global \-CCS/CLR/ONT/CONTIG ref.fa
-lra local \-CCS/CLR/ONT/CONTIG ref.fa
+lra global -CCS/CLR/ONT/CONTIG ref.fa
+lra local -CCS/CLR/ONT/CONTIG ref.fa
 ```
 
 2. LRA takes reads fasta, fastq, sam, or bam format in the mapping step. The output format can be SAM, PAF, BED, and pairwise alignment. Details see `lra align --help`. The usage of multiple threads can be specified by `-t`. LRA uses the same base algorithm for mapping all datatypes with different parameters settings. It is recommended to choose among `CCS/CLR/ONT/CONTIG` based on the accuracy and average length of the input reads. 
 
 ```sh
-lra align \-CCS/CLR/ONT/CONTIG ref.fa read.fa \-t 16 \-p s > output.sam  
-lra align \-CCS/CLR/ONT/CONTIG ref.fa read.fa \-t 16 \-p p > output.paf  
-lra align \-CCS/CLR/ONT/CONTIG ref.fa read.fa \-t 16 \-p b > output.bed
+lra align -CCS/CLR/ONT/CONTIG ref.fa read.fa -t 16 -p s > output.sam  
+lra align -CCS/CLR/ONT/CONTIG ref.fa read.fa -t 16 -p p > output.paf  
+lra align -CCS/CLR/ONT/CONTIG ref.fa read.fa -t 16 -p b > output.bed
 ```
 
 ##<a name="started"></a>Output Format
@@ -34,20 +34,19 @@ lra align \-CCS/CLR/ONT/CONTIG ref.fa read.fa \-t 16 \-p b > output.bed
 #### <a name="sam"></a>SAM format
 LRA uses a set of customized tags in SAM and PAF output.
 
-|Tag|Type  |Description                                         |
-|--:|:----:|:---------------------------------------------------|
-|NM |i |Number of matches in the alignment               |
-|NX |i |Number of mismatches in the alignment            |
-|ND |i |Number of bases of deletions in the alignment    |
-|TD |i |Number of deletions in the alignment             |
-|NI |i |Number of bases of insertions in the alignment   |
-|TI |i |Number of insertions in the alignment            |
-|NV |f |The alignment score                              |
-|TP |A |Type of aln, P/primary, S/secondary, I/inversion |
-|RT |i |runtime   									     |
-|CG |z |CIGAR string        						     |	 
-|AO |i |This number shows the order of the aligned segment,\
-	        when a read is split.						 |
+|Tag|Type  |Description                                  						|
+|--:|:----:|:-------------------------------------------------------------------|
+|NM |i |Number of matches in the alignment                                      |
+|NX |i |Number of mismatches in the alignment                                   |
+|ND |i |Number of bases of deletions in the alignment                           |
+|TD |i |Number of deletions in the alignment                                    |
+|NI |i |Number of bases of insertions in the alignment                          |
+|TI |i |Number of insertions in the alignment                                   | 
+|NV |f |The alignment score                                                     |
+|TP |A |Type of aln, P/primary, S/secondary, I/inversion                        |
+|RT |i |runtime   									                            |
+|CG |z |CIGAR string        						                            |	 
+|AO |i |This number shows the order of the aligned segment when a read is split |
 
 
 
