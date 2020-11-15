@@ -382,7 +382,8 @@ class Alignment {
 				cigarstrm << i-p << 'D';
 				//ndel+=i-p;
 				tdel+=i-p;
-				if (i-p<=10) {ndel++;}
+				ndel++;
+				//if (i-p<=10) {ndel++;}
 				if (i-p < 501) {value += -opts.coefficient*log(i-p) - 1;}
 				else if (i-p <= 10001){
 					int a = (int)floor((i-p-501)/5);
@@ -397,7 +398,8 @@ class Alignment {
 				cigarstrm << i-p << 'I';
 				//nins+=i-p;
 				tins+=i-p;
-				if (i-p<=10) nins++;
+				nins++;
+				//if (i-p<=10) {nins++;}
 				if (i-p < 501) {value += -opts.coefficient*log(i-p) - 1;}
 				else if (i-p <= 10001){
 					int a = (int)floor((i-p-501)/5);
@@ -540,13 +542,13 @@ class Alignment {
 
 		out << readName << "\t" << queryString.size() << "\t" << qStart << "\t" << qEnd << "\t" 
 				<< strandChar << "\t" << chrom << "\t" << genomeLen << "\t" << tStart << "\t" << tEnd 
-				<< "\t" << nm+nmm+nins+ndel << "\t" << (int)mapqv << "\t" << "AO:i:" << order;
+				<< "\t" << nm+nmm+nins+ndel << "\t" << nm+nmm+tins+tdel << "\t" << (int)mapqv << "\t" << "AO:i:" << order;
 		out << "\tNM:i:" << nm << "\t";
 		out << "NX:i:" << nmm << "\t";
 		out << "ND:i:" << ndel << "\t";
 		out << "TD:i:" << tdel << "\t";
 		out << "NI:i:" << nins << "\t";
-    	out << "AS:i:" << value << "\t";
+    	out << "NV:f:" << value << "\t";
 		out << "TI:i:" << tins << "\t";
 		if (typeofaln == 0) {
 			out << "TP:A:" << "P\t";
@@ -649,7 +651,7 @@ class Alignment {
 			samStrm << "TD:i:" << tdel << "\t";
 			samStrm << "NI:i:" << nins << "\t";
 			samStrm << "TI:i:" << tins << "\t";
-			samStrm << "NV:i:" << value << "\t";
+			samStrm << "NV:f:" << value << "\t";
 			samStrm << "AO:i:" << order;
 		}
 		out << samStrm.str();
