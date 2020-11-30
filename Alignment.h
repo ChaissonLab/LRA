@@ -476,7 +476,7 @@ class Alignment {
 		// 
 		prepared=true;
 
-		if (split == 1) flag = flag | READ_MULTIPLESEGMENTS;
+		// if (split == 1) flag = flag | READ_MULTIPLESEGMENTS;
 		if (strand == 1) flag = flag | READ_REVERSE;
 		//if (ISsecondary == 1) flag = flag | READ_SECONDARY;
 		if (Supplymentary == 1) flag = flag | READ_SUPPLEMENTARY;
@@ -579,7 +579,7 @@ class Alignment {
 		}
 		out << endl;
 	}
-	void PrintSAM(ostream &out, Options &opts, char *passthrough=NULL) {
+	void PrintSAM(ostream &out, Options &opts, const vector<Alignment*> &alngroup, int as, char *passthrough=NULL) {
 		stringstream samStrm;
 		samStrm << readName << "\t";
 		assert(prepared);
@@ -652,7 +652,111 @@ class Alignment {
 			samStrm << "NI:i:" << nins << "\t";
 			samStrm << "TI:i:" << tins << "\t";
 			samStrm << "NV:f:" << value << "\t";
-			samStrm << "AO:i:" << order;
+			samStrm << "AO:i:" << order << "\t";
+
+			// output SA tag
+			if (alngroup.size() > 1) {
+				samStrm << "SA:Z:";
+			}
+			for (int ag = 0; ag < alngroup.size(); ag++) {
+				if (ag == as) {continue;}
+				samStrm << alngroup[ag]->chrom << ", " 
+						<< alngroup[ag]->tStart << ", ";
+				if (alngroup[ag]->strand == 1) {
+					samStrm << "+" << ", ";
+				}
+				else {
+					samStrm << "-" << ", ";
+				}
+				samStrm << alngroup[ag]->cigar << ", "
+						<< (unsigned int) alngroup[ag]->mapqv << ", "
+						<< int(alngroup[ag]->nm) << ";";
+			}
+
+		}
+		out << samStrm.str();
+		if (passthrough != NULL ) {
+			out << "\t" << passthrough;
+		}
+		out << endl;
+		out.flush();
+	}
+
+	void SimplePrintSAM(ostream &out, Options &opts, char *passthrough=NULL) {
+		stringstream samStrm;
+		samStrm << readName << "\t";
+		assert(prepared);
+		if (blocks.size() == 0) {
+			//
+			// Create a null alignment
+			//
+			chrom="*";
+			tStart=0;
+			tEnd=0;
+			order=0;
+			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t" << string(read,readLen) << "\t*" << endl;
+		}
+		else {
+
+			int last = blocks.size();
+			samStrm << (unsigned int) flag << "\t"
+							<< chrom << "\t" 
+							<< tStart+1 << "\t"
+							<< (unsigned int) mapqv << "\t";
+			char clipOp = 'S';
+			if (opts.hardClip) {
+				clipOp = 'H';
+			}
+			if (preClip > 0) {
+				samStrm << preClip << clipOp;
+			}
+			samStrm << cigar;
+			if (sufClip > 0) {
+				samStrm << sufClip << clipOp;
+			}
+			// Rnext, Pnext
+			samStrm << "\t*\t0\t";
+			// Template length
+			samStrm << tEnd - tStart << "\t";
+			string qualStr;
+			if (opts.hardClip) {
+				string subStr;
+				subStr=string(read, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);								
+				samStrm << subStr;
+				if (qual != NULL and strncmp(qual,"*",1) != 0) {
+					qualStr = string(qual, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);
+				}
+				else {
+					qualStr= "*";
+				}
+			}
+			else {
+				string readStr(read, 0, readLen);
+				samStrm << readStr;
+				if (qual[0] == '*') {
+					qualStr = "*";
+				}
+				else {
+					qualStr.assign(qual, readLen);
+				}
+			}
+			samStrm << "\t";
+			if ( qual == NULL ) {
+				samStrm << "*";
+			}
+			else {
+				samStrm << qualStr;
+			}
+			samStrm << "\t";
+			samStrm << "NM:i:" << nm << "\t";
+			samStrm << "NX:i:" << nmm << "\t";
+			samStrm << "ND:i:" << ndel << "\t";
+			samStrm << "TD:i:" << tdel << "\t";
+			samStrm << "NI:i:" << nins << "\t";
+			samStrm << "TI:i:" << tins << "\t";
+			samStrm << "NV:f:" << value << "\t";
+			samStrm << "AO:i:" << order << "\t";
+
 		}
 		out << samStrm.str();
 		if (passthrough != NULL ) {
@@ -742,36 +846,6 @@ public:
 	}
 };
 
-/*
-class AlignmentsOrder {
-public:
-	vector<SegAlignmentGroup> *alignments;
-	vector<int> index;
-
-	// constructor
-	AlignmentsOrder(vector<SegAlignmentGroup> *a): alignments(a) {
-		index.resize(a->size());
-		for (int i=0;i < index.size(); i++) { index[i]=i;}
-		Sort();
-	}
-
-	int operator()(const int i, const int j) {
-		return (*alignments)[i].value > (*alignments)[j].value;
-	}
-
-	void Sort() {
-		sort(index.begin(), index.end(), *this);
-	}
-
-	SegAlignmentGroup & operator[](int i) {
-		return (*alignments)[index[i]];
-	}
-
-	int size() {
-		return index.size();
-	}	
-};
-*/
 
 class AlignmentsOrder {
 public:
