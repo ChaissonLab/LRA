@@ -29,6 +29,12 @@ lra align -CCS/CLR/ONT/CONTIG ref.fa read.fa -t 16 -p p > output.paf
 lra align -CCS/CLR/ONT/CONTIG ref.fa read.fa -t 16 -p b > output.bed
 ```
 
+If you have read.fa.gz, you may pip the read.fa to lra.
+
+```
+zcat read.fa.gz | lra align -CCS ref.fa /dev/stdin -t -p s > output.sam
+```
+
 ## Output Format
 
 LRA uses a set of customized tags in SAM and PAF output.
@@ -46,6 +52,7 @@ LRA uses a set of customized tags in SAM and PAF output.
 |RT |i |runtime   									                            |
 |CG |z |CIGAR string        						                            |	 
 |AO |i |This number shows the order of the aligned segment when a read is split |
+
 
 
 
