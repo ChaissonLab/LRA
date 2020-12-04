@@ -2940,7 +2940,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					alignmentsOrder[a].SegAlignment[s]->PrintBed(*output);
 				}
 				else if (opts.printFormat == "s") {
-					alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts, alignmentsOrder[a].SegAlignment, s);
+					alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts, alignmentsOrder[a].SegAlignment, s, read.passthrough);
 				}
 				else if (opts.printFormat == "a") {
 					alignmentsOrder[a].SegAlignment[s]->PrintPairwise(*output);
@@ -2956,7 +2956,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 			Alignment unaligned;
 			unaligned.read=read.seq;
 			unaligned.readLen=read.length;
-			unaligned.SimplePrintSAM(*output,opts);
+			unaligned.SimplePrintSAM(*output, opts, read.passthrough);
 		}
 	}
 	

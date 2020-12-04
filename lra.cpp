@@ -75,7 +75,8 @@ void HelpMap() {
 			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
 			 << "   -d 	(flag)  Enable dotPlot" << endl
 			 << "   -PAl (int) Print at most how many alignments for one read" << endl
-			 << "   -Al (int) Compute at most how many alignments for one read" << endl;
+			 << "   -Al (int) Compute at most how many alignments for one read" << endl
+			 << "   --passthrough Pass auxilary tags from the input unaligned bam to the output" << endl;
 			 //<< "   -aa (flag)  use Merge.h" << endl;
 	cout << "Examples: " << endl
 			 << "Aligning CCS reads:  lra align -CCS -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
@@ -110,7 +111,7 @@ void MapReads(MapInfo *mapInfo) {
 	stringstream strm;
 	stringstream svsigstrm;
 	vector<Read> reads;
-	while (mapInfo->reader->BufferedRead(reads,IO_BUFFER_SIZE)) {
+	while (mapInfo->reader->BufferedRead(reads,IO_BUFFER_SIZE,(*mapInfo->opts))) {
 		if (mapInfo->opts->readStride != 1 and
 				mapInfo->reader->nReads % mapInfo->opts->readStride != mapInfo->opts->readStart ) {
 			continue;
@@ -221,6 +222,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "--maxDiag")) {
 			opts.maxDiag = atoi(GetArgv(argv, argc, argi));
+			++argi;
 		}
 		else if (ArgIs(argv[argi], "-t")) {
 			opts.nproc=atoi(GetArgv(argv, argc, argi));
@@ -255,6 +257,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}			
 		else if (ArgIs(argv[argi], "--timeRead")) {
 			opts.storeTiming=true;
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--passthrough")) {
+			opts.passthroughtag=true;
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.readType=Options::ccs;
@@ -487,7 +493,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	}
 	else {
 		Timing timing;
-		while (reader.GetNext(read)) {			
+		while (reader.GetNext(read, opts)) {
+			int rstmm = 0;			
 			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr, outSVsig, timing);
 			if (opts.timing != "") {
 				timing.Summarize(opts.timing);

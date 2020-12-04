@@ -14,6 +14,7 @@
 #include <iomanip>
 #include <vector>
 #include <assert.h>
+#include "Options.h"
 
 KSEQ_INIT(gzFile, gzread)
 
@@ -151,7 +152,7 @@ class Input {
 		return true;
 	}
 
-	bool GetNext(Read &read, bool overrideSemaphore=false, bool top=true) {
+	bool GetNext(Read &read, Options &opt, bool overrideSemaphore=false, bool top=true) {
 		read.Clear();
 
 		if (overrideSemaphore == false and top == true) {
@@ -194,13 +195,24 @@ class Input {
 					readOne=true;
 				}
 			}
-			else if (inputType == 1) {
+			else if (inputType == 1) { // sam input
 				int res;
 				bam1_t *b = bam_init1();
 				res= sam_read1(htsfp, samHeader, b);
 				while (res > 0 and readOne == false) {
 					if (res > 0) {	
-					if ((b->core.flag & flagRemove) == 0) {							
+					if ((b->core.flag & flagRemove) == 0) {		
+							// // get auxilary tags
+							// if (opt.passthroughtag and bam_get_aux(b))	{
+							// 	unsigned char *pq = bam_get_aux(b);
+							// 	int pq_len = strlen((char*)pq);
+							// 	read.passthrough = new unsigned char[pq_len + 1];
+							// 	for (int p=0; p<pq_len; p++) {
+							// 		read.passthrough[p] = pq[p];
+							// 	}
+							// 	read.passthrough[pq_len] = '\0';
+
+							// }				
 							read.length = b->core.l_qseq;			
 							read.seq = new char[read.length];
 							read.name = string(bam_get_qname(b));
@@ -208,10 +220,10 @@ class Input {
 							uint8_t *q = bam_get_seq(b);
 							for (int i=0; i < read.length; i++) {read.seq[i]=seq_nt16_str[bam_seqi(q,i)];	}
 							char* qual=(char*) bam_get_qual(b);
-							if (qual[0] == 0xff) {
-								qual = new char[2];
-								qual[1] = '\0';
-								qual[0] = '*';
+							if (qual[0] == char(0xff)) {
+								read.qual = new char[2];
+								read.qual[1] = '\0';
+								read.qual[0] = '*';
 							}
 							else {
 								read.qual=new char[read.length+1];
@@ -225,8 +237,40 @@ class Input {
 							// Eventually this will store the passthrough data
 							//
 							readOne=true;
+							if (opt.passthroughtag) {
+								int ksLen;
+								kstring_t fullKs;
+								int fullLen;
+								ks_initialize(&fullKs);
+								fullLen = sam_format1(samHeader, b, &fullKs);
+								int t=0;
+								int numTab=0;							
+								while (t < fullKs.l and numTab < 11) 
+									{
+										if (fullKs.s[t] == '\t') 
+											{
+												numTab++;
+											}
+										t+=1;									
+									}
+								if (t < fullKs.l) 
+									{
+										int lenPassthrough=fullKs.l-t;									
+										if (lenPassthrough > 0) 
+											{											
+												read.passthrough=new char[lenPassthrough+1];
+												read.passthrough[lenPassthrough]='\0';
+												memcpy(read.passthrough, fullKs.s + t, lenPassthrough);											
+											}
+										else
+											{
+												read.passthrough=NULL;
+											}
+									}
+								ks_free(&fullKs);								
+							}
 							bam_destroy1(b);
-							//							bam1_t *b = bam_init1();
+							//bam1_t *b = bam_init1();
 						}
 						else {
 							bam_destroy1(b);
@@ -246,7 +290,7 @@ class Input {
 			if (readOne == false and top == true ) {
 				++curFile;
 				doInit=true;
-				readOne=GetNext(read, overrideSemaphore, false);
+				readOne=GetNext(read, opt, overrideSemaphore, false);
 			}
 			basesRead += read.length;
 			totalRead += read.length;
@@ -257,13 +301,13 @@ class Input {
 		}
 		return readOne;
 	}
-	bool BufferedRead(vector<Read> &reads, int maxBufferSize) {
+	bool BufferedRead(vector<Read> &reads, int maxBufferSize, Options &opt) {
 		int totalSize=0;
 
 		pthread_mutex_lock(&semaphore);
 		Read read;
 
-		while(totalSize < maxBufferSize and GetNext(read, true, true)) {
+		while(totalSize < maxBufferSize and GetNext(read, opt, true, true)) {
 			reads.resize(reads.size()+1);
 			reads[reads.size()-1]=read;
 			totalSize += read.length;

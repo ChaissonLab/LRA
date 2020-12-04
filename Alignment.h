@@ -37,7 +37,6 @@ class Alignment {
 	bool prepared;
 	char *read;
 	char *forward;
-	char *passthrough;
 	char *qual;
 	int nanchors;
 	int readLen;
@@ -96,7 +95,6 @@ class Alignment {
 		FirstSDPValue=0;
 		order=0;
 		// Will eventually contain quality value strings.
-		passthrough=NULL;
 		NumOfAnchors=0;
 		typeofaln=0;
 	}
@@ -660,22 +658,41 @@ class Alignment {
 			}
 			for (int ag = 0; ag < alngroup.size(); ag++) {
 				if (ag == as) {continue;}
-				samStrm << alngroup[ag]->chrom << ", " 
-						<< alngroup[ag]->tStart << ", ";
+				samStrm << alngroup[ag]->chrom << "," 
+						<< alngroup[ag]->tStart << ",";
 				if (alngroup[ag]->strand == 1) {
-					samStrm << "+" << ", ";
+					samStrm << "+" << ",";
 				}
 				else {
-					samStrm << "-" << ", ";
+					samStrm << "-" << ",";
 				}
-				samStrm << alngroup[ag]->cigar << ", "
-						<< (unsigned int) alngroup[ag]->mapqv << ", "
+				char clipOp = 'S';
+				if (alngroup[ag]->preClip > 0) {
+					samStrm << alngroup[ag]->preClip << clipOp;
+				}
+				if (alngroup[ag]->tdel > alngroup[ag]->tins) {
+					samStrm << alngroup[ag]->tdel - alngroup[ag]->tins << 'D';
+				}
+				else {
+					samStrm << alngroup[ag]->tins - alngroup[ag]->tdel << 'I';
+				}
+				if (alngroup[ag]->preClip > 0) {
+					samStrm << alngroup[ag]->sufClip << clipOp;
+				}
+				samStrm << ","
+						<< (unsigned int) alngroup[ag]->mapqv << ","
 						<< int(alngroup[ag]->nm) << ";";
 			}
 
 		}
 		out << samStrm.str();
-		if (passthrough != NULL ) {
+		if (opts.passthroughtag and passthrough != NULL ) {
+			// // converts character array to string 
+		 //    int iq = strlen((char*)passthrough);
+		 //    string passthrough_string = ""; 
+		 //    for (int qt = 0; qt < iq; qt++) { 
+		 //        passthrough_string.push_back(passthrough[qt]); 
+		 //    } 
 			out << "\t" << passthrough;
 		}
 		out << endl;
@@ -755,11 +772,11 @@ class Alignment {
 			samStrm << "NI:i:" << nins << "\t";
 			samStrm << "TI:i:" << tins << "\t";
 			samStrm << "NV:f:" << value << "\t";
-			samStrm << "AO:i:" << order << "\t";
+			samStrm << "AO:i:" << order;
 
 		}
 		out << samStrm.str();
-		if (passthrough != NULL ) {
+		if (opts.passthroughtag and passthrough != NULL ) {
 			out << "\t" << passthrough;
 		}
 		out << endl;

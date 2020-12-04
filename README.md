@@ -21,7 +21,7 @@ lra global -CCS/CLR/ONT/CONTIG ref.fa
 lra local -CCS/CLR/ONT/CONTIG ref.fa
 ```
 
-2. LRA takes reads fasta, fastq, sam, or bam format in the mapping step. The output format can be SAM, PAF, BED, and pairwise alignment. Details see `lra align --help`. The usage of multiple threads can be specified by `-t`. LRA uses the same base algorithm for mapping all datatypes with different parameters settings. It is recommended to choose among `CCS/CLR/ONT/CONTIG` based on the accuracy and average length of the input reads. 
+2. LRA takes reads fasta, fastq or bam format in the mapping step. The output format can be SAM, PAF, BED, and pairwise alignment. Details see `lra align --help`. The usage of multiple threads can be specified by `-t`. LRA uses the same base algorithm for mapping all datatypes with different parameters settings. It is recommended to choose among `CCS/CLR/ONT/CONTIG` based on the accuracy and average length of the input reads. 
 
 ```
 lra align -CCS/CLR/ONT/CONTIG ref.fa read.fa -t 16 -p s > output.sam  

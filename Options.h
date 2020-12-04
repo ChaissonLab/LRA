@@ -85,6 +85,7 @@ public:
 	float anchor_rate;
 	int predefined_coefficient;
 	float anchorstoosparse;
+	bool passthroughtag;
 
 	Options() {
 		storeTiming=false;
@@ -169,6 +170,7 @@ public:
 		anchor_rate=1.0;
 		predefined_coefficient=12;
 		anchorstoosparse=0.02;
+		passthroughtag=false;
 	}
 };
 #endif
