@@ -1,6 +1,5 @@
 all:  lra 
 PROF=/home/cmb-16/mjc/shared/lib/
-#PROF=/home/cmb-16/mjc/jingwenr/software/lib
 CCOPTS_BASE=
 DEBUG?=""
 OPT?=""
@@ -55,7 +54,7 @@ tgc: TestGlobalChain.cpp GlobalChain.h Fragment.h BasicEndpoint.h PrioritySearch
 	$(CXX) -g TestGlobalChain.cpp -o tgc
 
 lra: lra.o
-	$(CXX) $(STATIC) $(CCOPTS) $^ -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib  -lhts -lz -lpthread -ldeflate -lbz2 -lhts -o $@ 
+	$(CXX) $(STATIC) $(CCOPTS) $^ -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib  -lhts -lz -lpthread -ldeflate -lbz2  -o $@ 
 
 alchemy2: Alchemy2.o
 	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib  -lhts -lz -lpthread -o $@  -Wl,-rpath,$(PWD)/htslib/lib

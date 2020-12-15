@@ -241,7 +241,7 @@ class Input {
 								int ksLen;
 								kstring_t fullKs;
 								int fullLen;
-								ks_initialize(&fullKs);
+								fullKs = { 0, 0, NULL };
 								fullLen = sam_format1(samHeader, b, &fullKs);
 								int t=0;
 								int numTab=0;							
@@ -267,7 +267,7 @@ class Input {
 												read.passthrough=NULL;
 											}
 									}
-								ks_free(&fullKs);								
+								free(fullKs.s);								
 							}
 							bam_destroy1(b);
 							//bam1_t *b = bam_init1();
