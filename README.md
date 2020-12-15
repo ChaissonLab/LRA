@@ -9,7 +9,7 @@ Install by bioconda: `conda install -c bioconda lra`
 Install from github or release:
 1. Dependency: `conda install -c bioconda htslib`;
 2. `conda activate base`;
-3. Get released latest source code from github `wget https://github.com/ChaissonLab/LRA/archive/V1.10.tar.gz && tar -xvf VX.XX.tar.gz && cd LRA-X.XX/ && make`. 
+3. Get released latest source code from github `wget https://github.com/ChaissonLab/LRA/archive/VX.XX.tar.gz && tar -xvf VX.XX.tar.gz && cd LRA-X.XX/ && make`. 
    Or get source code directly from the master branch `git clone --recursive https://github.com/ChaissonLab/LRA.git -b master && cd LRA && make`. You are all set for the installation!
 
 
