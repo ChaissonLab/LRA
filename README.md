@@ -7,9 +7,9 @@ LRA is a sequence alignment program that aligns long reads from single-molecule 
 Install by bioconda: `conda install -c bioconda lra`
 
 Install from github or release:
-Dependency: `conda install -c bioconda htslib`
-`git clone --recursive https://github.com/ChaissonLab/LRA.git -b master && cd LRA && make`
-
+#### Dependency: `conda install -c bioconda htslib`;
+#### Get released source code from github `wget https://github.com/ChaissonLab/LRA/archive/V1.10.tar.gz && tar -xvf V1.10.tar.gz && cd LRA-1.10/ && make`
+#### Or get source code directly from github `git clone --recursive https://github.com/ChaissonLab/LRA.git -b master && cd LRA && make`
 
 ## General Usage
 1. LRA needs to first build a two-tiered minimizer indexes (global and local) for the reference before mapping. Both can be built at once using commands:
