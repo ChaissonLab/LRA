@@ -659,24 +659,21 @@ class Alignment {
 			for (int ag = 0; ag < alngroup.size(); ag++) {
 				if (ag == as) {continue;}
 				samStrm << alngroup[ag]->chrom << "," 
-						<< alngroup[ag]->tStart << ",";
+						<< alngroup[ag]->tStart + 1 << ",";
 				if (alngroup[ag]->strand == 1) {
 					samStrm << "+" << ",";
 				}
 				else {
 					samStrm << "-" << ",";
 				}
-				char clipOp = 'S';
+				if (opts.hardClip) {
+					clipOp = 'H';
+				}
 				if (alngroup[ag]->preClip > 0) {
 					samStrm << alngroup[ag]->preClip << clipOp;
 				}
-				if (alngroup[ag]->tdel > alngroup[ag]->tins) {
-					samStrm << alngroup[ag]->tdel - alngroup[ag]->tins << 'D';
-				}
-				else {
-					samStrm << alngroup[ag]->tins - alngroup[ag]->tdel << 'I';
-				}
-				if (alngroup[ag]->preClip > 0) {
+				samStrm << alngroup[ag]->cigar;
+				if (alngroup[ag]->sufClip > 0) {
 					samStrm << alngroup[ag]->sufClip << clipOp;
 				}
 				samStrm << ","
