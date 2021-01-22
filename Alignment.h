@@ -469,15 +469,6 @@ class Alignment {
 			tStart = blocks[0].tPos;
 			tEnd   = blocks[last-1].tPos + blocks[last-1].length;
 		}
-		//
-		// Flag that the stats are calculated for methods that need them.
-		// 
-		prepared=true;
-
-		// if (split == 1) flag = flag | READ_MULTIPLESEGMENTS;
-		if (strand == 1) flag = flag | READ_REVERSE;
-		//if (ISsecondary == 1) flag = flag | READ_SECONDARY;
-		if (Supplymentary == 1) flag = flag | READ_SUPPLEMENTARY;
 	}
 	
 	bool Overlaps(const Alignment &b, float frac) const {
@@ -834,6 +825,16 @@ public:
 		totalValue = opts.rate_FirstSDPValue*FirstSDPValue + opts.rate_value*value;
 		for (int s = 0; s < SegAlignment.size(); s++) {
 			SegAlignment[s]->totalValue = totalValue;
+			if (s >= 1) {
+				SegAlignment[s]->ISsecondary = ISsecondary;
+				SegAlignment[s]->Supplymentary = 1;
+			}
+			//
+			// Flag that the stats are calculated for methods that need them.
+			// 
+			SegAlignment[s]->prepared=true;
+			if (SegAlignment[s]->strand == 1) SegAlignment[s]->flag = SegAlignment[s]->flag | READ_REVERSE;
+			if (SegAlignment[s]->Supplymentary == 1) SegAlignment[s]->flag = SegAlignment[s]->flag | READ_SUPPLEMENTARY;
 		}		
 	}
 
