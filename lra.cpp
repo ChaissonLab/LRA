@@ -32,7 +32,7 @@
 using namespace std;
 
 int IO_BUFFER_SIZE=10000000;
-const char* lraVersion="0.1-alpha";
+const char* lraVersion="V1.1.2";
 
 bool ArgIs(const char* a, const char* b) {
 	return strcmp(a,b) == 0;
@@ -77,7 +77,6 @@ void HelpMap() {
 			 << "   -PAl (int) Print at most how many alignments for one read" << endl
 			 << "   -Al (int) Compute at most how many alignments for one read" << endl
 			 << "   --passthrough Pass auxilary tags from the input unaligned bam to the output" << endl;
-			 //<< "   -aa (flag)  use Merge.h" << endl;
 	cout << "Examples: " << endl
 			 << "Aligning CCS reads:  lra align -CCS -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
 			 << "Aligning CLR reads:  lra align -CLR -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
@@ -755,8 +754,6 @@ void RunStoreIndex(int argc, const char* argv[]) {
 
     RunStoreLocal(argc, argv, glIndex, opts);
 }
-
-
 
 void Usage() {
 	cout << "Program: lra (long sequence alignment)" << endl;
