@@ -275,14 +275,14 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<uns
 			//
 			// clusters[cm]->matches[n] does not overlap with "Set";
 			//
-			long long int curDiag, nextDiag;
+			int64_t curDiag, nextDiag;
 			if (clusters[cm]->strand == 0) {
-				curDiag = (long long int) clusters[cm]->matches[n-1].first.pos - (long long int) clusters[cm]->matches[n-1].second.pos;
-				nextDiag = (long long int) clusters[cm]->matches[n].first.pos - (long long int) clusters[cm]->matches[n].second.pos;
+				curDiag = (int64_t) clusters[cm]->matches[n-1].first.pos - (int64_t) clusters[cm]->matches[n-1].second.pos;
+				nextDiag = (int64_t) clusters[cm]->matches[n].first.pos - (int64_t) clusters[cm]->matches[n].second.pos;
 			}
 			else {
-				curDiag = (long long int) clusters[cm]->matches[n-1].first.pos + (long long int) clusters[cm]->matches[n-1].second.pos;
-				nextDiag = (long long int) clusters[cm]->matches[n].first.pos + (long long int) clusters[cm]->matches[n].second.pos;			
+				curDiag = (int64_t) clusters[cm]->matches[n-1].first.pos + (int64_t) clusters[cm]->matches[n-1].second.pos;
+				nextDiag = (int64_t) clusters[cm]->matches[n].first.pos + (int64_t) clusters[cm]->matches[n].second.pos;			
 			}
 
 			if (curDiag == nextDiag) { // those two anchors are on the same diagonal
@@ -447,9 +447,9 @@ void LinearExtend(GenomePairs * pairs, GenomePairs & Extendpairs, vector<int> &E
 	int mat = 0;
 	while (n < (*pairs).size()) {
 
-		long long int curDiag, nextDiag;
-		curDiag = (long long int) (*pairs)[n-1].first.pos - (long long int) (*pairs)[n-1].second.pos;
-		nextDiag = (long long int) (*pairs)[n].first.pos - (long long int) (*pairs)[n].second.pos;
+		int64_t curDiag, nextDiag;
+		curDiag = (int64_t) (*pairs)[n-1].first.pos - (int64_t) (*pairs)[n-1].second.pos;
+		nextDiag = (int64_t) (*pairs)[n].first.pos - (int64_t) (*pairs)[n].second.pos;
 
 		if (curDiag == nextDiag) { // those two anchors are on the same diagonal
 

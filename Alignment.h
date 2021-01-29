@@ -42,6 +42,7 @@ class Alignment {
 	int readLen;
 	int refLen;
 	GenomePos genomeLen;
+	GenomePos wholegenomeLen;
 	string readName;
 	char *genome;
 	int strand;
@@ -529,16 +530,18 @@ class Alignment {
 			strandChar = '-';
 		}
 
-		out << readName << "\t" << queryString.size() << "\t" << qStart << "\t" << qEnd << "\t" 
-				<< strandChar << "\t" << chrom << "\t" << genomeLen << "\t" << tStart << "\t" << tEnd 
-				<< "\t" << nm+nmm+nins+ndel << "\t" << nm+nmm+tins+tdel << "\t" << (int)mapqv << "\t" << "AO:i:" << order;
+		out << readName << "\t" << queryString.size() << "\t" << "qStart:" << qStart << "\t" << "qEnd:" << qEnd << "\t" 
+				<< strandChar << "\t" << chrom << "\t" << genomeLen << "\t" 
+				<< "wholegenomeLen:" << wholegenomeLen <<  "\t" // (Revision) delete wholegenomeLen
+				<< "tStart:" << tStart << "\t" << "tEnd:" << tEnd 
+				<< "\t" << "NumofSV:" << nm+nmm+nins+ndel << "\t" << "LenofSV:" << nm+nmm+tins+tdel << "\t" << (int)mapqv << "\t" << "AO:i:" << order;
 		out << "\tNM:i:" << nm << "\t";
 		out << "NX:i:" << nmm << "\t";
 		out << "ND:i:" << ndel << "\t";
 		out << "TD:i:" << tdel << "\t";
 		out << "NI:i:" << nins << "\t";
-    	out << "NV:f:" << value << "\t";
 		out << "TI:i:" << tins << "\t";
+    	out << "NV:f:" << value << "\t";
 		if (typeofaln == 0) {
 			out << "TP:A:" << "P\t";
 		}
@@ -548,8 +551,8 @@ class Alignment {
 		else {
 			out << "TP:A:" << "I\t";
 		}
-		if (nanchors > 0) {
-			out << "\tNA:i:" << nanchors;
+		if (NumOfAnchors > 0) {
+			out << "\tNA:i:" << NumOfAnchors;
 		}
 		if (runtime > 0) {
 			out << "\tRT:i:" << runtime;

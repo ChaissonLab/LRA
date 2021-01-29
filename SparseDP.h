@@ -1674,19 +1674,21 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	// For anchors in the overlapping region between Clusters, we need to insert 4 points for them;
 	//
 
+	//
 	// Compute the matches start in each Cluster;
 	//
 	vector<unsigned int> MatchStart(inputChain.size(), 0);
 	int totalMatch = 0;
 	ComputeMatchStart(MatchStart, totalMatch, FragInput, inputChain);
 
+	//
 	// Decide the rate;
 	//
-	float rate = 1;//2
+	float rate = 2;//2
 	//if ((float)totalMatch / (float) read.length <= 0.005) rate = 4; //2 0.01
 	//cerr << "totalMatch/read.length: " << (float)totalMatch / (float) read.length << " rate: " << rate << endl;
 
-
+	//
 	// get points from FragInput and store them in H1;
 	//
 	std::vector<Point> H1;		

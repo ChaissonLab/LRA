@@ -17,7 +17,6 @@ class SortByPos {
 	}
 };
 
-
 template<typename Tup>
 void PrintPairs(vector<pair<Tup, Tup> > &mins, int k, int cluster=-1) {
 	CartesianTargetSort<Tup>(mins);
@@ -33,7 +32,6 @@ void PrintPairs(vector<pair<Tup, Tup> > &mins, int k, int cluster=-1) {
 	}	
 }
 	
-
 template<typename Tup>
 void PrintIndex(vector<Tup> &minimizers, int k) {
 	sort(minimizers.begin(), minimizers.end(), SortByPos<Tup>());
@@ -44,7 +42,6 @@ void PrintIndex(vector<Tup> &minimizers, int k) {
 	}	
 }
 
-// RemoveFrequent for LocalTuple, does not need bits mask
 template<typename Tup>
 void RemoveFrequent(vector<Tup> &minimizers, int maxFreq) {
 	int c=0,n=0;
@@ -63,11 +60,9 @@ void RemoveFrequent(vector<Tup> &minimizers, int maxFreq) {
 	minimizers.resize(c);
 }
 
-
 template<typename Tup>
 void RemoveFrequent(vector<Tup> &minimizers, vector<bool> &remove) {
 	int c = 0;
-
 	for (int n = 0; n < minimizers.size(); n++) {
 		if (remove[n] == 0) {
 			minimizers[c] = minimizers[n];
@@ -76,22 +71,6 @@ void RemoveFrequent(vector<Tup> &minimizers, vector<bool> &remove) {
 	}
 	minimizers.resize(c);
 }
-
-
-template<typename Tup, typename tup>
-void CompressFrequent(vector<Tup> &minimizers, tup for_mask) {
-	int c=0,n=0;
-	int before=minimizers.size();
-	while(n < minimizers.size()) {		
-		while (n < minimizers.size() && 
-					 (minimizers[n].t & for_mask) == (minimizers[c].t & for_mask)) { n++;}
-		
-		minimizers[c] = minimizers[n-1];
-		c++;
-	}
-	minimizers.resize(c);
-}
-
 
 class LocalIndex {
  public:
@@ -206,8 +185,8 @@ class LocalIndex {
 		GenomePos netSize=0;		
 		for (int i = 0; i < nIndex; i++) {
 			locMinimizers.clear();
-			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos) seqLen, 
-							(GenomePos) seqPos+localIndexWindow) - seqPos, k, w, locMinimizers, false); // canonical = false
+			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos)seqLen, (GenomePos) (seqPos+localIndexWindow)) - seqPos,
+																 k, w, locMinimizers, false, false); 
 			//RemoveFrequent(locMinimizers, maxFreq)
 			// Sort minimzers by tuple value.
 			//
@@ -251,11 +230,7 @@ class LocalIndex {
 
 };
 
-
 void CountSort(const vector<uint32_t> & Freq, const int & RANGE, const vector<bool> & Remove, vector<uint32_t> & Sortindex){
-//void CountSort (const vector<std::pair<uint32_t, uint32_t>> & v, const int & RANGE, 
-//						vector<std::pair<uint32_t, uint32_t>> & sortv) {
-
 	// Create a count vector to store counts of each frequency
 	vector<uint32_t> count(RANGE + 1, 0);
   
@@ -302,18 +277,18 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
 		int prevMinCount = minimizers.size();
 		//cerr << "Storing for "<< ks->name.s << " " << prevMinCount << " " << offset << endl;
-		StoreMinimizers<GenomeTuple, Tuple>(ks->seq.s, ks->seq.l, opts.globalK, opts.globalW, minimizers);
+		StoreMinimizers<GenomeTuple, Tuple>(ks->seq.s, ks->seq.l, opts.globalK, opts.globalW, minimizers, true);
 		
-		for (GenomePos i=prevMinCount; i< minimizers.size(); i++) {
+		for (GenomePos i = prevMinCount; i < minimizers.size(); i++) {
 			minimizers[i].pos+=offset;
 		}
-		offset+= ks->seq.l;	
+		offset += ks->seq.l;	
 		header.Add(ks->name.s, offset);
 	}
 	kseq_destroy(ks);
 	gzclose(f);
 	cerr << "Sorting " << minimizers.size() << " minimizers" << endl;
-	std::sort(minimizers.begin(), minimizers.end());
+	sort(minimizers.begin(), minimizers.end());
 	cerr << "done Sorting" << endl;
 
 	//
@@ -328,36 +303,30 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	uint32_t n = 0; uint32_t ne = 0;
 	uint32_t unremoved = 0;
 	uint32_t removed = 0;
-    Tuple Ai=1;
-	Tuple for_mask = ~(Ai << 63);
+ 	Tuple for_mask = 1;
+	for_mask = ~(for_mask << 63); // for_mask = 0111..11;
 	while (n < minimizers.size()) {
 		ne = n + 1;
-		while (ne < minimizers.size() and (minimizers[ne].t & for_mask) == (minimizers[n].t & for_mask)) {ne++;}
+		while (ne < minimizers.size() and minimizers[ne].t & for_mask == minimizers[n].t & for_mask) {ne++;}
 		if (ne - n > RANGE) { // opts.minimizerFreq*rz is the rough threshold
 			for (uint32_t i = n; i < ne; i++) {
 				Freq[i] = ne - n;
 				Remove[i] = 1;
-				//++removed;
 			}
 			removed += ne-n;
-			assert(removed+unremoved<=Remove.size());
+			assert(removed + unremoved <= Remove.size());
 		}
 		else {
 			for (uint32_t i = n; i < ne; i++) {
 				Freq[i] = ne - n;
-				//++unremoved;
 			}		
-			//if (ne -n > RANGE) {RANGE = ne - n;}
 			unremoved += ne-n;
-			assert(removed+unremoved<=Remove.size());
+			assert(removed + unremoved <= Remove.size());
 		}
 		n = ne;
 	}
-
-	cerr << "RANGE: " << RANGE << endl;
-	assert(removed+unremoved==Remove.size());
-
-
+	assert(removed + unremoved == Remove.size());
+	//
 	// Sort unremoved minimizers by frequency 
 	// Use count sort
 	//
@@ -367,20 +336,17 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	CountSort(Freq, RANGE, Remove, Sortindex);
 
 	vector<uint32_t> winCount(sz, opts.NumOfminimizersPerWindow); // 50 is a parameter that can be changed 
-
 	for (uint32_t s = 0; s < Sortindex.size(); s++) {
 		uint32_t id = minimizers[Sortindex[s]].pos/opts.globalWinsize;
-		if (winCount[id] > 0 and minimizers[Sortindex[s]].pos<id*opts.globalWinsize+5) { // force the minimizer to fall into the first 10bp of the window
+		if (winCount[id] > 0 and minimizers[Sortindex[s]].pos < id*opts.globalWinsize + 5) { // force the minimizer to fall into the first 10bp of the window
 			winCount[id] -= 1;
 		}
-		//if (winCount[id] > 0) {
-		//	winCount[id] -= 1;
-		//}
 		else {
 			Remove[Sortindex[s]] = 1;
 		}
 	}
-	// TODO(Jingwen) Print out all the minimizer and delete this later
+	cerr << "Starting to remove minimizers with multiplicity larger than " << RANGE << endl;
+	RemoveFrequent (minimizers, Remove); 
 	if (opts.dotPlot) {
 		stringstream outNameStrm;
 		outNameStrm << "minimizers.txt";
@@ -394,16 +360,12 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		}
 		baseDots.close();
 	}
-
 	//
 	// Remove too frequent minimizers;
 	//
-	cerr << "Removing too frequent minimizers" << endl;
-	RemoveFrequent (minimizers, Remove); 
 	cerr << "There are " << minimizers.size() << " minimizers left" << endl;
 	//RemoveFrequent(minimizers, opts.globalMaxFreq);
 }
-
 
 int ReadIndex(string fn, vector<GenomeTuple> &index, Header &h, Options &opts) {
 	ifstream fin(fn.c_str(), ios::in|ios::binary);
@@ -418,7 +380,6 @@ int ReadIndex(string fn, vector<GenomeTuple> &index, Header &h, Options &opts) {
 	fin.read((char*) &index[0], sizeof(GenomeTuple)*len);
 	return len;
 }
-
 
 void WriteIndex(string fn, vector<GenomeTuple> &index, Header &h, Options &opts) {
 	ofstream fout(fn.c_str(), ios::out|ios::binary);

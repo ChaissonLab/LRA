@@ -318,8 +318,8 @@ class Cluster : public ClusterCoordinates {
 	GenomePairs matches;
 	vector<int> strands; // stores the strand of every GenomePair in matches
 	vector<int> coarseSubCluster; // coarseSubCluster[i] means GenomePair i is from  the SubCluster[coarseSubCluster] 
-	long long int maxDiagNum;
-	long long int minDiagNum; // maxDiagNum and minDiagNum defines diagonal band boundary of the current cluster
+	int64_t maxDiagNum;
+	int64_t minDiagNum; // maxDiagNum and minDiagNum defines diagonal band boundary of the current cluster
 	int coarse; 
 	int Val; // Val stores the value of each Cluster;(using in SDP)
 	int NumofAnchors; // NumofAnchors stores the # of anchors of each splitcluster 
@@ -620,7 +620,6 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 											// interval_map<GenomePos, int> &xIntv, 
 											// interval_map<GenomePos, int> &yIntv,
 											 int strand=0, int outerIteration=0) {
-
 	//
 	// StoreFineClusters based on unique part
 	// The first step: store the number of matches corresponding to each minimizer from the read; -- a linear pass
@@ -779,7 +778,7 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 			matches[c_e-1].first.pos + opts.globalK - matches[c_s].first.pos >= opts.minUniqueStretchDist) { 
 		clusters.push_back(Cluster(0, 0, strand)); 
 
-		if (c_e - c_s == e - s) { // no need to extend
+		if (c_e - c_s == e - s) { // no need to extend - the whole rough cluster is a unique linear part
 			for (int i = c_s; i < c_e; i++) {
 				clusters.back().matches.push_back(matches[i]);				
 			}	
