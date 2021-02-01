@@ -2883,9 +2883,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				}
 
 			}
-			// alignments.back().SetFromSegAlignment(smallOpts);
-		}
-		for (int a = 0; a < alignments.back().size(); a++) {
 			for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
 				//
 				// (Mark: add the refining code here)
@@ -2895,8 +2892,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				// function refining(alignments.back().SegAlignment[s])
 				//
 				alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
-				alignments.back().SetFromSegAlignment(smallOpts);
 			}
+			alignments.back().SetFromSegAlignment(smallOpts);
 		}
 		alignmentsOrder.Update(&alignments);
 	}	
