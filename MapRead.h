@@ -2883,7 +2883,20 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				}
 
 			}
-			alignments.back().SetFromSegAlignment(smallOpts);
+			// alignments.back().SetFromSegAlignment(smallOpts);
+		}
+		for (int a = 0; a < alignments.back().size(); a++) {
+			for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
+				//
+				// (Mark: add the refining code here)
+				// alignments.back() is `class SegAlignmentGroup`. `class SegAlignmentGroup` has member: `vector<Alignment*> SegAlignment`, where 
+				// each `SegAlignment[s]` is a segment of alignment when there are multiple segments. 
+				// So the function refining can be apply to each of the segment. 
+				// function refining(alignments.back().SegAlignment[s])
+				//
+				alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
+				alignments.back().SetFromSegAlignment(smallOpts);
+			}
 		}
 		alignmentsOrder.Update(&alignments);
 	}	

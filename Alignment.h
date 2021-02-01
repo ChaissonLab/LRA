@@ -450,7 +450,7 @@ class Alignment {
 		read = strands[str];
 		strand = str;
 		nblocks = blocks.size();
-		CalculateStatistics(opts, svsigstrm, LookUpTable);
+		// CalculateStatistics(opts, svsigstrm, LookUpTable);
 	}
 
 	void CalculateStatistics(Options & opts, ostream *svsigstrm, const std::vector<float> & LookUpTable) {
@@ -859,6 +859,10 @@ public:
 			SegAlignment[s]->mapqv = mapqv;
 		}
 	}
+
+	int size() {
+		return SegAlignment.size();
+	}	
 };
 
 
