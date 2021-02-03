@@ -562,7 +562,7 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 			glIndex.maxFreq=opts.localMaxFreq;
 		}
 		else if (ArgIs(argv[argi], "-K") or ArgIs(argv[argi], "-W") or ArgIs(argv[argi], "-F")
-				 or ArgIs(argv[argi], "-N")) {
+				 or ArgIs(argv[argi], "-N") or ArgIs(argv[argi], "--globalWinsize")) {
 			argi+=2;
 			continue;
 		}

@@ -307,7 +307,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	for_mask = ~(for_mask << 63); // for_mask = 0111..11;
 	while (n < minimizers.size()) {
 		ne = n + 1;
-		while (ne < minimizers.size() and minimizers[ne].t & for_mask == minimizers[n].t & for_mask) {ne++;}
+		while (ne < minimizers.size() and (minimizers[ne].t & for_mask) == (minimizers[n].t & for_mask)) {ne++;}
 		if (ne - n > RANGE) { // opts.minimizerFreq*rz is the rough threshold
 			for (uint32_t i = n; i < ne; i++) {
 				Freq[i] = ne - n;
@@ -326,6 +326,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		n = ne;
 	}
 	assert(removed + unremoved == Remove.size());
+	cerr << unremoved << " minimizers with multiplicity samller than " << RANGE << endl;
 	//
 	// Sort unremoved minimizers by frequency 
 	// Use count sort
@@ -338,33 +339,35 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	vector<uint32_t> winCount(sz, opts.NumOfminimizersPerWindow); // 50 is a parameter that can be changed 
 	for (uint32_t s = 0; s < Sortindex.size(); s++) {
 		uint32_t id = minimizers[Sortindex[s]].pos/opts.globalWinsize;
-		if (winCount[id] > 0 and minimizers[Sortindex[s]].pos < id*opts.globalWinsize + 5) { // force the minimizer to fall into the first 10bp of the window
+		if (winCount[id] > 0) {
+		// if (winCount[id] > 0 and minimizers[Sortindex[s]].pos < id*opts.globalWinsize + 5) { // force the minimizer to fall into the first 10bp of the window
 			winCount[id] -= 1;
 		}
 		else {
 			Remove[Sortindex[s]] = 1;
 		}
 	}
-	cerr << "Starting to remove minimizers with multiplicity larger than " << RANGE << endl;
-	RemoveFrequent (minimizers, Remove); 
+
 	if (opts.dotPlot) {
 		stringstream outNameStrm;
 		outNameStrm << "minimizers.txt";
 		ofstream baseDots(outNameStrm.str().c_str());
 		for (int m=0; m < minimizers.size(); m++) {
-			baseDots << minimizers[m].t << "\t"
-					 << minimizers[m].pos << "\t" 
-					 << minimizers[m].pos + opts.globalK << "\t"
-					 << Freq[m] << "\t" 
-					 << Remove[m] << endl;				
+			if (Remove[m] == 0) {
+				baseDots << minimizers[m].t << "\t"
+			        << minimizers[m].pos << "\t"
+			        << minimizers[m].pos + opts.globalK << "\t"
+			        << Freq[m] << "\t"
+			        << Remove[m] << endl;	
+			}		
 		}
 		baseDots.close();
 	}
+	RemoveFrequent (minimizers, Remove); 
 	//
 	// Remove too frequent minimizers;
 	//
 	cerr << "There are " << minimizers.size() << " minimizers left" << endl;
-	//RemoveFrequent(minimizers, opts.globalMaxFreq);
 }
 
 int ReadIndex(string fn, vector<GenomeTuple> &index, Header &h, Options &opts) {

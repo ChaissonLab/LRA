@@ -199,13 +199,13 @@ void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & spl
 			matchE = CartesianLowerBound<GenomeTuple>(clusters[ic_n].matches.begin(), 
 														  clusters[ic_n].matches.end(), splitclusters[n].qStart);		
 			assert(matchE >= matchS);
-			splitclusters[m].NumofAnchors = matchE - matchS;		
+			splitclusters[m].NumofAnchors0 = matchE - matchS;		
 			matchS = matchE;														  	
 		}
 		else {
 			matchE = clusters[ic_m].matches.size();
 			assert(matchE >= matchS);
-			splitclusters[m].NumofAnchors = matchE - matchS;		
+			splitclusters[m].NumofAnchors0 = matchE - matchS;		
 			matchS = 0;	
 		}
 		m = n;
@@ -214,7 +214,7 @@ void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & spl
 		if (n < splitclusters.size()) ic_n = splitclusters[n].coarse;
 	}
 	if (splitclusters.size() > 1) {	
-		splitclusters[n-1].NumofAnchors = clusters[ic_m].matches.size() - matchS;	
+		splitclusters[n-1].NumofAnchors0 = clusters[ic_m].matches.size() - matchS;	
 	}
 	
 }

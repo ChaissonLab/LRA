@@ -80,28 +80,8 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 		*/
 		curMinimizer.pos = p;
 
-		// if (canonical) {
-		// 	//curMinimizer.t = min(cur.t, curRC.t);
-		// 	if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
-		// 	else curMinimizer.t = (curRC.t | rev_mask); 
-		// }
-		// else {
-		// 	curMinimizer.t = cur.t;
-		// }
 		if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
 		else curMinimizer.t = (curRC.t | rev_mask); 
-		// if (canonical) {
-		// 	if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) { 
-		// 		activeMinimizer.t = curMinimizer.t;
-		// 		activeMinimizer.pos = p;
-		// 	}			
-		// }
-		// else {
-		// 	if (curMinimizer.t < activeMinimizer.t) {  
-		// 		activeMinimizer.t = curMinimizer.t;
-		// 		activeMinimizer.pos = p;
-		// 	}				
-		// }
 		if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) {  
 			activeMinimizer.t = curMinimizer.t;
 			activeMinimizer.pos = p;
@@ -123,14 +103,6 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 		assert(test.t == cur.t);
 		assert(testrc.t == curRC.t);
 #endif
-		// if (canonical) {
-		// 	//curMinimizer.t = min(cur.t, curRC.t);
-		// 	if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
-		// 	else curMinimizer.t = (curRC.t | rev_mask); 
-		// }
-		// else {
-		// 	curMinimizer.t = cur.t;
-		// }
 		if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
 		else curMinimizer.t = (curRC.t | rev_mask); 
 		curMinimizer.pos = p;
@@ -138,16 +110,6 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 		if (p - w >= activeMinimizer.pos) {
 			activeMinimizer = curTuples[0];
 			for (int j =1; j < w; j++) {
-				// if (canonical) {
-				// 	if ((curTuples[j].t & for_mask) < (activeMinimizer.t & for_mask)) { 
-				// 		activeMinimizer = curTuples[j];
-				// 	}					
-				// }
-				// else {
-				// 	if (curTuples[j].t < activeMinimizer.t) { 
-				// 		activeMinimizer = curTuples[j];
-				// 	}						
-				// }
 				if ((curTuples[j].t & for_mask) < (activeMinimizer.t & for_mask)) { 
 					activeMinimizer = curTuples[j];
 				}		
@@ -156,18 +118,6 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 			nMinimizers+=1;
 		}
 		else {
-			// if (canonical) {
-			// 	if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) { //TODO(Jingwen)
-			// 		activeMinimizer = curMinimizer;
-			// 		minimizers.push_back(activeMinimizer);
-			// 		nMinimizers++;		
-			// 	}				
-			// }
-			// if (curMinimizer.t < activeMinimizer.t) { 
-			// 	activeMinimizer = curMinimizer;
-			// 	minimizers.push_back(activeMinimizer);
-			// 	nMinimizers++;		
-			// }
 			if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) { //TODO(Jingwen)
 				activeMinimizer = curMinimizer;
 				minimizers.push_back(activeMinimizer);

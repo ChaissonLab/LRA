@@ -7,8 +7,7 @@
 void 
 CreateLookUpTable(std::vector<float> & LookUpTable){
 	for (int i = 501; i <= 10001; i = i + 5) {
-		//cerr << "i: " << i << endl;
-		LookUpTable.push_back(std::log(i));
+		LookUpTable.push_back(logf(i));
 	}
 
 }
