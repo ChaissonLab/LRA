@@ -2892,7 +2892,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				// So the function refining can be apply to each of the segment. 
 				// function refining(alignments.back().SegAlignment[s])
 				//
-				//IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts);
+				IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts);
 				
 				alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
 			}
