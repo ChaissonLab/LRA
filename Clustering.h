@@ -13,7 +13,7 @@ long DiagonalDifference(Tup &a, Tup &b, int strand=0) {
 		long bDiag = (long)b.second.pos - (long)b.first.pos;
 		return aDiag - bDiag;		
 	}
-	else { // revMathches
+	else { // revMatches
 		long aDiag = a.first.pos + a.second.pos; 
 		long bDiag= b.first.pos + b.second.pos;
 		return aDiag - bDiag;				
@@ -27,7 +27,7 @@ long SkewDiagonalDifference(Tup &a, Tup &b, Options &opts, int strand=0) {
 		long bDiag = (long)b.second.pos - (long)ceil(opts.slope*b.first.pos);
 		return aDiag - bDiag;		
 	}
-	else { // revMathches
+	else { // revMatches
 		long aDiag = ceil(opts.slope*a.first.pos) + a.second.pos; 
 		long bDiag= ceil(opts.slope*b.first.pos) + b.second.pos;
 		return aDiag - bDiag;				
@@ -318,11 +318,11 @@ class Cluster : public ClusterCoordinates {
 	GenomePairs matches;
 	vector<int> strands; // stores the strand of every GenomePair in matches
 	vector<int> coarseSubCluster; // coarseSubCluster[i] means GenomePair i is from  the SubCluster[coarseSubCluster] 
-	long long int maxDiagNum;
-	long long int minDiagNum; // maxDiagNum and minDiagNum defines diagonal band boundary of the current cluster
+	int64_t maxDiagNum;
+	int64_t minDiagNum; // maxDiagNum and minDiagNum defines diagonal band boundary of the current cluster
 	int coarse; 
 	int Val; // Val stores the value of each Cluster;(using in SDP)
-	int NumofAnchors; // NumofAnchors stores the # of anchors of each splitcluster 
+	int NumofAnchors0; // NumofAnchors0 stores the # of anchors of each splitcluster 
 	vector<int> matchesLengths; // store the length of each anchor 
 	bool refined; // refined == 0 means this Cluster has not been refined yet
 	bool refinespace; // refinespace == 0 means this Cluster has not been add anchors in the step of RefineBtwnSpace;
@@ -353,7 +353,7 @@ class Cluster : public ClusterCoordinates {
 		refined = 0;
 		refinespace = 0;
 		Val = 0;
-		NumofAnchors = 0;
+		NumofAnchors0 = 0;
 	}
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
@@ -365,7 +365,7 @@ class Cluster : public ClusterCoordinates {
 		maxDiagNum=0;
 		minDiagNum=0;
 		Val = 0;
-		NumofAnchors = 0;
+		NumofAnchors0 = 0;
 	}
   Cluster(GenomePos qs, GenomePos qe, GenomePos ts, GenomePos te, int st, int coa) {
 		qStart = qs;
@@ -375,7 +375,7 @@ class Cluster : public ClusterCoordinates {
 		strand = st;
 		coarse = coa;
 		Val = 0;
-		NumofAnchors = 0;
+		NumofAnchors0 = 0;
 	}
   Cluster(int st, GenomePairs::iterator gpBegin, GenomePairs::iterator gpEnd, vector<int>::iterator stBegin, vector<int>::iterator stEnd) {
   		strand = st;
@@ -620,7 +620,6 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 											// interval_map<GenomePos, int> &xIntv, 
 											// interval_map<GenomePos, int> &yIntv,
 											 int strand=0, int outerIteration=0) {
-
 	//
 	// StoreFineClusters based on unique part
 	// The first step: store the number of matches corresponding to each minimizer from the read; -- a linear pass
@@ -779,7 +778,7 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 			matches[c_e-1].first.pos + opts.globalK - matches[c_s].first.pos >= opts.minUniqueStretchDist) { 
 		clusters.push_back(Cluster(0, 0, strand)); 
 
-		if (c_e - c_s == e - s) { // no need to extend
+		if (c_e - c_s == e - s) { // no need to extend - the whole rough cluster is a unique linear part
 			for (int i = c_s; i < c_e; i++) {
 				clusters.back().matches.push_back(matches[i]);				
 			}	

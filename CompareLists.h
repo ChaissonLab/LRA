@@ -9,17 +9,20 @@
 template<typename tup, typename Tup> 
 void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::iterator qEnd, 
 						typename vector<tup>::iterator tBegin, typename vector<tup>::iterator tEnd, 
-						vector<pair<tup, tup> > &result, Options &opts, long long int maxDiagNum = 0,
-						 long long int minDiagNum = 0, bool canonical=true) {
+						vector<pair<tup, tup> > &result, Options &opts, bool Global, int64_t maxDiagNum = 0,
+						int64_t minDiagNum = 0, bool canonical=true) {
+	//
+	// If canonical == True, for_mask = 0111...11 --> minimizer & for_mask = 0minimizer.
+	// Else, for_mask = 111...11 --> minimizer & for_mask = minimizer
+	// For LocalTuple, for_mask = 111...11 always.
+	//
 	Tup for_mask = tup::for_mask_s;
-	if (!canonical) {
+	if (!canonical and Global) {
 		for_mask = ~(for_mask & 0);
 	}
-    // cerr << "nOfBits: " << nOfBits << endl;
     // cerr << "canonical: " << canonical << "  for_mask: " << for_mask << endl;
 
-	int qs = 0;
-	int qe = qEnd-qBegin - 1;
+	int qs = 0, qe = qEnd - qBegin - 1;
 	int ts = 0, te = tEnd - tBegin;
 	typename vector<tup>::iterator slb;
 	if (qBegin == qEnd or tBegin == tEnd) {
@@ -33,6 +36,7 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
   std::set_intersection(qBegin, qEnd, tBegin, tEnd, back_inserter(isect));
 	cout << "Matched " << isect.size() << " slowly." << endl;
 #endif
+
 	int nMatch=0;
 	int iter=0;
 	do {
@@ -47,7 +51,7 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 		}
 		else {
 			// Move past any entries guaranteed to not be in target
-			while (qe > qs and te > ts and (qBegin[qe].t  & for_mask) > (tBegin[te-1].t & for_mask)) {
+			while (qe > qs and te > ts and (qBegin[qe].t & for_mask) > (tBegin[te-1].t & for_mask)) {
 				qe--;
 			}
 			endGap.t = (tBegin[te-1].t & for_mask) - (qBegin[qe].t & for_mask);
@@ -57,45 +61,24 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 			// Find entry in t that could match qs
 			//
 			typename vector<tup>::iterator lb;
-			lb = lower_bound(tBegin+ts, tBegin+te, qBegin[qs]);
-			ts=lb-tBegin;
+			lb = lower_bound(tBegin + ts, tBegin + te, qBegin[qs]);
+			ts = lb - tBegin;
 			if ((tBegin[ts].t & for_mask) == (qBegin[qs].t & for_mask)) {
-				GenomePos tsStart=ts;
-				GenomePos tsi=ts;
-				while (tsi != te and (qBegin[qs].t & for_mask) == (tBegin[tsi].t & for_mask)) {
-					tsi++;
-				}
-				GenomePos qsStart=qs;
-				while (qs < qe and (qBegin[qs+1].t & for_mask) == (qBegin[qs].t & for_mask) ) { qs++; }
-				
-				if (tsi - tsStart < opts.globalMaxFreq) {
-					for(GenomePos ti=tsStart; ti != tsi; ti++) {
-						for (GenomePos qi=qsStart; qi <= qs; qi++) {
-							if (maxDiagNum != 0 and minDiagNum != 0) {
-								long long int Diag = (long long int) tBegin[ti].pos - (long long int) qBegin[qi].pos;
-
-
-								if (Diag <= maxDiagNum and Diag >= minDiagNum) {
-									// //check duplicates in allMatches
-									// if (result.size() >= 0) {
-									// 	if (qBegin[qi].t == 5413 and qBegin[qi].pos == 47435
-									// 		and tBegin[ti].t == 5413 and tBegin[ti].pos == 36356) {
-									// 		cerr << "result.size(): " << result.size() << endl;
-									// 	}
-									// }
-									result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
-								}
-							}
-							else {
-								// 	// //check duplicates in allMatches
-								// if (result.size() >= 0) {
-								// 	if (qBegin[qi].t == 5413 and qBegin[qi].pos == 47435
-								// 		and tBegin[ti].t == 5413 and tBegin[ti].pos == 36356) {
-								// 		cerr << "result.size(): " << result.size() << endl;
-								// 	}
-								// }
+				GenomePos tsStart = ts;
+				GenomePos tsi = ts;
+				while (tsi != te and (qBegin[qs].t & for_mask) == (tBegin[tsi].t & for_mask)) { tsi++; }
+				GenomePos qsStart = qs;
+				while (qs < qe and (qBegin[qs+1].t & for_mask) == (qBegin[qs].t & for_mask)) { qs++; }				
+				for (GenomePos ti = tsStart; ti != tsi; ti++) {
+					for (GenomePos qi = qsStart; qi <= qs; qi++) {
+						if (maxDiagNum != 0 and minDiagNum != 0) {
+							uint64_t Diag = (uint64_t) tBegin[ti].pos - (uint64_t) qBegin[qi].pos;
+							if (Diag <= maxDiagNum and Diag >= minDiagNum) {
 								result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
 							}
+						}
+						else {
+							result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
 						}
 					}
 				}
@@ -122,33 +105,16 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 			if (tei < teStart and teStart > 0) {
 				GenomePos qeStart=qe;
 				while (qe > qs and (qBegin[qe].t & for_mask) == (qBegin[qe-1].t & for_mask)) { qe--;}
-
-				if (teStart - te < opts.globalMaxFreq) {
-					for (GenomePos ti=tei; ti < teStart; ti++) {
-						for (GenomePos qi=qe; qi <= qeStart; qi++) {
-							if (maxDiagNum != 0 and minDiagNum != 0) {
-								long long int Diag = (long long int) tBegin[ti].pos - (long long int) qBegin[qi].pos;
-								if (Diag <= maxDiagNum and Diag >= minDiagNum) {
-									// //check if the new one is a duplicate of the last one
-									// if (result.size() >= 0) {
-									// 	if (qBegin[qi].t == 5413 and qBegin[qi].pos == 47435
-									// 		and tBegin[ti].t == 5413 and tBegin[ti].pos == 36356) {
-									// 		cerr << "result.size(): " << result.size() << endl;
-									// 	}
-									// }
-									result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
-								}
-							}
-							else {
-								// //check if the new one is a duplicate of the last one
-								// if (result.size() >= 0) {
-								// 	if (qBegin[qi].t == 5413 and qBegin[qi].pos == 47435
-								// 		and tBegin[ti].t == 5413 and tBegin[ti].pos == 36356) {
-								// 		cerr << "result.size(): " << result.size() << endl;
-								// 	}
-								// }
+				for (GenomePos ti = tei; ti < teStart; ti++) {
+					for (GenomePos qi = qe; qi <= qeStart; qi++) {
+						if (maxDiagNum != 0 and minDiagNum != 0) {
+							int64_t Diag = (int64_t) tBegin[ti].pos - (int64_t) qBegin[qi].pos;
+							if (Diag <= maxDiagNum and Diag >= minDiagNum) {
 								result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
 							}
+						}
+						else {
+							result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
 						}
 					}
 				}
@@ -159,8 +125,8 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 }
 
 template<typename tup, typename Tup> 
-void CompareLists(vector<tup> &query, vector<tup> &target, vector<pair<tup, tup> > &result, Options &opts) {
-	CompareLists<tup, Tup>(query.begin(), query.end(), target.begin(), target.end(), result, opts);
+void CompareLists(vector<tup> &query, vector<tup> &target, vector<pair<tup, tup> > &result, Options &opts, bool Global) {
+	CompareLists<tup, Tup>(query.begin(), query.end(), target.begin(), target.end(), result, opts, Global);
 }
 
 #endif

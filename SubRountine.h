@@ -34,7 +34,7 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts
 
 	if (opts.LookUpTable) {
 		if (x < 501) {
-	    	return - opts.coefficient*std::log(x) - 1;   
+	    	return - opts.coefficient*logf(x) - 1;   
 		}
 		else if (x <= 10001){
 			// check LookUpTable
@@ -54,16 +54,16 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts
 	}
 	else {
 		if (x < 501) {
-			return - opts.coefficient*std::log(x) - 1;  
+			return - opts.coefficient*logf(x) - 1;  
 		}
 		else if (x <= 10001) {
-			return - opts.coefficient*std::log(x) - 1;  
+			return - opts.coefficient*logf(x) - 1;  
 		}
 		else if (x <= 100001) {
-			return - opts.coefficient*std::log(x) - 1;
+			return - opts.coefficient*logf(x) - 1;
 		}
 		else {
-			return - opts.coefficient*std::log(x) - 1;	
+			return - opts.coefficient*logf(x) - 1;	
 		}
 	}
 }  

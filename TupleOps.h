@@ -22,7 +22,7 @@ class LocalTuple {
  public:
   uint32_t t: 32-LOCAL_POS_BITS;
   uint32_t pos: LOCAL_POS_BITS;
-	static uint32_t for_mask_s;
+  static uint32_t for_mask_s;
 	LocalTuple() {
 		t=0;
 		pos=0;
@@ -33,7 +33,6 @@ class LocalTuple {
 	bool operator>(const LocalTuple &b) {
 		return t > b.t;
 	}
-
 	friend int operator >(LocalTuple &a, LocalTuple &b) {
 		return a.t > b.t;
 	}
@@ -45,6 +44,7 @@ class LocalTuple {
 	}
 
 };
+
 uint32_t LocalTuple::for_mask_s=0;
 
 template<typename Tup> 
@@ -63,23 +63,22 @@ int DiagGap(Tup &a, Tup &b) {
 	return res;
 }
 
-
-
 class GenomeTuple {
 public:
 	Tuple t; // used to store kmers, this uses a 64 bit representation of k-mers (A=00, C=01, G=10, T=11)
 	GenomePos pos; // unsigned 32 bit position in a genome (signed integers cannot index entire human genome!) 
 	static Tuple for_mask_s;
-	GenomeTuple() {t=0;pos=0;} 
+	static Tuple rev_mask_s;
+	GenomeTuple() {t = 0; pos = 0;} 
  	GenomeTuple(Tuple _t, GenomePos _p): t(_t), pos(_p) {}
 	bool operator<(const GenomeTuple &b) const {
 		return (t & GenomeTuple::for_mask_s) < (b.t & GenomeTuple::for_mask_s);
 	}
 
-	friend int operator >(GenomeTuple &a, GenomeTuple &b) {
+	friend int operator > (GenomeTuple &a, GenomeTuple &b) {
 		return (a.t & GenomeTuple::for_mask_s) > (b.t & GenomeTuple::for_mask_s);
 	}
-	friend int operator!=(GenomeTuple &a, GenomeTuple &b) {
+	friend int operator!= (GenomeTuple &a, GenomeTuple &b) {
 		return (a.t & GenomeTuple::for_mask_s) != (b.t & GenomeTuple::for_mask_s);
 	}
 	void ToString(int k, string &s) {
@@ -87,9 +86,7 @@ public:
 	}
 };
 
-
-Tuple GenomeTuple::for_mask_s=0;
-
+Tuple GenomeTuple::for_mask_s = 0;
 
 template< typename Tup>
 int InitMask(Tup &m, int k) {
@@ -120,7 +117,6 @@ template<typename tup> void ShiftOneRC(char *seq, int pos, int k, tup &t) {
 	t.t += (~(seqMap[seq[pos]]) & (Tuple)3) << (2*((Tuple)k-1));
 }
 
-
 template <typename tup> void TupleRC(tup a, tup &b, int k) {
 	int i;
 	tup nucMask;
@@ -133,7 +129,6 @@ template <typename tup> void TupleRC(tup a, tup &b, int k) {
 		b.t <<=2;
 		b.t += least.t;
 	}
-
 }
 
 typedef pair<GenomeTuple, GenomeTuple> GenomePair;
@@ -155,16 +150,15 @@ void AppendValues(GenomePairs &dest, typename List::iterator sourceStart, typena
 	}
 }
 
-
 template<typename List>
 void AppendValues(GenomePairs &dest, typename List::iterator sourceStart, typename List::iterator sourceEnd, GenomePos &queryOffset,
-					 GenomePos &targetOffset, long long int &maxDiagNum, long long int &minDiagNum, GenomePos qs, GenomePos qe, 
+					 GenomePos &targetOffset, int64_t &maxDiagNum, int64_t &minDiagNum, GenomePos qs, GenomePos qe, 
 					 GenomePos ts, GenomePos te, GenomePos &prev_readStart, GenomePos &prev_readEnd) {
 	//int i=dest.size();
 	//dest.resize(dest.size() + sourceEnd-sourceStart);
 	typename List::iterator sourceIt=sourceStart;
 	for (; sourceIt < sourceEnd; ++sourceIt) {
-		long long int diag = (long long int)(sourceIt->second.pos + targetOffset) - (long long int)(sourceIt->first.pos + queryOffset);
+		int64_t diag = (int64_t)(sourceIt->second.pos + targetOffset) - (int64_t)(sourceIt->first.pos + queryOffset);
 		if (diag >= minDiagNum and diag <= maxDiagNum 
 			and sourceIt->first.pos + queryOffset >= qs 
 			and sourceIt->first.pos + queryOffset < qe 

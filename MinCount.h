@@ -4,11 +4,8 @@
 #include "SeqUtils.h"
 #include "htslib/kseq.h"
 
-
-
-
 template <typename TupPos, typename Tup> 
-void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &minimizers, bool canonical=true) {
+void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &minimizers, bool Global, bool canonical = true) {
 	//
 	// Initialize first.
 	//
@@ -25,23 +22,37 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 	TupleRC(cur, curRC, k);
 	//
 	// Initialize the first minimzer.
-	// Store canonical information in the last bit of can.t; The last bit = 1 ==> reverse strand
+	// Store canonical information in the rightest bit of can.t; The last bit = 1 ==> reverse strand
+	// If canonical == True, for_mask = 0111...11 --> minimizer & for_mask = 0minimizer; rev_mask = 1000...00 --> minimizer | rev_mask = 1minimizer
+	// Else for_mask = 111...11 --> minimizer & for_mask = minimizer, rev_mask = 000...00 --> minimizer | rev_mask = minimizer
 	//
+	Tup for_mask = TupPos::for_mask_s;	
+	Tup rev_mask = ~for_mask;
+	if (!Global) { // for LocalTuple, rev_mask = 000...00 (20 bits)
+		rev_mask = rev_mask & 0;
+	}
+	if (!canonical and Global) {
+		rev_mask = rev_mask & 0;
+		for_mask = ~rev_mask;
+	}
+	// cerr << "Global: " << Global << endl;
+	// cerr << "for_mask: " << for_mask << endl;
+	// cerr << "rev_mask: " << rev_mask << endl;
 
-    Tup Bi=1, Ai=1;
-    int nOfBits=0;
-    while (Bi != 0) {
-        Bi = Bi << 1;
-        nOfBits++;
-    }
-    //cerr << "nOfBits: " << nOfBits << endl;
-	Tup for_mask = ~(Ai << (nOfBits-1));
-	Tup rev_mask = Ai << (nOfBits-1);
+	// Tup for_mask, rev_mask;
+	// if (canonical) { // minimizer <t, pos> --> <unsigned 64 bit, usigned 32 bit>
+	// 	for_mask = 1;
+	// 	rev_mask = 1;
+	// 	for_mask = ~(for_mask << 63);// for_mask = 0111...11 --> minimizer & for_mask = 0minimizer
+	// 	rev_mask <<= 63; // rev_mask = 1000...00 --> minimizer | rev_mask = 1minimizer
+	// }
+	// else { // local minimizer <t, pos> --> <unsigned 20 bit, usigned 12 bit>
+	// 	for_mask = 1; // for_mask = 111...11 --> minimizer & for_mask = minimizer
+	// 	rev_mask = 0; // 
+	// }
 
 	if (canonical) { 
-		//can.t = min(cur.t, curRC.t);
-		if ((cur.t & for_mask) < (curRC.t & for_mask)) can.t = (cur.t & for_mask);
-		//if (cur.t < curRC.t) can.t = cur.t & for_mask;
+		if ((cur.t & for_mask) < (curRC.t & for_mask)) can.t = (cur.t & for_mask); //can.t = min(cur.t, curRC.t);
 		else can.t = (curRC.t | rev_mask); 
 	}
 	else { can.t = cur.t; }
@@ -49,15 +60,15 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 	TupPos activeMinimizer, curMinimizer;
 	activeMinimizer.t = can.t;
 	activeMinimizer.pos = 0;
-	//	priority_queue<GenomeTuple, vector<GenomeTuple>, GenomeTupleComp > pQueue;
 	vector<TupPos> curTuples(w);
 	curTuples[0] = activeMinimizer;
 
 	// 
 	// Find the active minimizer in this window
+	//
 	int nMinimizers=1;
 
-	for (p = 1; p< w && p < seqLen-k+1 ; p++) {
+	for (p = 1; p < w && p < seqLen-k+1 ; p++) {
 		ShiftOne(seq, p+k-1, m, cur);
 		ShiftOneRC(seq, p+k-1, k, curRC);
 		/*
@@ -68,35 +79,19 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 		assert(testrc == curRC);
 		*/
 		curMinimizer.pos = p;
-		if (canonical) {
-			//curMinimizer.t = min(cur.t, curRC.t);
-			if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
-			else curMinimizer.t = (curRC.t | rev_mask); 
-		}
-		else {
-			curMinimizer.t = cur.t;
-		}
 
-		if (canonical) {
-			if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) {  //TODO(Jingwen)
-				activeMinimizer.t = curMinimizer.t;
-				activeMinimizer.pos = p;
-			}			
-		}
-		else {
-			if (curMinimizer.t < activeMinimizer.t) {  
-				activeMinimizer.t = curMinimizer.t;
-				activeMinimizer.pos = p;
-			}				
-		}
-
+		if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
+		else curMinimizer.t = (curRC.t | rev_mask); 
+		if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) {  
+			activeMinimizer.t = curMinimizer.t;
+			activeMinimizer.pos = p;
+		}	
 		curTuples[p%w] = curMinimizer;
 	}
 	minimizers.push_back(activeMinimizer);
 	// Now scan the chromosome
 	minTuple.t=m.t;
-	for (p=w; p < seqLen-k+1; p++) {
-		
+	for (p = w; p < seqLen-k+1; p++) {
 		// Check if past current active minimzier
 		ShiftOne(seq, p+k-1, m, cur);
 		ShiftOneRC(seq, p+k-1, k, curRC);
@@ -108,46 +103,26 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 		assert(test.t == cur.t);
 		assert(testrc.t == curRC.t);
 #endif
-		if (canonical) {
-			//curMinimizer.t = min(cur.t, curRC.t);
-			if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
-			else curMinimizer.t = (curRC.t | rev_mask); 
-		}
-		else {
-			curMinimizer.t = cur.t;
-		}
+		if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
+		else curMinimizer.t = (curRC.t | rev_mask); 
 		curMinimizer.pos = p;
 		curTuples[p%w] = curMinimizer;
 		if (p - w >= activeMinimizer.pos) {
 			activeMinimizer = curTuples[0];
 			for (int j =1; j < w; j++) {
-				if (canonical) {
-					if ((curTuples[j].t & for_mask) < (activeMinimizer.t & for_mask)) { 
-						activeMinimizer = curTuples[j];
-					}					
-				}
-				else {
-					if (curTuples[j].t < activeMinimizer.t) { 
-						activeMinimizer = curTuples[j];
-					}						
-				}
+				if ((curTuples[j].t & for_mask) < (activeMinimizer.t & for_mask)) { 
+					activeMinimizer = curTuples[j];
+				}		
 			}
 			minimizers.push_back(activeMinimizer);
 			nMinimizers+=1;
 		}
 		else {
-			if (canonical) {
-				if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) { //TODO(Jingwen)
-					activeMinimizer = curMinimizer;
-					minimizers.push_back(activeMinimizer);
-					nMinimizers++;		
-				}				
-			}
-			if (curMinimizer.t < activeMinimizer.t) { 
+			if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) { //TODO(Jingwen)
 				activeMinimizer = curMinimizer;
 				minimizers.push_back(activeMinimizer);
 				nMinimizers++;		
-			}
+			}		
 		}		
 		if (p + 1 % 10000 == 0) {
 			cerr << p +1 << endl;

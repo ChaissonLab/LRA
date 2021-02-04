@@ -77,7 +77,6 @@ void DiagonalSort(vector<pair<Tup, Tup> > &vals, int minRange=0) {
 	DiagonalSort<Tup>(vals.begin(), vals.end(), minRange);
 }
 
-
 template<typename Tup> 
 class AntiDiagonalSortOp {
  public:

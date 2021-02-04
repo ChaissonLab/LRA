@@ -84,8 +84,6 @@ void HelpMap() {
 
 }
 
-
-		
 class MapInfo {
 public:
 	std::vector<float> *LookUpTable;
@@ -117,7 +115,8 @@ void MapReads(MapInfo *mapInfo) {
 		}
 		else {
 			for (int i = 0; i< reads.size(); i++) {
-				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm, *mapInfo->glIndex, *mapInfo->opts, &strm, &svsigstrm, mapInfo->timing, mapInfo->semaphore);
+				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm,
+											 *mapInfo->glIndex, *mapInfo->opts, &strm, &svsigstrm, mapInfo->timing, mapInfo->semaphore);
 				reads[i].Clear();
 			}
 			reads.clear();
@@ -132,7 +131,9 @@ void MapReads(MapInfo *mapInfo) {
 				if (mapInfo->reader->basesRead > 100000000) {
 					
 					clock_t cur = clock();		
-					cerr << "lra aligned " << *mapInfo->numAligned << " from " << mapInfo->reader->nReads << ", " << mapInfo->reader->totalRead /1000000<< "M bases (" << std::setprecision(4) <<  ((float)(cur - mapInfo->reader->timestamp))/CLOCKS_PER_SEC  << "s)." << endl;
+					cerr << "lra aligned " << *mapInfo->numAligned << " from " << mapInfo->reader->nReads << ", " 
+						 << mapInfo->reader->totalRead /1000000<< "M bases (" << std::setprecision(4) <<  
+						 ((float)(cur - mapInfo->reader->timestamp))/CLOCKS_PER_SEC  << "s)." << endl;
 					mapInfo->reader->timestamp=cur;
 					mapInfo->reader->basesRead = 0;
 				}
@@ -170,8 +171,6 @@ void MapReads(MapInfo *mapInfo) {
 	pthread_exit(NULL);
 }
 
-
-
 void RunAlign(int argc, const char* argv[], Options &opts ) {
 // open query file for reading; you may use your favorite FASTA/Q parser
 	int argi = 0;
@@ -183,37 +182,21 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		if (ArgIs(argv[argi], "-a")) {
 			++argi;
 			opts.storeAll=true;
-		}		
-		else if (ArgIs(argv[argi], "-W")) {
-			opts.globalW=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}		
-		else if (ArgIs(argv[argi], "-K")) {
-			opts.globalK=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}	
-		else if (ArgIs(argv[argi], "-F")) {
-			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}	
-		else if (ArgIs(argv[argi], "-N")) {
-			opts.NumOfminimizersPerWindow=atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}			
-		else if (ArgIs(argv[argi], "-m")) {
-			opts.minRefinedClusterSize=atoi(GetArgv(argv, argc, argi));
+		}				
+		if (ArgIs(argv[argi], "-m")) {
+			opts.minRefinedClusterSize = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}	
 		else if (ArgIs(argv[argi], "-M")) {
-			opts.minClusterSize=atoi(GetArgv(argv, argc, argi));
+			opts.minClusterSize = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}	
 		else if (ArgIs(argv[argi], "-Flag")) {
-			opts.flagRemove=atoi(GetArgv(argv, argc, argi));
+			opts.flagRemove = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}	
 		else if (ArgIs(argv[argi], "-H")) {
-			opts.hardClip=true;
+			opts.hardClip = true;
 		}
 		else if (ArgIs(argv[argi], "-p")) {			
 			opts.printFormat = GetArgv(argv, argc, argi);
@@ -224,42 +207,42 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "-t")) {
-			opts.nproc=atoi(GetArgv(argv, argc, argi));
+			opts.nproc = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}		
 		else if (ArgIs(argv[argi], "-r")) {
-			opts.refineLevel=atoi(GetArgv(argv, argc, argi));
+			opts.refineLevel = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--stride")) {
-			opts.readStride=atoi(GetArgv(argv, argc, argi));
+			opts.readStride = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--start")) {
-			opts.readStart=atoi(GetArgv(argv, argc, argi));
+			opts.readStart = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--PAl")) {
-			opts.PrintNumAln=atoi(GetArgv(argv, argc, argi));
+			opts.PrintNumAln = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--Al")) {
-			opts.NumAln=atoi(GetArgv(argv, argc, argi));
+			opts.NumAln = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}		
 		else if (ArgIs(argv[argi], "-S")) {
 			opts.SparseDP = true;
 		}
 		else if (ArgIs(argv[argi], "--timing")) {
-			opts.timing=GetArgv(argv, argc, argi);
+			opts.timing = GetArgv(argv, argc, argi);
 			++argi;
 		}			
 		else if (ArgIs(argv[argi], "--timeRead")) {
-			opts.storeTiming=true;
+			opts.storeTiming = true;
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--passthrough")) {
-			opts.passthroughtag=true;
+			opts.passthroughtag = true;
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.readType=Options::ccs;
@@ -330,14 +313,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.maxGapBtwnAnchors=1800;
 		}
 		else if (ArgIs(argv[argi], "-at")) {
-			opts.alnthres=atoi(GetArgv(argv, argc, argi));
+			opts.alnthres = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "-SV")) {
-			opts.Printsvsig=true;
-			opts.svsigLen=atoi(GetArgv(argv, argc, argi));
+			opts.Printsvsig = true;
+			opts.svsigLen = atoi(GetArgv(argv, argc, argi));
 			++argi;
-			opts.outsvfile=argv[++argi];
+			opts.outsvfile = argv[++argi];
 		}
 		else if (ArgIs(argv[argi], "-T")) {
 			opts.LookUpTable = true;
@@ -347,32 +330,29 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;
-		}
-		else if (ArgIs(argv[argi], "-aa")) {
-			opts.MergeSplit = false;
-		}		
+		}	
 		else if (ArgIs(argv[argi], "--locMatch")) {
-			opts.localMatch=atoi(GetArgv(argv,argc,argi));
+			opts.localMatch = atoi(GetArgv(argv,argc,argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--locBand")) {
-			opts.localBand=atoi(GetArgv(argv,argc,argi));
+			opts.localBand = atoi(GetArgv(argv,argc,argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--sseBand")) {
-			opts.sseBand=atoi(GetArgv(argv,argc,argi));
+			opts.sseBand = atoi(GetArgv(argv,argc,argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--locIndel")) {
-			opts.localIndel=atoi(GetArgv(argv,argc,argi));
+			opts.localIndel = atoi(GetArgv(argv,argc,argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--cleanMaxDiag")) {
-			opts.cleanMaxDiag=atoi(GetArgv(argv, argc, argi));
+			opts.cleanMaxDiag = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--maxCandidates")) {
-			opts.maxCandidates=atoi(GetArgv(argv, argc, argi));
+			opts.maxCandidates = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
 		else {
@@ -449,7 +429,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		genome.header.WriteSAMHeader(*outPtr);
 	}
 
-
 	vector<float> LookUpTable;
 	CreateLookUpTable(LookUpTable);
 
@@ -503,7 +482,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	outfile.close();
 	outsvfile.close();
 }
-
 
 void HelpStoreIndex() {
 	cout << "Usage: lra index file.fa [options]" << endl
@@ -584,8 +562,12 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 			glIndex.maxFreq=opts.localMaxFreq;
 		}
 		else if (ArgIs(argv[argi], "-K") or ArgIs(argv[argi], "-W") or ArgIs(argv[argi], "-F")
-				 or ArgIs(argv[argi], "-N")) {
+				 or ArgIs(argv[argi], "-N") or ArgIs(argv[argi], "--globalWinsize")) {
 			argi+=2;
+			continue;
+		}
+		else if (ArgIs(argv[argi], "-d")) {
+			argi+=1;
 			continue;
 		}
 		else if (ArgIs(argv[argi], "--localIndexWindow")) {
@@ -613,7 +595,7 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 }
 
 void RunStoreGlobal(int argc, const char* argv[], 
-										vector<GenomeTuple> &minimizers, Header &header, Options &opts) {
+					vector<GenomeTuple> &minimizers, Header &header, Options &opts) {
 	// open query file for reading; you may use your favorite FASTA/Q parser
 	int argi = 0;
 	string genome;
@@ -687,11 +669,7 @@ void RunStoreGlobal(int argc, const char* argv[],
 		else if (ArgIs(argv[argi], "-p")) {
 			++argi;
 			printIndex = true;
-		}
-		else if (ArgIs(argv[argi], "-Kglo")) {
-			++argi;
-			opts.globalK=atoi(argv[argi]);
-		}		
+		}	
 		else if (ArgIs(argv[argi], "-k") or ArgIs(argv[argi], "-w") or ArgIs(argv[argi], "-f")) {
 			argi+=2;
 			continue;
@@ -705,7 +683,6 @@ void RunStoreGlobal(int argc, const char* argv[],
 			HelpStoreGlobal();
 			exit(0);
 		}		
-
 		else if (strlen(argv[argi]) > 0 && argv[argi][0] == '-') {
 			HelpStoreGlobal();
 			cout << "Invalid option " << argv[argi] << endl;
@@ -740,18 +717,6 @@ void RunStoreIndex(int argc, const char* argv[]) {
 	Options opts;
 
 	RunStoreGlobal(argc, argv, minimizers, header, opts);
-
-
-	// save the minimizers in a file
-	// TODO(Jingwen): delete this later
-/*
-	ofstream clust("minimizers.dots");
-	for (int m=0; m < minimizers.size(); m++) {
-		clust << minimizers[m].pos << "\t" << minimizers[m].pos + opts.globalK - 1 <<endl;
-	}
-	clust.close();
-*/
-
     RunStoreLocal(argc, argv, glIndex, opts);
 }
 
@@ -767,15 +732,20 @@ void Usage() {
 }
 
 void InitStatic() {
-	Tuple mask=1;
-	
-	GenomeTuple::for_mask_s = ~(mask << (sizeof(mask)*8-1));
-	u_int32_t local_mask=1;
-	for (int i=0; i < LOCAL_POS_BITS; i++) {
-		LocalTuple::for_mask_s = LocalTuple::for_mask_s << 2;
-		LocalTuple::for_mask_s += 3;
+	Tuple mask = 1;
+	GenomeTuple::for_mask_s = ~(mask << (sizeof(mask)*8-1)); // for_mask_s = 0111...11
+	LocalTuple::for_mask_s = 1;
+	for (int i = 1; i < 32 - LOCAL_POS_BITS; i++) {
+		LocalTuple::for_mask_s = LocalTuple::for_mask_s << 1;
+		LocalTuple::for_mask_s += 1; // for_mask_s = 111...11 (20 bit)
 	}
-
+	// cerr << "GenomeTuple::for_mask_s: " << GenomeTuple::for_mask_s << endl;
+	// cerr << "LocalTuple::for_mask_s: " << LocalTuple::for_mask_s << endl;
+	// u_int32_t local_mask = 1;
+	// for (int i = 0; i < LOCAL_POS_BITS; i++) {
+	// 	LocalTuple::for_mask_s = LocalTuple::for_mask_s << 2;
+	// 	LocalTuple::for_mask_s += 3; // for_mask_s = 111...11 (20 bit)
+	// }
 }
 
 int main(int argc, const char *argv[]) {
@@ -783,10 +753,9 @@ int main(int argc, const char *argv[]) {
 		Usage();
 		return 1;
 	}
-	
 	Options opts;
 	InitStatic();
-  int argi;
+  	int argi;
 	vector<GenomeTuple>  minimizers;
 	LocalIndex lIndex;
 	Header header;
