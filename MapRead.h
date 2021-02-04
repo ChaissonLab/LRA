@@ -352,7 +352,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 		else if (r == 0 and len > 1) {
 			// float x = (0.5f * alignmentsOrder[r + 1].value + 0.4f * alignmentsOrder[r + 1].SecondSDPValue + 0.1f * alignmentsOrder[r + 1].FirstSDPValue) / 
 			// 			(0.5f * alignmentsOrder[r].value + 0.4f * alignmentsOrder[r].SecondSDPValue + 0.1f * alignmentsOrder[r].FirstSDPValue);
-			float x = (0.5f * alignmentsOrder[r + 1].value + 0.5f * alignmentsOrder[r + 1].FirstSDPValue) / (0.5f * alignmentsOrder[r].value + 0.5f * alignmentsOrder[r].FirstSDPValue);
+			float x = alignmentsOrder[r + 1].value / alignmentsOrder[r].value;
 			float pen_cm_1 = (alignmentsOrder[r].NumOfAnchors0 > 10? 1.0f : 0.1f ) * alignmentsOrder[r].NumOfAnchors0;
 			// float pen_cm_2 = (alignmentsOrder[r].NumOfAnchors1 > 100? 1.0f : 0.01f) * alignmentsOrder[r].NumOfAnchors1;
 			float mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * logf(alignmentsOrder[r].value));
