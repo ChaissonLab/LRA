@@ -196,7 +196,7 @@ void IndelRefineAlignment(Read &read,
 			int mismatch=opts.localMismatch;
 			
 			if (tSeqLen < k or qSeqLen < k) {
-				cerr << "Resorting to affine " << tSeqLen << "\t" << qSeqLen << endl;
+
 				Alignment aln;
 				AffineAlignBuffers buff;
 				string qStr(&qSeq[qStart], qSeqLen);
