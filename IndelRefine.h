@@ -283,8 +283,7 @@ void IndelRefineAlignment(Read &read,
 						indexMat[curRowPos] = prevRowPos;
 					}
 				}
-
-				
+			
 				prevRowStart += prevRowLen;
 				curRowStart  += curRowLen;
 				prevRowLen   =  curRowLen;
@@ -313,17 +312,20 @@ void IndelRefineAlignment(Read &read,
 				}
 				assert(r == 0 || np == 1);
 			}
-			if (startBlock > 100) {
-				//				PrintMat(pathMat, qS, qE);
+			/*
+			if (startBlock == 1) {
+			 				PrintMat(pathMat, qS, qE);
 			}
+			*/
 			//			PrintMat(pathMat, qS, qE);
 			//			PrintMat(scoreMat, qS, qE);
 			long qPath=qStart;
 			long tPath=tStart;
 			int pi=path.size()-1;
-			assert(path[0] == diag);
-			assert(path[pi] == diag);
 			reverse(path.begin(), path.end());
+			assert(path[0] == diag);
+			//			assert(path[pi] == diag);
+
 			pi=0;
 			while (pi < path.size()) {
 				int blockLen=0;
