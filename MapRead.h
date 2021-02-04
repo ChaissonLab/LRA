@@ -21,6 +21,7 @@
 #include "LinearExtend.h"
 #include "SplitClusters.h"
 #include "Timing.h"
+#include "IndelRefine.h"
 
 #include <iostream>
 #include <algorithm>
@@ -2891,6 +2892,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				// So the function refining can be apply to each of the segment. 
 				// function refining(alignments.back().SegAlignment[s])
 				//
+				//IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts);
+				
 				alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
 			}
 			alignments.back().SetFromSegAlignment(smallOpts);

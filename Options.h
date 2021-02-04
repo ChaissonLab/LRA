@@ -92,7 +92,7 @@ public:
 		readType=Options::raw;
 		localMatch=4;
 		localMismatch=-3;
-		localIndel=-3;
+		localIndel=-4;
 		localBand=15;
 		sseBand=30;
 		readStart=0;
