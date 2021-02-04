@@ -86,8 +86,9 @@ public:
 	int predefined_coefficient;
 	float anchorstoosparse;
 	bool passthroughtag;
-
+	bool skipBandedRefine;
 	Options() {
+		skipBandedRefine=false;
 		storeTiming=false;
 		readType=Options::raw;
 		localMatch=4;

@@ -244,6 +244,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "--passthrough")) {
 			opts.passthroughtag = true;
 		}
+		else if (ArgIs(argv[argi], "--skipBandedRefine")) {
+			opts.skipBandedRefine = true;
+		}
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.readType=Options::ccs;
 			opts.HighlyAccurate = true;
