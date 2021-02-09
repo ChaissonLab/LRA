@@ -386,14 +386,31 @@ void IndelRefineAlignment(Read &read,
 				 assert(tPath <= alignment.blocks[endBlock+1].tPos);
 				 assert(qPath <= alignment.blocks[endBlock+1].qPos);
 			 }
+			
+			 if (qPath != qSeqLen + qStart || tPath != tSeqLen + tStart) {
+				 cout << "ERROR on " << read.name << endl;		
+				 assert(qPath == qSeqLen + qStart);
+				 assert(tPath == tSeqLen + tStart);
+			 }
 			}
-
 			//cerr << "ratio " << scoreMat.size() / (float)qS.size() << endl;			
 		}
 		endBlock++;
 		startBlock=endBlock;		
 	}
 	alignment.blocks = refined;
+	if (alignment.blocks.size() > 1) {
+		for (int b=0; b < alignment.blocks.size()-1; b++) {
+			if (alignment.blocks[b].qPos + alignment.blocks[b].length > alignment.blocks[b+1].qPos or
+					alignment.blocks[b].tPos + alignment.blocks[b].length > alignment.blocks[b+1].tPos ) {
+				cout << "ERROR with alignment consistency of " << read.name << endl;
+				cout << "block " << b << endl;
+				cout << "q: " << alignment.blocks[b].qPos + alignment.blocks[b].length << "\t" << alignment.blocks[b+1].qPos << endl;
+				cout << "t: " << alignment.blocks[b].tPos + alignment.blocks[b].length << "\t" << alignment.blocks[b+1].tPos << endl;
+				assert(0);
+			}
+		}
+	}
 }
 
 
