@@ -129,7 +129,7 @@ public:
 		maxCandidates=10;
 		doBandedAlignment=true;
 		refineLevel= REF_LOC | REF_DYN | REF_DP;
-		maxGap=10000;  
+		maxGap=5000; // 5000
 		maxGapBtwnAnchors=1000; // no larger than 2000 // used to be 1500 // 1000
 		mergeClusters=true;
 		NaiveDP=false;
@@ -144,7 +144,7 @@ public:
    		//minRemoveSpuriousAnchorsLength=100;
      	maxRemoveSpuriousAnchorsDist=500;
    		minRemoveSpuriousAnchorsNum=10;
-   		NumAln = 6;//3
+   		NumAln = 3;//3
    		PrintNumAln = 1;
    		BtnSubClusterswindow = 800;
 		binLength = 20000;
