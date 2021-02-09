@@ -912,7 +912,6 @@ public:
 		// 		0.5f * (*alignments)[j].value + 0.4f * (*alignments)[j].SecondSDPValue + 0.1f * (*alignments)[j].FirstSDPValue;
 		//return 0.8f * (*alignments)[i].value + 0.2f * (*alignments)[i].FirstSDPValue > 0.8f * (*alignments)[j].value + 0.2f * (*alignments)[j].FirstSDPValue;
 		return (*alignments)[i].value > (*alignments)[j].value;
-
 	}
 
 	void Sort() {

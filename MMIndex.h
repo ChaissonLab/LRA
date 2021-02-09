@@ -353,7 +353,6 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, vector<int> &mm
 	}
 	assert(removed + unremoved == Remove.size());
 	cerr << unremoved << " minimizers with multiplicity samller than " << RANGE << endl;
-
 	//
 	// Sort unremoved minimizers by frequency 
 	// Use count sort
@@ -377,6 +376,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, vector<int> &mm
 			Remove[Sortindex[s]] = 1;
 		}
 	}
+
 	if (opts.dotPlot) {
 		stringstream outNameStrm;
 		outNameStrm << "minimizers.txt";
@@ -392,6 +392,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, vector<int> &mm
 		}
 		baseDots.close();
 	}
+	RemoveFrequent (minimizers, Remove); 
 	//
 	// Remove too frequent minimizers;
 	//

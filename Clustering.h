@@ -16,7 +16,7 @@ long DiagonalDifference(Tup &a, Tup &b, int strand=0) {
 		long bDiag = (long)b.second.pos - (long)b.first.pos;
 		return aDiag - bDiag;		
 	}
-	else { // revMathches
+	else { // revMatches
 		long aDiag = a.first.pos + a.second.pos; 
 		long bDiag= b.first.pos + b.second.pos;
 		return aDiag - bDiag;				
@@ -62,7 +62,7 @@ long SkewDiagonalDifference(Tup &a, Tup &b, Options &opts, int strand=0) {
 		long bDiag = (long)b.second.pos - (long)ceil(opts.slope*b.first.pos);
 		return aDiag - bDiag;		
 	}
-	else { // revMathches
+	else { // revMatches
 		long aDiag = ceil(opts.slope*a.first.pos) + a.second.pos; 
 		long bDiag= ceil(opts.slope*b.first.pos) + b.second.pos;
 		return aDiag - bDiag;				
