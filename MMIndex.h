@@ -392,7 +392,6 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, vector<int> &mm
 		}
 		baseDots.close();
 	}
-	RemoveFrequent (minimizers, Remove); 
 	//
 	// Remove too frequent minimizers;
 	//

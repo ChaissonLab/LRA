@@ -42,6 +42,7 @@ HEADERS=MinCount.h \
   SplitClusters.h \
   SparseDP.h \
   Timing.h \
+  IndelRefine.h
 
 CXX=g++
 # -std=c++14 
@@ -52,6 +53,9 @@ tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 
 tgc: TestGlobalChain.cpp GlobalChain.h Fragment.h BasicEndpoint.h PrioritySearchTree.h
 	$(CXX) -g TestGlobalChain.cpp -o tgc
+
+tir: TestIndelRefine.cpp IndelRefine.h
+	$(CXX) -g TestIndelRefine.cpp  -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib  -lhts -o tir -lbz2 -lz
 
 lra: lra.o
 	$(CXX) $(STATIC) $(CCOPTS) $^ -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib  -lhts -lz -lpthread -ldeflate -lbz2  -o $@ 

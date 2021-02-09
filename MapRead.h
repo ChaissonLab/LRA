@@ -19,6 +19,7 @@
 #include "LinearExtend.h"
 #include "SplitClusters.h"
 #include "Timing.h"
+#include "IndelRefine.h"
 
 #include <iostream>
 #include <algorithm>
@@ -307,16 +308,11 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 		else if (r == 0 and len > 1) {
 			// float x = (0.5f * alignmentsOrder[r + 1].value + 0.4f * alignmentsOrder[r + 1].SecondSDPValue + 0.1f * alignmentsOrder[r + 1].FirstSDPValue) / 
 			// 			(0.5f * alignmentsOrder[r].value + 0.4f * alignmentsOrder[r].SecondSDPValue + 0.1f * alignmentsOrder[r].FirstSDPValue);
-<<<<<<< HEAD
 			//float x = (0.8f * alignmentsOrder[r + 1].value + 0.2f * alignmentsOrder[r + 1].FirstSDPValue) / (0.8f * alignmentsOrder[r].value + 0.2f * alignmentsOrder[r].FirstSDPValue);
 			float x = (alignmentsOrder[r + 1].value) / (alignmentsOrder[r].value);
 			float pen_cm_1 = (alignmentsOrder[r].NumOfAnchors0 > 20? 1.0f : 0.05f ) * alignmentsOrder[r].NumOfAnchors0;
 			pen_cm_1 = (alignmentsOrder[r].NumOfAnchors0 >= 5? 1.0f : 0.1f ) * pen_cm_1;
 			// float pen_cm_1 = (alignmentsOrder[r].NumOfAnchors0 > 10? 1.0f : 0.1f ) * alignmentsOrder[r].NumOfAnchors0;
-=======
-			float x = (0.5f * alignmentsOrder[r + 1].value + 0.5f * alignmentsOrder[r + 1].FirstSDPValue) / (0.5f * alignmentsOrder[r].value + 0.5f * alignmentsOrder[r].FirstSDPValue);
-			float pen_cm_1 = (alignmentsOrder[r].NumOfAnchors0 > 10? 1.0f : 0.1f ) * alignmentsOrder[r].NumOfAnchors0;
->>>>>>> 77f3f443f27a8ed17df43e1939e0660d54eee1d3
 			// float pen_cm_2 = (alignmentsOrder[r].NumOfAnchors1 > 100? 1.0f : 0.01f) * alignmentsOrder[r].NumOfAnchors1;
 			float mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * logf(alignmentsOrder[r].value));
 			mapq -= (int)(4.343f * logf(len) + .499f);
@@ -332,124 +328,6 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
 	}
 }
 
-<<<<<<< HEAD
-=======
-// void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
-// 	//
-// 	// Store the index of primary alignments in vector<int> pry_index;
-// 	//
-// 	vector<int> pry_index;
-// 	for (int sl = 0; sl < alignmentsOrder.size(); sl++) {
-// 		if (!alignmentsOrder[sl].ISsecondary) { // This is primary alignment;
-// 			pry_index.push_back(sl);
-// 		}
-// 	}
-// 	//
-// 	// compute mapqv for each alignment;
-// 	//
-// 	for (int pi = 0; pi < pry_index.size(); pi++) {
-		
-// 		int first = pry_index[pi];
-// 		int last;
-// 		if (pi == pry_index.size() - 1) last = alignmentsOrder.size();
-// 		else last = pry_index[pi+1];
-
-// 		if (last - first == 1) { // No secondary alignments
-// 			alignmentsOrder[first].mapqv = 60;
-// 			alignmentsOrder[first].SetMapqv();
-// 			// if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.00001) { // 0.0005
-// 			// 	alignmentsOrder[first].mapqv = 2;
-// 			// }
-// 			// else {alignmentsOrder[first].mapqv = 60;}
-// 			// alignmentsOrder[first].SetMapqv();
-// 		}
-// 		else {
-// 			// assign mapqv to primary alignment;
-// 			int nmmdiff = alignmentsOrder[first].nmm - alignmentsOrder[first+1].nmm;
-// 			int nsmallgap = (alignmentsOrder[first].ndel + alignmentsOrder[first].nins) - 
-// 								(alignmentsOrder[first+1].ndel + alignmentsOrder[first+1].nins);
-// 			float alnvaluediff = alignmentsOrder[first].totalValue - alignmentsOrder[first+1].totalValue;
-
-// 			//cerr << "nmmdiff: " << nmmdiff << " nsmallgap: " << nsmallgap << " alnvaluediff: " << alnvaluediff << endl;
-// 			//cerr << "alignmentsOrder[first].NumOfAnchors/(float)read.length: " << alignmentsOrder[first].NumOfAnchors/(float)read.length << endl;
-// 			float denom_1 = 1, denom_2 = 1;
-// 			if (nmmdiff == 0 and nsmallgap == 0 ) {
-// 				alignmentsOrder[first].mapqv = 2;
-// 				alignmentsOrder[first+1].mapqv = 1;
-// 			}
-// 			// else if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.00001) {
-// 			// 	alignmentsOrder[first].mapqv = 2;
-// 			// 	alignmentsOrder[first+1].mapqv = 1;
-// 			// }
-// 			else if (alnvaluediff <= 20 and abs(nmmdiff) <= 20 and abs(nsmallgap) <= 20) { //10 & 15 & 20
-// 				alignmentsOrder[first].mapqv = 2;
-// 				alignmentsOrder[first+1].mapqv = 1;
-// 			}
-// 			else if (nmmdiff <= 0 and nsmallgap <= 0) { // nmmdiff=0 and nsmallgap=0 ==> mapqv=52
-// 				if (alignmentsOrder[first].totalValue < alignmentsOrder[first+1].totalValue + 300) { 
-// 					if (nmmdiff < -20) denom_1 = 1;
-// 					else if (nmmdiff >= -20 and nmmdiff < -5) denom_1 = pow(0.9,20-abs(nmmdiff));  
-// 					else denom_1 = pow(0.7,20-abs(nmmdiff));
-
-// 					if (nsmallgap < -20) denom_2 = 1;
-// 					else if (nsmallgap >= -20 and nsmallgap < -5) denom_2 = pow(0.9,20-abs(nsmallgap));
-// 					else  denom_2 = pow(0.7,20-abs(nsmallgap)); 
-// 					alignmentsOrder[first].mapqv = min(60, (int) (60 + 5*log10(denom_1) + 5*log10(denom_2)));
-// 				}
-// 				else { alignmentsOrder[first].mapqv = 60;}			
-// 			}
-// 			else if (nmmdiff <= 0 and nsmallgap >= 0) { // when nsmallgap=30 and nmmdiff=0; mapqv=0
-// 				if (alignmentsOrder[first].totalValue < alignmentsOrder[first+1].totalValue + 300) { 
-// 					if (nmmdiff < -20) denom_1 = 1;
-// 					else if (nmmdiff >= -20 and nmmdiff < -5) denom_1 = pow(0.9,20-abs(nmmdiff));  
-// 					else denom_1 = pow(0.7,20-abs(nmmdiff));
-
-// 					denom_2 = pow(0.1, abs(nsmallgap));  
-// 					int cpr=(int) (60 + 5*log10(denom_1) + 20*log10(denom_2)); //60 + 10*log10(denom) 
-// 					if (cpr>=0) alignmentsOrder[first].mapqv = min(60, cpr);
-// 					else alignmentsOrder[first].mapqv = 2;					
-// 				}
-// 				else { alignmentsOrder[first].mapqv = 60;}					
-// 			}
-// 			else if (nmmdiff >= 0 and nsmallgap <= 0) { // when nsmallgap=0 and nmmdiff=30, mapqv=0
-// 				if (alignmentsOrder[first].totalValue < alignmentsOrder[first+1].totalValue + 300) { 
-// 					denom_1 = pow(0.1, abs(nmmdiff));  
-
-// 					if (nsmallgap < -20) denom_2 = 1;
-// 					else if (nsmallgap >= -20 and nsmallgap < -5) denom_2 = pow(0.9,20-abs(nsmallgap));
-// 					else  denom_2 = pow(0.7,20-abs(nsmallgap)); 
-// 					int cpr=(int) (60 + 20*log10(denom_1) + 5*log10(denom_2)); //60 + 10*log10(denom) 
-// 					if (cpr>=0) alignmentsOrder[first].mapqv = min(60, cpr);
-// 					else alignmentsOrder[first].mapqv = 2;						
-// 				}
-// 				else { alignmentsOrder[first].mapqv = 60;}	
-// 			}
-// 			else { 
-// 				if (alignmentsOrder[first].totalValue < alignmentsOrder[first+1].totalValue + 300) { 
-// 					denom_1 = pow(0.1, abs(nmmdiff));  
-// 					denom_2 = pow(0.1, abs(nsmallgap));  
-// 					int cpr=(int) (60 + 20*log10(denom_1) + 20*log10(denom_2));
-// 					if (cpr>=0) alignmentsOrder[first].mapqv = min(60, cpr);
-// 					else alignmentsOrder[first].mapqv = 2;					
-// 				}
-// 				else {alignmentsOrder[first].mapqv = 60;}	
-// 			}				
-
-// 			alignmentsOrder[first].SetMapqv();
-// 			//
-// 			// assign mapqv to secondary alignments;
-// 			//
-// 			assert(alignmentsOrder[first].mapqv <= 60);
-// 			for (int sd = first + 1; sd < last; sd++) {
-// 				alignmentsOrder[sd].mapqv = (int) alignmentsOrder[first].mapqv/(2*(last-first-1));
-// 				alignmentsOrder[sd].SetMapqv();
-// 			}
-// 		}
-// 	}
-// }
-
-
->>>>>>> 77f3f443f27a8ed17df43e1939e0660d54eee1d3
 int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, GenomePos &tStart, GenomePos &tEnd,
 						vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &options, 
 						AffineAlignBuffers &buff) {
@@ -1848,22 +1726,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	//
 	// Add matches between the read and the genome.
 	//
-<<<<<<< HEAD
 	CompareLists<GenomeTuple, Tuple, int>(readmm, genomemm, allMatches, mmfreqs, opts, true);
 	// DiagonalSort<GenomeTuple, int>(allMatches, 500);
-=======
-	CompareLists<GenomeTuple, Tuple>(readmm, genomemm, allMatches, opts, true);
-
-	// // check duplicate in allMatches
-	// for (int am=0; am<allMatches.size(); am++) {
-	// 	if (allMatches[am].first.t == 5413 and allMatches[am].first.pos == 47435 and allMatches[am].second.t == 5413 and allMatches[am].second.pos == 36356) {
-	// 		cerr << "before sort am: " << am << endl;
-	// 	}
-	// }
-	// Guess that 500 is where the setup/takedown overhead of an array index is equal to sort by value.
-	DiagonalSort<GenomeTuple>(allMatches); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
-
->>>>>>> 77f3f443f27a8ed17df43e1939e0660d54eee1d3
 	timing.Tick("Sort minimizers");
 
 	if (opts.dotPlot) {
@@ -1886,29 +1750,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		}
 		fclust.close();
 
-<<<<<<< HEAD
 		ofstream rclust("rev-matches_0.dots");
-=======
-	}
-
-	timing.Tick("Forward-diag-rough-clusters");
-
-	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize());
-	CleanOffDiagonal(revMatches, opts, 1);
-	vector<Cluster> revroughClusters;
-	vector<Cluster> split_revroughClusters;
-	int reverseStrand=1;
-	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), reverseStrand);
-	for (int c = 0; c < revroughClusters.size(); c++) {
-		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
-		SplitRoughClustersWithGaps(revMatches, revroughClusters[c], split_revroughClusters, opts, 1);
-	}
-	//cerr << "revroughClusters.size(): " << revroughClusters.size() << " split_revroughClusters.dots: " << split_revroughClusters.size()<< endl;
-
-
-	if (opts.dotPlot) {
-		ofstream rclust("rev-matches.dots");
->>>>>>> 77f3f443f27a8ed17df43e1939e0660d54eee1d3
 		for (int m=0; m < revMatches.size(); m++) {			
 			rclust << get<0>(revMatches[m]).pos << "\t" << get<1>(revMatches[m]).pos + opts.globalK << "\t" << opts.globalK + get<0>(revMatches[m]).pos << "\t"
 					 << get<1>(revMatches[m]).pos << "\t" << m << "\t" << get<2>(revMatches[m]) << endl;
@@ -2790,6 +2632,20 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				// So the function refining can be apply to each of the segment. 
 				// function refining(alignments.back().SegAlignment[s])
 				//
+				alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
+			}
+			for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
+				//
+				// (Mark: add the refining code here)
+				// alignments.back() is `class SegAlignmentGroup`. `class SegAlignmentGroup` has member: `vector<Alignment*> SegAlignment`, where 
+				// each `SegAlignment[s]` is a segment of alignment when there are multiple segments. 
+				// So the function refining can be apply to each of the segment. 
+				// function refining(alignments.back().SegAlignment[s])
+				//
+				if (opts.skipBandedRefine == false) {
+					IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts);
+				}
+				
 				alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
 			}
 			alignments.back().SetFromSegAlignment(smallOpts);

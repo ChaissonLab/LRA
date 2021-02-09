@@ -193,10 +193,11 @@ class Alignment {
 		char gapSeparationChar = ' ';
 		refLen=0;
 		int refStart=0;
+		textStr = "";
+		alignStr = "";
+		queryStr = "";
+
 		if (blocks.size() == 0) {
-			textStr = "";
-			alignStr = "";
-			queryStr = "";
 			return;
 		}
 
@@ -868,6 +869,10 @@ public:
 			SegAlignment[s]->mapqv = mapqv;
 		}
 	}
+
+	int size() {
+		return SegAlignment.size();
+	}	
 };
 
 
