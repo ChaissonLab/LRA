@@ -8,6 +8,7 @@
 #include <numeric>     /*iota */
 #include <cmath>       /* ceil */
 #include <utility>      // std::pair, std::make_pair
+#include <unordered_map>
 
 template<typename Tup>
 class SortByPos {
@@ -42,6 +43,29 @@ void PrintIndex(vector<Tup> &minimizers, int k) {
 	}	
 }
 
+template<typename Tup> 
+void CalculateMinimizerStats(vector<Tup> &minimizers, vector<int> &mmfreqs) {
+	int distinct = 0; // Number of distinct minimizers
+	float avg_freq = 0;
+	int avg_distance = 0;
+	int unique = 0;
+	int total_freq = 0;
+	unordered_map<Tuple, int> miniDistinct;
+	for (int n = 0; n < minimizers.size(); n++) {
+		unordered_map<Tuple, int>::const_iterator got = miniDistinct.find(minimizers[n].t);
+		if (got == miniDistinct.end()) {
+			miniDistinct[minimizers[n].t] = 0;
+		}
+		if (mmfreqs[n] == 1) unique++;
+		total_freq += mmfreqs[n];
+
+	}
+	distinct = miniDistinct.size();
+	avg_freq = (float) total_freq / minimizers.size();
+	cerr << "sample minimizers: " << minimizers.size() << " distinct minimizers: " << distinct << " unique minimizers: " << (float) unique / minimizers.size() 
+		 << " average minimizer frequency: " << avg_freq << endl;
+}
+
 template<typename Tup>
 void RemoveFrequent(vector<Tup> &minimizers, int maxFreq) {
 	int c=0,n=0;
@@ -61,11 +85,12 @@ void RemoveFrequent(vector<Tup> &minimizers, int maxFreq) {
 }
 
 template<typename Tup>
-void RemoveFrequent(vector<Tup> &minimizers, vector<bool> &remove) {
+void RemoveFrequent(vector<Tup> &minimizers, vector<int> &mmfreqs, vector<uint32_t> &Freq, vector<bool> &remove) {
 	int c = 0;
 	for (int n = 0; n < minimizers.size(); n++) {
 		if (remove[n] == 0) {
 			minimizers[c] = minimizers[n];
+			mmfreqs.push_back(Freq[n]);
 			c++;
 		}	
 	}
@@ -258,7 +283,7 @@ void CountSort(const vector<uint32_t> & Freq, const int & RANGE, const vector<bo
 }
 
 
-void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header, Options &opts) {	
+void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, vector<int> &mmfreqs, Header &header, Options &opts) {	
 	if (opts.localK > 10) {
 		cerr << "ERROR, local k must be at most 10." << endl;
 		exit(1);
@@ -303,11 +328,12 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	uint32_t n = 0; uint32_t ne = 0;
 	uint32_t unremoved = 0;
 	uint32_t removed = 0;
- 	Tuple for_mask = 1;
-	for_mask = ~(for_mask << 63); // for_mask = 0111..11;
+ // 	Tuple for_mask = 1;
+	// for_mask = ~(for_mask << 63); // for_mask = 0111..11;
+	Tuple for_mask = GenomeTuple::for_mask_s;
 	while (n < minimizers.size()) {
 		ne = n + 1;
-		while (ne < minimizers.size() and minimizers[ne].t & for_mask == minimizers[n].t & for_mask) {ne++;}
+		while (ne < minimizers.size() and (minimizers[ne].t & for_mask) == (minimizers[n].t & for_mask)) {ne++;}
 		if (ne - n > RANGE) { // opts.minimizerFreq*rz is the rough threshold
 			for (uint32_t i = n; i < ne; i++) {
 				Freq[i] = ne - n;
@@ -326,6 +352,8 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		n = ne;
 	}
 	assert(removed + unremoved == Remove.size());
+	cerr << unremoved << " minimizers with multiplicity samller than " << RANGE << endl;
+
 	//
 	// Sort unremoved minimizers by frequency 
 	// Use count sort
@@ -338,36 +366,44 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	vector<uint32_t> winCount(sz, opts.NumOfminimizersPerWindow); // 50 is a parameter that can be changed 
 	for (uint32_t s = 0; s < Sortindex.size(); s++) {
 		uint32_t id = minimizers[Sortindex[s]].pos/opts.globalWinsize;
-		if (winCount[id] > 0 and minimizers[Sortindex[s]].pos < id*opts.globalWinsize + 5) { // force the minimizer to fall into the first 10bp of the window
+		if (winCount[id] > 0) { 
 			winCount[id] -= 1;
 		}
+		// if (winCount[id] > 0 and minimizers[Sortindex[s]].pos < id*opts.globalWinsize + 5) { // force the minimizer to fall into the first 10bp of the window
+		// 	winCount[id] -= 1;
+		// }
 		else {
+
 			Remove[Sortindex[s]] = 1;
 		}
 	}
-	cerr << "Starting to remove minimizers with multiplicity larger than " << RANGE << endl;
-	RemoveFrequent (minimizers, Remove); 
 	if (opts.dotPlot) {
 		stringstream outNameStrm;
 		outNameStrm << "minimizers.txt";
 		ofstream baseDots(outNameStrm.str().c_str());
 		for (int m=0; m < minimizers.size(); m++) {
-			baseDots << minimizers[m].t << "\t"
-					 << minimizers[m].pos << "\t" 
-					 << minimizers[m].pos + opts.globalK << "\t"
-					 << Freq[m] << "\t" 
-					 << Remove[m] << endl;				
+			if (Remove[m] == 0) {
+				baseDots << minimizers[m].t << "\t"
+						 << minimizers[m].pos << "\t" 
+						 << minimizers[m].pos + opts.globalK << "\t"
+						 << Freq[m] << "\t" 
+						 << Remove[m] << endl;					
+			}	
 		}
 		baseDots.close();
 	}
 	//
 	// Remove too frequent minimizers;
 	//
+	mmfreqs.clear();
+	RemoveFrequent (minimizers, mmfreqs, Freq, Remove); 
+	if (opts.CalculateMinimizerStats) {
+		CalculateMinimizerStats(minimizers, mmfreqs);
+	}
 	cerr << "There are " << minimizers.size() << " minimizers left" << endl;
-	//RemoveFrequent(minimizers, opts.globalMaxFreq);
 }
 
-int ReadIndex(string fn, vector<GenomeTuple> &index, Header &h, Options &opts) {
+int ReadIndex(string fn, vector<GenomeTuple> &index, vector<int> &mmfreqs, Header &h, Options &opts) {
 	ifstream fin(fn.c_str(), ios::in|ios::binary);
 	if (fin.good() == false or fin.eof()) {
 		return 0;
@@ -378,16 +414,19 @@ int ReadIndex(string fn, vector<GenomeTuple> &index, Header &h, Options &opts) {
 	h.Read(fin);
 	index.resize(len);
 	fin.read((char*) &index[0], sizeof(GenomeTuple)*len);
+	mmfreqs.resize(len); // read frequency of minimizers
+	fin.read((char*) &mmfreqs[0], sizeof(int)*len); // read frequency of minimizers
 	return len;
 }
 
-void WriteIndex(string fn, vector<GenomeTuple> &index, Header &h, Options &opts) {
+void WriteIndex(string fn, vector<GenomeTuple> &index, vector<int> &mmfreqs, Header &h, Options &opts) {
 	ofstream fout(fn.c_str(), ios::out|ios::binary);
 	int64_t minLength = index.size();
-	fout.write((char*) &minLength, sizeof(int64_t));
-	fout.write((char*) &opts.globalK, sizeof(int));
-	h.Write(fout);
-	fout.write((char*) &index[0], sizeof(GenomeTuple)* index.size());
+	fout.write((char*) &minLength, sizeof(int64_t)); // write the length of index 
+	fout.write((char*) &opts.globalK, sizeof(int)); // write the kmer length 
+	h.Write(fout); // write info about genome
+	fout.write((char*) &index[0], sizeof(GenomeTuple)*index.size()); // write minimizers
+	fout.write((char*) &mmfreqs[0], sizeof(int)*mmfreqs.size()); // write frequency of minimizers
 	fout.close();
 }
 

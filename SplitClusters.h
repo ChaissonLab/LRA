@@ -110,27 +110,20 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters) 
 			if (it->second == 0) { // split on q coord.
 				GenomePos t = (GenomePos) ceil(itlSet.slope * it->first + itlSet.intercept);
 
-				if (prev.first < it->first) { 
-					if (clusters[m].strand == 0) 
-						splitclusters.push_back(Cluster(prev.first, it->first, prev.second, t, clusters[m].strand, m)); // initialize coarse to specify the index of original index
-					else 
-						splitclusters.push_back(Cluster(prev.first, it->first, t, prev.second, clusters[m].strand, m));					
+				if (clusters[m].strand == 0) {// initialize coarse to specify the index of original index
+					 splitclusters.push_back(Cluster(prev.first, it->first, prev.second, t, clusters[m].strand, m)); 
 				}
-				else continue;
+				else {splitclusters.push_back(Cluster(prev.first, it->first, t, prev.second, clusters[m].strand, m));}
 
 				prev = make_pair(it->first, t);					
 			}
 			else { // split on t coord.
 				GenomePos q = (GenomePos) ceil((it->first - itlSet.intercept) / itlSet.slope);
 				
-				if (prev.first < q) {
 					if (clusters[m].strand == 0) 
 						splitclusters.push_back(Cluster(prev.first, q, prev.second, it->first, clusters[m].strand, m));
 					else 
 						splitclusters.push_back(Cluster(prev.first, q, it->first, prev.second, clusters[m].strand, m));
-
-				}
-				else continue;
 
 				prev = make_pair(q, it->first);					
 			}
@@ -138,8 +131,12 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters) 
 		} 
 
 		if (prev.first < clusters[m].qEnd) {
-			if (clusters[m].strand == 0) splitclusters.push_back(Cluster(prev.first, clusters[m].qEnd, prev.second, clusters[m].tEnd, clusters[m].strand, m));
-			else splitclusters.push_back(Cluster(prev.first, clusters[m].qEnd, clusters[m].tStart, prev.second, clusters[m].strand, m));			
+			if (clusters[m].strand == 0) {
+				splitclusters.push_back(Cluster(prev.first, clusters[m].qEnd, prev.second, clusters[m].tEnd, clusters[m].strand, m));
+			}
+			else {
+				splitclusters.push_back(Cluster(prev.first, clusters[m].qEnd, clusters[m].tStart, prev.second, clusters[m].strand, m));	
+			}		
 		}
 
 	}
@@ -199,13 +196,13 @@ void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & spl
 			matchE = CartesianLowerBound<GenomeTuple>(clusters[ic_n].matches.begin(), 
 														  clusters[ic_n].matches.end(), splitclusters[n].qStart);		
 			assert(matchE >= matchS);
-			splitclusters[m].NumofAnchors = matchE - matchS;		
+			splitclusters[m].NumofAnchors0 = matchE - matchS;		
 			matchS = matchE;														  	
 		}
 		else {
 			matchE = clusters[ic_m].matches.size();
 			assert(matchE >= matchS);
-			splitclusters[m].NumofAnchors = matchE - matchS;		
+			splitclusters[m].NumofAnchors0 = matchE - matchS;		
 			matchS = 0;	
 		}
 		m = n;
@@ -214,7 +211,7 @@ void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & spl
 		if (n < splitclusters.size()) ic_n = splitclusters[n].coarse;
 	}
 	if (splitclusters.size() > 1) {	
-		splitclusters[n-1].NumofAnchors = clusters[ic_m].matches.size() - matchS;	
+		splitclusters[n-1].NumofAnchors0 = clusters[ic_m].matches.size() - matchS;	
 	}
 	
 }

@@ -26,6 +26,7 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 	// If canonical == True, for_mask = 0111...11 --> minimizer & for_mask = 0minimizer; rev_mask = 1000...00 --> minimizer | rev_mask = 1minimizer
 	// Else for_mask = 111...11 --> minimizer & for_mask = minimizer, rev_mask = 000...00 --> minimizer | rev_mask = minimizer
 	//
+/*
 	Tup for_mask = TupPos::for_mask_s;	
 	Tup rev_mask = ~for_mask;
 	if (!Global) { // for LocalTuple, rev_mask = 000...00 (20 bits)
@@ -35,21 +36,17 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 		rev_mask = rev_mask & 0;
 		for_mask = ~rev_mask;
 	}
+*/
+	Tup for_mask = TupPos::for_mask_s;	
+	Tup rev_mask = TupPos::rev_mask_s;
+	Tup mask = 0;
+	if (!canonical and Global) {
+		rev_mask = (rev_mask & mask); // 0000...00 64 bits
+		for_mask = ~rev_mask; // 111...11 64 bits
+	}
 	// cerr << "Global: " << Global << endl;
 	// cerr << "for_mask: " << for_mask << endl;
 	// cerr << "rev_mask: " << rev_mask << endl;
-
-	// Tup for_mask, rev_mask;
-	// if (canonical) { // minimizer <t, pos> --> <unsigned 64 bit, usigned 32 bit>
-	// 	for_mask = 1;
-	// 	rev_mask = 1;
-	// 	for_mask = ~(for_mask << 63);// for_mask = 0111...11 --> minimizer & for_mask = 0minimizer
-	// 	rev_mask <<= 63; // rev_mask = 1000...00 --> minimizer | rev_mask = 1minimizer
-	// }
-	// else { // local minimizer <t, pos> --> <unsigned 20 bit, usigned 12 bit>
-	// 	for_mask = 1; // for_mask = 111...11 --> minimizer & for_mask = minimizer
-	// 	rev_mask = 0; // 
-	// }
 
 	if (canonical) { 
 		if ((cur.t & for_mask) < (curRC.t & for_mask)) can.t = (cur.t & for_mask); //can.t = min(cur.t, curRC.t);
@@ -80,28 +77,8 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 		*/
 		curMinimizer.pos = p;
 
-		// if (canonical) {
-		// 	//curMinimizer.t = min(cur.t, curRC.t);
-		// 	if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
-		// 	else curMinimizer.t = (curRC.t | rev_mask); 
-		// }
-		// else {
-		// 	curMinimizer.t = cur.t;
-		// }
 		if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
 		else curMinimizer.t = (curRC.t | rev_mask); 
-		// if (canonical) {
-		// 	if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) { 
-		// 		activeMinimizer.t = curMinimizer.t;
-		// 		activeMinimizer.pos = p;
-		// 	}			
-		// }
-		// else {
-		// 	if (curMinimizer.t < activeMinimizer.t) {  
-		// 		activeMinimizer.t = curMinimizer.t;
-		// 		activeMinimizer.pos = p;
-		// 	}				
-		// }
 		if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) {  
 			activeMinimizer.t = curMinimizer.t;
 			activeMinimizer.pos = p;
@@ -123,14 +100,6 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 		assert(test.t == cur.t);
 		assert(testrc.t == curRC.t);
 #endif
-		// if (canonical) {
-		// 	//curMinimizer.t = min(cur.t, curRC.t);
-		// 	if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
-		// 	else curMinimizer.t = (curRC.t | rev_mask); 
-		// }
-		// else {
-		// 	curMinimizer.t = cur.t;
-		// }
 		if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
 		else curMinimizer.t = (curRC.t | rev_mask); 
 		curMinimizer.pos = p;
@@ -138,16 +107,6 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 		if (p - w >= activeMinimizer.pos) {
 			activeMinimizer = curTuples[0];
 			for (int j =1; j < w; j++) {
-				// if (canonical) {
-				// 	if ((curTuples[j].t & for_mask) < (activeMinimizer.t & for_mask)) { 
-				// 		activeMinimizer = curTuples[j];
-				// 	}					
-				// }
-				// else {
-				// 	if (curTuples[j].t < activeMinimizer.t) { 
-				// 		activeMinimizer = curTuples[j];
-				// 	}						
-				// }
 				if ((curTuples[j].t & for_mask) < (activeMinimizer.t & for_mask)) { 
 					activeMinimizer = curTuples[j];
 				}		
@@ -156,18 +115,6 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 			nMinimizers+=1;
 		}
 		else {
-			// if (canonical) {
-			// 	if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) { //TODO(Jingwen)
-			// 		activeMinimizer = curMinimizer;
-			// 		minimizers.push_back(activeMinimizer);
-			// 		nMinimizers++;		
-			// 	}				
-			// }
-			// if (curMinimizer.t < activeMinimizer.t) { 
-			// 	activeMinimizer = curMinimizer;
-			// 	minimizers.push_back(activeMinimizer);
-			// 	nMinimizers++;		
-			// }
 			if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) { //TODO(Jingwen)
 				activeMinimizer = curMinimizer;
 				minimizers.push_back(activeMinimizer);

@@ -10,36 +10,14 @@
 
 using std::sort;
 using std::pair;
+using std::tuple;
 
-
-template<typename Tup>
-class DiagonalIndexSort {
-public:
-
-	typename vector<pair<Tup, Tup> >::iterator tuples;
-  int operator()(const int &a, const int &b) {
-		typename vector<std::pair<Tup, Tup> >::iterator ap=tuples+a;
-		typename vector<std::pair<Tup, Tup> >::iterator bp=tuples+b;
-		int aDiag = (int)ap->first.pos - (int)ap->second.pos, 
-			bDiag= (int)bp->first.pos - (int)bp->second.pos;
-		
-		if (aDiag != bDiag) {
-			return aDiag < bDiag;
-		}
-		else {
-			return ap->first.pos < bp->first.pos; 
-		}
-	}
-
-};
-	
 template<typename Tup> 
 class DiagonalSortOp {
  public:
 	int operator()(const pair<Tup, Tup> &a, const pair<Tup, Tup> &b) {
 		int aDiag = (int)a.first.pos - (int)a.second.pos, 
 			bDiag= (int)b.first.pos - (int)b.second.pos;
-
 		if (aDiag != bDiag) {
 			return aDiag < bDiag;
 		}
@@ -49,40 +27,75 @@ class DiagonalSortOp {
 	}
 };
 
+// Sort anchors with frequence
+template<typename Tup, typename T> 
+class DiagonalSortOp_freq {
+ public:
+	int operator()(const tuple<Tup, Tup, T> &a, const tuple<Tup, Tup, T> &b) {
+		int aDiag = (int)get<0>(a).pos - get<1>(b).pos, 
+			bDiag= (int)get<0>(b).pos - (int)get<1>(b).pos;
+		if (aDiag != bDiag) {
+			return aDiag < bDiag;
+		}
+		else {
+			return get<0>(a).pos < get<0>(b).pos; 
+		}
+	}
+};
 
-template<typename Tup>
-void DiagonalSort(typename vector<pair<Tup, Tup> >::iterator begin, typename vector<pair<Tup, Tup> >::iterator end, int minRange=0) {
-	if (minRange == 0 or end-begin < minRange) {
-		sort(begin, end, DiagonalSortOp<Tup>());
+template<typename Tup, typename T>
+class DiagonalIndexSort {
+public:
+	typename vector<tuple<Tup, Tup, T> >::iterator tuples;
+  int operator()(const int &a, const int &b) {
+		typename vector<tuple<Tup, Tup, T> >::iterator ap = tuples+a;
+		typename vector<tuple<Tup, Tup, T> >::iterator bp = tuples+b;
+		int aDiag = (int)get<0>(*ap).pos - (int)get<1>(*ap).pos, 
+			bDiag = (int)get<0>(*bp).pos - (int)get<1>(*bp).pos;
+		if (aDiag != bDiag) {
+			return aDiag < bDiag;
+		}
+		else {
+			return get<0>(*ap).pos < get<0>(*bp).pos; 
+		}
+	}
+};
+	
+template<typename Tup, typename T>
+void DiagonalSort(typename vector<tuple<Tup, Tup, T> >::iterator begin, typename vector<tuple<Tup, Tup, T> >::iterator end, int minRange=0) {
+	if (minRange == 0 or end - begin < minRange) {
+		sort(begin, end, DiagonalSortOp_freq<Tup, T>());
 	}
 	else {
-		
-		DiagonalIndexSort<Tup> sorter;
+		DiagonalIndexSort<Tup, T> sorter;
 		sorter.tuples=begin;
-		vector<int> index(end-begin);
+		vector<int> index(end - begin);
 		std::iota(index.begin(), index.end(), 0);
 		sort(index.begin(), index.end(), sorter);
-		GenomePos pos;
-		vector<pair<Tup, Tup> > temp(end-begin);
-		copy(begin,end, temp.begin());
+		vector<tuple<Tup, Tup, T> > temp(end - begin);
+		copy(begin, end, temp.begin());
 		
 		for (int i=0; i < index.size(); i++) {
-			temp[i]=*(begin+index[i]);
+			temp[i] = *(begin + index[i]);
 		}
 		copy(temp.begin(), temp.end(), begin);
 	}	
 }
-template<typename Tup>
-void DiagonalSort(vector<pair<Tup, Tup> > &vals, int minRange=0) {
-	DiagonalSort<Tup>(vals.begin(), vals.end(), minRange);
+
+template<typename Tup, typename T>
+void DiagonalSort(vector<tuple<Tup, Tup, T> > &vals, int minRange=0) {
+	DiagonalSort<Tup, T>(vals.begin(), vals.end(), minRange);
 }
 
+template<typename Tup>
+void DiagonalSort(typename vector<pair<Tup, Tup> >::iterator begin, typename vector<pair<Tup, Tup> >::iterator end) {
+		sort(begin, end, DiagonalSortOp<Tup>());
+}
 
 template<typename Tup> 
 class AntiDiagonalSortOp {
  public:
  AntiDiagonalSortOp(GenomePos l) : length(l) {}
-		
 	GenomePos length;
 	int operator()(const pair<Tup, Tup> &a, const pair<Tup, Tup> &b) {
 		int aDiag = (int)a.first.pos - (int)(length-a.second.pos),  
@@ -97,62 +110,77 @@ class AntiDiagonalSortOp {
 	}
 };
 
+template<typename Tup, typename T> 
+class AntiDiagonalSortOp_freq {
+ public:
+ AntiDiagonalSortOp_freq(GenomePos l) : length(l) {}
+	GenomePos length;
+	int operator()(const tuple<Tup, Tup, T> &a, const tuple<Tup, Tup, T> &b) {
+		int aDiag = (int)get<0>(a).pos - (int)(length - get<1>(a).pos),  
+			bDiag= (int)get<0>(b).pos - (int)(length - get<1>(b).pos); 
 
-template<typename Tup>
+		if (aDiag != bDiag) {
+			return aDiag < bDiag;
+		}
+		else {
+			return get<0>(a).pos < get<0>(b).pos; 
+		}
+	}
+};
+
+template<typename Tup, typename T>
 class AntiDiagonalIndexSort {
 public:
 	GenomePos length;
-	typename vector<pair<Tup, Tup> >::iterator tuples;
+	typename vector<tuple<Tup, Tup, T> >::iterator tuples;
   int operator()(const int &a, const int &b) {
-		typename vector<std::pair<Tup, Tup> >::iterator ap=tuples+a;
-		typename vector<std::pair<Tup, Tup> >::iterator bp=tuples+b;
-		int aDiag = (int)ap->first.pos - (int)(length - ap->second.pos); 
-		int bDiag = (int)bp->first.pos - (int)(length - bp->second.pos);
+		typename vector<std::tuple<Tup, Tup, T> >::iterator ap=tuples+a;
+		typename vector<std::tuple<Tup, Tup, T> >::iterator bp=tuples+b;
+		int aDiag = (int)get<0>(*ap).pos - (int)(length - get<1>(*ap).pos); 
+		int bDiag = (int)get<0>(*bp).pos - (int)(length - get<1>(*bp).pos);
 		
 		if (aDiag != bDiag) {
 			return aDiag < bDiag;
 		}
 		else {
-			return ap->first.pos < bp->first.pos; 
+			return get<0>(*ap).pos < get<0>(*bp).pos; 
 		}
 	}
-
 };
 
-template<typename Tup>
-void AntiDiagonalSort(typename vector<pair<Tup, Tup> >::iterator  begin,
-											typename vector<pair<Tup, Tup> >::iterator  end, GenomePos genomeLength, int sortByIndex=0) {
+template<typename Tup, typename T>
+void AntiDiagonalSort(typename vector<tuple<Tup, Tup, T> >::iterator  begin, typename vector<tuple<Tup, Tup, T> >::iterator  end, GenomePos genomeLength, int sortByIndex=0) {
 
 	if (sortByIndex == 0 or end-begin < sortByIndex) {
-		sort(begin, end, AntiDiagonalSortOp<Tup>(genomeLength));
+		sort(begin, end, AntiDiagonalSortOp_freq<Tup, T>(genomeLength));
 	}
 	else {
-		
-		AntiDiagonalIndexSort<Tup> sorter;
+		AntiDiagonalIndexSort<Tup, T> sorter;
 		sorter.tuples=begin;
 		sorter.length=genomeLength;
 		vector<int> index(end-begin);
 		std::iota(index.begin(), index.end(), 0);
 		sort(index.begin(), index.end(), sorter);
 		GenomePos pos;
-		vector<pair<Tup, Tup> > temp(end-begin);
+		vector<tuple<Tup, Tup, T >> temp(end-begin);
 		copy(begin,end, temp.begin());
 		
-		for (int i=0; i < index.size(); i++) {
-			temp[i]=*(begin+index[i]);
+		for (int i = 0; i < index.size(); i++) {
+			temp[i] = *(begin+index[i]);
 		}
 		copy(temp.begin(), temp.end(), begin);
 	}	
-
 }
 
+template<typename Tup, typename T>
+void AntiDiagonalSort(vector<tuple<Tup, Tup, T> > &vals, GenomePos length, int sortByIndex=0) {
+	AntiDiagonalSort<Tup, T>(vals.begin(), vals.end(), length, sortByIndex);
+}
 
 template<typename Tup>
-void AntiDiagonalSort(vector<pair<Tup, Tup> > &vals, GenomePos length, int sortByIndex=0) {
-	AntiDiagonalSort<Tup>(vals.begin(), vals.end(), length, sortByIndex);
+void AntiDiagonalSort(typename vector<pair<Tup, Tup> >::iterator  begin, typename vector<pair<Tup, Tup> >::iterator  end, GenomePos genomeLength) {
+	sort(begin, end, AntiDiagonalSortOp<Tup>(genomeLength));
 }
-
-
 
 template<typename Tup> 
 class CartesianSortOp {
@@ -167,16 +195,28 @@ class CartesianSortOp {
 	}
 };
 
+template<typename Tup, typename T> 
+class CartesianSortOp_freq {
+ public:
+	int operator()(const tuple<Tup, Tup, T> &a, const tuple<Tup, Tup, T> &b) {
+		if (get<0>(a).pos != get<0>(b).pos) {
+			return get<0>(a).pos < get<0>(b).pos;
+		}
+		else {
+			return get<1>(a).pos < get<1>(b).pos;
+		}
+	}
+};
+
+template<typename Tup, typename T>
+void CartesianSort(vector<tuple<Tup, Tup, T> > &vals, int s, int e) {
+	sort(vals.begin() + s, vals.begin() + e, CartesianSortOp_freq<Tup, T>());
+}
+
 template<typename Tup>
-void CartesianSort(typename vector<pair<Tup, Tup> >::iterator  begin, typename vector<pair<Tup, Tup> >::iterator  end) {
+void CartesianSort(typename vector<pair<Tup, Tup> >::iterator begin, typename vector<pair<Tup, Tup> >::iterator end) {
 	sort(begin, end, CartesianSortOp<Tup>());
 }
-
-template<typename Tup>
-void CartesianSort(vector<pair<Tup, Tup> > &vals, int s, int e) {
-	sort(vals.begin() + s, vals.begin() + e, CartesianSortOp<Tup>());
-}
-
 
 template<typename Tup>
 void CartesianSort(vector<pair<Tup, Tup> > &vals) {

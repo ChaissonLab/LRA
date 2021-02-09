@@ -14,8 +14,6 @@
 #include "TupleOps.h"
 #include "SparseDP.h"
 #include "SparseDP_Forward.h"
-#include "Merge.h"
-#include "MergeAnchors.h"
 #include "Chain.h"
 #include "overload.h"
 #include "LinearExtend.h"
@@ -299,162 +297,35 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 	clusters.resize(c);
 }
 
-
-/*
-void SimpleMapQV(vector<SegAlignmentGroup> &alignments) {
-	int a=0;
-	int ovp=a;
-	if (alignments.size() == 0) {
-		return;
-	}
-	if (alignments.size() == 1) {
-		alignments[a].mapqv=255;
-		alignments[a].SetMapqv(); // give mapq 255 to every segment
-		return;
-	}
-	while (a < alignments.size() - 1) {
-		ovp=a+1;
-		float num=1.0;
-		float denom=1.0;
-		while (ovp < alignments.size() and alignments[a].Overlaps(alignments[ovp], 0.9) ) {
-			int nmDiff = alignments[a].nm - alignments[ovp].nm;
-			if (nmDiff < 10) {
-				denom += pow(0.5,nmDiff);
-			}
-			ovp++;
-		}
-		if (ovp == a+1){
-			alignments[a].mapqv=255;
-		}
-		else {
-			// comparing float ok because it is potentially not set.
-			if (denom == 1.0) {
-				alignments[a].mapqv=255;
-			}
-			else {
-				alignments[a].mapqv=-10*log10(1-num/denom);
-			}
-		}
-		alignments[a].SetMapqv();
-		a=ovp;
-	}			
-}
-*/
-
 void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read) {
-	//
-	// Store the index of primary alignments in vector<int> pry_index;
-	//
-	vector<int> pry_index;
-	for (int sl = 0; sl < alignmentsOrder.size(); sl++) {
-		if (!alignmentsOrder[sl].ISsecondary) { // This is primary alignment;
-			pry_index.push_back(sl);
+	static const float q_coef = 40.0f;
+	int len = alignmentsOrder.size();
+	for (int r = 0; r < len; r++) {
+		if (r == 0 and len == 1) {
+			alignmentsOrder[r].mapqv = 60;
 		}
-	}
-	//
-	// compute mapqv for each alignment;
-	//
-	for (int pi = 0; pi < pry_index.size(); pi++) {
-		
-		int first = pry_index[pi];
-		int last;
-		if (pi == pry_index.size() - 1) last = alignmentsOrder.size();
-		else last = pry_index[pi+1];
-
-		if (last - first == 1) { // No secondary alignments
-			alignmentsOrder[first].mapqv = 60;
-			alignmentsOrder[first].SetMapqv();
-			// if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.00001) { // 0.0005
-			// 	alignmentsOrder[first].mapqv = 2;
-			// }
-			// else {alignmentsOrder[first].mapqv = 60;}
-			// alignmentsOrder[first].SetMapqv();
+		else if (r == 0 and len > 1) {
+			// float x = (0.5f * alignmentsOrder[r + 1].value + 0.4f * alignmentsOrder[r + 1].SecondSDPValue + 0.1f * alignmentsOrder[r + 1].FirstSDPValue) / 
+			// 			(0.5f * alignmentsOrder[r].value + 0.4f * alignmentsOrder[r].SecondSDPValue + 0.1f * alignmentsOrder[r].FirstSDPValue);
+			//float x = (0.8f * alignmentsOrder[r + 1].value + 0.2f * alignmentsOrder[r + 1].FirstSDPValue) / (0.8f * alignmentsOrder[r].value + 0.2f * alignmentsOrder[r].FirstSDPValue);
+			float x = (alignmentsOrder[r + 1].value) / (alignmentsOrder[r].value);
+			float pen_cm_1 = (alignmentsOrder[r].NumOfAnchors0 > 20? 1.0f : 0.05f ) * alignmentsOrder[r].NumOfAnchors0;
+			pen_cm_1 = (alignmentsOrder[r].NumOfAnchors0 >= 5? 1.0f : 0.1f ) * pen_cm_1;
+			// float pen_cm_1 = (alignmentsOrder[r].NumOfAnchors0 > 10? 1.0f : 0.1f ) * alignmentsOrder[r].NumOfAnchors0;
+			// float pen_cm_2 = (alignmentsOrder[r].NumOfAnchors1 > 100? 1.0f : 0.01f) * alignmentsOrder[r].NumOfAnchors1;
+			float mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * logf(alignmentsOrder[r].value));
+			mapq -= (int)(4.343f * logf(len) + .499f);
+			mapq = mapq > 0? mapq : 0;
+			alignmentsOrder[r].mapqv = mapq < 60? mapq : 60;
+			if (r == 0 && len == 2 && alignmentsOrder[r].mapqv == 0) alignmentsOrder[r].mapqv = 1;
 		}
 		else {
-			// assign mapqv to primary alignment;
-			int nmmdiff = alignmentsOrder[first].nmm - alignmentsOrder[first+1].nmm;
-			int nsmallgap = (alignmentsOrder[first].ndel + alignmentsOrder[first].nins) - 
-								(alignmentsOrder[first+1].ndel + alignmentsOrder[first+1].nins);
-			float alnvaluediff = alignmentsOrder[first].totalValue - alignmentsOrder[first+1].totalValue;
-
-			//cerr << "nmmdiff: " << nmmdiff << " nsmallgap: " << nsmallgap << " alnvaluediff: " << alnvaluediff << endl;
-			//cerr << "alignmentsOrder[first].NumOfAnchors/(float)read.length: " << alignmentsOrder[first].NumOfAnchors/(float)read.length << endl;
-			float denom_1 = 1, denom_2 = 1;
-			if (nmmdiff == 0 and nsmallgap == 0 ) {
-				alignmentsOrder[first].mapqv = 2;
-				alignmentsOrder[first+1].mapqv = 1;
-			}
-			// else if (alignmentsOrder[first].NumOfAnchors/(float)read.length < 0.00001) {
-			// 	alignmentsOrder[first].mapqv = 2;
-			// 	alignmentsOrder[first+1].mapqv = 1;
-			// }
-			else if (alnvaluediff <= 20 and abs(nmmdiff) <= 20 and abs(nsmallgap) <= 20) { //10 & 15 & 20
-				alignmentsOrder[first].mapqv = 2;
-				alignmentsOrder[first+1].mapqv = 1;
-			}
-			else if (nmmdiff <= 0 and nsmallgap <= 0) { // nmmdiff=0 and nsmallgap=0 ==> mapqv=52
-				if (alignmentsOrder[first].totalValue < alignmentsOrder[first+1].totalValue + 300) { 
-					if (nmmdiff < -20) denom_1 = 1;
-					else if (nmmdiff >= -20 and nmmdiff < -5) denom_1 = pow(0.9,20-abs(nmmdiff));  
-					else denom_1 = pow(0.7,20-abs(nmmdiff));
-
-					if (nsmallgap < -20) denom_2 = 1;
-					else if (nsmallgap >= -20 and nsmallgap < -5) denom_2 = pow(0.9,20-abs(nsmallgap));
-					else  denom_2 = pow(0.7,20-abs(nsmallgap)); 
-					alignmentsOrder[first].mapqv = min(60, (int) (60 + 5*log10(denom_1) + 5*log10(denom_2)));
-				}
-				else { alignmentsOrder[first].mapqv = 60;}			
-			}
-			else if (nmmdiff <= 0 and nsmallgap >= 0) { // when nsmallgap=30 and nmmdiff=0; mapqv=0
-				if (alignmentsOrder[first].totalValue < alignmentsOrder[first+1].totalValue + 300) { 
-					if (nmmdiff < -20) denom_1 = 1;
-					else if (nmmdiff >= -20 and nmmdiff < -5) denom_1 = pow(0.9,20-abs(nmmdiff));  
-					else denom_1 = pow(0.7,20-abs(nmmdiff));
-
-					denom_2 = pow(0.1, abs(nsmallgap));  
-					int cpr=(int) (60 + 5*log10(denom_1) + 20*log10(denom_2)); //60 + 10*log10(denom) 
-					if (cpr>=0) alignmentsOrder[first].mapqv = min(60, cpr);
-					else alignmentsOrder[first].mapqv = 2;					
-				}
-				else { alignmentsOrder[first].mapqv = 60;}					
-			}
-			else if (nmmdiff >= 0 and nsmallgap <= 0) { // when nsmallgap=0 and nmmdiff=30, mapqv=0
-				if (alignmentsOrder[first].totalValue < alignmentsOrder[first+1].totalValue + 300) { 
-					denom_1 = pow(0.1, abs(nmmdiff));  
-
-					if (nsmallgap < -20) denom_2 = 1;
-					else if (nsmallgap >= -20 and nsmallgap < -5) denom_2 = pow(0.9,20-abs(nsmallgap));
-					else  denom_2 = pow(0.7,20-abs(nsmallgap)); 
-					int cpr=(int) (60 + 20*log10(denom_1) + 5*log10(denom_2)); //60 + 10*log10(denom) 
-					if (cpr>=0) alignmentsOrder[first].mapqv = min(60, cpr);
-					else alignmentsOrder[first].mapqv = 2;						
-				}
-				else { alignmentsOrder[first].mapqv = 60;}	
-			}
-			else { 
-				if (alignmentsOrder[first].totalValue < alignmentsOrder[first+1].totalValue + 300) { 
-					denom_1 = pow(0.1, abs(nmmdiff));  
-					denom_2 = pow(0.1, abs(nsmallgap));  
-					int cpr=(int) (60 + 20*log10(denom_1) + 20*log10(denom_2));
-					if (cpr>=0) alignmentsOrder[first].mapqv = min(60, cpr);
-					else alignmentsOrder[first].mapqv = 2;					
-				}
-				else {alignmentsOrder[first].mapqv = 60;}	
-			}				
-
-			alignmentsOrder[first].SetMapqv();
-			//
-			// assign mapqv to secondary alignments;
-			//
-			assert(alignmentsOrder[first].mapqv <= 60);
-			for (int sd = first + 1; sd < last; sd++) {
-				alignmentsOrder[sd].mapqv = (int) alignmentsOrder[first].mapqv/(2*(last-first-1));
-				alignmentsOrder[sd].SetMapqv();
-			}
+			alignmentsOrder[r].mapqv = 0;
 		}
+		alignmentsOrder[r].SetMapqv();
+		//cerr << "alignmentsOrder[" << r << "].mapq: " << (int) alignmentsOrder[r].mapqv << endl;
 	}
 }
-
 
 int AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, GenomePos &tStart, GenomePos &tEnd,
 						vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &options, 
@@ -580,26 +451,65 @@ void RefineSubstrings(char *read, GenomePos readSubStart, GenomePos readSubEnd, 
 	}
 }
 
-void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<pair<GenomeTuple, GenomeTuple> > &allMatches,  vector<pair<GenomeTuple, GenomeTuple> > &forMatches,
-								vector<pair<GenomeTuple, GenomeTuple> > &revMatches) {
-	vector<bool> strand(allMatches.size(), 0); // 0: forward strand, 1: reverse strand
-	Tuple rev_mask = 1;
-	rev_mask <<= 63; // rev_mask = 1000..00
+void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<tuple<GenomeTuple, GenomeTuple, int> > &allMatches,  vector<tuple<GenomeTuple, GenomeTuple, int> > &forMatches,
+								vector<tuple<GenomeTuple, GenomeTuple, int> > &revMatches, string &baseName) {
+	// vector<bool> strand(allMatches.size(), 0); // 0: forward strand, 1: reverse strand
+	// // Tuple rev_mask = 1;
+	// // rev_mask <<= 63; // rev_mask = 1000..00
+	// Tuple rev_mask = GenomeTuple::rev_mask_s;
+	// int nForward = 0;
+	// for (int i = 0; i < allMatches.size(); i++) {
+	// 	if ((get<1>(allMatches[i]).t & rev_mask) == 0) { // the rightest bit is 0, the match is in the forward strand
+	// 		nForward++;
+	// 	} 
+	// 	else { 
+	// 		strand[i] = true; // the rightest bit is 1, the match is in the reverse strand
+	// 	}
+	// }
+	// //
+	// // Populate two lists, one for forward matches one for reverse.
+	// //
+	// forMatches.resize(nForward);
+	// revMatches.resize(allMatches.size()-nForward);
+	// int i = 0,r = 0,f = 0;
+	// for (i = 0,r = 0,f = 0; i < allMatches.size(); i++) {
+	// 	if (strand[i] == 0) {
+	// 		forMatches[f] = allMatches[i];
+	// 		f++;
+	// 	}
+	// 	else {
+	// 		revMatches[r] = allMatches[i];
+	// 		r++;
+	// 	}
+	// }
 
-	int nForward = 0;
-	for (int i = 0; i < allMatches.size(); i++) {
-		if ((allMatches[i].second.t & rev_mask) == 0) { // the rightest bit is 0, the match is in the forward strand
+	//
+	// A value of 0 implies forward strand match.
+	//
+	vector<bool> strand(allMatches.size(), 0);
+	int nForward=0;
+	for (int i=0; i < allMatches.size(); i++) {
+		int readPos = get<0>(allMatches[i]).pos;
+		uint64_t refPos = get<1>(allMatches[i]).pos;
+		char *genomePtr = genome.GlobalIndexToSeq(refPos);
+		//
+		// Read and genome are identical, the match is in the forward strand
+		if (strncmp(&read.seq[readPos], genomePtr, k) == 0) {
 			nForward++;
-		} 
-		else { 
-			strand[i] = true; // the rightest bit is 1, the match is in the reverse strand
+		}
+		else {
+			//
+			// The k-mers are not identical, but a match was stored between
+			// readPos and *genomePtr, therefore the match must be reverse.
+			//
+			strand[i] = true;
 		}
 	}
 	//
 	// Populate two lists, one for forward matches one for reverse.
 	//
 	forMatches.resize(nForward);
-	revMatches.resize(allMatches.size()-nForward);
+	revMatches.resize(allMatches.size() - nForward);
 	int i = 0,r = 0,f = 0;
 	for (i = 0,r = 0,f = 0; i < allMatches.size(); i++) {
 		if (strand[i] == 0) {
@@ -1723,7 +1633,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 					alignment->UpdateParameters(str, tinyOpts, LookUpTable, svsigstrm, strands);
 					Alignment *inv_alignment = new Alignment(inv_value, strands[str], read.seq, read.length, read.name, inv_str, read.qual, genome.seqs[chromIndex],  
 																		 genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex, 0); 
-					alignment->NumOfAnchors = BtwnChain.size();
+					alignment->NumOfAnchors1 = BtwnChain.size();
 					alignments.back().SegAlignment.push_back(inv_alignment);	
 				}
 				
@@ -1772,19 +1682,15 @@ PassgenomeThres(int cur, GenomePos & genomeThres, FinalChain & finalchain) {
 	else return 0;
 }
 
-int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
-						vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, 
-						ostream *output, ostream *svsigstrm, Timing &timing, pthread_mutex_t *semaphore=NULL) {
+int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, vector<int> &mmfreqs, LocalIndex &glIndex, Options &opts, 
+			ostream *output, ostream *svsigstrm, Timing &timing, pthread_mutex_t *semaphore=NULL) {
 	string baseName = read.name;
-
 	for (int i=0; i < baseName.size(); i++) {	
 		if (baseName[i] == '/') baseName[i] = '_';	
 		if (baseName[i] == '|') baseName[i] = '_';
 	}
-
-
 	vector<GenomeTuple> readmm; // readmm stores minimizers
-	vector<pair<GenomeTuple, GenomeTuple> > allMatches, forMatches, revMatches, matches;
+	vector<tuple<GenomeTuple, GenomeTuple, int> > allMatches, forMatches, revMatches;
 	timing.Start();
 	//
 	// Add pointers to seq that make code more readable.
@@ -1819,169 +1725,48 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	//
 	// Add matches between the read and the genome.
 	//
-	CompareLists<GenomeTuple, Tuple>(readmm, genomemm, allMatches, opts, true);
-
-	// // check duplicate in allMatches
-	// for (int am=0; am<allMatches.size(); am++) {
-	// 	if (allMatches[am].first.t == 5413 and allMatches[am].first.pos == 47435 and allMatches[am].second.t == 5413 and allMatches[am].second.pos == 36356) {
-	// 		cerr << "before sort am: " << am << endl;
-	// 	}
-	// }
-	// Guess that 500 is where the setup/takedown overhead of an array index is equal to sort by value.
-	DiagonalSort<GenomeTuple>(allMatches,500); // sort fragments in allMatches by forward diagonal, then by first.pos(read)
-
+	CompareLists<GenomeTuple, Tuple, int>(readmm, genomemm, allMatches, mmfreqs, opts, true);
+	// DiagonalSort<GenomeTuple, int>(allMatches, 500);
 	timing.Tick("Sort minimizers");
 
-	//TODO(Jinwen): delete this after debug
 	if (opts.dotPlot) {
 		ofstream clust("all-matches.dots");
-		for (int m=0; m < allMatches.size(); m++) {
-			clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos 
-						<< "\t" << allMatches[m].first.pos+ opts.globalK << "\t" 
-						<< allMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
+		for (int m = 0; m < allMatches.size(); m++) {
+			clust << get<0>(allMatches[m]).pos << "\t" << get<1>(allMatches[m]).pos 
+						<< "\t" << get<0>(allMatches[m]).pos + opts.globalK << "\t" 
+						<< get<1>(allMatches[m]).pos + opts.globalK << "\t"<< get<2>(allMatches[m]) << endl;
 		}
 		clust.close();
 	}
 
-	// check duplicate in allMatches
-	// for (int am=0; am<allMatches.size(); am++) {
-	// 	if (allMatches[am].first.t == 5413 and allMatches[am].first.pos == 47435 and allMatches[am].second.t == 5413 and allMatches[am].second.pos == 36356) {
-	// 		cerr << "am: " << am << endl;
-	// 	}
-	// }
+	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, forMatches, revMatches, baseName);
 
-	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, forMatches, revMatches);
 	if (opts.dotPlot) {
-		ofstream clust("for-matches_0.dots");
+		ofstream fclust("for-matches_0.dots");
 		for (int m=0; m < forMatches.size(); m++) {
-			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"
-					<< forMatches[m].second.pos + opts.globalK << "\t" << m << "\t0"<<endl;
+			fclust << get<0>(forMatches[m]).pos << "\t" << get<1>(forMatches[m]).pos << "\t" << opts.globalK + get<0>(forMatches[m]).pos << "\t"
+					<< get<1>(forMatches[m]).pos + opts.globalK << "\t" << m << "\t" << get<2>(forMatches[m]) <<endl;
 		}
+		fclust.close();
+
 		ofstream rclust("rev-matches_0.dots");
 		for (int m=0; m < revMatches.size(); m++) {			
-			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[m].first.pos << "\t"
-					 << revMatches[m].second.pos << "\t0"<<endl;
+			rclust << get<0>(revMatches[m]).pos << "\t" << get<1>(revMatches[m]).pos + opts.globalK << "\t" << opts.globalK + get<0>(revMatches[m]).pos << "\t"
+					 << get<1>(revMatches[m]).pos << "\t" << m << "\t" << get<2>(revMatches[m]) << endl;
 		}
+		rclust.close();
 	}
-	CleanOffDiagonal(forMatches, opts);
-	// if (opts.dotPlot and read.name == "chr1/tig00000001|arrow") {
-	// 	ofstream clust("off-diag-all-matches.dots");
-	// 	for (int m=0; m < allMatches.size(); m++) {
-	// 		clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos << "\t" << allMatches[m].first.pos+ opts.globalK << "\t" 
-	// 			<< allMatches[m].second.pos + opts.globalK << "\t0\t0"<<endl;
-	// 	}
-	// 	clust.close();
-	// }
 
-	//cerr << "opts.globalK " << opts.globalK << endl;
 	vector<Cluster> clusters;
-	vector<Cluster> roughClusters;
-	vector<Cluster> split_roughClusters;
-	int forwardStrand=0;
-	// maxDiag must be large enough for the following function "StoreDiagonalClusters". 
-	// Otherwise fragments on the same line (line with little curve) might end up in several clusters[i], instead of one clusters[i]
+	MatchesToFineClusters(forMatches, clusters, genome, read, opts);
+	MatchesToFineClusters(revMatches, clusters, genome, read, opts, 1);
 
-	// The strategy we are taking: 
-	// first let maxDiag be a small number but not too small(like 500), which also alleviate the cases where anchors are on a curvy line.
-	// Then break the clusters[i] into two if any two anchors are father than maxGap. 
-	StoreDiagonalClusters(forMatches, roughClusters, opts, 0, forMatches.size(), forwardStrand); // rough == true means only storing "start and end" in every clusters[i]
-	for (int c = 0; c < roughClusters.size(); c++) {
-		CartesianSort(forMatches, roughClusters[c].start, roughClusters[c].end);
-		SplitRoughClustersWithGaps(forMatches, roughClusters[c], split_roughClusters, opts, 0);
+	if (opts.CheckTrueIntervalInFineCluster) {
+		CheckTrueIntervalInFineCluster(clusters, read.name, genome);
 	}
-	//cerr << "roughClusters.size(): " << roughClusters.size() << " split_roughClusters.size(): " << split_roughClusters.size()<< endl;
-	if (opts.dotPlot) {
-		ofstream clust("for-matches.dots");
-		for (int m=0; m < forMatches.size(); m++) {
-			clust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"
-					<< forMatches[m].second.pos + opts.globalK << "\t" << m << "\t0"<<endl;
-		}
-		clust.close();
-		ofstream rclust("roughClusters.dots");
-		for (int m=0; m < roughClusters.size(); m++) {
-			int rci = genome.header.Find(roughClusters[m].tStart);
-			for (int c = roughClusters[m].start; c < roughClusters[m].end; ++c) {
-				rclust << forMatches[c].first.pos << "\t" << forMatches[c].second.pos << "\t" << opts.globalK + forMatches[c].first.pos << "\t"
-					<< forMatches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci]<< "\t0"<<endl;				
-			}
-		}
-		rclust.close();
-		ofstream wclust("split_roughClusters.dots");
-		for (int m=0; m < split_roughClusters.size(); m++) {
-			int rci = genome.header.Find(split_roughClusters[m].tStart);
-			for (int c = split_roughClusters[m].start; c < split_roughClusters[m].end; ++c) {
-				wclust << forMatches[c].first.pos << "\t" << forMatches[c].second.pos << "\t" << opts.globalK + forMatches[c].first.pos << "\t"
-					<< forMatches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci]<< "\t0"<<endl;				
-			}
-		}
-		wclust.close();
-
-	}
-
-	timing.Tick("Forward-diag-rough-clusters");
-
-	AntiDiagonalSort<GenomeTuple>(revMatches, genome.GetSize(), 500);
-	CleanOffDiagonal(revMatches, opts, 1);
-	vector<Cluster> revroughClusters;
-	vector<Cluster> split_revroughClusters;
-	int reverseStrand=1;
-	StoreDiagonalClusters(revMatches, revroughClusters, opts, 0, revMatches.size(), reverseStrand);
-	for (int c = 0; c < revroughClusters.size(); c++) {
-		CartesianSort(revMatches, revroughClusters[c].start, revroughClusters[c].end);
-		SplitRoughClustersWithGaps(revMatches, revroughClusters[c], split_revroughClusters, opts, 1);
-	}
-	//cerr << "revroughClusters.size(): " << revroughClusters.size() << " split_revroughClusters.dots: " << split_revroughClusters.size()<< endl;
-
-
-	if (opts.dotPlot) {
-		ofstream rclust("rev-matches.dots");
-		for (int m=0; m < revMatches.size(); m++) {			
-			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[m].first.pos << "\t"
-					 << revMatches[m].second.pos << "\t0"<<endl;
-		}
-		rclust.close();
-		ofstream revsclust("revroughClusters.dots");
-		for (int m=0; m < revroughClusters.size(); m++) {
-			int rci = genome.header.Find(revroughClusters[m].tStart);
-			for (int c = revroughClusters[m].start; c < revroughClusters[m].end; ++c) {
-				revsclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[c].first.pos << "\t"
-					 << revMatches[c].second.pos<< "\t" << m << "\t" << genome.header.names[rci]<<"\t0"<<endl;				
-			}
-		}
-		revsclust.close();
-		ofstream srevclust("split_revroughClusters.dots");
-		for (int m=0; m < split_revroughClusters.size(); m++) {
-			int rci = genome.header.Find(split_revroughClusters[m].tStart);
-			for (int c = split_revroughClusters[m].start; c < split_revroughClusters[m].end; ++c) {
-				srevclust << revMatches[c].first.pos << "\t" << revMatches[c].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[c].first.pos << "\t"
-					 << revMatches[c].second.pos<< "\t" << m << "\t" << genome.header.names[rci]<<"\t0"<<endl;				
-			}
-		}
-		srevclust.close();
-	}
-
-	//interval_map<GenomePos, int> xIntv;
-	//interval_map<GenomePos, int> yIntv;
-	timing.Tick("Reverse-diag-rough-clusters");
-
-	for (int c = 0; c < split_roughClusters.size(); c++) {
-		int rci = genome.header.Find(split_roughClusters[c].tStart);
-		StoreFineClusters(rci, forMatches, clusters, opts, split_roughClusters[c].start, split_roughClusters[c].end, genome, 
-							read.length, forwardStrand, c);
-	}
-
-	for (int c = 0; c < split_revroughClusters.size(); c++) {
-		int rci = genome.header.Find(split_revroughClusters[c].tStart);
-		StoreFineClusters(rci, revMatches, clusters, opts, split_revroughClusters[c].start, split_revroughClusters[c].end, genome, 
-							read.length, reverseStrand, c);
-	}
-
 	//cerr << "clusters.size(): " <<  clusters.size() << endl;
 	timing.Tick("Fine-clusters");
-	//
-	// Split clusters on x and y coordinates, vector<Cluster> splitclusters, add a member for each splitcluster to specify the original cluster it comes from
-	//
-	// INPUT: vector<Cluster> clusters   OUTPUT: vector<Cluster> splitclusters with member--"coarse" specify the index of the original cluster splitcluster comes from
+
 	if (clusters.size() == 0) {	
 		return 0; // This read cannot be mapped to the genome; 
 	}
@@ -2015,19 +1800,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	
 	ClusterOrder fineClusterOrder(&clusters, 1);  // has some bug (delete clusters which should be kept -- cluster9_scaffold_58.fasta and cluster18_contig_234.fasta)
 	RemoveOverlappingClusters(clusters, fineClusterOrder.index, opts);
-	if (opts.dotPlot) {
-		ofstream clust("clusters-post-remove.tab");
-		
-
-	}
-
-	/*
-	for (int co=0; co < clusters.size(); co++) {
-		int idx=fineClusterOrder2.index[co];
-		cout << co << "\t" << clusters[idx].size() << "\t" << clusters[idx].qStart << "\t" << clusters[idx].qEnd << endl;
-	}
-	*/
-
+	//
 	// remove Cluster that firstChromIndex != lastChromIndex; or remove Cluster of 0 matches;
 	//
 	vector<bool> RV(clusters.size(), 0);
@@ -2071,14 +1844,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 			}
 		}
 		clust.close();
-	}
 
-
-	if (opts.dotPlot) {
-		ofstream clust("clusters_coarse.tab");
+		ofstream sclust("clusters_coarse.tab");
 		for (int m = 0; m < clusters.size(); m++) {
 				if (clusters[m].strand == 0) {
-					clust << clusters[m].qStart << "\t"
+					sclust << clusters[m].qStart << "\t"
 						  << clusters[m].tStart << "\t"
 						  << clusters[m].qEnd << "\t"
 						  << clusters[m].tEnd << "\t"
@@ -2088,7 +1858,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 						  << clusters[m].strand << endl;
 				}
 				else {
-					clust << clusters[m].qStart << "\t"
+					sclust << clusters[m].qStart << "\t"
 						  << clusters[m].tEnd << "\t"
 						  << clusters[m].qEnd << "\t"
 						  << clusters[m].tStart << "\t"
@@ -2098,13 +1868,16 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 						  << clusters[m].strand << endl;
 				}				
 		}
-		clust.close();
+		sclust.close();
 	}
 
+	//
+	// Split clusters on x and y coordinates, vector<Cluster> splitclusters, add a member for each splitcluster to specify the original cluster it comes from.
+	// INPUT: vector<Cluster> clusters   OUTPUT: vector<Cluster> splitclusters with member--"coarse" specify the index of the original cluster splitcluster comes from
+	//
 	vector<Cluster> splitclusters;
 	SplitClusters(clusters, splitclusters);
 	DecideSplitClustersValue(clusters, splitclusters, opts);
-
 	timing.Tick("Split");
 
 	if (opts.dotPlot) {
@@ -2132,15 +1905,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 			}
 		}
 		clust.close();
-	}
-
-
-	if (opts.dotPlot) {
-		ofstream clust("splitclusters-decideval.tab");
+		ofstream sclust("splitclusters-decideval.tab");
 		for (int m = 0; m < splitclusters.size(); m++) {
 			if (splitclusters[m].Val !=0) {
 				if (splitclusters[m].strand == 0) {
-					clust << splitclusters[m].qStart << "\t" 
+					sclust << splitclusters[m].qStart << "\t" 
 						  << splitclusters[m].tStart << "\t"
 						  << splitclusters[m].qEnd   << "\t"
 						  << splitclusters[m].tEnd   << "\t"
@@ -2151,7 +1920,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 						  << splitclusters[m].Val << endl;
 				}
 				else {
-					clust << splitclusters[m].qStart << "\t" 
+					sclust << splitclusters[m].qStart << "\t" 
 						  << splitclusters[m].tEnd << "\t"
 						  << splitclusters[m].qEnd   << "\t"
 						  << splitclusters[m].tStart   << "\t"
@@ -2163,7 +1932,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				}				
 			}
 		}
-		clust.close();
+		sclust.close();
 	}
 
 	//
@@ -2171,27 +1940,16 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 	// class: chains: vector<chain> chain: vector<vector<int>>     Need parameters: PrimaryAlgnNum, SecondaryAlnNum
 	// NOTICE: chains in Primary_chains do not overlap on Cluster
 	//
-
-	////// TODO(Jingwen): customize a rate fro SparseDP
-	//cerr << "clusters.size(): " << clusters.size() << endl;
-	//cerr << "splitclusters.size(): " << splitclusters.size() << endl;
 	vector<Primary_chain> Primary_chains;
 	float rate = opts.anchor_rate;
 	if (splitclusters.size()/clusters.size() > 20) { // mapping to repetitive region
 		rate = rate / 2.0;
 	}
-	//cerr << "rate: " << rate << endl;
+	// cerr << "clusters.size(): " << clusters.size() << endl;
+	// cerr << "splitclusters.size(): " << splitclusters.size() << endl;
+	// cerr << "rate: " << rate << endl;
 
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
-	// for (int p = 0; p < Primary_chains.size(); p++) {
-	// 	for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
-	// 		for (int c = 0; c < Primary_chains[p].chains[h].ch.size(); c++) {
-	// 			int ph = Primary_chains[p].chains[h].ch[c];
-	// 			splitclusters[ph].used = 1;
-	// 		}
-	// 	}
-	// }
-	// SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
 
 	if (opts.dotPlot) {
 		ofstream clust("Chains.tab");
@@ -2209,7 +1967,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 							  << h << "\t"
 							  << Primary_chains[p].chains[h].ch[c] << "\t"
 							  << splitclusters[ph].strand << "\t"
-							  << splitclusters[ph].NumofAnchors << "\t"
+							  << splitclusters[ph].NumofAnchors0 << "\t"
 							  << splitclusters[ph].coarse << endl;
 					} 
 					else {
@@ -2222,7 +1980,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 							  << h << "\t"
 							  << Primary_chains[p].chains[h].ch[c] << "\t"
 							  << splitclusters[ph].strand << "\t"
-							  << splitclusters[ph].NumofAnchors << "\t"						
+							  << splitclusters[ph].NumofAnchors0 << "\t"						
 							  << splitclusters[ph].coarse << endl;
 					}
 				}
@@ -2230,7 +1988,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 		}
 		clust.close();
 	}	
-
 	switchindex(splitclusters, Primary_chains, clusters, genome);
 	timing.Tick("Sparse DP - clusters");
 	//
@@ -2686,9 +2443,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 				//
 				// RemoveSpuriousAnchors and RemovePairedIndels; 
 				//
-				int orig = finalchain.size();
-				// RemovePairedIndels(finalchain);
-				// RemoveSpuriousAnchors(finalchain, smallOpts);
+				RemovePairedIndels(finalchain);
+				RemoveSpuriousAnchors(finalchain, smallOpts);
 				//cerr << "2nd SDP done!" << endl;
 				if (finalchain.size() == 0) continue; // cannot be mapped to the genome!
 				if (opts.dotPlot) {
@@ -2743,7 +2499,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 					Alignment *alignment = new Alignment(Primary_chains[p].chains[h].value, strands[str], read.seq, read.length, 
 														 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
 														 genome.header.names[chromIndex], chromIndex, 0); 
-					alignment->NumOfAnchors = Primary_chains[p].chains[h].NumOfAnchors;
+					alignment->NumOfAnchors0 = Primary_chains[p].chains[h].NumOfAnchors0;
+					alignment->NumOfAnchors1 = finalchain.size();
+					alignment->SecondSDPValue = finalchain.SecondSDPValue;
 					alignments.back().SegAlignment.push_back(alignment);
 					vector<int> scoreMat;
 					vector<Arrow> pathMat;
@@ -2780,7 +2538,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 									Alignment *next_alignment = new Alignment(Primary_chains[p].chains[h].value, strands[str], read.seq, read.length, 
 															 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
 															 genome.header.names[chromIndex], chromIndex, 0); 
-									next_alignment->NumOfAnchors = fl-start;
+									next_alignment->NumOfAnchors1 = fl-start;
 									alignments.back().SegAlignment.push_back(next_alignment);
 									prev_inv = fl;
 									inversion = 0;
@@ -2810,7 +2568,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 									Alignment *next_alignment = new Alignment(Primary_chains[p].chains[h].value, strands[str], read.seq, read.length, 
 															 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
 															 genome.header.names[chromIndex], chromIndex, 0); 
-									next_alignment->NumOfAnchors = end-fl;
+									next_alignment->NumOfAnchors1 = end-fl;
 									alignments.back().SegAlignment.push_back(next_alignment);
 									prev_inv = fl;
 									inversion = 0;
@@ -2859,13 +2617,21 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome,
 							continue;
 						}
 						else if (alignments.back().SegAlignment[js-2]->typeofaln != 3) {
-
 							alignments.back().SegAlignment[js-1]->typeofaln=3;
 						}
 					}
 					js++;
 				}
-
+			}
+			for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
+				//
+				// (Mark: add the refining code here)
+				// alignments.back() is `class SegAlignmentGroup`. `class SegAlignmentGroup` has member: `vector<Alignment*> SegAlignment`, where 
+				// each `SegAlignment[s]` is a segment of alignment when there are multiple segments. 
+				// So the function refining can be apply to each of the segment. 
+				// function refining(alignments.back().SegAlignment[s])
+				//
+				alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
 			}
 			alignments.back().SetFromSegAlignment(smallOpts);
 		}

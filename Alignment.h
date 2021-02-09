@@ -16,9 +16,6 @@ using namespace std;
 const unsigned int READ_UNMAPPED=0x4;
 const unsigned int READ_REVERSE=0x10;
 const unsigned int READ_SECONDARY=0x100;
-const unsigned int READ_MULTIPLESEGMENTS=0x1;
-const unsigned int READ_FIRSTSEGMENT=0x40;
-const unsigned int READ_LASTSEGMENT=0x80;
 const unsigned int READ_SUPPLEMENTARY=0x800;
 
 class Alignment {
@@ -53,13 +50,13 @@ class Alignment {
  	//int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
  	//vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains	
  	bool split;
- 	float value;
- 	float totalValue;
+ 	float value; // base level alignment value
+ 	float SecondSDPValue;
  	float FirstSDPValue;
-	int NumOfAnchors; 	
+	int NumOfAnchors0; 	
+	int NumOfAnchors1;
 	int typeofaln; // 0 -> Primary; 1->secondary; 3-> inversion
 	GenomePos qStart, qEnd, tStart, tEnd;
-
 
 	void Clear() {
 		queryString=alignString=refString="";
@@ -70,6 +67,9 @@ class Alignment {
 	}
 	void SetReverse() {
 		flag = flag | READ_REVERSE;
+	}
+	void SetSupplementary() {
+		flag = flag | READ_SUPPLEMENTARY;
 	}
 	void SetUnmapped() {
 		flag = flag | READ_UNMAPPED;
@@ -92,11 +92,12 @@ class Alignment {
 		Supplymentary=0;
 		split=0;
 		value=0;
-		totalValue=0;
+		SecondSDPValue=0;
 		FirstSDPValue=0;
 		order=0;
 		// Will eventually contain quality value strings.
-		NumOfAnchors=0;
+		NumOfAnchors0=0;
+		NumOfAnchors1=0;
 		typeofaln=0;
 	}
  	Alignment(float _FirstSDPValue, char *_read, char *_forward, 
@@ -383,7 +384,7 @@ class Alignment {
 				tdel+=i-p;
 				ndel++;
 				//if (i-p<=10) {ndel++;}
-				if (i-p < 501) {value += -opts.coefficient*log(i-p) - 1;}
+				if (i-p < 501) {value += -opts.coefficient*logf(i-p) - 1;}
 				else if (i-p <= 10001){
 					int a = (int)floor((i-p-501)/5);
 					value += -opts.coefficient*LookUpTable[a] - 1;
@@ -399,7 +400,7 @@ class Alignment {
 				tins+=i-p;
 				nins++;
 				//if (i-p<=10) {nins++;}
-				if (i-p < 501) {value += -opts.coefficient*log(i-p) - 1;}
+				if (i-p < 501) {value += -opts.coefficient*logf(i-p) - 1;}
 				else if (i-p <= 10001){
 					int a = (int)floor((i-p-501)/5);
 					value += -opts.coefficient*LookUpTable[a] - 1;
@@ -451,7 +452,7 @@ class Alignment {
 		read = strands[str];
 		strand = str;
 		nblocks = blocks.size();
-		CalculateStatistics(opts, svsigstrm, LookUpTable);
+		// CalculateStatistics(opts, svsigstrm, LookUpTable);
 	}
 
 	void CalculateStatistics(Options & opts, ostream *svsigstrm, const std::vector<float> & LookUpTable) {
@@ -521,7 +522,7 @@ class Alignment {
 				 << tEnd << "\t"
 				 << (int) mapqv << "\t" 
 				 << readName << "\t" << readLen << "\t" << qStart << "\t" << qEnd << "\t"
-				 << nm << "\t" << nmm << "\t" << nins << "\t" << ndel << "\t" << value << "\t" << totalValue << "\t" << flag << "\t" << NumOfAnchors << "\t" << NumOfAnchors/(float)readLen << endl;
+				 << nm << "\t" << nmm << "\t" << nins << "\t" << ndel << "\t" << value << "\t" << flag << "\t" << NumOfAnchors1 << "\t" << NumOfAnchors1/(float)readLen << endl;
 	}
 
 	void PrintPAF(ostream &out, bool printCigar=false) {
@@ -534,7 +535,7 @@ class Alignment {
 				<< strandChar << "\t" << chrom << "\t" << genomeLen << "\t" 
 				<< "wholegenomeLen:" << wholegenomeLen <<  "\t" // (Revision) delete wholegenomeLen
 				<< "tStart:" << tStart << "\t" << "tEnd:" << tEnd 
-				<< "\t" << "NumofSV:" << nm+nmm+nins+ndel << "\t" << "LenofSV:" << nm+nmm+tins+tdel << "\t" << (int)mapqv << "\t" << "AO:i:" << order;
+				<< "\t" << "NumofSV:" << nm+nmm+nins+ndel << "\t" << "LenofSV:" << nm+nmm+tins+tdel << "\t" << "mapqv: " << (int)mapqv << "\t" << "AO:i:" << order;
 		out << "\tNM:i:" << nm << "\t";
 		out << "NX:i:" << nmm << "\t";
 		out << "ND:i:" << ndel << "\t";
@@ -551,8 +552,8 @@ class Alignment {
 		else {
 			out << "TP:A:" << "I\t";
 		}
-		if (NumOfAnchors > 0) {
-			out << "\tNA:i:" << NumOfAnchors;
+		if (NumOfAnchors1 > 0) {
+			out << "\tNA:i:" << NumOfAnchors1;
 		}
 		if (runtime > 0) {
 			out << "\tRT:i:" << runtime;
@@ -788,9 +789,10 @@ public:
 	int nins;
 	bool ISsecondary;
 	float value;
-	float totalValue;
+	float SecondSDPValue;
 	float FirstSDPValue;
-	int NumOfAnchors; 	
+	int NumOfAnchors0; 	
+	int NumOfAnchors1;
 
 	SegAlignmentGroup () {
 		qStart = 0;
@@ -803,16 +805,20 @@ public:
 		nins = 0;
 		ISsecondary = 0;
 		value = 0;
-		totalValue = 0;
+		SecondSDPValue = 0;
 		FirstSDPValue = 0;
-		NumOfAnchors = 0; 	
+		NumOfAnchors0 = 0; 	
+		NumOfAnchors1 = 0;
 	};
 	~SegAlignmentGroup () {};
 
 	void SetFromSegAlignment(Options &opts) {
 		ISsecondary = SegAlignment[0]->ISsecondary;
-		NumOfAnchors =  SegAlignment[0]->NumOfAnchors;
+		NumOfAnchors0 =  SegAlignment[0]->NumOfAnchors0;
+		NumOfAnchors1 =  SegAlignment[0]->NumOfAnchors1;
 		FirstSDPValue = SegAlignment[0]->FirstSDPValue;
+		SecondSDPValue = SegAlignment[0]->SecondSDPValue;
+
 		for (int s = 0; s < SegAlignment.size(); s++) {
 			qStart = min(qStart, SegAlignment[s]->qStart);
 			qEnd   = max(qEnd, SegAlignment[s]->qEnd);
@@ -823,11 +829,11 @@ public:
 			ndel += SegAlignment[s]->ndel;
 			nins += SegAlignment[s]->nins;
 			value += SegAlignment[s]->value;
-			SegAlignment[s]->totalValue = totalValue;
+			// SegAlignment[s]->SecondValue = SecondValue;
 		}
-		totalValue = opts.rate_FirstSDPValue*FirstSDPValue + opts.rate_value*value;
+		// SecondValue = opts.rate_FirstSDPValue*FirstSDPValue + opts.rate_value*value;
 		for (int s = 0; s < SegAlignment.size(); s++) {
-			SegAlignment[s]->totalValue = totalValue;
+			// SegAlignment[s]->SecondValue = SecondValue;
 			if (s >= 1) {
 				SegAlignment[s]->ISsecondary = ISsecondary;
 				SegAlignment[s]->Supplymentary = 1;
@@ -836,8 +842,8 @@ public:
 			// Flag that the stats are calculated for methods that need them.
 			// 
 			SegAlignment[s]->prepared=true;
-			if (SegAlignment[s]->strand == 1) SegAlignment[s]->flag = SegAlignment[s]->flag | READ_REVERSE;
-			if (SegAlignment[s]->Supplymentary == 1) SegAlignment[s]->flag = SegAlignment[s]->flag | READ_SUPPLEMENTARY;
+			if (SegAlignment[s]->strand == 1) SegAlignment[s]->SetReverse(); //SegAlignment[s]->flag = SegAlignment[s]->flag | READ_REVERSE;
+			if (SegAlignment[s]->Supplymentary == 1) SegAlignment[s]->SetSupplementary(); //SegAlignment[s]->flag = SegAlignment[s]->flag | READ_SUPPLEMENTARY;
 		}		
 	}
 
@@ -892,7 +898,8 @@ public:
 		for (int i = 0; i< (*alignments).size(); i++) {
 			if ((*alignments)[i].ISsecondary == 1) {
 				for (int z = 0; z < (*alignments)[i].SegAlignment.size(); z++) {
-					(*alignments)[i].SegAlignment[z]->flag = (*alignments)[i].SegAlignment[z]->flag | READ_SECONDARY;
+					(*alignments)[i].SegAlignment[z]->SetSecondary();
+					//(*alignments)[i].SegAlignment[z]->flag = (*alignments)[i].SegAlignment[z]->flag | READ_SECONDARY;
 					if ((*alignments)[i].SegAlignment[z]->typeofaln != 3) (*alignments)[i].SegAlignment[z]->typeofaln = 2;
 				}
 			}
@@ -901,7 +908,11 @@ public:
 
 	int operator()(const int i, const int j) {
 		//return (*alignments)[i].value > (*alignments)[j].value;
-		return (*alignments)[i].totalValue > (*alignments)[j].totalValue;
+		// return 0.5f * (*alignments)[i].value + 0.4f * (*alignments)[i].SecondSDPValue + 0.1f * (*alignments)[i].FirstSDPValue > 
+		// 		0.5f * (*alignments)[j].value + 0.4f * (*alignments)[j].SecondSDPValue + 0.1f * (*alignments)[j].FirstSDPValue;
+		//return 0.8f * (*alignments)[i].value + 0.2f * (*alignments)[i].FirstSDPValue > 0.8f * (*alignments)[j].value + 0.2f * (*alignments)[j].FirstSDPValue;
+		return (*alignments)[i].value > (*alignments)[j].value;
+
 	}
 
 	void Sort() {

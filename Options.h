@@ -86,6 +86,8 @@ public:
 	int predefined_coefficient;
 	float anchorstoosparse;
 	bool passthroughtag;
+	bool CheckTrueIntervalInFineCluster;
+	bool CalculateMinimizerStats;
 
 	Options() {
 		storeTiming=false;
@@ -112,7 +114,7 @@ public:
 							// This parameter is used in another CleanOFFDiagonal function
 							// This parameter can be deleted here
 
-		minClusterSize=5; // For CCS, need to be larger!(20) // 5
+		minClusterSize=2; // 
 		minClusterLength=50;  // For CCS, need to be larger!(200)
 		minRefinedClusterSize=40;
 		window=2000; 
@@ -171,6 +173,8 @@ public:
 		predefined_coefficient=12;
 		anchorstoosparse=0.02;
 		passthroughtag=false;
+		CheckTrueIntervalInFineCluster=false;
+		CalculateMinimizerStats=false;
 	}
 };
 #endif

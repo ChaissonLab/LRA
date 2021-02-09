@@ -23,6 +23,7 @@ class LocalTuple {
   uint32_t t: 32-LOCAL_POS_BITS;
   uint32_t pos: LOCAL_POS_BITS;
   static uint32_t for_mask_s;
+  static uint32_t rev_mask_s;
 	LocalTuple() {
 		t=0;
 		pos=0;
@@ -46,6 +47,7 @@ class LocalTuple {
 };
 
 uint32_t LocalTuple::for_mask_s=0;
+uint32_t LocalTuple::rev_mask_s=0;
 
 template<typename Tup> 
 int DiagOffset(Tup &a, Tup &b) {
@@ -87,6 +89,7 @@ public:
 };
 
 Tuple GenomeTuple::for_mask_s = 0;
+Tuple GenomeTuple::rev_mask_s = 0;
 
 template< typename Tup>
 int InitMask(Tup &m, int k) {

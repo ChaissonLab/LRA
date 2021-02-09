@@ -1563,7 +1563,7 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 void 
 ComputeNumOfAnchors (const vector<Cluster> & FragInput, const vector<unsigned int> & onechain, int &Num_Anchors) {
 	for (int oc = 0; oc < onechain.size(); oc++) {
-		Num_Anchors += FragInput[onechain[oc]].NumofAnchors;
+		Num_Anchors += FragInput[onechain[oc]].NumofAnchors0;
 	}
 }
 
@@ -1604,9 +1604,10 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 				tStart = min(FragInput[onechain[c]].tStart, tStart);
 			}
 			//
-			// If this chain overlap with read greater than 10%, insert it to chains
+			// If this chain overlap with read greater than 0.5%, insert it to chains
 			//
-			if (((float)(qEnd - qStart)/read.length) > 0.01) {
+			// cerr << "overlap rate: " << (float)(qEnd - qStart)/read.length << endl;
+			if (((float)(qEnd - qStart)/read.length) > 0.005) {
 				//
 				// Compute the # of anchors on this chain
 				//
@@ -1621,33 +1622,36 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv], Num_Anchors));
 					Primary_chains.push_back(Pc);
 				} 
+				else if (Primary_chains[0].chains.size() < opts.NumAln) {
+					Primary_chains[0].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv], Num_Anchors));					
+				}
 				else {
-					bool newpr = 1, inserted = 0;
-					int p = 0;
-					while (p < Primary_chains.size()) {
-						if (Primary_chains[p].chains[0].OverlapsOnQ(qStart, qEnd, 0.5)) {
-							if (!Primary_chains[p].chains[0].OverlapsOnT(tStart, tEnd, 0.3)) {
-								if (Primary_chains[p].chains.size() < opts.NumAln) {
-									Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, 
-																				link, fragments_valueOrder[fv], Num_Anchors));
-									inserted = 1;								
-								}
-								break;
-							}
-						}
-						else{
-						//else if (Primary_chains[p].chains[0].Overlaps(qStart, qEnd, 0.5)) {
-							newpr = 0;
-						}
-						++p;
-					}			
-					if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 0) {		
-						if (Primary_chains.size() < 2) { // TODO(Jingwen): how to decide the number of Primary alignments
-							Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv], Num_Anchors));
-							Primary_chains.push_back(Pc);
-						}	
-						else break;		
-					}	
+					break;
+					// bool newpr = 1, inserted = 0;
+					// int p = 0;
+					// while (p < Primary_chains.size()) {
+					// 	if (Primary_chains[p].chains[0].OverlapsOnQ(qStart, qEnd, 0.5)) {
+					// 		if (!Primary_chains[p].chains[0].OverlapsOnT(tStart, tEnd, 0.3)) {
+					// 			if (Primary_chains[p].chains.size() < opts.NumAln) {
+					// 				Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, 
+					// 															link, fragments_valueOrder[fv], Num_Anchors));
+					// 				inserted = 1;								
+					// 			}
+					// 			break;
+					// 		}
+					// 	}
+					// 	else{
+					// 		newpr = 0;
+					// 	}
+					// 	++p;
+					// }			
+					// if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 0) {		
+					// 	if (Primary_chains.size() < 2) { // TODO(Jingwen): how to decide the number of Primary alignments
+					// 		Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv], Num_Anchors));
+					// 		Primary_chains.push_back(Pc);
+					// 	}	
+					// 	else break;		
+					// }	
 				}
 			}
 			else break;				
@@ -1684,7 +1688,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	//
 	// Decide the rate;
 	//
-	float rate = 2;//2
+	float rate = 8;//2
 	//if ((float)totalMatch / (float) read.length <= 0.005) rate = 4; //2 0.01
 	//cerr << "totalMatch/read.length: " << (float)totalMatch / (float) read.length << " rate: " << rate << endl;
 
@@ -2100,6 +2104,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	// Trace back to get the FinalChain
 	// store the index of points
 	finalchain.chain.clear();
+	finalchain.SecondSDPValue = max_value;
 	TraceBack(SubR1, SubC1, SubR2, SubC2, Value, max_pos, finalchain.chain); // NOTICE: This chain is from the last anchors to the first anchor;
 
 	// Clear SubR and SubC
@@ -2125,8 +2130,8 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, Options & opts, const vector<float> & LookUpTable, Read & read, float & rate) {
 
 	if (FragInput.size() == 0) return 0;
-	if (Primary_chains.size() != 0 and Primary_chains[0].chains.size() == opts.NumAln) return 0;
-	std::vector<Point>  H1;
+	// if (Primary_chains.size() != 0 and Primary_chains[0].chains.size() == opts.NumAln) return 0;
+	vector<Point>  H1;
 	// FragInput is vector<Cluster>
 	// get points from FragInput and store them in H1		
 

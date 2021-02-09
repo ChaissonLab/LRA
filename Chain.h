@@ -12,10 +12,10 @@ public:
 	vector<bool> link;
 	int direction;
 	GenomePos qStart, qEnd, tStart, tEnd;
-	int main; // If one chain is aligned to several chromosomes, 
-			 // then we need to split this chain. main refers to the index of the main alignment in vector chain
+	int main; // If one chain is aligned to several chromosomes, then we need to split this chain. main refers to the index of the main alignment in vector chain.
+	int chromIndex;
 	float value;
-	int NumOfAnchors;
+	int NumOfAnchors0;
 	CHain () {
 		qStart = 0;
 		qEnd = 0;
@@ -24,7 +24,7 @@ public:
 		direction = 0;
 		main = -1;
 		value = 0;
-		NumOfAnchors = 0;
+		NumOfAnchors0 = 0;
 	};
 	~CHain() {};
 	CHain (vector<unsigned int> &onechain) {
@@ -41,7 +41,7 @@ public:
 		main = -1;
 		link = lk;
 		value = val;
-		NumOfAnchors = numofanchors;
+		NumOfAnchors0 = numofanchors;
 	}
 	int OverlapsOnQ (GenomePos &qS, GenomePos &qE, float rate);
 	int OverlapsOnT (GenomePos &tS, GenomePos &tE, float rate);
@@ -109,6 +109,7 @@ public:
 	vector<unsigned int> MatchStart;
 	vector<int> ClusterIndex; // ClusterIndex[i] stores the index of the Cluster that anchor i comes from;
 	vector<int> StartIndex; // StartIndex[i] stores the index of the start for Cluster inputchain[i];
+	float SecondSDPValue;
 
 	FinalChain (vector<Cluster> *clusters) {
 		ExtendClusters = clusters;
