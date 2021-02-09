@@ -915,7 +915,7 @@ public:
 		//return (*alignments)[i].value > (*alignments)[j].value;
 		// return 0.5f * (*alignments)[i].value + 0.4f * (*alignments)[i].SecondSDPValue + 0.1f * (*alignments)[i].FirstSDPValue > 
 		// 		0.5f * (*alignments)[j].value + 0.4f * (*alignments)[j].SecondSDPValue + 0.1f * (*alignments)[j].FirstSDPValue;
-		return 0.5f * (*alignments)[i].value + 0.5f * (*alignments)[i].FirstSDPValue > 0.5f * (*alignments)[j].value + 0.5 * (*alignments)[j].FirstSDPValue;
+		return (*alignments)[i].value > (*alignments)[j].value;
 	}
 
 	void Sort() {
