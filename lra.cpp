@@ -86,7 +86,7 @@ void HelpMap() {
 
 class MapInfo {
 public:
-	std::vector<float> *LookUpTable;
+	vector<float> *LookUpTable;
 	Header*header;
 	Genome *genome;
 	vector<GenomeTuple> *genomemm;

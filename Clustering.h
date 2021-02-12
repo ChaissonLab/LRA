@@ -121,43 +121,43 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, Read &rea
 					for (int j = diagStart; j < i; j++) {
 						onDiag[j] = false;
 					}
-					if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
-						ofstream fclust("for-matches_1.dots", ofstream::app);
-						for (int j = diagStart; j < i; j++) {
-							fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
-									<< matches[j].second.pos + opts.globalK << "\t" << counter << "\t" << 0 << endl;
-						}
-						fclust.close();
-					}
-					if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
-						ofstream rclust("rev-matches_1.dots", ofstream::app);
-						for (int j = diagStart; j < i; j++) {			
-							rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
-									 << matches[j].second.pos <<"\t" << counter << "\t" << 0 << endl;
-						}
-						rclust.close();
-					}
+					// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
+					// 	ofstream fclust("for-matches_1.dots", ofstream::app);
+					// 	for (int j = diagStart; j < i; j++) {
+					// 		fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
+					// 				<< matches[j].second.pos + opts.globalK << "\t" << counter << "\t" << 0 << endl;
+					// 	}
+					// 	fclust.close();
+					// }
+					// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
+					// 	ofstream rclust("rev-matches_1.dots", ofstream::app);
+					// 	for (int j = diagStart; j < i; j++) {			
+					// 		rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
+					// 				 << matches[j].second.pos <<"\t" << counter << "\t" << 0 << endl;
+					// 	}
+					// 	rclust.close();
+					// }
 				}
 				else {
 					float avgfreq;
 					AVGfreq(diagStart, i, matches, avgfreq);
 					// cerr << " avgfreq: " << avgfreq << endl;
-					if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
-						ofstream fclust("for-matches_1.dots", ofstream::app);
-						for (int j = diagStart; j < i; j++) {
-							fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
-									<< matches[j].second.pos + opts.globalK << "\t" << counter << "\t" << avgfreq << endl;
-						}
-						fclust.close();
-					}
-					if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
-						ofstream rclust("rev-matches_1.dots", ofstream::app);
-						for (int j = diagStart; j < i; j++) {			
-							rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
-									 << matches[j].second.pos << "\t" << counter << "\t" << avgfreq << endl;
-						}
-						rclust.close();
-					}
+					// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
+					// 	ofstream fclust("for-matches_1.dots", ofstream::app);
+					// 	for (int j = diagStart; j < i; j++) {
+					// 		fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
+					// 				<< matches[j].second.pos + opts.globalK << "\t" << counter << "\t" << avgfreq << endl;
+					// 	}
+					// 	fclust.close();
+					// }
+					// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
+					// 	ofstream rclust("rev-matches_1.dots", ofstream::app);
+					// 	for (int j = diagStart; j < i; j++) {			
+					// 		rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
+					// 				 << matches[j].second.pos << "\t" << counter << "\t" << avgfreq << endl;
+					// 	}
+					// 	rclust.close();
+					// }
 					if (avgfreq >= 50.0f) {
 						int MinDiagCluster = 1000;
 						int CleanMaxDiag = 10;
@@ -214,7 +214,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, Read &rea
 }
 
 template<typename Tup>
-void SecondRoundCleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int MinDiagCluster,int CleanMaxDiag, vector<bool> &OriginalOnDiag, int &os, int &oe, 
+void SecondRoundCleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int &MinDiagCluster,int &CleanMaxDiag, vector<bool> &OriginalOnDiag, int &os, int &oe, 
 																											int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	int nOnDiag2=0;
 	for (int i = os; i < oe; i++) {
