@@ -8,6 +8,17 @@
 #include "AffineOneGapAlign.h"
 #include <algorithm>
 
+void FlatPrintMat(vector<int> &mat, vector<int> &qS, vector<int> &qE) {
+	int mi=0;
+	for (int r=0; r< qS.size(); r++) {
+		cout << r << "\t" << qS[r] << "\t" << qE[r] << "\t";
+		for (int c=qS[r]; c <= qE[r]; c++, mi++) {
+			cout << setw(3) << mat[mi];
+		}
+		cout << endl;
+	}
+}
+
 void PrintMat(vector<int> &mat, vector<int> &qS, vector<int> &qE) {
 	int m=0;
 	int s=qS[0];
@@ -30,12 +41,21 @@ void IndelRefineAlignment(Read &read,
 													Options &opts) {
 
 	int startBlock=0, endBlock=0;
-	int k=10;
+	int k=5;
 	int maxGap=k-1;
 	long qPos,tPos;
 
 	vector<Block> refined;
 
+	vector<int> cuMatSize;
+	vector<int> qS, qE;
+
+	vector<int> insScoreMat, insPathMat, insIndexMat;
+	vector<int> delScoreMat, delPathMat, delIndexMat;
+	
+	vector<int> scoreMat;
+	vector<int> pathMat;
+	vector<int> indexMat;
 	//
 	// No modification on empty or ungapped alignment
 	//
@@ -90,11 +110,16 @@ void IndelRefineAlignment(Read &read,
 			long qLen=qPos-qStart;
 			long tLen=tPos-tStart;
 
-			vector<int> qS(tLen, -1), qE(tLen, -1), tS(qLen, -1), tE(qLen, -1);
+
+			qS.resize(tLen, -1);
+			qE.resize(tLen, -1);
+			fill(qS.begin(), qS.end(),-1);
+			fill(qE.begin(), qE.end(), -1);
 			long t, q;
 			int tOff=0, qOff=0;
 			t=alignment.blocks[startBlock].tPos;
 			q=alignment.blocks[startBlock].qPos;
+			//			cout << "Block boundaries " << endl;
 			for (int b=startBlock; b <= endBlock; b++) {
 				int qGap=0, tGap=0;
 				int commonGap   = 0;
@@ -118,13 +143,16 @@ void IndelRefineAlignment(Read &read,
 				for (int bi = 0; bi < blockLength; tOff++, bi++, q++, t++) {
 					if (qS[tOff] == -1) {
 						qS[tOff] = max(q-k, qStart);
+						//						cout << "START " << startBlock << "\tROW " << tOff << "\tqS " << qS[tOff];
 					}
 					else {
 						qS[tOff] = min((long)qS[tOff], max(q-k, (long)qStart));
+						//						cout << "START " << startBlock << "\tROW " << tOff << "\tqS " << qS[tOff] << endl;
 						assert(qS[tOff] >= 0);
 					}
 					if (qE[tOff] == -1 or qE[tOff] < q+k) {
 						qE[tOff] = min(qEnd-1, (long)(q+k));
+						//						cout << "START " << startBlock << "\tROW " << tOff << "\tqE " << qE[tOff] << endl;
 						assert(qE[tOff] < qEnd);
 					}
 					for (int ki=0; ki < k; ki++) {
@@ -132,12 +160,14 @@ void IndelRefineAlignment(Read &read,
 						// ensure future entries process to this point k above and below.
 						if (tOff - ki >= 0) {
 							if (qE[tOff - ki]  < q) { 
+								//								cout << "START " << startBlock << "\tROW " << tOff-ki << "\tResetting qE " << tOff-ki << "\t" << qE[tOff-ki] << "\t" << q << endl;
 								qE[tOff-ki] = q;
 							}
 						}
 						if (tOff + ki < qS.size()) {
 							if (qS[tOff+ki] == -1 or qS[tOff+ki] > q) {
-								qS[tOff+ki] = q;
+								//								cout << "START " << startBlock << "\tROW " << tOff+ki << "\tResetting qS " << tOff+ki << "\t" << qS[tOff+ki] << "\t" << q << endl;
+								qS[tOff+ki] = q;								
 							}
 						}
 					}
@@ -150,10 +180,14 @@ void IndelRefineAlignment(Read &read,
 					for (int qi=0; qi < qGap; qi++, q++) {
 						for (int ki=0; ki < k; ki++) {
 							if (tOff - ki >= 0) {
-								if (qE[tOff - ki]  < q) { qE[tOff-ki] = q;}
+								if (qE[tOff - ki]  < q) { 
+									//									cout << "START " << startBlock << "\tROW " << tOff-ki << "\tgap qe " << tOff-ki << "\t" << qE[tOff-ki] << "\t" << q << endl;
+									qE[tOff-ki] = q;									
+								}
 							}
 							if (tOff + ki < qS.size()) {
 								if (qS[tOff+ki] == 0 or qS[tOff+ki] > q) {
+									cout << "START " << startBlock << "\tROW " << tOff+ki << "\tgap qs " << tOff+ki << "\t" << qE[tOff+ki] << "\t" << q << endl;
 									qS[tOff+ki] = q;
 								}
 							}
@@ -163,7 +197,9 @@ void IndelRefineAlignment(Read &read,
 				if (tGap > qGap) {
 					assert(qGap == 0);
 					for (int ti=0; ti < tGap; tOff++, ti++, t++) {
+						//						cout << "START " << startBlock << "\tROW " << tOff << " qs gap " << qS[tOff] << "\t" << q-k << "\t" << qStart << endl;
 						qS[tOff] = max(q-k, qStart);
+						//						cout << "START " << startBlock << "\tROW " << tOff << " qe gap " << qE[tOff] << "\t" << q+k << "\t" << qEnd -1 << endl;
 						qE[tOff] = min(qEnd-1,q+k);
 					}
 				}
@@ -181,17 +217,18 @@ void IndelRefineAlignment(Read &read,
 			for (int qi=0; qi < qS.size(); qi++) {
 				matSize+=qE[qi]-qS[qi]+1;
 			}
-
-			vector<int> scoreMat(matSize,0);
-			vector<int> pathMat(matSize,0);
-			vector<int> indexMat(matSize,-1);
-			vector<int> cuMatSize(qS.size(), 0);
-
+			for (int qi=1; qi < qS.size(); qi++) {
+				assert(qS[qi] >= qS[qi-1]);
+				assert(qE[qi] >= qE[qi-1]);
+				assert(qS[qi] < qE[qi]);
+			}
 			char *tSeq=genome.seqs[alignment.chromIndex];
 			char *qSeq=alignment.read;
 			long tSeqLen = tEnd-tStart;
 			long qSeqLen = qEnd-qStart;
 			int gap=opts.localIndel;
+			int gapOpen=opts.localIndel*2+1;
+			int gapExtend=0;//opts.localMismatch+1;
 			int match=opts.localMatch;
 			int mismatch=opts.localMismatch;
 			
@@ -210,23 +247,64 @@ void IndelRefineAlignment(Read &read,
 				refined.insert(refined.end(), aln.blocks.begin(), aln.blocks.end());
 			}
 			else {
-				 for (int qi=1; qi < qS.size(); qi++) {
-					 cuMatSize[qi] = cuMatSize[qi-1] + qE[qi-1] - qS[qi-1] + 1;
-			 }
-			 //
+				cuMatSize.resize(qS.size(), 0);
+				fill(cuMatSize.begin(), cuMatSize.end(), 0);
+				for (int qi=1; qi < qS.size(); qi++) {
+					cuMatSize[qi] = cuMatSize[qi-1] + qE[qi-1] - qS[qi-1] + 1;
+				}
+
+				//
 			 // The first base is always aligned here. 
 			 int rowStart=0, rowEnd=-1;
-			 int BAD=-99999999;
+			 int BAD=-999999999;
 			 int diag=0;
 			 int left=1;
 			 int down=2;
 			 int bound=3;
+			 int done=20;
+			 int delOpen=4;
+			 int delExtend=5;
+			 int delClose=6;
+
+			 int insOpen=7;
+			 int insExtend=8;
+			 int insClose=9;
+
+
+			 scoreMat.resize(matSize, 0);
+			 fill(scoreMat.begin(), scoreMat.end(), 0);
+
+			 pathMat.resize(matSize, bound);
+			 fill(pathMat.begin(), pathMat.end(), bound);
+
+			 indexMat.resize(matSize, -1);
+			 fill(indexMat.begin(), indexMat.end(), -1);
+
+			 delScoreMat.resize(matSize, BAD);
+			 fill(delScoreMat.begin(), delScoreMat.end(), BAD);
+			 delPathMat.resize(matSize, 0);
+			 fill(delPathMat.begin(), delPathMat.end(), bound);
+			 delIndexMat.resize(matSize, -1);
+			 fill(delIndexMat.begin(), delIndexMat.end(), -1);
+
+
+			 insScoreMat.resize(matSize, BAD);
+			 fill(insScoreMat.begin(), insScoreMat.end(), BAD);
+			 insPathMat.resize(matSize, 0);
+			 fill(insPathMat.begin(), insPathMat.end(), bound);
+			 insIndexMat.resize(matSize, -1);
+			 fill(insIndexMat.begin(), insIndexMat.end(), -1);
+			 
+			 indexMat[0] = 0;
+			 pathMat[0] = done;
 			 for (int ti=0; ti < tLen; ti++) {
 				 int rowLen=qE[ti]-qS[ti]+1;
 				 rowEnd=rowStart + rowLen-1;
 				 if (rowStart > 0) {
 					 scoreMat[rowStart] = BAD;
 					 pathMat[rowStart] = bound;
+					 insPathMat[rowStart] = bound;
+
 				 }
 				 else {
 					 for (int qi = 1; qi < rowEnd; qi++ ){
@@ -244,65 +322,187 @@ void IndelRefineAlignment(Read &read,
 			 //
 			 // Now run dp
 			 //
-			 int curRowStart=qE[0]-qS[0]+1;
-			 int prevRowStart=0;
-			 int prevRowLen=qE[0]-qS[0]+1;
+			 int curRowStart  = qE[0]-qS[0]+1;
+			 int prevRowStart = 0;
+			 int prevRowLen   = qE[0]-qS[0]+1;
 			 for (int ti=1; ti < tLen; ti++) {
-				 int curRowLen=qE[ti] - qS[ti] + 1;
+				 int curRowLen = qE[ti] - qS[ti] + 1;
 				 assert(qS[ti-1] <= qS[ti]);
-				 int curRowOffset=qS[ti] - qS[ti-1];
+				 int curRowOffset = qS[ti] - qS[ti-1];
 				 // Iterate on current row, skipping boundaries.
 				 // prevRowPos is set to the cell immediately below the current cell, so the diagonal cell is prevRowPos-1
 				 // The +1 offset is to skip past boundary cells.
-				 int prevRowPos=prevRowStart + curRowOffset +1;
-				 int curRowPos=curRowStart + 1;
-				 //				cout << "Row offsets\t" << ti << "\t" << prevRowPos << "\t" << curRowPos << endl;
+				 int curRowPos  = curRowStart + 1;
+				 int prevRowPos = prevRowStart + curRowOffset +1;
 				 int rowEnd;
 				 // Last row is solved to final cell which should end on a match.
 				 if (ti == tLen-1) {
-					 rowEnd=curRowLen;
+					 rowEnd = curRowLen;
 				 }
 				 else {
-					 rowEnd=curRowLen-1;
+					 rowEnd = curRowLen - 1;
 				 }
-				 for (int qi=1; qi < rowEnd; qi++, curRowPos++, prevRowPos++) {
+				 int *scoreMatPrevRowPosPtr=&scoreMat[prevRowPos];
+				 int *scoreMatCurRowPosPtr=&scoreMat[curRowPos];
+				 int *scoreMatDiagPosPtr=&scoreMat[prevRowPos-1];
+				 int *scoreMatInsPosPtr=&scoreMat[curRowPos-1];
+
+				 int *pathMatPrevRowPosPtr=&pathMat[prevRowPos];
+				 int *pathMatCurRowPosPtr=&pathMat[curRowPos];
+				 int *pathMatDiagPosPtr=&pathMat[prevRowPos-1];
+				 
+				 int *indexMatCurRowPosPtr = &indexMat[curRowPos];
+
+				 int *delScoreMatPrevRowPosPtr=&delScoreMat[prevRowPos];
+				 int *delScoreMatCurRowPosPtr=&delScoreMat[curRowPos];
+				 int *delIndexMatCurRowPosPtr=&delIndexMat[curRowPos];
+				 int *delPathMatCurRowPosPtr=&delPathMat[curRowPos];
+
+				 int *insScoreMatInsPosPtr=&insScoreMat[curRowPos-1];
+				 int *insScoreMatCurRowPosPtr=&insScoreMat[curRowPos];
+				 int *insIndexMatCurRowPosPtr=&insIndexMat[curRowPos];
+				 int *insPathMatCurRowPosPtr=&insPathMat[curRowPos];
+
+				 char tChar=tSeq[ti+tStart];
+				 char *qCharPtr=&qSeq[1+qS[ti]];
+				 int qEPrev = qE[ti-1];
+				 int qECur  = qE[ti];
+				 int qSCur  = qS[ti];
+
+				 for (int qi=1; qi < rowEnd; qi++, curRowPos++, prevRowPos++, ++scoreMatPrevRowPosPtr, ++scoreMatCurRowPosPtr, ++scoreMatDiagPosPtr, ++scoreMatInsPosPtr, ++pathMatPrevRowPosPtr, ++pathMatCurRowPosPtr, ++pathMatDiagPosPtr, ++delScoreMatPrevRowPosPtr,++delScoreMatCurRowPosPtr, ++insScoreMatInsPosPtr, ++insScoreMatCurRowPosPtr, ++delIndexMatCurRowPosPtr, ++insIndexMatCurRowPosPtr, ++qCharPtr, ++delPathMatCurRowPosPtr, ++insPathMatCurRowPosPtr, ++indexMatCurRowPosPtr) {
 					 int matchScore, insScore, delScore;
 					 int matchIndex, insIndex, delIndex;
-					 if (qE[ti-1] >= qi + qS[ti]) {
-						 if (tSeq[ti+tStart] == qSeq[qi+qS[ti]]) {
-							 matchScore = scoreMat[prevRowPos-1] + match;
+					 int delOpenScore, delExtendScore;
+					 int insOpenScore, insExtendScore;
+					 //
+					 // Del matrix (down)
+					 //
+					 //					 if (qE[ti-1] >= qi+qS[ti] && pathMat[prevRowPos] != bound) {
+					 if (qE[ti-1] >= qi+qS[ti] && *pathMatPrevRowPosPtr != bound) {
+						 //						 delOpenScore = scoreMat[prevRowPos] + gapOpen;
+						 delOpenScore = *scoreMatPrevRowPosPtr + gapOpen;
+						 
+						 //						 delExtendScore = delScoreMat[prevRowPos] + gapExtend;
+						 delExtendScore = *delScoreMatPrevRowPosPtr + gapExtend;
+						 //						 assert(pathMat[prevRowPos] != bound);
+					 }
+					 else {
+						 delOpenScore = BAD;
+						 delExtendScore = BAD;
+					 }
+					 int maxScore=max(delOpenScore, delExtendScore);
+					 if (maxScore == delOpenScore) {						 
+						 //						 delPathMat[curRowPos] = delOpen;
+						 *delPathMatCurRowPosPtr = delOpen;
+						 //						 delIndexMat[curRowPos] = prevRowPos;
+						 *delIndexMatCurRowPosPtr = prevRowPos;
+					 }
+					 else {
+						 //						 delPathMat[curRowPos] = delExtend;
+						 *delPathMatCurRowPosPtr = delExtend;
+						 
+						 //						 delIndexMat[curRowPos] = prevRowPos;
+						 *delIndexMatCurRowPosPtr = prevRowPos;
+					 }
+					 //					 delScoreMat[curRowPos]=maxScore;
+					 *delScoreMatCurRowPosPtr = maxScore;
+					 //
+					 // Insertion matrix.
+					 //
+					 //					 insOpenScore=scoreMat[curRowPos-1] + gapOpen;
+					 insOpenScore = *scoreMatInsPosPtr + gapOpen;
+					 
+
+					 //					 insExtendScore=insScoreMat[curRowPos-1] + gapExtend;
+					 insExtendScore = *insScoreMatInsPosPtr + gapExtend;
+					 maxScore=max(insOpenScore, insExtendScore);
+						 if (maxScore == insOpenScore) {							 
+							 //							 insPathMat[curRowPos] = insOpen;
+							 *insPathMatCurRowPosPtr = insOpen;
+							 //							 insIndexMat[curRowPos]= curRowPos-1;
+							 *insIndexMatCurRowPosPtr = curRowPos-1;
+						 }
+						 else {
+							 //							 insPathMat[curRowPos] = insExtend;
+							 *insPathMatCurRowPosPtr = insExtend;
+							 //							 insIndexMat[curRowPos] = curRowPos-1;
+							 *insIndexMatCurRowPosPtr = curRowPos-1;
+						 }
+						 assert(insIndexMat[curRowPos] >= 0);
+						 //						 insScoreMat[curRowPos] = maxScore;
+						 *insScoreMatCurRowPosPtr = maxScore;
+
+							 
+
+					 
+					 if (qE[ti-1] >= qi + qS[ti] && pathMat[prevRowPos-1] != bound) {
+						 //						 if (tSeq[ti+tStart] == qSeq[qi+qS[ti]]) {
+						 if (tChar == *qCharPtr) {
+							 //							 matchScore = scoreMat[prevRowPos-1] + match;
+							 matchScore = *scoreMatDiagPosPtr + match;
+							 //							 assert(pathMat[prevRowPos-1] != bound);
 						 }
 						 else { 
-							 matchScore = scoreMat[prevRowPos-1] + mismatch;
+							 //							 matchScore = scoreMat[prevRowPos-1] + mismatch;
+							 matchScore = *scoreMatDiagPosPtr + mismatch;
+							 //							 assert(pathMat[prevRowPos-1] != bound);
 						 }
 					 }
 					 else {
 						 matchScore = BAD;
 					 }
-
-					 insScore = scoreMat[curRowPos-1] + gap;
-
-					 if (qE[ti-1] >= qi+qS[ti]) {
-						 delScore = scoreMat[prevRowPos] + gap;
+					 //					 insScore = scoreMat[curRowPos-1] + gap;
+					 insScore = *scoreMatInsPosPtr + gap;
+					 //					 if (qE[ti-1] >= qi+qS[ti] && pathMat[prevRowPos] != bound) {
+					 if (qEPrev >= qi+qSCur && *pathMatPrevRowPosPtr != bound) {
+						 //						 delScore = scoreMat[prevRowPos] + gap;
+						 delScore = *scoreMatPrevRowPosPtr + gap;
+						 //						 assert(pathMat[prevRowPos] != bound);
 					 }
 					 else {
-						 delScore =BAD;
+						 delScore = BAD;
 					 }
-					 int maxScore = max(matchScore,max(insScore, delScore));
-					 scoreMat[curRowPos] = maxScore;
+					 //					 int delCloseScore = delScoreMat[curRowPos];
+					 int delCloseScore = *delScoreMatCurRowPosPtr;
+					 //					 int insCloseScore = insScoreMat[curRowPos];
+					 int insCloseScore = *insScoreMatCurRowPosPtr;
+					 maxScore = max(matchScore,max(insScore, max(delScore, max(delCloseScore, insCloseScore))));
+					 assert(curRowPos < scoreMat.size());
+					 //					 scoreMat[curRowPos] = maxScore;
+					 *scoreMatCurRowPosPtr = maxScore;
 					 if (maxScore == matchScore) {
-						 pathMat[curRowPos]  = diag;
-						 assert(prevRowPos-1 <= cuMatSize[ti]);
-						 indexMat[curRowPos] = prevRowPos-1;
+						 //						 pathMat[curRowPos]  = diag;
+						 *pathMatCurRowPosPtr = diag;
+						 //						 assert(prevRowPos-1 < cuMatSize[ti]);
+						 //						 indexMat[curRowPos] = prevRowPos-1;
+						 *indexMatCurRowPosPtr = prevRowPos-1;
 					 }
 					 else if (maxScore == insScore) {
-						 pathMat[curRowPos]  = left;
-						 indexMat[curRowPos] = curRowPos-1;
+						 //						 pathMat[curRowPos]  = left;
+						 *pathMatCurRowPosPtr = left;
+						 //						 indexMat[curRowPos] = curRowPos-1;
+						 *indexMatCurRowPosPtr = curRowPos-1;
+						 //						 assert(curRowPos-1 > cuMatSize[ti]);
 					 }
-					 else {
-						 pathMat[curRowPos]  = down;
-						 assert(prevRowPos <= cuMatSize[ti]);
-						 indexMat[curRowPos] = prevRowPos;
+					 else if (maxScore == delScore) {
+						 //						 pathMat[curRowPos]  = down;
+						 *pathMatCurRowPosPtr = down;
+
+						 //						 assert(prevRowPos <= cuMatSize[ti]);
+						 //						 indexMat[curRowPos] = prevRowPos;
+						 *indexMatCurRowPosPtr = prevRowPos;
+					 }
+					 else if (maxScore == delCloseScore) {
+						 //						 pathMat[curRowPos] = delClose;
+						 *pathMatCurRowPosPtr = delClose;
+						 //						 indexMat[curRowPos] = curRowPos;
+						 *indexMatCurRowPosPtr = curRowPos;
+					 }
+					 else if (maxScore == insCloseScore) {
+						 //						 pathMat[curRowPos] = insClose;
+						 *pathMatCurRowPosPtr = insClose;
+						 //indexMat[curRowPos] = curRowPos;
+						 *indexMatCurRowPosPtr = curRowPos;
 					 }
 				 }
 
@@ -314,12 +514,51 @@ void IndelRefineAlignment(Read &read,
 			 // Trace back.
 			 // 
 			 vector<int> path;
+			 int matchMat=0, delMat=1, insMat=2;
+			 int curMat=0;
 			 int curMatPos=pathMat.size()-1;
 
 			 while (curMatPos > 0) {
-				 path.push_back(pathMat[curMatPos]);
-				 pathMat[curMatPos] = 90+pathMat[curMatPos];
-				 curMatPos=indexMat[curMatPos];				
+				 if (curMat == matchMat) {
+					 
+					 if (pathMat[curMatPos] == delClose) {
+						 //						 cout << "Hopping to del " << endl;
+						 curMat=delMat;
+					 }
+					 else if (pathMat[curMatPos] == insClose) {
+						 //						 cout << "Hopping to ins" << endl;
+						 curMat=insMat;
+					 }
+					 else {
+						 path.push_back(pathMat[curMatPos]);
+						 pathMat[curMatPos] = 90+pathMat[curMatPos];
+					 }
+					 curMatPos=indexMat[curMatPos];
+				 }
+				 else if (curMat == delMat) {
+					 path.push_back(down);
+					 if (delPathMat[curMatPos] == delOpen) {
+						 curMat=matchMat;
+					 }
+					 else {
+						 curMat=delMat;
+					 }
+					 curMatPos=delIndexMat[curMatPos];
+					 assert(curMatPos >= 0);
+				 }
+				 else {
+					 assert(curMat == insMat);
+					 path.push_back(left);
+					 if (insPathMat[curMatPos] == insOpen) {
+						 curMat = matchMat;
+					 }
+					 else {
+						 curMat=insMat;
+					 }
+					 curMatPos=insIndexMat[curMatPos];
+					 assert(curMatPos >= 0);
+				 }					 						 
+				 assert(curMatPos >= 0);
 			 }
 			 path.push_back(diag);
 
@@ -336,20 +575,30 @@ void IndelRefineAlignment(Read &read,
 					 ++ci;
 
 				 }
+				 /*
 				 if (r > 0 and np != 1) {
 					 PrintMat(pathMat, qS, qE);
 					 cout << "ERROR at " << r << "\t" << np << endl;
 
-				 }
+					 }
 				 assert(r == 0 || np == 1);
+				 */
 			 }
 
-
-			 //			PrintMat(pathMat, qS, qE);
+			 //			 cout<< "Start " << startBlock << " end " << endBlock << endl;
+			 //			 FlatPrintMat(pathMat, qS, qE);
 			 //			PrintMat(scoreMat, qS, qE);
 			 long qPath=qStart;
 			 long tPath=tStart;
 			 int pi=path.size()-1;
+			 int nm=0, ni=0,nd=0;
+			 for (int p=0;p<path.size();p++) {
+				 assert(path[p] >= 0&& path[p] <= 2);
+				 if (path[p] == 0) { nm++;}
+				 if (path[p] == 1) { ni++;}
+				 if (path[p] == 2) { nd++;}
+			 }
+
 			 reverse(path.begin(), path.end());
 			 assert(path[0] == diag);
 			 //			assert(path[pi] == diag);
@@ -388,7 +637,7 @@ void IndelRefineAlignment(Read &read,
 			 }
 			
 			 if (qPath != qSeqLen + qStart || tPath != tSeqLen + tStart) {
-				 cout << "ERROR on " << read.name << endl;		
+				 //				 cout << "ERROR on " << read.name << endl;		
 				 assert(qPath == qSeqLen + qStart);
 				 assert(tPath == tSeqLen + tStart);
 			 }
