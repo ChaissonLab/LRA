@@ -60,16 +60,16 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts
 		else if (x <= 7000) {
 			return - 1152 * LookUpTable[a] - 9664;
 		}
-		else if (x <= 10000) {
+		else if (x <= 100000) {
 			return - 533 - 0.2 * x;
 		}
-		else if (x <= 50000) {
-			if (step_sdp == 1) return -1000; //-800
-			else return -2000;	
-		}		
+		// else if (x <= 100000) {
+		// 	if (step_sdp == 1) return -10533 - 0.3 * x; //-800
+		// 	else return -20000;	
+		// }		
 		else {
-			if (step_sdp == 1) return -2000;
-			else return -4000;
+			if (step_sdp == 1) return -100000;
+			else return -200000;
 		} 
 	}
 	else {

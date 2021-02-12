@@ -7,6 +7,8 @@
 #include <regex>
 #include <string>
 #include <unordered_map>
+#include "Timing.h"
+
 using namespace std;
 
 template<typename Tup>
@@ -16,24 +18,9 @@ long DiagonalDifference(Tup &a, Tup &b, int strand=0) {
 		long bDiag = (long)b.second.pos - (long)b.first.pos;
 		return aDiag - bDiag;		
 	}
-	else { // revMatches
+	else { // revMathches
 		long aDiag = a.first.pos + a.second.pos; 
 		long bDiag= b.first.pos + b.second.pos;
-		return aDiag - bDiag;				
-	}
-}
-
-// for tuple
-template<typename Tup>
-long DiagonalDifference_tuple(Tup &a, Tup &b, int strand=0) {
-	if (strand == 0) { // Matches
-		long aDiag = (long)get<1>(a).pos - (long)get<0>(a).pos;
-		long bDiag = (long)get<1>(b).pos - (long)get<0>(b).pos;
-		return aDiag - bDiag;		
-	}
-	else { // revMathches
-		long aDiag = get<1>(a).pos + get<0>(a).pos; 
-		long bDiag = get<1>(b).pos + get<0>(b).pos;
 		return aDiag - bDiag;				
 	}
 }
@@ -46,14 +33,6 @@ int DiagonalDrift(long curDiag, Tup &t, int strand=0) {
 	return drift;
 }
 
-// for tuple
-template<typename Tup>
-int DiagonalDrift_tuple(long curDiag, Tup &t, int strand=0) {
-	long drift;
-	if (strand == 0) drift= abs(curDiag - ((long)get<1>(t).pos - (long)get<0>(t).pos ));
-	else drift= abs(curDiag - ((long)get<0>(t).pos + (long)get<1>(t).pos));
-	return drift;
-}
 
 template<typename Tup>
 long SkewDiagonalDifference(Tup &a, Tup &b, Options &opts, int strand=0) {
@@ -62,7 +41,7 @@ long SkewDiagonalDifference(Tup &a, Tup &b, Options &opts, int strand=0) {
 		long bDiag = (long)b.second.pos - (long)ceil(opts.slope*b.first.pos);
 		return aDiag - bDiag;		
 	}
-	else { // revMatches
+	else { // revMathches
 		long aDiag = ceil(opts.slope*a.first.pos) + a.second.pos; 
 		long bDiag= ceil(opts.slope*b.first.pos) + b.second.pos;
 		return aDiag - bDiag;				
@@ -77,42 +56,35 @@ long GapDifference(Tup &a, Tup &b) {
 }
 
 template<typename Tup>
-long GapDifference_tuple(Tup &a, Tup &b) {
-	long aDiff = abs((long)get<0>(b).pos - (long)get<0>(a).pos);
-	long bDiff = abs((long)get<1>(b).pos - (long)get<1>(a).pos);
-	return max(aDiff, bDiff);
-}
-
-template<typename Tup, typename T>
-void AVGfreq(int &as, int &ae, vector<tuple<Tup, Tup, T> > &matches, float &avgfreq) {
+void AVGfreq(int &as, int &ae, vector<pair<Tup, Tup> > &matches, float &avgfreq) {
 	unordered_map<Tuple, int> miniCount;
 	for (int r = as; r < ae; r++) {
-		unordered_map<Tuple, int>::const_iterator got = miniCount.find(get<0>(matches[r]).t);
+		unordered_map<Tuple, int>::const_iterator got = miniCount.find(matches[r].first.t);
 		if (got == miniCount.end()) {
-			miniCount[get<0>(matches[r]).t] = 0;
+			miniCount[matches[r].first.t] = 0;
 		}
 	}
 	// cerr << "pr.second - pr.first: " << pr.second - pr.first << " miniCount.size(): " << miniCount.size() << endl;
 	avgfreq = (float)(ae - as) / miniCount.size();
 }
 
-template<typename Tup, typename T>
-void CleanOffDiagonal(vector<tuple<Tup, Tup, T> > &matches, Options &opts, Read &read, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
+template<typename Tup>
+void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, Read &read, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (matches.size() == 0) {
 		return;
 	}
 
 	vector<bool> onDiag(matches.size(), false);
 	int nOnDiag=0;
-	if (matches.size() > 1 and abs(DiagonalDifference_tuple(matches[0], matches[1], strand)) < opts.cleanMaxDiag 
-						   and (diagOrigin == -1 or DiagonalDrift_tuple(diagOrigin, matches[0], strand) < diagDrift)) { 
+	if (matches.size() > 1 and abs(DiagonalDifference(matches[0], matches[1], strand)) < opts.cleanMaxDiag 
+						   and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[0], strand) < diagDrift)) { 
 		onDiag[0] = true;
 		nOnDiag++;
 	}
 	
 	for (int i = 1; i < matches.size(); i++) {
-		if (abs(DiagonalDifference_tuple(matches[i], matches[i-1], strand)) < opts.cleanMaxDiag 
-			and (diagOrigin == -1 or DiagonalDrift_tuple(diagOrigin, matches[i],strand) < diagDrift)) {	
+		if (abs(DiagonalDifference(matches[i], matches[i-1], strand)) < opts.cleanMaxDiag 
+			and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift)) {	
 			onDiag[i] = true;
 			onDiag[i-1] = true;
 			nOnDiag++;
@@ -133,6 +105,7 @@ void CleanOffDiagonal(vector<tuple<Tup, Tup, T> > &matches, Options &opts, Read 
 
 	int minDiagCluster = (int) floor(Largest_ClusterNum/10);
 	// cerr << "Largest_ClusterNum: " << Largest_ClusterNum << " minDiagCluster: " << minDiagCluster << endl;
+	if (opts.readType == Options::contig) {minDiagCluster = 100;}
 
 	// 
 	// Remove bins with number of anchors <= minDiagCluster
@@ -148,19 +121,19 @@ void CleanOffDiagonal(vector<tuple<Tup, Tup, T> > &matches, Options &opts, Read 
 					for (int j = diagStart; j < i; j++) {
 						onDiag[j] = false;
 					}
-					if (opts.dotPlot and strand == 0) {
+					if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
 						ofstream fclust("for-matches_1.dots", ofstream::app);
 						for (int j = diagStart; j < i; j++) {
-							fclust << get<0>(matches[j]).pos << "\t" << get<1>(matches[j]).pos << "\t" << opts.globalK + get<0>(matches[j]).pos << "\t"
-									<< get<1>(matches[j]).pos + opts.globalK << "\t" << get<2>(matches[j]) << "\t" << counter << "\t" << 0 << endl;
+							fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
+									<< matches[j].second.pos + opts.globalK << "\t" << counter << "\t" << 0 << endl;
 						}
 						fclust.close();
 					}
-					if (opts.dotPlot and strand == 1){
+					if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
 						ofstream rclust("rev-matches_1.dots", ofstream::app);
 						for (int j = diagStart; j < i; j++) {			
-							rclust << get<0>(matches[j]).pos << "\t" << get<1>(matches[j]).pos + opts.globalK << "\t" << opts.globalK + get<0>(matches[j]).pos << "\t"
-									 << get<1>(matches[j]).pos << "\t" << get<2>(matches[j])<<"\t" << counter << "\t" << 0 << endl;
+							rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
+									 << matches[j].second.pos <<"\t" << counter << "\t" << 0 << endl;
 						}
 						rclust.close();
 					}
@@ -169,23 +142,38 @@ void CleanOffDiagonal(vector<tuple<Tup, Tup, T> > &matches, Options &opts, Read 
 					float avgfreq;
 					AVGfreq(diagStart, i, matches, avgfreq);
 					// cerr << " avgfreq: " << avgfreq << endl;
-					if (opts.dotPlot and strand == 0) {
+					if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
 						ofstream fclust("for-matches_1.dots", ofstream::app);
 						for (int j = diagStart; j < i; j++) {
-							fclust << get<0>(matches[j]).pos << "\t" << get<1>(matches[j]).pos << "\t" << opts.globalK + get<0>(matches[j]).pos << "\t"
-									<< get<1>(matches[j]).pos + opts.globalK << "\t" << get<2>(matches[j]) << "\t" << counter << "\t" << avgfreq << endl;
+							fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
+									<< matches[j].second.pos + opts.globalK << "\t" << counter << "\t" << avgfreq << endl;
 						}
 						fclust.close();
 					}
-					if (opts.dotPlot and strand == 1){
+					if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
 						ofstream rclust("rev-matches_1.dots", ofstream::app);
 						for (int j = diagStart; j < i; j++) {			
-							rclust << get<0>(matches[j]).pos << "\t" << get<1>(matches[j]).pos + opts.globalK << "\t" << opts.globalK + get<0>(matches[j]).pos << "\t"
-									 << get<1>(matches[j]).pos << "\t" << get<2>(matches[j])<<"\t" << counter << "\t" << avgfreq << endl;
+							rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
+									 << matches[j].second.pos << "\t" << counter << "\t" << avgfreq << endl;
 						}
 						rclust.close();
 					}
-					if (avgfreq >= 10.0f) {
+					if (avgfreq >= 50.0f) {
+						int MinDiagCluster = 1000;
+						int CleanMaxDiag = 10;
+						SecondRoundCleanOffDiagonal(matches, MinDiagCluster, CleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);						
+					}
+					if (avgfreq >= 30.0f) {
+						int MinDiagCluster = 500;
+						int CleanMaxDiag = 10;
+						SecondRoundCleanOffDiagonal(matches, MinDiagCluster, CleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);						
+					}
+					else if (avgfreq >= 20.0f) {
+						int MinDiagCluster = 100;
+						int CleanMaxDiag = 10;
+						SecondRoundCleanOffDiagonal(matches, MinDiagCluster, CleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);						
+					}
+					else if (avgfreq >= 10.0f) {
 						// cerr << "Go second Clean" << endl;
 						int MinDiagCluster = 20;
 						int CleanMaxDiag = 10;
@@ -198,57 +186,6 @@ void CleanOffDiagonal(vector<tuple<Tup, Tup, T> > &matches, Options &opts, Read 
 		}		
 	}
 
-	// int c = 0;
-	// int pre = matches.size();
-	// for (int i = 0; i < matches.size(); i++) {
-	// 	if (onDiag[i]) {
-	// 		matches[c] = matches[i]; c++;
-	// 	}
-	// }
-	// matches.resize(c);
-
-	//
-	// Determine the average frequence of minimizers
-	//
-/*
-	int totalfreq = 0;	
-	for (int i = 0; i < matches.size(); i++) {
-		totalfreq += get<2>(matches[i]);
-	}
-	float avgfreq = (float) totalfreq / c;
- */
-	// vector<pair<int, int> > r1;
-	// vector<int> r2;
-	// float avgfreq;
-	// StoreDiagonalClusters(matches, r1, opts, 0, matches.size(), strand);
-	// for (int i = 0; i < r1.size(); i++) {
-	// 	AVGfreq(r1[i], matches, avgfreq);
-	// 	// int totalfreq = 0;
-	// 	// for (int j = r1[i].first; j < r1[i].second; j++) {
-	// 	// 	totalfreq += get<2>(matches[j]);
-	// 	// }
-	// 	// float avgfreq = (float) totalfreq / (r1[i].second - r1[i].first);	
-	// 	// cerr << "tStart: " << get<1>(matches[r1[i].first]).pos << endl;
-	// 	cerr << " avgfreq: " << avgfreq << " Largest_ClusterNum: " << Largest_ClusterNum << " minDiagCluster: " << minDiagCluster << endl;
-	
-	// 	if (avgfreq >= 180.0f) {
-	// 		int MinDiagCluster = 20;
-	// 		int CleanMaxDiag = 10;
-	// 		SecondRoundCleanOffDiagonal(matches, MinDiagCluster, CleanMaxDiag, r1[i], r2, strand, diagOrigin, diagDrift);
-	// 	}
-	// 	else {
-	// 		for (int ra = r1[i].first; ra < r1[i].second; ra++) {
-	// 			r2.push_back(ra);
-	// 		}
-	// 	}
-	// }
-	// int c = 0;
-	// for (int i = 0; i < r2.size(); i++) {
-	// 	matches[c] = matches[r2[i]]; 
-	// 	c++;
-	// }
-	// matches.resize(c);
-
 	int c = 0;
 	for (int i = 0; i < matches.size(); i++) {
 		if (onDiag[i]) {
@@ -258,85 +195,40 @@ void CleanOffDiagonal(vector<tuple<Tup, Tup, T> > &matches, Options &opts, Read 
 	}
 	matches.resize(c);
 
-	if (opts.dotPlot and strand == 0) {
-		ofstream fclust("for-matches_clean.dots");
-		for (int m = 0; m < matches.size(); m++) {
-			fclust << get<0>(matches[m]).pos << "\t" << get<1>(matches[m]).pos << "\t" << opts.globalK + get<0>(matches[m]).pos << "\t"
-					<< get<1>(matches[m]).pos + opts.globalK << "\t" << m << "\t" << get<2>(matches[m]) <<endl;
-		}
-		fclust.close();
-	}
-	if (opts.dotPlot and strand == 1){
-		ofstream rclust("rev-matches_clean.dots");
-		for (int m=0; m < matches.size(); m++) {			
-			rclust << get<0>(matches[m]).pos << "\t" << get<1>(matches[m]).pos + opts.globalK << "\t" << opts.globalK + get<0>(matches[m]).pos << "\t"
-					 << get<1>(matches[m]).pos << "\t" << get<2>(matches[m])<<endl;
-		}
-		rclust.close();
-	}
+	// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
+	// 	ofstream fclust("for-matches_clean.dots");
+	// 	for (int m = 0; m < matches.size(); m++) {
+	// 		fclust << matches[m].first.pos << "\t" << matches[m].second.pos << "\t" << opts.globalK + matches[m].first.pos << "\t"
+	// 				<<  matches[m].second.pos + opts.globalK << "\t" << m << "\t" <<endl;
+	// 	}
+	// 	fclust.close();
+	// }
+	// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
+	// 	ofstream rclust("rev-matches_clean.dots");
+	// 	for (int m=0; m < matches.size(); m++) {			
+	// 		rclust <<  matches[m].first.pos << "\t" <<  matches[m].second.pos + opts.globalK << "\t" << opts.globalK + matches[m].first.pos  << "\t"
+	// 				 <<  matches[m].second.pos << m << "\t" << endl;
+	// 	}
+	// 	rclust.close();
+	// }
 }
 
-// template<typename Tup, typename T>
-// void SecondRoundCleanOffDiagonal(vector<tuple<Tup, Tup, T> > &matches, int MinDiagCluster,int CleanMaxDiag, pair<int, int> &se, vector<int> &r2, 
-// 																											int strand=0, int diagOrigin=-1, int diagDrift=-1) {
-// 	int csize = se.second - se.first;
-// 	int nOnDiag=0;
-// 	vector<bool> onDiag(csize, false);
-// 	if (csize > 1 and abs(DiagonalDifference_tuple(matches[se.first], matches[se.first + 1], strand)) < CleanMaxDiag 
-// 						   and (diagOrigin == -1 or DiagonalDrift_tuple(diagOrigin, matches[se.first], strand) < diagDrift)) { 
-// 		onDiag[0] = true;
-// 		nOnDiag++;
-// 	}
-	
-// 	for (int i = 1; i < csize; i++) {
-// 		if (abs(DiagonalDifference_tuple(matches[se.first + i], matches[se.first + i - 1], strand)) < CleanMaxDiag 
-// 			and (diagOrigin == -1 or DiagonalDrift_tuple(diagOrigin, matches[se.first + i],strand) < diagDrift)) {	
-// 			onDiag[i] = true;
-// 			onDiag[i-1] = true;
-// 			nOnDiag++;
-// 		}
-// 	}
-
-// 	bool prevOnDiag = false;
-// 	int  diagStart;
-// 	for (int i = 0; i < csize; i++) {
-// 		if (prevOnDiag == false and onDiag[i] == true) {
-// 			diagStart = i;
-// 		}
-// 		if (prevOnDiag == true and onDiag[i] == false) {
-// 			if (i - diagStart < MinDiagCluster) { // used to be minDiagCluster not opts.minDiagCluster
-// 				for (int j = diagStart; j < i; j++) {
-// 					onDiag[j] = false;
-// 				}
-// 			}
-// 		}
-// 		prevOnDiag = onDiag[i];
-// 	}
-
-// 	for (int i = 0; i < csize; i++) {
-// 		if (onDiag[i]) {
-// 			r2.push_back(se.first + i);
-// 		}
-// 	}
-// }
-
-
-template<typename Tup, typename T>
-void SecondRoundCleanOffDiagonal(vector<tuple<Tup, Tup, T> > &matches, int MinDiagCluster,int CleanMaxDiag, vector<bool> &OriginalOnDiag, int &os, int &oe, 
+template<typename Tup>
+void SecondRoundCleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int MinDiagCluster,int CleanMaxDiag, vector<bool> &OriginalOnDiag, int &os, int &oe, 
 																											int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	int nOnDiag2=0;
 	for (int i = os; i < oe; i++) {
 		OriginalOnDiag[i] = false;
 	}	
-	if ((oe - os) > 1 and abs(DiagonalDifference_tuple(matches[os], matches[os + 1], strand)) < CleanMaxDiag 
-						   and (diagOrigin == -1 or DiagonalDrift_tuple(diagOrigin, matches[os], strand) < diagDrift)) { 
+	if ((oe - os) > 1 and abs(DiagonalDifference(matches[os], matches[os + 1], strand)) < CleanMaxDiag 
+						   and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[os], strand) < diagDrift)) { 
 		OriginalOnDiag[os] = true;
 		nOnDiag2++;
 	}
 	
 	for (int i = os + 1; i < oe; i++) {
-		if (abs(DiagonalDifference_tuple(matches[i], matches[i - 1], strand)) < CleanMaxDiag 
-			and (diagOrigin == -1 or DiagonalDrift_tuple(diagOrigin, matches[i],strand) < diagDrift)) {	
+		if (abs(DiagonalDifference(matches[i], matches[i - 1], strand)) < CleanMaxDiag 
+			and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift)) {	
 			OriginalOnDiag[i] = true;
 			OriginalOnDiag[i- 1] = true;
 			nOnDiag2++;
@@ -832,8 +724,8 @@ void EstimateDiagonalSlope(vector<pair<Tup, Tup> > &matches, int s, int e, Optio
 	}
 }
 
-template<typename Tup, typename T>
-void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
+template<typename Tup>
+void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, 
 											 Genome &genome, Read &read, GenomePos readLength, int strand=0, int outerIteration=0) {
 	//
 	// StoreFineClusters based on unique part
@@ -846,7 +738,7 @@ void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Clus
 	int oc = 1;
 	int us = s;
 	for (int i = s + 1; i < e; i++) {
-		if (get<0>(matches[i]).pos ==  get<0>(matches[i-1]).pos) {
+		if (matches[i].first.pos ==  matches[i-1].first.pos) {
 			oc++;
 		}
 		else {
@@ -946,7 +838,7 @@ void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Clus
 			u_end = k + 1;	
 			reset = 1;				
 			while (k < match_num.size() - 1 and match_num[k+1] == match_num[k] 
-				and abs(DiagonalDifference_tuple(matches[pos_start[k+1]], matches[pos_start[k]], strand)) < opts.maxDiag/2) { 
+				and abs(DiagonalDifference(matches[pos_start[k+1]], matches[pos_start[k]], strand)) < opts.maxDiag/2) { 
 				u_end = k + 2;
 				k++;
 				// reset = 1;
@@ -968,25 +860,25 @@ void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Clus
 	//
 	int c_s = pos_start[u_maxstart], c_e = pos_start[u_maxend - 1] + 1;
 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream uniquematch("UniqueMatch.tab", ofstream::app);
 		for (int h = 0; h < Start.size(); h++) {
 			for (int he = Start[h]; he < End[h]; he++) {
 				if (strand == 0) {
-					uniquematch << get<0>(matches[pos_start[he]]).pos << "\t"
-						  << get<1>(matches[pos_start[he]]).pos << "\t"
-						  << get<0>(matches[pos_start[he]]).pos  + opts.globalK << "\t"
-						  << get<1>(matches[pos_start[he]]).pos + opts.globalK << "\t"
+					uniquematch << matches[pos_start[he]].first.pos << "\t"
+						  << matches[pos_start[he]].second.pos << "\t"
+						  << matches[pos_start[he]].first.pos  + opts.globalK << "\t"
+						  << matches[pos_start[he]].second.pos + opts.globalK << "\t"
 						  << outerIteration << "\t"
 						  << h << "\t"
 						  << End[h] - Start[h] << "\t"
 						  << strand << endl;
 				}
 				else {
-					uniquematch << get<0>(matches[pos_start[he]]).pos << "\t"
-						  << get<1>(matches[pos_start[he]]).pos + opts.globalK << "\t"
-						  << get<0>(matches[pos_start[he]]).pos + opts.globalK << "\t"
-						  << get<1>(matches[pos_start[he]]).pos << "\t"
+					uniquematch << matches[pos_start[he]].first.pos << "\t"
+						  << matches[pos_start[he]].second.pos + opts.globalK << "\t"
+						  << matches[pos_start[he]].first.pos + opts.globalK << "\t"
+						  << matches[pos_start[he]].second.pos << "\t"
 						  << outerIteration << "\t"
 						  << h << "\t"		
 						  << End[h] - Start[h] << "\t"		  
@@ -997,14 +889,14 @@ void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Clus
 		uniquematch.close();
 	}	
 
-	if (c_e - c_s >= opts.minUniqueStretchNum and get<0>(matches[c_e-1]).pos + opts.globalK - get<0>(matches[c_s]).pos >= opts.minUniqueStretchDist) { 
+	if (c_e - c_s >= opts.minUniqueStretchNum and matches[c_e-1].first.pos + opts.globalK - matches[c_s].first.pos >= opts.minUniqueStretchDist) { 
 		clusters.push_back(Cluster(0, 0, strand)); 
 		vector<bool> AddOrNot(Start.size(), 0);
 		list<int> StretchOfOne;
 
 		if (c_e - c_s == e - s) { // no need to extend - the whole rough cluster is a unique linear part
 			for (int i = c_s; i < c_e; i++) {
-				clusters.back().matches.push_back(make_pair(get<0>(matches[i]), get<1>(matches[i])));				
+				clusters.back().matches.push_back(matches[i]);
 			}	
 		}
 		else {
@@ -1037,7 +929,7 @@ void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Clus
 					// }
 					// i--;
 
-					if (abs(DiagonalDifference_tuple(matches[i_m], matches[prev_anchor], strand)) <= opts.maxDiag) {
+					if (abs(DiagonalDifference(matches[i_m], matches[prev_anchor], strand)) <= opts.maxDiag) {
 						assert(i < StretchOfOne.back());
 						StretchOfOne.push_back(i);
 						AddOrNot[i] = 1; // Add the stretch
@@ -1074,7 +966,7 @@ void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Clus
 					// }
 					// i++;
 
-					if (abs(DiagonalDifference_tuple(matches[i_m], matches[prev_anchor], strand)) <= opts.maxDiag) {
+					if (abs(DiagonalDifference(matches[i_m], matches[prev_anchor], strand)) <= opts.maxDiag) {
 						assert(i > StretchOfOne.front());
 						StretchOfOne.push_front(i);
 						AddOrNot[i] = 1; // Add the stretch
@@ -1108,13 +1000,13 @@ void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Clus
 
 				int prev_match = c_s;
 				for (int si = p_e - 1; si >= p_s; si--) {
-					if (abs(DiagonalDifference_tuple(matches[si], matches[prev_match], strand)) < opts.maxDiag) { //opts.maxDiag-200
+					if (abs(DiagonalDifference(matches[si], matches[prev_match], strand)) < opts.maxDiag) { //opts.maxDiag-200
 						Cluster_index.push_back(si);
 						prev_match = si;
 					}
 				}
 				for (vector<int>::reverse_iterator ci = Cluster_index.rbegin(); ci != Cluster_index.rend(); ++ci) {
-					clusters.back().matches.push_back(make_pair(get<0>( matches[*ci]), get<1>(matches[*ci])));
+					clusters.back().matches.push_back(matches[*ci]);
 					//
 					// for debug
 					//
@@ -1130,27 +1022,25 @@ void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Clus
 				}
 				// insert the unique anchors
 				for (int si = c_s; si < c_e; si++) {
-					clusters.back().matches.push_back(make_pair(get<0>(matches[si]), get<1>(matches[si])));
+					clusters.back().matches.push_back(matches[si]);
 				}
-				if (opts.dotPlot) {
+				if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 					ofstream uniquepart("UniquePart.tab", std::ofstream::app);
 					for (int si = c_s; si < c_e; si++) {
 						if (strand == 0) {
-							uniquepart << get<0>(matches[si]).pos << "\t"
-								  << get<1>(matches[si]).pos << "\t"
-								  << get<0>(matches[si]).pos + opts.globalK << "\t"
-								  << get<1>(matches[si]).pos + opts.globalK << "\t"
+							uniquepart << matches[si].first.pos << "\t"
+								  << matches[si].second.pos << "\t"
+								  << matches[si].first.pos+ opts.globalK << "\t"
+								  << matches[si].second.pos + opts.globalK << "\t"
 								  << outerIteration << "\t"
-								  << opts.slope << "\t"
 								  << strand << endl;
 						}
 						else {
-							uniquepart << get<0>(matches[si]).pos << "\t"
-								  << get<1>(matches[si]).pos + opts.globalK << "\t"
-								  << get<0>(matches[si]).pos + opts.globalK << "\t"
-								  << get<1>(matches[si]).pos << "\t"
+							uniquepart << matches[si].first.pos << "\t"
+								  << matches[si].second.pos + opts.globalK << "\t"
+								  << matches[si].first.pos + opts.globalK << "\t"
+								  << matches[si].second.pos << "\t"
 								  << outerIteration << "\t"
-								  << opts.slope << "\t"					  
 								  << strand << endl;					
 						}							
 					}
@@ -1165,8 +1055,8 @@ void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Clus
 					assert(p_s >= s and p_e <= e and p_s <= p_e);
 					prev_match = c_e - 1;
 					for (int si = p_s; si < p_e; si++) {
-						if (abs(DiagonalDifference_tuple(matches[si], matches[prev_match], strand)) < opts.maxDiag) {//opts.maxDiag-200
-							clusters.back().matches.push_back(make_pair(get<0>(matches[si]), get<1>(matches[si])));
+						if (abs(DiagonalDifference(matches[si], matches[prev_match], strand)) < opts.maxDiag) {//opts.maxDiag-200
+							clusters.back().matches.push_back(matches[si]);
 							prev_match = si;
 							if (clusters.back().matches.size() >= 2) {
 								int mb = clusters.back().matches.size() - 1;
@@ -1186,7 +1076,7 @@ void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Clus
 		clusters.back().SetClusterBoundariesFromMatches(opts);
 		clusters.back().chromIndex = ri;
 
-		if (opts.dotPlot) {
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream fineclusters("fineclusters_byunique.tab", std::ofstream::app);
 			if (clusters.size() > 0) {
 				for (int h = 0; h < clusters.back().matches.size(); h++) {
@@ -1223,7 +1113,7 @@ void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Clus
 			if (!AddOrNot[ar] and End[ar] - Start[ar] >= 10) {
 				clusters.push_back(Cluster(0, 0, strand)); 
 				for (int i = pos_start[Start[ar]]; i < pos_start[End[ar] - 1] + 1; i++) {
-					clusters.back().matches.push_back(make_pair(get<0>(matches[i]), get<1>(matches[i])));				
+					clusters.back().matches.push_back(matches[i]);
 				}		
 				clusters.back().SetClusterBoundariesFromMatches(opts);
 				clusters.back().chromIndex = ri;			
@@ -1236,91 +1126,93 @@ void StoreFineClusters(int ri, vector<tuple<Tup, Tup, T> > &matches, vector<Clus
 }
 
 void 
-SplitRoughClustersWithGaps(vector<tuple<GenomeTuple, GenomeTuple, int> > &matches, Cluster &OriginalClusters, vector<Cluster> &split, Options &opts, int strand=0) {
+SplitRoughClustersWithGaps(vector<pair<GenomeTuple, GenomeTuple> > &matches, Cluster &OriginalClusters, vector<Cluster> &split, Options &opts, int strand=0) {
 
 	if (OriginalClusters.end - OriginalClusters.start == 0) {
 		return;
 	}
 	int split_cs = OriginalClusters.start;
-	GenomePos split_qStart = get<0>(matches[split_cs]).pos,
-			  split_tStart = get<1>(matches[split_cs]).pos,
+	GenomePos split_qStart = matches[split_cs].first.pos,
+			  split_tStart = matches[split_cs].second.pos,
 	          split_qEnd = split_qStart + opts.globalK, 
 	          split_tEnd = split_tStart + opts.globalK;
 
 	for (int m = OriginalClusters.start+1; m < OriginalClusters.end; m++) {
-		int gap = GapDifference_tuple(matches[m], matches[m-1]);
+		int gap = GapDifference(matches[m], matches[m-1]);
 		//int diag_gap=DiagonalDifference(matches[m], matches[m-1], strand);
 
 		if (gap > opts.maxGap /*or diag_gap > opts.maxGap*/) {
 			// cerr << "GAP: " << gap << "\t" << m << "\t" << clusters[c].matches.size() << "\t" << clusters[c].matches[m].second.pos - clusters[c].matches[m-1].second.pos << "\t" << clusters[c].matches[m].first.pos - clusters[c].matches[m-1].first.pos << endl;
-			if ( (m-split_cs) > opts.minClusterSize) split.push_back(Cluster(split_cs, m, split_qStart, split_qEnd, split_tStart, split_tEnd, OriginalClusters.strand));
-			split_qStart = get<0>(matches[m]).pos;
-			split_tStart = get<1>(matches[m]).pos;
+			if ((m - split_cs) > opts.minClusterSize) {
+				split.push_back(Cluster(split_cs, m, split_qStart, split_qEnd, split_tStart, split_tEnd, OriginalClusters.strand));
+			}
+			split_qStart = matches[m].first.pos;
+			split_tStart = matches[m].second.pos;
 			split_qEnd = split_qStart + opts.globalK; 
 			split_tEnd = split_tStart + opts.globalK;
 			split_cs = m;
 		}
 		else {
-			split_qStart = min(split_qStart, get<0>(matches[m]).pos);
-			split_tStart = min(split_tStart, get<1>(matches[m]).pos);
-			split_qEnd = max(split_qEnd, get<0>(matches[m]).pos + opts.globalK);
-			split_tEnd = max(split_tEnd, get<1>(matches[m]).pos+ opts.globalK);
+			split_qStart = min(split_qStart, matches[m].first.pos);
+			split_tStart = min(split_tStart, matches[m].second.pos);
+			split_qEnd = max(split_qEnd, matches[m].first.pos + opts.globalK);
+			split_tEnd = max(split_tEnd, matches[m].second.pos + opts.globalK);
 		}
 	}
 	int last = OriginalClusters.end;
 	split.push_back(Cluster(split_cs, last, split_qStart, split_qEnd, split_tStart, split_tEnd, OriginalClusters.strand));
 }
 
-void SplitClustersWithGaps(vector<Cluster> &clusters, vector<Cluster> &split, Options &opts) {
-	int curSplit=-1;
+// void SplitClustersWithGaps(vector<Cluster> &clusters, vector<Cluster> &split, Options &opts) {
+// 	int curSplit=-1;
 
-	for (int c=0; c < clusters.size(); c++) {
-		split.push_back(Cluster());
-		curSplit++;
-		split[curSplit].tStart = clusters[c].tStart;
-		split[curSplit].qStart = clusters[c].qStart;
+// 	for (int c=0; c < clusters.size(); c++) {
+// 		split.push_back(Cluster());
+// 		curSplit++;
+// 		split[curSplit].tStart = clusters[c].tStart;
+// 		split[curSplit].qStart = clusters[c].qStart;
 
-		if (clusters[c].matches.size() == 0) {
-			continue;
-		}
-		split[curSplit].matches.push_back(clusters[c].matches[0]);
-		for (int m=1; m < clusters[c].matches.size(); m++) {
-			int gap=GapDifference_tuple(clusters[c].matches[m], clusters[c].matches[m-1]);
+// 		if (clusters[c].matches.size() == 0) {
+// 			continue;
+// 		}
+// 		split[curSplit].matches.push_back(clusters[c].matches[0]);
+// 		for (int m=1; m < clusters[c].matches.size(); m++) {
+// 			int gap=GapDifference(clusters[c].matches[m], clusters[c].matches[m-1]);
 
-			if (gap > 500) {
-				// s				cerr << "GAP: " << gap << "\t" << m << "\t" << clusters[c].matches.size() << "\t" << clusters[c].matches[m].second.pos - clusters[c].matches[m-1].second.pos << "\t" << clusters[c].matches[m].first.pos - clusters[c].matches[m-1].first.pos << endl;
-				split[curSplit].qEnd = clusters[c].matches[m-1].first.pos + opts.globalK;
-				split[curSplit].tEnd = clusters[c].matches[m-1].second.pos + opts.globalK;
+// 			if (gap > 500) {
+// 				// s				cerr << "GAP: " << gap << "\t" << m << "\t" << clusters[c].matches.size() << "\t" << clusters[c].matches[m].second.pos - clusters[c].matches[m-1].second.pos << "\t" << clusters[c].matches[m].first.pos - clusters[c].matches[m-1].first.pos << endl;
+// 				split[curSplit].qEnd = clusters[c].matches[m-1].first.pos + opts.globalK;
+// 				split[curSplit].tEnd = clusters[c].matches[m-1].second.pos + opts.globalK;
 
-				split.push_back(Cluster());
-				curSplit++;
-				split[curSplit].qStart = clusters[c].matches[m].first.pos;
-				split[curSplit].tStart = clusters[c].matches[m].second.pos;
-			}
-		}
-		int last=clusters[c].matches.size();
-		split[curSplit].qEnd = clusters[c].matches[last-1].first.pos + opts.globalK;
-		split[curSplit].tEnd = clusters[c].matches[last-1].second.pos + opts.globalK;
-	}
-}
+// 				split.push_back(Cluster());
+// 				curSplit++;
+// 				split[curSplit].qStart = clusters[c].matches[m].first.pos;
+// 				split[curSplit].tStart = clusters[c].matches[m].second.pos;
+// 			}
+// 		}
+// 		int last=clusters[c].matches.size();
+// 		split[curSplit].qEnd = clusters[c].matches[last-1].first.pos + opts.globalK;
+// 		split[curSplit].tEnd = clusters[c].matches[last-1].second.pos + opts.globalK;
+// 	}
+// }
 
 
-template<typename Tup, typename T>
-void StoreDiagonalClusters(vector<tuple<Tup, Tup, T> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, int strand=0) {
+template<typename Tup>
+void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, int strand=0) {
 	int i;
 	int cs = s, ce = e;
 	while (cs < e) {
 		ce = cs+1;
-		GenomePos qStart = get<0>(matches[cs]).pos, 
-				  qEnd = get<0>(matches[cs]).pos + opts.globalK, 
-			      tStart = get<1>(matches[cs]).pos, 
-			      tEnd = get<1>(matches[cs]).pos + opts.globalK;
+		GenomePos qStart = matches[cs].first.pos, 
+				  qEnd = matches[cs].first.pos + opts.globalK, 
+			      tStart = matches[cs].second.pos, 
+			      tEnd = matches[cs].second.pos + opts.globalK;
 
-		while (ce < e and abs(DiagonalDifference_tuple(matches[ce], matches[ce-1], strand)) < opts.maxDiag) {
-			qStart = min(qStart, get<0>(matches[ce]).pos);
-			qEnd   = max(qEnd, get<0>(matches[ce]).pos + opts.globalK);
-			tStart = min(tStart, get<1>(matches[ce]).pos);
-			tEnd   = max(tEnd, get<1>(matches[ce]).pos + opts.globalK);
+		while (ce < e and abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) < opts.maxDiag) {
+			qStart = min(qStart, matches[ce].first.pos);
+			qEnd   = max(qEnd, matches[ce].first.pos + opts.globalK);
+			tStart = min(tStart, matches[ce].second.pos);
+			tEnd   = max(tEnd, matches[ce].second.pos + opts.globalK);
 			/*		cerr << "rc:\t" << clusters.size() << "\t" << matches[ce].first.pos << "\t" << matches[ce].second.pos << "\t" 
 					 << GetDiag(matches[ce], strand) << "\t" <<
 					 abs(DiagonalDifference(matches[ce], matches[ce-1], strand))
@@ -1335,23 +1227,22 @@ void StoreDiagonalClusters(vector<tuple<Tup, Tup, T> > &matches, vector<Cluster>
 	}	
 }
 
-
-template<typename Tup, typename T>
-void StoreDiagonalClusters(vector<tuple<Tup, Tup, T> > &matches, vector<pair<int, int> > &r1, Options &opts, int s, int e, int strand=0) {
-	int i;
-	int cs = s, ce = e;
+// template<typename Tup>
+// void StoreDiagonalClusters(vector<pair<Tup, Tup> > &matches, vector<pair<int, int> > &r1, Options &opts, int s, int e, int strand=0) {
+// 	int i;
+// 	int cs = s, ce = e;
 	
-	while (cs < e) {
-		ce = cs+1;
-		while (ce < e and abs(DiagonalDifference_tuple(matches[ce], matches[ce-1], strand)) < opts.maxDiag) {
-			ce++;
-		}	
-		if (ce - cs >= opts.minClusterSize) {
-			r1.push_back(make_pair(cs, ce));
-		}
-		cs=ce;
-	}	
-}
+// 	while (cs < e) {
+// 		ce = cs+1;
+// 		while (ce < e and abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) < opts.maxDiag) {
+// 			ce++;
+// 		}	
+// 		if (ce - cs >= opts.minClusterSize) {
+// 			r1.push_back(make_pair(cs, ce));
+// 		}
+// 		cs=ce;
+// 	}	
+// }
 
 bool sign(int val) {
 	if (val >= 0) return true;
@@ -1470,15 +1361,24 @@ void SetCoarseFromSubClusters (Cluster & cluster, const LogCluster &logCluster) 
 	}
 }
 
-void MatchesToFineClusters (vector<tuple<GenomeTuple, GenomeTuple, int> > &Matches, vector<Cluster> &clusters, Genome &genome, Read &read, 
-																																Options &opts, bool ma_strand = 0) {
+void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genome &genome, Read &read, Options &opts, Timing &timing, bool ma_strand = 0) {
 	if (ma_strand == 0) {
 		//
 		// Guess that 500 is where the setup/takedown overhead of an array index is equal to sort by value.
 		// sort fragments in allMatches by forward diagonal, then by first.pos(read)
 		//
-		DiagonalSort<GenomeTuple, int>(Matches, 500);
+		DiagonalSort<GenomeTuple>(Matches, 500);
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+			ofstream fclust("for-matches_0.dots");
+			for (int m=0; m < Matches.size(); m++) {
+				fclust << Matches[m].first.pos << "\t" << Matches[m].second.pos << "\t" << opts.globalK + Matches[m].first.pos << "\t"
+						<< Matches[m].second.pos + opts.globalK << "\t" << m <<endl;
+			}
+			fclust.close();
+		}
 		CleanOffDiagonal(Matches, opts, read);
+		timing.Tick("CleanOffDiagonal_forward");
+
 		//
 		// Matches --> roughclusters --> split_roughClusters --> fineclusters 
 		//
@@ -1489,17 +1389,20 @@ void MatchesToFineClusters (vector<tuple<GenomeTuple, GenomeTuple, int> > &Match
 			CartesianSort(Matches, roughClusters[c].start, roughClusters[c].end);
 			SplitRoughClustersWithGaps(Matches, roughClusters[c], split_roughClusters, opts, 0);
 		}
+		timing.Tick("roughclusters_forward");
 
 		for (int c = 0; c < split_roughClusters.size(); c++) {
 			int rci = genome.header.Find(split_roughClusters[c].tStart);
 			StoreFineClusters(rci, Matches, clusters, opts, split_roughClusters[c].start, split_roughClusters[c].end, genome, read, read.length, 0, c);
 		}
+		timing.Tick("fineclusters_forward");
+
 		//cerr << "roughClusters.size(): " << roughClusters.size() << " split_roughClusters.size(): " << split_roughClusters.size()<< endl;
-		if (opts.dotPlot) {
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream fclust("for-matches.dots");
 			for (int m = 0; m < Matches.size(); m++) {
-				fclust << get<0>(Matches[m]).pos << "\t" << get<1>(Matches[m]).pos << "\t" << opts.globalK + get<0>(Matches[m]).pos << "\t"
-						<< get<1>(Matches[m]).pos + opts.globalK << "\t" << m << "\t" << get<2>(Matches[m]) <<endl;
+				fclust << Matches[m].first.pos << "\t" << Matches[m].second.pos << "\t" << opts.globalK + Matches[m].first.pos << "\t"
+						<< Matches[m].second.pos + opts.globalK << "\t" << m << endl;
 			}
 			fclust.close();
 
@@ -1507,8 +1410,8 @@ void MatchesToFineClusters (vector<tuple<GenomeTuple, GenomeTuple, int> > &Match
 			for (int m = 0; m < roughClusters.size(); m++) {
 				int rci = genome.header.Find(roughClusters[m].tStart);
 				for (int c = roughClusters[m].start; c < roughClusters[m].end; ++c) {
-					rclust << get<0>(Matches[c]).pos << "\t" << get<1>(Matches[c]).pos << "\t" << opts.globalK + get<0>(Matches[c]).pos << "\t"
-						   << get<1>(Matches[c]).pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci] << "\t" << get<2>(Matches[c])<<endl;				
+					rclust << Matches[c].first.pos << "\t" << Matches[c].second.pos << "\t" << opts.globalK + Matches[c].first.pos << "\t"
+						   << Matches[c].second.pos  + opts.globalK << "\t" << m << "\t" << genome.header.names[rci] << endl;				
 				}
 			}
 			rclust.close();
@@ -1517,16 +1420,26 @@ void MatchesToFineClusters (vector<tuple<GenomeTuple, GenomeTuple, int> > &Match
 			for (int m=0; m < split_roughClusters.size(); m++) {
 				int rci = genome.header.Find(split_roughClusters[m].tStart);
 				for (int c = split_roughClusters[m].start; c < split_roughClusters[m].end; ++c) {
-					wclust << get<0>(Matches[c]).pos << "\t" << get<1>(Matches[c]).pos << "\t" << opts.globalK + get<0>(Matches[c]).pos << "\t"
-						   << get<1>(Matches[c]).pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci]<< "\t" << get<2>(Matches[c])<<endl;				
+					wclust << Matches[c].first.pos << "\t" << Matches[c].second.pos << "\t" << opts.globalK + Matches[c].first.pos << "\t"
+						   << Matches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci] << endl;				
 				}
 			}
 			wclust.close();
 		}	
 	}
 	else {
-		AntiDiagonalSort<GenomeTuple, int>(Matches, genome.GetSize(), 500);
+		AntiDiagonalSort<GenomeTuple>(Matches, genome.GetSize(), 500);
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+			ofstream rclust("rev-matches_0.dots");
+			for (int m=0; m < Matches.size(); m++) {			
+				rclust << Matches[m].first.pos << "\t" << Matches[m].second.pos + opts.globalK << "\t" << opts.globalK + Matches[m].first.pos << "\t"
+						 << Matches[m].second.pos << "\t" << m << endl;
+			}
+			rclust.close();
+		}
 		CleanOffDiagonal(Matches, opts, read, 1);
+		timing.Tick("CleanOffDiagonal_reverse");
+
 		vector<Cluster> revroughClusters;
 		vector<Cluster> split_revroughClusters;
 		StoreDiagonalClusters(Matches, revroughClusters, opts, 0, Matches.size(), 1);
@@ -1534,16 +1447,20 @@ void MatchesToFineClusters (vector<tuple<GenomeTuple, GenomeTuple, int> > &Match
 			CartesianSort(Matches, revroughClusters[c].start, revroughClusters[c].end);
 			SplitRoughClustersWithGaps(Matches, revroughClusters[c], split_revroughClusters, opts, 1);
 		}
+		timing.Tick("roughclusters_reverse");
+
 		for (int c = 0; c < split_revroughClusters.size(); c++) {
 			int rci = genome.header.Find(split_revroughClusters[c].tStart);
 			StoreFineClusters(rci, Matches, clusters, opts, split_revroughClusters[c].start, split_revroughClusters[c].end, genome, read, read.length, 1, c);
 		}	
+		timing.Tick("fineclusters_reverse");
+
 		// cerr << "revroughClusters.size(): " << revroughClusters.size() << " split_revroughClusters.dots: " << split_revroughClusters.size()<< endl;
-		if (opts.dotPlot) {
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream rclust("rev-matches.dots");
 			for (int m=0; m < Matches.size(); m++) {			
-				rclust << get<0>(Matches[m]).pos << "\t" << get<1>(Matches[m]).pos + opts.globalK << "\t" << opts.globalK + get<0>(Matches[m]).pos << "\t"
-						 << get<1>(Matches[m]).pos << "\t" << m << "\t" << get<2>(Matches[m])<<endl;
+				rclust << Matches[m].first.pos << "\t" << Matches[m].second.pos + opts.globalK << "\t" << opts.globalK + Matches[m].first.pos  << "\t"
+						 << Matches[m].second.pos << "\t" << m << endl;
 			}
 			rclust.close();
 
@@ -1551,21 +1468,21 @@ void MatchesToFineClusters (vector<tuple<GenomeTuple, GenomeTuple, int> > &Match
 			for (int m=0; m < revroughClusters.size(); m++) {
 				int rci = genome.header.Find(revroughClusters[m].tStart);
 				for (int c = revroughClusters[m].start; c < revroughClusters[m].end; ++c) {
-					revsclust << get<0>(Matches[c]).pos << "\t" << get<1>(Matches[c]).pos + opts.globalK << "\t" << opts.globalK + get<0>(Matches[c]).pos << "\t"
-							 << get<1>(Matches[c]).pos << "\t" << m << "\t" << genome.header.names[rci] << "\t" << get<2>(Matches[c]) <<endl;				
+					revsclust << Matches[c].first.pos << "\t" << Matches[c].second.pos + opts.globalK << "\t" << opts.globalK + Matches[c].first.pos << "\t"
+							 << Matches[c].second.pos << "\t" << m << "\t" << genome.header.names[rci] << endl;				
 				}
 			}
 			revsclust.close();
 
-			ofstream srevclust("split_revroughClusters.dots");
+			ofstream wclust("split_revroughClusters.dots");
 			for (int m=0; m < split_revroughClusters.size(); m++) {
 				int rci = genome.header.Find(split_revroughClusters[m].tStart);
 				for (int c = split_revroughClusters[m].start; c < split_revroughClusters[m].end; ++c) {
-					revsclust << get<0>(Matches[c]).pos << "\t" << get<1>(Matches[c]).pos + opts.globalK << "\t" << opts.globalK + get<0>(Matches[c]).pos << "\t"
-							 << get<1>(Matches[c]).pos << "\t" << m << "\t" << genome.header.names[rci] << "\t" << get<2>(Matches[c]) <<endl;			
+					wclust << Matches[c].first.pos << "\t" << Matches[c].second.pos << "\t" << opts.globalK + Matches[c].first.pos << "\t"
+						   << Matches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci] << endl;				
 				}
 			}
-			srevclust.close();
+			wclust.close();
 		}
 	
 	}

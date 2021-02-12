@@ -283,7 +283,7 @@ void CountSort(const vector<uint32_t> & Freq, const int & RANGE, const vector<bo
 }
 
 
-void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, vector<int> &mmfreqs, Header &header, Options &opts) {	
+void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header, Options &opts) {	
 	if (opts.localK > 10) {
 		cerr << "ERROR, local k must be at most 10." << endl;
 		exit(1);
@@ -395,7 +395,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, vector<int> &mm
 	//
 	// Remove too frequent minimizers;
 	//
-	mmfreqs.clear();
+	vector<int> mmfreqs;
 	RemoveFrequent (minimizers, mmfreqs, Freq, Remove); 
 	if (opts.CalculateMinimizerStats) {
 		CalculateMinimizerStats(minimizers, mmfreqs);
@@ -403,7 +403,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, vector<int> &mm
 	cerr << "There are " << minimizers.size() << " minimizers left" << endl;
 }
 
-int ReadIndex(string fn, vector<GenomeTuple> &index, vector<int> &mmfreqs, Header &h, Options &opts) {
+int ReadIndex(string fn, vector<GenomeTuple> &index, Header &h, Options &opts) {
 	ifstream fin(fn.c_str(), ios::in|ios::binary);
 	if (fin.good() == false or fin.eof()) {
 		return 0;
@@ -414,19 +414,16 @@ int ReadIndex(string fn, vector<GenomeTuple> &index, vector<int> &mmfreqs, Heade
 	h.Read(fin);
 	index.resize(len);
 	fin.read((char*) &index[0], sizeof(GenomeTuple)*len);
-	mmfreqs.resize(len); // read frequency of minimizers
-	fin.read((char*) &mmfreqs[0], sizeof(int)*len); // read frequency of minimizers
 	return len;
 }
 
-void WriteIndex(string fn, vector<GenomeTuple> &index, vector<int> &mmfreqs, Header &h, Options &opts) {
+void WriteIndex(string fn, vector<GenomeTuple> &index, Header &h, Options &opts) {
 	ofstream fout(fn.c_str(), ios::out|ios::binary);
 	int64_t minLength = index.size();
 	fout.write((char*) &minLength, sizeof(int64_t)); // write the length of index 
 	fout.write((char*) &opts.globalK, sizeof(int)); // write the kmer length 
 	h.Write(fout); // write info about genome
 	fout.write((char*) &index[0], sizeof(GenomeTuple)*index.size()); // write minimizers
-	fout.write((char*) &mmfreqs[0], sizeof(int)*mmfreqs.size()); // write frequency of minimizers
 	fout.close();
 }
 

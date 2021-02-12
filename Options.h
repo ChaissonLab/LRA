@@ -89,6 +89,8 @@ public:
 	bool CheckTrueIntervalInFineCluster;
 	bool CalculateMinimizerStats;
 	bool skipBandedRefine;
+	string readname;
+
 	Options() {
 		skipBandedRefine=false;
 		storeTiming=false;

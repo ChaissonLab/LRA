@@ -60,7 +60,7 @@ ScanPoints_Col1(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsi
 	std::map<long int, unsigned int> fmap; // <forward diagonal, number of points which have forward diagonal <= the current forward diagonal>
 	for (unsigned int i = s; i < e; ++i) {
 		for (unsigned int j = V[i].pstart; j < V[i].pend; ++j) {	
-			long int l = static_cast<long int>(H1[H2[j]].second) - static_cast<long int>(H1[H2[j]].first);
+			long int l = (long int)(H1[H2[j]].second) - (long int)(H1[H2[j]].first);
 			std::pair<std::map<long int, unsigned int>::iterator,bool> ret;
 			ret = fmap.insert(std::pair<long int, unsigned int>(l, 1));
 			if (ret.second == false) { // element with such forward diagonal l is already existed
@@ -86,7 +86,7 @@ ScanPoints_Col1(std::vector<info> & V, std::vector<Pair> & H1, std::vector<unsig
 	std::map<long int, unsigned int> fmap; // <forward diagonal, number of points which have forward diagonal <= the current forward diagonal>
 	for (unsigned int i = s; i < e; ++i) {
 		for (unsigned int j = V[i].pstart; j < V[i].pend; ++j) {	
-			long int l = static_cast<long int>(H1[H2[j]].second) - static_cast<long int>(H1[H2[j]].first);
+			long int l = (long int)(H1[H2[j]].second) - (long int)(H1[H2[j]].first);
 			std::pair<std::map<long int, unsigned int>::iterator,bool> ret;
 			ret = fmap.insert(std::pair<long int, unsigned int>(l, 1));
 			if (ret.second == false) { // element with such forward diagonal l is already existed
@@ -118,7 +118,7 @@ ScanPoints_Col1(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsi
 		unsigned int count = 0;
 		for (unsigned int j = V[i].pstart; j < V[i].pend; ++j) {
 			if (H1[H2[j]].ind == DE and H1[H2[j]].inv == 1) {
-				long int l = static_cast<long int>(H1[H2[j]].se.second) - static_cast<long int>(H1[H2[j]].se.first);
+				long int l = (long int)(H1[H2[j]].se.second) - (long int)(H1[H2[j]].se.first);
 				ForwardIndex.insert(l);		
 				++count;		
 			}
@@ -151,12 +151,12 @@ ScanPoints_Col1(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsi
 		unsigned int count2 = 0;
 		for (unsigned int j = V[i].pstart; j < V[i].pend; ++j) {
 			if (H1[H2[j]].ind == 1 and H1[H2[j]].inv == 1) {
-				long int l = static_cast<long int>(H1[H2[j]].se.second) - static_cast<long int>(H1[H2[j]].se.first);
+				long int l = (long int)(H1[H2[j]].se.second) - (long int)(H1[H2[j]].se.first);
 				ForwardIndex1.insert(l);		
 				++count1;		
 			}
 			else if (H1[H2[j]].ind == 0 and H1[H2[j]].inv == 1) {
-				long int r = static_cast<long int>(H1[H2[j]].se.second) - static_cast<long int>(H1[H2[j]].se.first);
+				long int r = (long int)(H1[H2[j]].se.second) - (long int)(H1[H2[j]].se.first);
 				ForwardIndex2.insert(r);		
 				++count2;		
 			}

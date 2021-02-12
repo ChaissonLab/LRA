@@ -90,7 +90,6 @@ public:
 	Header*header;
 	Genome *genome;
 	vector<GenomeTuple> *genomemm;
-	vector<int> *mmfreqs;
 	LocalIndex *glIndex;
 	Input *reader;
 	Options *opts;
@@ -116,7 +115,7 @@ void MapReads(MapInfo *mapInfo) {
 		}
 		else {
 			for (int i = 0; i< reads.size(); i++) {
-				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm, *mapInfo->mmfreqs,
+				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm,
 											 *mapInfo->glIndex, *mapInfo->opts, &strm, &svsigstrm, mapInfo->timing, mapInfo->semaphore);
 				reads[i].Clear();
 			}
@@ -281,8 +280,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			// opts.maxGap=1500;
 			// opts.globalMaxFreq = 30;
 			// opts.NumOfminimizersPerWindow = 1;	
-			//opts.minClusterSize=5; 
-			//opts.minClusterLength=50;  
+			opts.minClusterSize=5; 
+			opts.minClusterLength=50;  
 			// opts.maxGapBtwnAnchors=1500;
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
@@ -317,6 +316,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			// opts.NumOfminimizersPerWindow = 1;
 			// opts.maxGapBtwnAnchors=1800;
 		}
+		else if (ArgIs(argv[argi], "--read")) {
+			opts.readname = string(GetArgv(argv, argc, argi));
+			++argi;
+		}
 		else if (ArgIs(argv[argi], "--CheckTrueIntervalInFineCluster")) {
 			opts.CheckTrueIntervalInFineCluster = true;
 		}
@@ -347,6 +350,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.cleanMaxDiag = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "--minClusterSize")) {
+			opts.minClusterSize = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--minClusterLength")) {
+			opts.minClusterLength = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
 		else if (ArgIs(argv[argi], "--minDiagCluster")) {
 			opts.minDiagCluster = atoi(GetArgv(argv, argc, argi));
 			++argi;
@@ -375,11 +386,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	}
 	Header header;
 	vector<GenomeTuple> genomemm;
-	vector<int> mmfreqs;
 	LocalIndex glIndex(opts.localIndexWindow);
 
-	if (ReadIndex(indexFile, genomemm, mmfreqs, header, opts) == 0) {
-		StoreIndex(genomeFile, genomemm, mmfreqs, header, opts);
+	if (ReadIndex(indexFile, genomemm, header, opts) == 0) {
+		StoreIndex(genomeFile, genomemm, header, opts);
 	}
 	
 	if (glIndex.Read(genomeFile+".gli") == 0) {
@@ -447,7 +457,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			mapInfo[procIndex].LookUpTable = &LookUpTable;
 			mapInfo[procIndex].genome = &genome;
 			mapInfo[procIndex].genomemm = &genomemm;
-			mapInfo[procIndex].mmfreqs = &mmfreqs;
 			mapInfo[procIndex].glIndex = &glIndex;
 			mapInfo[procIndex].reader = &reader;
 			mapInfo[procIndex].opts= &opts;
@@ -474,7 +483,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		Timing timing;
 		while (reader.GetNext(read, opts)) {
 			int rstmm = 0;			
-			MapRead(LookUpTable, read, genome, genomemm, mmfreqs, glIndex, opts, outPtr, outSVsig, timing);
+			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr, outSVsig, timing);
 			if (opts.timing != "") {
 				timing.Summarize(opts.timing);
 			}
@@ -591,7 +600,7 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 	glIndex.Write(genome + ".gli");
 }
 
-void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizers, vector<int> &mmfreqs, Header &header, Options &opts) {
+void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizers, Header &header, Options &opts) {
 	// open query file for reading; you may use your favorite FASTA/Q parser
 	int argi = 0;
 	string genome;
@@ -609,10 +618,10 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalK = atoi(argv[argi]);
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
-			opts.globalK = 17;
+			opts.globalK = 15;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 60;
-			opts.globalWinsize = 18;
+			opts.globalMaxFreq = 200;
+			opts.globalWinsize = 12;
 			opts.NumOfminimizersPerWindow = 1;			
 		}	
 		else if (ArgIs(argv[argi], "-CONTIG")) {
@@ -625,15 +634,15 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.globalK = 15;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 80;
-			opts.globalWinsize = 16;
+			opts.globalMaxFreq = 200;
+			opts.globalWinsize = 12;
 			opts.NumOfminimizersPerWindow = 1;		
 		}
 		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.globalK = 15;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 80;
-			opts.globalWinsize = 16;
+			opts.globalMaxFreq = 200;
+			opts.globalWinsize = 12;
 			opts.NumOfminimizersPerWindow = 1;			
 		}
 		else if (ArgIs(argv[argi], "-F")) {
@@ -696,23 +705,22 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 		indexFile = genome + ".mmi";
 	}
 
-	if (printIndex and ReadIndex(indexFile, minimizers,mmfreqs, header, opts)) {
+	if (printIndex and ReadIndex(indexFile, minimizers, header, opts)) {
 		PrintIndex(minimizers, opts.globalK);
 		exit(0);
 	}
 
-	StoreIndex(genome, minimizers, mmfreqs, header, opts);
-	WriteIndex(indexFile, minimizers, mmfreqs, header, opts);
+	StoreIndex(genome, minimizers, header, opts);
+	WriteIndex(indexFile, minimizers, header, opts);
 }
 
 void RunStoreIndex(int argc, const char* argv[]) {
 	LocalIndex glIndex;
 	vector<GenomeTuple> minimizers;
-	vector<int> mmfreqs;
 	Header header;
 	Options opts;
 
-	RunStoreGlobal(argc, argv, minimizers, mmfreqs, header, opts);
+	RunStoreGlobal(argc, argv, minimizers, header, opts);
     RunStoreLocal(argc, argv, glIndex, opts);
 }
 
@@ -756,7 +764,6 @@ int main(int argc, const char *argv[]) {
 	InitStatic();
   	int argi;
 	vector<GenomeTuple> minimizers;
-	vector<int> mmfreqs;
 	LocalIndex lIndex;
 	Header header;
 	for (argi = 1; argi < argc; ){
@@ -767,7 +774,7 @@ int main(int argc, const char *argv[]) {
 		}
 		else if (ArgIs(argv[argi], "global")) {
 			argc -=2;
-      		RunStoreGlobal(argc,  &argv[2], minimizers, mmfreqs, header, opts);		
+      		RunStoreGlobal(argc,  &argv[2], minimizers, header, opts);		
 			exit(0);
 		}
 		else if (ArgIs(argv[argi], "local")) {

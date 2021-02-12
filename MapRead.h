@@ -19,7 +19,6 @@
 #include "LinearExtend.h"
 #include "SplitClusters.h"
 #include "Timing.h"
-#include "IndelRefine.h"
 
 #include <iostream>
 #include <algorithm>
@@ -452,46 +451,16 @@ void RefineSubstrings(char *read, GenomePos readSubStart, GenomePos readSubEnd, 
 	}
 }
 
-void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<tuple<GenomeTuple, GenomeTuple, int> > &allMatches,  vector<tuple<GenomeTuple, GenomeTuple, int> > &forMatches,
-								vector<tuple<GenomeTuple, GenomeTuple, int> > &revMatches, string &baseName) {
-	// vector<bool> strand(allMatches.size(), 0); // 0: forward strand, 1: reverse strand
-	// // Tuple rev_mask = 1;
-	// // rev_mask <<= 63; // rev_mask = 1000..00
-	// Tuple rev_mask = GenomeTuple::rev_mask_s;
-	// int nForward = 0;
-	// for (int i = 0; i < allMatches.size(); i++) {
-	// 	if ((get<1>(allMatches[i]).t & rev_mask) == 0) { // the rightest bit is 0, the match is in the forward strand
-	// 		nForward++;
-	// 	} 
-	// 	else { 
-	// 		strand[i] = true; // the rightest bit is 1, the match is in the reverse strand
-	// 	}
-	// }
-	// //
-	// // Populate two lists, one for forward matches one for reverse.
-	// //
-	// forMatches.resize(nForward);
-	// revMatches.resize(allMatches.size()-nForward);
-	// int i = 0,r = 0,f = 0;
-	// for (i = 0,r = 0,f = 0; i < allMatches.size(); i++) {
-	// 	if (strand[i] == 0) {
-	// 		forMatches[f] = allMatches[i];
-	// 		f++;
-	// 	}
-	// 	else {
-	// 		revMatches[r] = allMatches[i];
-	// 		r++;
-	// 	}
-	// }
-
+void SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<GenomePair> &allMatches,  vector<GenomePair> &forMatches,
+								vector<GenomePair> &revMatches, string &baseName) {
 	//
 	// A value of 0 implies forward strand match.
 	//
 	vector<bool> strand(allMatches.size(), 0);
 	int nForward=0;
 	for (int i=0; i < allMatches.size(); i++) {
-		int readPos = get<0>(allMatches[i]).pos;
-		uint64_t refPos = get<1>(allMatches[i]).pos;
+		int readPos = allMatches[i].first.pos; 
+		uint64_t refPos = allMatches[i].second.pos;
 		char *genomePtr = genome.GlobalIndexToSeq(refPos);
 		//
 		// Read and genome are identical, the match is in the forward strand
@@ -1349,7 +1318,7 @@ RefineByLinearAlignment(GenomePos &btc_curReadEnd, GenomePos &btc_curGenomeEnd, 
 				assert(betweenAnchorAlignment.blocks[b-1].tPos + betweenAnchorAlignment.blocks[b-1].length <= betweenAnchorAlignment.blocks[b].tPos);						
 			}
 			alignment->blocks.insert(alignment->blocks.end(), betweenAnchorAlignment.blocks.begin(), betweenAnchorAlignment.blocks.end());
-			if (opts.dotPlot) {
+			if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 				ofstream Lclust("LinearAlignment.tab", std::ofstream::app);
 				for (b = 0; b < betweenAnchorAlignment.blocks.size(); b++) {
 					Lclust << betweenAnchorAlignment.blocks[b].qPos << "\t"
@@ -1511,7 +1480,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				btc_curReadEnd = curReadEnd;
 				btc_curGenomeEnd = curGenomeEnd;
 
-				if (nanoOpts.dotPlot) {
+				if (nanoOpts.dotPlot and !nanoOpts.readname.empty() and read.name == nanoOpts.readname) {
 					ofstream pSclust("BtwnPairs.tab", std::ofstream::app);
 					for (int bp = BtwnPairs->size()-1; bp >= 0; bp--) {
 						if (inversion == 0) {
@@ -1587,7 +1556,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 					eSclust.close();
 				}	
 
-				if (nanoOpts.dotPlot) {
+				if (nanoOpts.dotPlot and !nanoOpts.readname.empty() and read.name == nanoOpts.readname) {
 					ofstream Sclust("SparseDP_Forward.tab", std::ofstream::app);
 						for (int btc = BtwnChain.size()-1; btc >= 0; btc--) {
 							if (inversion == 0) {
@@ -1683,7 +1652,7 @@ PassgenomeThres(int cur, GenomePos & genomeThres, FinalChain & finalchain) {
 	else return 0;
 }
 
-int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, vector<int> &mmfreqs, LocalIndex &glIndex, Options &opts, 
+int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, 
 			ostream *output, ostream *svsigstrm, Timing &timing, pthread_mutex_t *semaphore=NULL) {
 	string baseName = read.name;
 	for (int i=0; i < baseName.size(); i++) {	
@@ -1691,7 +1660,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		if (baseName[i] == '|') baseName[i] = '_';
 	}
 	vector<GenomeTuple> readmm; // readmm stores minimizers
-	vector<tuple<GenomeTuple, GenomeTuple, int> > allMatches, forMatches, revMatches;
+	vector<pair<GenomeTuple, GenomeTuple> > allMatches, forMatches, revMatches;
 	timing.Start();
 	//
 	// Add pointers to seq that make code more readable.
@@ -1708,71 +1677,55 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	else {
 		StoreMinimizers<GenomeTuple, Tuple>(read.seq, read.length, opts.globalK, opts.globalW, readmm, true, false);
 	}
-	sort(readmm.begin(), readmm.end()); //sort kmers in readmm(minimizers)
-
-	if (opts.dotPlot) {
-		stringstream outNameStrm;
-		outNameStrm << "read.minimizers";
-		ofstream baseDots(outNameStrm.str().c_str());
-		for (int m=0; m < readmm.size(); m++) {
-			baseDots << readmm[m].t << "\t"
-					 << readmm[m].pos << "\t" 
-					 << readmm[m].pos + opts.globalK << endl;				
-		}
-		baseDots.close();
-	}
-
 	timing.Tick("Store minimizers");
+	sort(readmm.begin(), readmm.end()); //sort kmers in readmm(minimizers)
+	timing.Tick("Sort minimizers");
+	// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+	// 	stringstream outNameStrm;
+	// 	outNameStrm << "read.minimizers";
+	// 	ofstream baseDots(outNameStrm.str().c_str());
+	// 	for (int m=0; m < readmm.size(); m++) {
+	// 		baseDots << readmm[m].t << "\t"
+	// 				 << readmm[m].pos << "\t" 
+	// 				 << readmm[m].pos + opts.globalK << endl;				
+	// 	}
+	// 	baseDots.close();
+	// }
+
+
 	//
 	// Add matches between the read and the genome.
 	//
-	CompareLists<GenomeTuple, Tuple, int>(readmm, genomemm, allMatches, mmfreqs, opts, true);
-	// DiagonalSort<GenomeTuple, int>(allMatches, 500);
-	timing.Tick("Sort minimizers");
+	CompareLists<GenomeTuple, Tuple>(readmm, genomemm, allMatches, opts, true);
+	timing.Tick("CompareLists");
 
-	if (opts.dotPlot) {
+	// DiagonalSort<GenomeTuple, int>(allMatches, 500);
+
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream clust("all-matches.dots");
 		for (int m = 0; m < allMatches.size(); m++) {
-			clust << get<0>(allMatches[m]).pos << "\t" << get<1>(allMatches[m]).pos 
-						<< "\t" << get<0>(allMatches[m]).pos + opts.globalK << "\t" 
-						<< get<1>(allMatches[m]).pos + opts.globalK << "\t"<< get<2>(allMatches[m]) << endl;
+			clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos
+						<< "\t" << allMatches[m].first.pos + opts.globalK << "\t" 
+						<< allMatches[m].second.pos+ opts.globalK << endl;
 		}
 		clust.close();
 	}
 
 	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, forMatches, revMatches, baseName);
-
-	if (opts.dotPlot) {
-		ofstream fclust("for-matches_0.dots");
-		for (int m=0; m < forMatches.size(); m++) {
-			fclust << get<0>(forMatches[m]).pos << "\t" << get<1>(forMatches[m]).pos << "\t" << opts.globalK + get<0>(forMatches[m]).pos << "\t"
-					<< get<1>(forMatches[m]).pos + opts.globalK << "\t" << m << "\t" << get<2>(forMatches[m]) <<endl;
-		}
-		fclust.close();
-
-		ofstream rclust("rev-matches_0.dots");
-		for (int m=0; m < revMatches.size(); m++) {			
-			rclust << get<0>(revMatches[m]).pos << "\t" << get<1>(revMatches[m]).pos + opts.globalK << "\t" << opts.globalK + get<0>(revMatches[m]).pos << "\t"
-					 << get<1>(revMatches[m]).pos << "\t" << m << "\t" << get<2>(revMatches[m]) << endl;
-		}
-		rclust.close();
-	}
-
 	vector<Cluster> clusters;
-	MatchesToFineClusters(forMatches, clusters, genome, read, opts);
-	MatchesToFineClusters(revMatches, clusters, genome, read, opts, 1);
+	MatchesToFineClusters(forMatches, clusters, genome, read, opts, timing);
+	MatchesToFineClusters(revMatches, clusters, genome, read, opts, timing, 1);
 
 	if (opts.CheckTrueIntervalInFineCluster) {
 		CheckTrueIntervalInFineCluster(clusters, read.name, genome);
 	}
 	//cerr << "clusters.size(): " <<  clusters.size() << endl;
-	timing.Tick("Fine-clusters");
 
 	if (clusters.size() == 0) {	
 		return 0; // This read cannot be mapped to the genome; 
 	}
 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream cpclust("clusters-coarse-pre-remove.tab");
 		for (int m = 0; m < clusters.size(); m++) {
 			for (int n = 0; n < clusters[m].matches.size(); n++) {
@@ -1798,7 +1751,14 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		}
 		cpclust.close();
 	}
-	
+
+	allMatches.clear();
+	forMatches.clear(); 
+	revMatches.clear();
+
+	// cerr << "before removing clusters.size(): " << clusters.size() << endl;
+	// cerr << "before removing splitclusters.size(): " << splitclusters.size() << endl;
+
 	ClusterOrder fineClusterOrder(&clusters, 1);  // has some bug (delete clusters which should be kept -- cluster9_scaffold_58.fasta and cluster18_contig_234.fasta)
 	RemoveOverlappingClusters(clusters, fineClusterOrder.index, opts);
 	//
@@ -1820,7 +1780,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	clusters.resize(vm);
 	if (clusters.size() == 0) return 0; // This read cannot be mapped to the genome; 
 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream clust("clusters.tab");
 		for (int m = 0; m < clusters.size(); m++) {
 			for (int n = 0; n < clusters[m].matches.size(); n++) {
@@ -1879,9 +1839,9 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	vector<Cluster> splitclusters;
 	SplitClusters(clusters, splitclusters);
 	DecideSplitClustersValue(clusters, splitclusters, opts);
-	timing.Tick("Split");
+	timing.Tick("SplitClusters");
 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream clust("splitclusters-coarse.tab");
 		for (int m = 0; m < splitclusters.size(); m++) {
 			if (splitclusters[m].strand == 0) {
@@ -1946,13 +1906,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	if (splitclusters.size()/clusters.size() > 20) { // mapping to repetitive region
 		rate = rate / 2.0;
 	}
-	// cerr << "clusters.size(): " << clusters.size() << endl;
-	// cerr << "splitclusters.size(): " << splitclusters.size() << endl;
-	// cerr << "rate: " << rate << endl;
+	cerr << "clusters.size(): " << clusters.size() << " splitclusters.size(): " << splitclusters.size() << " rate: " << rate << " read.name: " << read.name << endl;
 
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream clust("Chains.tab");
 		for (int p = 0; p < Primary_chains.size(); p++) {
 			for (int h = 0; h < Primary_chains[p].chains.size(); h++){
@@ -2037,7 +1995,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		}
 	}
 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream clust("CoarseChains.tab");
 
 		for (int p = 0; p < Primary_chains.size(); p++) {
@@ -2074,7 +2032,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		clust.close();
 	}	
 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream clust("clusters_1stSDP.tab");
 		for (int m = 0; m < clusters.size(); m++) {
 			for (int n = 0; n < clusters[m].matches.size(); n++) {
@@ -2182,7 +2140,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	}
 	//cerr << "read.name: " << read.name << endl;
 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream clust("RefinedClusters.tab", std::ofstream::app);
 
 		for (int p = 0; p < RefinedClusters.size(); p++) {
@@ -2212,7 +2170,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 		clust.close();
 	}	
 
-	timing.Tick("Refine");
+	timing.Tick("Refine_clusters");
 	int SizeRefinedClusters = 0;
 	for (int p = 0; p < RefinedClusters.size(); p++) {
 		SizeRefinedClusters += RefinedClusters[p]->matches.size();
@@ -2367,6 +2325,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				// 	RefineBtwnSpace(RefinedClusters[lh], smallOpts, genome, read, strands, qe, qe-1000, te, te-1000, st);						
 				// }			
 			}
+			timing.Tick("refine_btwnclusters");
+
 			//cerr << "refinement done!" << endl;
 			//
 			// Do linear extension for each anchors and avoid overlapping locations;
@@ -2376,6 +2336,8 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 			vector<Cluster> ExtendClusters(Primary_chains[p].chains[h].ch.size());
 			LinearExtend(RefinedClusters, ExtendClusters, Primary_chains[p].chains[h].ch, smallOpts, genome, read);
 			TrimOverlappedAnchors(ExtendClusters);
+			timing.Tick("LinearExtend");
+
 			//cerr << "LinearExtend done!" << endl;
 
 			int SizeExtendClusters = 0;
@@ -2383,7 +2345,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				SizeExtendClusters += ExtendClusters[ep].matches.size();
 			}	
 
-			if (opts.dotPlot) {
+			if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 				ofstream clust("ExtendClusters.tab", std::ofstream::app);
 				for (int ep = 0; ep < ExtendClusters.size(); ep++) {
 					for (int eh = 0; eh < ExtendClusters[ep].matches.size(); eh++) {	
@@ -2446,9 +2408,11 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				//
 				RemovePairedIndels(finalchain);
 				RemoveSpuriousAnchors(finalchain, smallOpts);
+				timing.Tick("SparseDP_anchors");
+
 				//cerr << "2nd SDP done!" << endl;
 				if (finalchain.size() == 0) continue; // cannot be mapped to the genome!
-				if (opts.dotPlot) {
+				if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 					ofstream clust("SparseDP.tab", std::ofstream::app);
 					for (int ep = 0; ep < finalchain.chain.size(); ep++) {
 						if (finalchain.strand(ep) == 0) {
@@ -2623,6 +2587,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 					}
 					js++;
 				}
+				timing.Tick("local refinment");
 			}
 			for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
 				//
@@ -2632,20 +2597,6 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 				// So the function refining can be apply to each of the segment. 
 				// function refining(alignments.back().SegAlignment[s])
 				//
-				alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
-			}
-			for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
-				//
-				// (Mark: add the refining code here)
-				// alignments.back() is `class SegAlignmentGroup`. `class SegAlignmentGroup` has member: `vector<Alignment*> SegAlignment`, where 
-				// each `SegAlignment[s]` is a segment of alignment when there are multiple segments. 
-				// So the function refining can be apply to each of the segment. 
-				// function refining(alignments.back().SegAlignment[s])
-				//
-				if (opts.skipBandedRefine == false) {
-					IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts);
-				}
-				
 				alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
 			}
 			alignments.back().SetFromSegAlignment(smallOpts);
@@ -2656,7 +2607,7 @@ int MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vecto
 	SimpleMapQV(alignmentsOrder, read);
 
 	timing.Tick("Local-SDP");
-	if (opts.dotPlot) {
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream baseDots("alignment.dots");
 			for (int a=0; a < (int) alignmentsOrder.size(); a++){
 				for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {

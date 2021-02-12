@@ -32,7 +32,7 @@ ScanPoints_Col2(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsi
 		unsigned int count = 0;
 		for (unsigned int j = V[i].pstart; j < V[i].pend; ++j) {
 			if (H1[H2[j]].ind == DE and H1[H2[j]].inv == 0) {
-				long int l = static_cast<long int>(H1[H2[j]].se.second) + static_cast<long int>(H1[H2[j]].se.first);
+				long int l = (long int)(H1[H2[j]].se.second) + (long int)(H1[H2[j]].se.first);
 				ForwardIndex.insert(l);		
 				++count;		
 			}
@@ -64,12 +64,12 @@ ScanPoints_Col2(std::vector<info> & V, std::vector<Point> & H1, std::vector<unsi
 		unsigned int count2 = 0;
 		for (unsigned int j = V[i].pstart; j < V[i].pend; ++j) {
 			if (H1[H2[j]].ind == 1 and H1[H2[j]].inv == 0) {
-				long int l = static_cast<long int>(H1[H2[j]].se.second) + static_cast<long int>(H1[H2[j]].se.first);
+				long int l = (long int)(H1[H2[j]].se.second) + (long int)(H1[H2[j]].se.first);
 				ForwardIndex1.insert(l);		
 				++count1;		
 			}
 			else if (H1[H2[j]].ind == 0 and H1[H2[j]].inv == 0) {
-				long int r = static_cast<long int>(H1[H2[j]].se.second) + static_cast<long int>(H1[H2[j]].se.first);
+				long int r = (long int)(H1[H2[j]].se.second) + (long int)(H1[H2[j]].se.first);
 				ForwardIndex2.insert(r);		
 				++count2;		
 			}

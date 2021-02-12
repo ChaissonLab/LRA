@@ -110,20 +110,26 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters) 
 			if (it->second == 0) { // split on q coord.
 				GenomePos t = (GenomePos) ceil(itlSet.slope * it->first + itlSet.intercept);
 
-				if (clusters[m].strand == 0) {// initialize coarse to specify the index of original index
-					 splitclusters.push_back(Cluster(prev.first, it->first, prev.second, t, clusters[m].strand, m)); 
+				if (prev.first < it->first) { 
+					if (clusters[m].strand == 0) 
+						splitclusters.push_back(Cluster(prev.first, it->first, prev.second, t, clusters[m].strand, m)); // initialize coarse to specify the index of original index
+					else 
+						splitclusters.push_back(Cluster(prev.first, it->first, t, prev.second, clusters[m].strand, m));					
 				}
-				else {splitclusters.push_back(Cluster(prev.first, it->first, t, prev.second, clusters[m].strand, m));}
+				else continue;
 
 				prev = make_pair(it->first, t);					
 			}
 			else { // split on t coord.
 				GenomePos q = (GenomePos) ceil((it->first - itlSet.intercept) / itlSet.slope);
 				
+				if (prev.first < q) {
 					if (clusters[m].strand == 0) 
 						splitclusters.push_back(Cluster(prev.first, q, prev.second, it->first, clusters[m].strand, m));
 					else 
 						splitclusters.push_back(Cluster(prev.first, q, it->first, prev.second, clusters[m].strand, m));
+				}
+				else continue;
 
 				prev = make_pair(q, it->first);					
 			}

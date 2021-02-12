@@ -67,7 +67,7 @@ ScanPoints_Row1 (std::vector<info> & V, std::vector<Point> & H1, std::vector<lon
 		unsigned int count = 0;
 		for (unsigned int j = V[i].pstart; j < V[i].pend; ++j) {
 			if (H1[j].ind == DE and H1[j].inv == 1) { // H1[j].ind == DE == 1 means finding start points
-				long int l = static_cast<long int>(H1[j].se.second) - static_cast<long int>(H1[j].se.first);
+				long int l = (long int)(H1[j].se.second) - (long int)(H1[j].se.first);
 				ForwardIndex.insert(l);
 				++count;				
 			}
@@ -101,12 +101,12 @@ ScanPoints_Row1 (std::vector<info> & V, std::vector<Point> & H1, std::vector<lon
 		unsigned int count2 = 0;
 		for (unsigned int j = V[i].pstart; j < V[i].pend; ++j) { 
 			if (H1[j].ind == 1 and H1[j].inv == 1) { // H1[j].ind  == 1 means finding start points
-				long int l = static_cast<long int>(H1[j].se.second) - static_cast<long int>(H1[j].se.first);
+				long int l = (long int)(H1[j].se.second) - (long int)(H1[j].se.first);
 				ForwardIndex1.insert(l);
 				++count1;				  
 			}
 			else if (H1[j].ind == 0 and H1[j].inv == 1) { // H1[j].ind  == 0 means finding end points
-				long int r = static_cast<long int>(H1[j].se.second) - static_cast<long int>(H1[j].se.first);
+				long int r = (long int)(H1[j].se.second) - (long int)(H1[j].se.first);
 				ForwardIndex2.insert(r);
 				++count2;				
 			}			
@@ -139,7 +139,7 @@ ScanPoints_Row1 (std::vector<info> & V, std::vector<Point> & H1, std::vector<lon
 	std::map<long int, unsigned int> fmap; // <forward diagonal, number of points which have forward diagonal <= the current forward diagonal>
 	for (unsigned int i = s; i < e; ++i) {
 		for (unsigned int j = V[i].pstart; j < V[i].pend; ++j) {	
-			long int l = static_cast<long int>(H1[j].second) - static_cast<long int>(H1[j].first);
+			long int l = (long int))(H1[j].second) - (long int))(H1[j].first);
 			std::pair<std::map<long int, unsigned int>::iterator, bool> ret;
 			ret = fmap.insert(std::pair<long int, unsigned int>(l, 1));
 			if (ret.second == false) { // element with such forward diagonal l is already existed
@@ -166,7 +166,7 @@ ScanPoints_Row1 (std::vector<info> & V, std::vector<Pair> & H1, std::vector<long
 	std::map<long int, unsigned int> fmap; // <forward diagonal, number of points which have forward diagonal <= the current forward diagonal>
 	for (unsigned int i = s; i < e; ++i) {
 		for (unsigned int j = V[i].pstart; j < V[i].pend; ++j) {	
-			long int l = static_cast<long int>(H1[j].second) - static_cast<long int>(H1[j].first);
+			long int l = (long int)(H1[j].second) - (long int)(H1[j].first);
 			std::pair<std::map<long int, unsigned int>::iterator, bool> ret;
 			ret = fmap.insert(std::pair<long int, unsigned int>(l, 1));
 			if (ret.second == false) { // element with such forward diagonal l is already existed

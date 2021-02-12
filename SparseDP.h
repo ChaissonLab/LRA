@@ -7,8 +7,8 @@
 #include <iostream>
 #include <string>
 #include <utility>
-#include <algorithm> // std::lower_bound
-#include <numeric> //std::floor
+#include <algorithm> // lower_bound
+#include <numeric> //floor
 #include <cmath>
 #include <set>
 #include <iterator>
@@ -35,7 +35,6 @@
 #include "Clustering.h"
 #include "Read.h"
 #include "Chain.h"
-
 
 using std::cerr;
 using std::cout;
@@ -120,7 +119,7 @@ insertPointsPair(const vector<Cluster> & FragInput, vector<Point> & H1, unsigned
 
 
 void 
-PassValueToD1 (unsigned int i, std::vector<Fragment_Info> & Value, const std::vector<Point> & H1, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, long int & ForwardDiag) {
+PassValueToD1 (unsigned int i, vector<Fragment_Info> & Value, const vector<Point> & H1, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, long int & ForwardDiag) {
 
 	// If all the subproblems B which contain the point H1[i] have been processed, then we can pass the value of the point H1[i] to the D array for every subproblem A
 	assert (Value[i].counter_B_R1 == 0 and Value[i].counter_B_C1 == 0);
@@ -140,7 +139,7 @@ PassValueToD1 (unsigned int i, std::vector<Fragment_Info> & Value, const std::ve
 		}
 		else {
 
-			std::vector<unsigned int>::iterator it = Lower_Bound<std::vector<unsigned int>::iterator, long int>(SubR1[u].D.begin(), SubR1[u].D.end(), ForwardDiag, SubR1[u].Di);
+			vector<unsigned int>::iterator it = Lower_Bound<vector<unsigned int>::iterator, long int>(SubR1[u].D.begin(), SubR1[u].D.end(), ForwardDiag, SubR1[u].Di);
 
 			/*
 			for (unsigned int q = *it; q < SubR1[u].Di.size(); ++q) {
@@ -175,7 +174,7 @@ PassValueToD1 (unsigned int i, std::vector<Fragment_Info> & Value, const std::ve
 		}
 		else {
 
-			std::vector<unsigned int>::reverse_iterator it = Lower_Bound<std::vector<unsigned int>::reverse_iterator, long int>(SubC1[u].D.rbegin(), SubC1[u].D.rend(), ForwardDiag, SubC1[u].Di);
+			vector<unsigned int>::reverse_iterator it = Lower_Bound<vector<unsigned int>::reverse_iterator, long int>(SubC1[u].D.rbegin(), SubC1[u].D.rend(), ForwardDiag, SubC1[u].Di);
 		
 			/*
 			for (unsigned int q = *it; q < SubC1[u].Di.size(); ++q) {
@@ -209,7 +208,7 @@ PassValueToD1 (unsigned int i, std::vector<Fragment_Info> & Value, const std::ve
 
 
 void 
-PassValueToD2 (unsigned int i, std::vector<Fragment_Info> & Value, const std::vector<Point> & H1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, long int & BackDiag) {
+PassValueToD2 (unsigned int i, vector<Fragment_Info> & Value, const vector<Point> & H1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, long int & BackDiag) {
 
 	// If all the subproblems B which contain the point H1[i] have been processed, then we can pass the value of the point H1[i] to the D array for every subproblem A
 	assert (Value[i].counter_B_R2 == 0 and Value[i].counter_B_C2 == 0);
@@ -229,7 +228,7 @@ PassValueToD2 (unsigned int i, std::vector<Fragment_Info> & Value, const std::ve
 		}
 		else {
 
-			std::vector<unsigned int>::reverse_iterator it = Lower_Bound<std::vector<unsigned int>::reverse_iterator, long int>(SubR2[u].D.rbegin(), SubR2[u].D.rend(), BackDiag, SubR2[u].Di);
+			vector<unsigned int>::reverse_iterator it = Lower_Bound<vector<unsigned int>::reverse_iterator, long int>(SubR2[u].D.rbegin(), SubR2[u].D.rend(), BackDiag, SubR2[u].Di);
 			/*
 			for (unsigned int q = *it; q < SubR2[u].Di.size(); ++q) {
 				--SubR2[u].counter_D[q];
@@ -263,7 +262,7 @@ PassValueToD2 (unsigned int i, std::vector<Fragment_Info> & Value, const std::ve
 		}
 		else {
 
-			std::vector<unsigned int>::iterator it = Lower_Bound<std::vector<unsigned int>::iterator, long int>(SubC2[u].D.begin(), SubC2[u].D.end(), BackDiag, SubC2[u].Di);
+			vector<unsigned int>::iterator it = Lower_Bound<vector<unsigned int>::iterator, long int>(SubC2[u].D.begin(), SubC2[u].D.end(), BackDiag, SubC2[u].Di);
 		
 			/*
 			for (unsigned int q = *it; q < SubC2[u].Di.size(); ++q) {
@@ -298,14 +297,14 @@ PassValueToD2 (unsigned int i, std::vector<Fragment_Info> & Value, const std::ve
 //This function is for fragments which are resulting from MergeSplit step. 
 // Each fragment has different length, so we need to pass vector<Cluster> vt to the function
 template<typename Tup>
-void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
-				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, std::vector<Fragment_Info> & Value, Options & opts, 
-				 const std::vector<float> & LookUpTable, const Tup & FragInput, int rate) { // std::vector<ClusterCoordinates> & FragInput
+void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
+				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, Options & opts, 
+				 const vector<float> & LookUpTable, const Tup & FragInput, int rate) { // vector<ClusterCoordinates> & FragInput
 
 	for (unsigned int i = 0; i < H1.size(); i++) { // process points by row
 
-		long int ForwardDiag = static_cast<long int>(H1[i].se.second) - static_cast<long int>(H1[i].se.first);
-		long int BackDiag = static_cast<long int>(H1[i].se.second) + static_cast<long int>(H1[i].se.first);
+		long int ForwardDiag = (long int)(H1[i].se.second) - (long int)(H1[i].se.first);
+		long int BackDiag = (long int)(H1[i].se.second) + (long int)(H1[i].se.first);
 
 		//cerr << "\n\n\n\nprocessing point " << H1[H3[i]] << endl;
 		//cerr << "the Value[" << H1[H3[i]].frag_num << "] of this point:  " <<  Value[H1[H3[i]].frag_num] << "\n";
@@ -332,7 +331,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				}
 				else {
 					// Then subproblem SubR1[j] is non-leaf case. find the index of the point in E array
-					std::vector<unsigned int>::iterator t = Lower_Bound<std::vector<unsigned int>::iterator,long int>(SubR1[j].E.begin(), SubR1[j].E.end(), ForwardDiag, SubR1[j].Ei);
+					vector<unsigned int>::iterator t = Lower_Bound<vector<unsigned int>::iterator,long int>(SubR1[j].E.begin(), SubR1[j].E.end(), ForwardDiag, SubR1[j].Ei);
 					//cerr << "SubR1[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
 					//cerr << "SubR1[" << j << "].Ei: " << SubR1[j].Ei << "/n";
 					//cerr << "The index of this point in E array: " << *t << "\n";
@@ -411,7 +410,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				else {
 
 					// find the index of this point in E array
-					std::vector<unsigned int>::reverse_iterator t = Lower_Bound<std::vector<unsigned int>::reverse_iterator,long int>(SubC1[j].E.rbegin(), SubC1[j].E.rend(), ForwardDiag, SubC1[j].Ei);
+					vector<unsigned int>::reverse_iterator t = Lower_Bound<vector<unsigned int>::reverse_iterator,long int>(SubC1[j].E.rbegin(), SubC1[j].E.rend(), ForwardDiag, SubC1[j].Ei);
 					//cerr << "SubC1[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
 					//cerr << "SubC1[" << j << "].Ei: " << SubC1[j].Ei << "/n";
 					//cerr << "The index of this point in E array: " << *t << "\n";
@@ -491,7 +490,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				}
 				else {
 					// Then subproblem SubR2[j] is non-leaf case. find the index of the point in E array
-					std::vector<unsigned int>::reverse_iterator t = Lower_Bound<std::vector<unsigned int>::reverse_iterator,long int>(SubR2[j].E.rbegin(), SubR2[j].E.rend(), BackDiag, SubR2[j].Ei);
+					vector<unsigned int>::reverse_iterator t = Lower_Bound<vector<unsigned int>::reverse_iterator,long int>(SubR2[j].E.rbegin(), SubR2[j].E.rend(), BackDiag, SubR2[j].Ei);
 					//cerr << "SubR2[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
 					//cerr << "SubR2[" << j << "].Ei: " << SubR2[j].Ei << "/n";
 					//cerr << "The index of this point in E array: " << *t << "\n";
@@ -560,7 +559,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				else {
 
 					// find the index of this point in E array
-					std::vector<unsigned int>::iterator t = Lower_Bound<std::vector<unsigned int>::iterator,long int>(SubC2[j].E.begin(), SubC2[j].E.end(), BackDiag, SubC2[j].Ei);
+					vector<unsigned int>::iterator t = Lower_Bound<vector<unsigned int>::iterator,long int>(SubC2[j].E.begin(), SubC2[j].E.end(), BackDiag, SubC2[j].Ei);
 					//cerr << "SubC2[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
 					//cerr << "SubC2[" << j << "].Ei: " << SubC2[j].Ei << "/n";
 					//cerr << "The index of this point in E array: " << *t << "\n";
@@ -636,15 +635,15 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 // This function is for splitCluster
 //
 template<typename Tup>
-void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
-				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, std::vector<Fragment_Info> & Value, Options & opts, 
-				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, float & rate) { // std::vector<ClusterCoordinates> & FragInput
+void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
+				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, Options & opts, 
+				 const vector<float> & LookUpTable, const vector<Tup> & FragInput, float & rate) { // vector<ClusterCoordinates> & FragInput
 
 	bool step_sdp = 0;
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
-		long int ForwardDiag = static_cast<long int>(H1[i].se.second) - static_cast<long int>(H1[i].se.first);
-		long int BackDiag = static_cast<long int>(H1[i].se.second) + static_cast<long int>(H1[i].se.first);
+		long int ForwardDiag = (long int)(H1[i].se.second) - (long int)(H1[i].se.first);
+		long int BackDiag = (long int)(H1[i].se.second) + (long int)(H1[i].se.first);
 
 		//cerr << "\n\n\n\nprocessing point " << H1[H3[i]] << endl;
 		//cerr << "the Value[" << H1[H3[i]].frag_num << "] of this point:  " <<  Value[H1[H3[i]].frag_num] << "\n";
@@ -672,7 +671,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				}
 				else {
 					// Then subproblem SubR1[j] is non-leaf case. find the index of the point in E array
-					std::vector<unsigned int>::iterator t = Lower_Bound<std::vector<unsigned int>::iterator,long int>(SubR1[j].E.begin(), SubR1[j].E.end(), ForwardDiag, SubR1[j].Ei);
+					vector<unsigned int>::iterator t = Lower_Bound<vector<unsigned int>::iterator,long int>(SubR1[j].E.begin(), SubR1[j].E.end(), ForwardDiag, SubR1[j].Ei);
 					//cerr << "SubR1[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
 					//cerr << "SubR1[" << j << "].Ei: " << SubR1[j].Ei << "/n";
 					//cerr << "The index of this point in E array: " << *t << "\n";
@@ -701,7 +700,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						
 
 						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step_sdp) + FragInput[ii].Val*rate;
-																//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
+																//min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR1[j].Ep[i1] = i2;							
 
 						//cerr << "SubR1[" << j << "].Ev[" << i1 << "]: " << SubR1[j].Ev[i1] << ", SubR1[" << j << "].Ep[" << i1 << "]: " << SubR1[j].Ep[i1] << "\n"; 
@@ -752,7 +751,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				else {
 
 					// find the index of this point in E array
-					std::vector<unsigned int>::reverse_iterator t = Lower_Bound<std::vector<unsigned int>::reverse_iterator,long int>(SubC1[j].E.rbegin(), SubC1[j].E.rend(), ForwardDiag, SubC1[j].Ei);
+					vector<unsigned int>::reverse_iterator t = Lower_Bound<vector<unsigned int>::reverse_iterator,long int>(SubC1[j].E.rbegin(), SubC1[j].E.rend(), ForwardDiag, SubC1[j].Ei);
 					//cerr << "SubC1[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
 					//cerr << "SubC1[" << j << "].Ei: " << SubC1[j].Ei << "/n";
 					//cerr << "The index of this point in E array: " << *t << "\n";
@@ -784,7 +783,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 	//					SubC1[j].Ep[i1] = i2;							
 
 						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step_sdp) + FragInput[ii].Val*rate;
-																//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
+																//min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC1[j].Ep[i1] = i2;							
 
 						//cerr << "SubC1[" << j << "].Ev[" << i1 << "]: " << SubC1[j].Ev[i1] << ", SubC1[" << j << "].Ep[" << i1 << "]: " << SubC1[j].Ep[i1] << "\n"; 
@@ -836,7 +835,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				}
 				else {
 					// Then subproblem SubR2[j] is non-leaf case. find the index of the point in E array
-					std::vector<unsigned int>::reverse_iterator t = Lower_Bound<std::vector<unsigned int>::reverse_iterator,long int>(SubR2[j].E.rbegin(), SubR2[j].E.rend(), BackDiag, SubR2[j].Ei);
+					vector<unsigned int>::reverse_iterator t = Lower_Bound<vector<unsigned int>::reverse_iterator,long int>(SubR2[j].E.rbegin(), SubR2[j].E.rend(), BackDiag, SubR2[j].Ei);
 					//cerr << "SubR2[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
 					//cerr << "SubR2[" << j << "].Ei: " << SubR2[j].Ei << "/n";
 					//cerr << "The index of this point in E array: " << *t << "\n";
@@ -864,7 +863,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 						//cerr << "the index in Di which is the best candidate for BackDiag ---- i2: " << i2 << "\n";
 
 						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts, step_sdp) + FragInput[ii].Val*rate;
-																	//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
+																	//min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR2[j].Ep[i1] = i2;							
 
 						//cerr << "SubR2[" << j << "].Ev[" << i1 << "]: " << SubR2[j].Ev[i1] << ", SubR2[" << j << "].Ep[" << i1 << "]: " << SubR2[j].Ep[i1] << "\n"; 
@@ -908,7 +907,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				else {
 
 					// find the index of this point in E array
-					std::vector<unsigned int>::iterator t = Lower_Bound<std::vector<unsigned int>::iterator,long int>(SubC2[j].E.begin(), SubC2[j].E.end(), BackDiag, SubC2[j].Ei);
+					vector<unsigned int>::iterator t = Lower_Bound<vector<unsigned int>::iterator,long int>(SubC2[j].E.begin(), SubC2[j].E.end(), BackDiag, SubC2[j].Ei);
 					//cerr << "SubC2[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
 					//cerr << "SubC2[" << j << "].Ei: " << SubC2[j].Ei << "/n";
 					//cerr << "The index of this point in E array: " << *t << "\n";
@@ -938,7 +937,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 					
 
 						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step_sdp) + FragInput[ii].Val*rate;
-																	//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
+																	//min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC2[j].Ep[i1] = i2;							
 
 						//cerr << "SubC2[" << j << "].Ev[" << i1 << "]: " << SubC2[j].Ev[i1] << ", SubC2[" << j << "].Ep[" << i1 << "]: " << SubC2[j].Ep[i1] << "\n"; 
@@ -986,15 +985,15 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 // This function is for ExtendClusters;
 //
 template<typename Tup>
-void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
-				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, std::vector<Fragment_Info> & Value, Options & opts, 
-				 const std::vector<float> & LookUpTable, const std::vector<Tup> & FragInput, SplitChain & inputChain, 
-				 	const vector<unsigned int> & MatchStart, float & rate) { // std::vector<ClusterCoordinates> & FragInput
+void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
+				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, Options & opts, 
+				 const vector<float> & LookUpTable, const vector<Tup> & FragInput, SplitChain & inputChain, 
+				 	const vector<unsigned int> & MatchStart, float & rate) { // vector<ClusterCoordinates> & FragInput
 	bool step_sdp = 1;
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
-		long int ForwardDiag = static_cast<long int>(H1[i].se.second) - static_cast<long int>(H1[i].se.first);
-		long int BackDiag = static_cast<long int>(H1[i].se.second) + static_cast<long int>(H1[i].se.first);
+		long int ForwardDiag = (long int)(H1[i].se.second) - (long int)(H1[i].se.first);
+		long int BackDiag = (long int)(H1[i].se.second) + (long int)(H1[i].se.first);
 
 		//cerr << "\n\n\n\nprocessing point " << H1[H3[i]] << endl;
 		//cerr << "the Value[" << H1[H3[i]].frag_num << "] of this point:  " <<  Value[H1[H3[i]].frag_num] << "\n";
@@ -1023,7 +1022,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				}
 				else {
 					// Then subproblem SubR1[j] is non-leaf case. find the index of the point in E array
-					std::vector<unsigned int>::iterator t = Lower_Bound<std::vector<unsigned int>::iterator,long int>(SubR1[j].E.begin(), SubR1[j].E.end(), ForwardDiag, SubR1[j].Ei);
+					vector<unsigned int>::iterator t = Lower_Bound<vector<unsigned int>::iterator,long int>(SubR1[j].E.begin(), SubR1[j].E.end(), ForwardDiag, SubR1[j].Ei);
 					//cerr << "SubR1[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
 					//cerr << "SubR1[" << j << "].Ei: " << SubR1[j].Ei << "/n";
 					//cerr << "The index of this point in E array: " << *t << "\n";
@@ -1053,7 +1052,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step_sdp) + 
 																rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
-																//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
+																//min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR1[j].Ep[i1] = i2;							
 
 						//cerr << "SubR1[" << j << "].Ev[" << i1 << "]: " << SubR1[j].Ev[i1] << ", SubR1[" << j << "].Ep[" << i1 << "]: " << SubR1[j].Ep[i1] << "\n"; 
@@ -1104,7 +1103,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				else {
 
 					// find the index of this point in E array
-					std::vector<unsigned int>::reverse_iterator t = Lower_Bound<std::vector<unsigned int>::reverse_iterator,long int>(SubC1[j].E.rbegin(), SubC1[j].E.rend(), ForwardDiag, SubC1[j].Ei);
+					vector<unsigned int>::reverse_iterator t = Lower_Bound<vector<unsigned int>::reverse_iterator,long int>(SubC1[j].E.rbegin(), SubC1[j].E.rend(), ForwardDiag, SubC1[j].Ei);
 					//cerr << "SubC1[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
 					//cerr << "SubC1[" << j << "].Ei: " << SubC1[j].Ei << "/n";
 					//cerr << "The index of this point in E array: " << *t << "\n";
@@ -1137,7 +1136,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step_sdp) + 
 																	rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
-																//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
+																//min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC1[j].Ep[i1] = i2;							
 
 						//cerr << "SubC1[" << j << "].Ev[" << i1 << "]: " << SubC1[j].Ev[i1] << ", SubC1[" << j << "].Ep[" << i1 << "]: " << SubC1[j].Ep[i1] << "\n"; 
@@ -1189,7 +1188,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				}
 				else {
 					// Then subproblem SubR2[j] is non-leaf case. find the index of the point in E array
-					std::vector<unsigned int>::reverse_iterator t = Lower_Bound<std::vector<unsigned int>::reverse_iterator,long int>(SubR2[j].E.rbegin(), SubR2[j].E.rend(), BackDiag, SubR2[j].Ei);
+					vector<unsigned int>::reverse_iterator t = Lower_Bound<vector<unsigned int>::reverse_iterator,long int>(SubR2[j].E.rbegin(), SubR2[j].E.rend(), BackDiag, SubR2[j].Ei);
 					//cerr << "SubR2[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
 					//cerr << "SubR2[" << j << "].Ei: " << SubR2[j].Ei << "/n";
 					//cerr << "The index of this point in E array: " << *t << "\n";
@@ -1218,7 +1217,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts, step_sdp) + 
 														rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
-																	//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
+																	//min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubR2[j].Ep[i1] = i2;							
 
 						//cerr << "SubR2[" << j << "].Ev[" << i1 << "]: " << SubR2[j].Ev[i1] << ", SubR2[" << j << "].Ep[" << i1 << "]: " << SubR2[j].Ep[i1] << "\n"; 
@@ -1262,7 +1261,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 				else {
 
 					// find the index of this point in E array
-					std::vector<unsigned int>::iterator t = Lower_Bound<std::vector<unsigned int>::iterator,long int>(SubC2[j].E.begin(), SubC2[j].E.end(), BackDiag, SubC2[j].Ei);
+					vector<unsigned int>::iterator t = Lower_Bound<vector<unsigned int>::iterator,long int>(SubC2[j].E.begin(), SubC2[j].E.end(), BackDiag, SubC2[j].Ei);
 					//cerr << "SubC2[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
 					//cerr << "SubC2[" << j << "].Ei: " << SubC2[j].Ei << "/n";
 					//cerr << "The index of this point in E array: " << *t << "\n";
@@ -1293,7 +1292,7 @@ void ProcessPoint (const std::vector<Point> & H1, std::vector<info> & V, StackOf
 
 						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step_sdp) + 
 														rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
-																	//std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
+																	//min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
 						SubC2[j].Ep[i1] = i2;							
 
 						//cerr << "SubC2[" << j << "].Ev[" << i1 << "]: " << SubC2[j].Ev[i1] << ", SubC2[" << j << "].Ep[" << i1 << "]: " << SubC2[j].Ep[i1] << "\n"; 
@@ -1572,9 +1571,9 @@ ComputeNumOfAnchors (const vector<Cluster> & FragInput, const vector<unsigned in
 //
 void 
 DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
-					const std::vector<Fragment_Info> & Value, vector<Primary_chain> &Primary_chains, Read & read, Options & opts) {
+					const vector<Fragment_Info> & Value, vector<Primary_chain> &Primary_chains, Read & read, Options & opts) {
 
-	std::vector<bool> used(Value.size(), 0);
+	vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
 	float value_thres = max(opts.alnthres*fragments_valueOrder[0], fragments_valueOrder[0]-100*opts.globalK);//30 for 50kb
 	//float value_thres = opts.alnthres*fragments_valueOrder[0];
@@ -1695,7 +1694,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	//
 	// get points from FragInput and store them in H1;
 	//
-	std::vector<Point> H1;		
+	vector<Point> H1;		
 	int next, prev;
 	for (int c = 0; c < inputChain.size(); c++) {
 
@@ -1951,12 +1950,12 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 		}
 	}
 
-	//clock_t begin = std::clock();
+	//clock_t begin = clock();
 
 	//Sort the point by row
 	//
 	sort(H1.begin(), H1.end(), SortByRowOp<Point>()); // with same q and t coordinates, end point < start point
-	std::vector<unsigned int> H2(H1.size());
+	vector<unsigned int> H2(H1.size());
 	iota(H2.begin(), H2.end(), 0);
 	sort(H2.begin(), H2.end(), SortByColOp<Point, unsigned int>(H1));
 
@@ -2010,13 +2009,13 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 				Value[ii].val = FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
 				Value[ii].matchstartNum = mi;
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
 				Value[ii].orient = H1[tt].orient;
 			}
 			else if (H1[tt].ind == 0 and H1[tt].inv == 1) { // H1[tt] is an end point (e1)
 				Value[ii].SS_A_R1 = Row[t].SS_A1;
 				Value[ii].counter_A_R1 = Row[t].SS_A1.size();
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
 				//Value[ii].orient = H1[tt].orient;
 			}
 			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
@@ -2025,13 +2024,13 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 				Value[ii].val = FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
 				Value[ii].matchstartNum = mi;
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
 				Value[ii].orient = H1[tt].orient;
 			}
 			else { // H1[tt] is an end point (e2)
 				Value[ii].SS_A_R2 = Row[t].SS_A2;
 				Value[ii].counter_A_R2 = Row[t].SS_A2.size();
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
 				//Value[ii].orient = H1[tt].orient;				
 			}
 		}
@@ -2053,13 +2052,13 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 				Value[ii].val = FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
 				Value[ii].matchstartNum = mi;
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
 				Value[ii].orient = H1[H2[tt]].orient;
 			}
 			else if (H1[H2[tt]].ind == 0 and H1[H2[tt]].inv == 1) { // H1[H2[tt]] is an end point (e1)
 				Value[ii].SS_A_C1 = Col[t].SS_A1;
 				Value[ii].counter_A_C1 = Col[t].SS_A1.size();
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
 				//Value[ii].orient = H1[H2[tt]].orient;
 			}
 			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
@@ -2068,13 +2067,13 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 				Value[ii].val = FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
 				Value[ii].matchstartNum = mi;
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
 				Value[ii].orient = H1[H2[tt]].orient;				
 			}
 			else { // H1[H2[tt]] is an end point (e2)
 				Value[ii].SS_A_C2 = Col[t].SS_A2;
 				Value[ii].counter_A_C2 = Col[t].SS_A2.size();
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
 				//Value[ii].orient = H1[H2[tt]].orient;			
 			}
 
@@ -2112,9 +2111,12 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	SubC1.Clear(eeC1);
 	SubR2.Clear(eeR2);
 	SubC2.Clear(eeC2);
+	Value.clear();
+	H1.clear();
+	H2.clear();
 
 	// get the time for the program
-	//clock_t end = std::clock();
+	//clock_t end = clock();
 	//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	//cerr << "Time: " << elapsed_secs << endl;
 
@@ -2142,7 +2144,7 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 			FragInput[i].tStart += 1;
 			FragInput[i].tEnd -= 1;			
 		}
-
+		else continue;
 		// insert start point s1 into H1
 		Point s1;
 		H1.push_back(s1);
@@ -2206,12 +2208,12 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 		}
 	}
 
-	//clock_t begin = std::clock();
+	//clock_t begin = clock();
 
 	//Sort the point by row
 	if (H1.size() == 0) return 0;
 	sort(H1.begin(), H1.end(), SortByRowOp<Point>()); // with same q and t coordinates, end point < start point
-	std::vector<unsigned int> H2(H1.size());
+	vector<unsigned int> H2(H1.size());
 	iota(H2.begin(), H2.end(), 0);
 	sort(H2.begin(), H2.end(), SortByColOp<Point, unsigned int>(H1));
 
@@ -2250,7 +2252,7 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 	//
 	// Get SS_A_R1, SS_B_R1, SS_A_R2 and SS_B_R2 for each fragment
 	//
-	std::vector<Fragment_Info> Value(FragInput.size());
+	vector<Fragment_Info> Value(FragInput.size());
 	for (unsigned int t = 0; t < Row.size(); ++t) {
 
 		for (unsigned int tt = Row[t].pstart; tt < Row[t].pend; ++tt) {
@@ -2261,26 +2263,26 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 				Value[ii].SS_B_R1 = Row[t].SS_B1;
 				Value[ii].counter_B_R1 = Row[t].SS_B1.size();
 				Value[ii].val = FragInput[ii].Val*rate;
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
 				Value[ii].orient = H1[tt].orient;
 			}
 			else if (H1[tt].ind == 0 and H1[tt].inv == 1) { // H1[tt] is an end point (e1)
 				Value[ii].SS_A_R1 = Row[t].SS_A1;
 				Value[ii].counter_A_R1 = Row[t].SS_A1.size();
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
 				//Value[ii].orient = H1[tt].orient;
 			}
 			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
 				Value[ii].SS_B_R2 = Row[t].SS_B2;
 				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
 				Value[ii].val = FragInput[ii].Val*rate;
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
 				Value[ii].orient = H1[tt].orient;
 			}
 			else { // H1[tt] is an end point (e2)
 				Value[ii].SS_A_R2 = Row[t].SS_A2;
 				Value[ii].counter_A_R2 = Row[t].SS_A2.size();
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
 				//Value[ii].orient = H1[tt].orient;				
 			}
 		}
@@ -2298,26 +2300,26 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 				Value[ii].SS_B_C1 = Col[t].SS_B1;
 				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
 				Value[ii].val = FragInput[ii].Val*rate;
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
 				Value[ii].orient = H1[H2[tt]].orient;
 			}
 			else if (H1[H2[tt]].ind == 0 and H1[H2[tt]].inv == 1) { // H1[H2[tt]] is an end point (e1)
 				Value[ii].SS_A_C1 = Col[t].SS_A1;
 				Value[ii].counter_A_C1 = Col[t].SS_A1.size();
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
 				//Value[ii].orient = H1[H2[tt]].orient;
 			}
 			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
 				Value[ii].SS_B_C2 = Col[t].SS_B2;
 				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
 				Value[ii].val = FragInput[ii].Val*rate;
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
 				Value[ii].orient = H1[H2[tt]].orient;				
 			}
 			else { // H1[H2[tt]] is an end point (e2)
 				Value[ii].SS_A_C2 = Col[t].SS_A2;
 				Value[ii].counter_A_C2 = Col[t].SS_A2.size();
-				//Value[ii].val = std::min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
+				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart + 1, FragInput[ii].tEnd - FragInput[ii].tStart + 1) * rate;
 				//Value[ii].orient = H1[H2[tt]].orient;			
 			}
 
@@ -2339,9 +2341,12 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 	SubC1.Clear(eeC1);
 	SubR2.Clear(eeR2);
 	SubC2.Clear(eeC2);
+	Value.clear();
+	H1.clear();
+	H2.clear();
 
 	// get the time for the program
-	//clock_t end = std::clock();
+	//clock_t end = clock();
 	//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	//cerr << "Time: " << elapsed_secs << endl;
 
@@ -2352,11 +2357,11 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 // (KEEPKEEP)
 // The input for this function is GenomePairs which is NOT from Merge_Split step
 // Each fragment has the same length ----> change to different length
-int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Options &opts, const std::vector<float> &LookUpTable, bool ReverseOnly = 1, int rate = 1) {
+int SparseDP (const Cluster &FragInput, vector<unsigned int> &chain, Options &opts, const vector<float> &LookUpTable, bool ReverseOnly = 1, int rate = 1) {
 
 	if (FragInput.matches.size() == 0) return 0;
 
-	std::vector<Point> H1;
+	vector<Point> H1;
 	// get points from FragInput and store them in H1			
 	for (unsigned int i = 0; i < FragInput.matches.size(); i++) {
 
@@ -2450,14 +2455,14 @@ int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Option
 	}
 
 
-	clock_t begin = std::clock();
+	clock_t begin = clock();
 
 	//Sort the point by row
 	sort(H1.begin(), H1.end(), SortByRowOp<Point>()); // with same q and t coordinates, end point < start point
 
 	//cerr << "H1: " << H1 << endl;
-	std::vector<unsigned int> H2(H1.size());
-	//std::vector<unsigned int> H3(H1.size()); // TODO(Jingwen): Probably don't need this
+	vector<unsigned int> H2(H1.size());
+	//vector<unsigned int> H3(H1.size()); // TODO(Jingwen): Probably don't need this
 	iota(H2.begin(), H2.end(), 0);
 	//iota(H3.begin(), H3.end(), 0);
 
@@ -2467,8 +2472,8 @@ int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Option
 
 	
 
-	std::vector<info> Row;
-	std::vector<info> Col;
+	vector<info> Row;
+	vector<info> Col;
 	GetRowInfo(H1, Row);
 	GetColInfo(H1, H2, Col);
 	//cerr << "Row: " << Row << "\n";
@@ -2478,8 +2483,8 @@ int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Option
 	unsigned int m1 = 0;
 	unsigned int n2 = 0;
 	unsigned int m2 = 0;
-	//std::vector<Subproblem> SubR;
-	//std::vector<Subproblem> SubC;
+	//vector<Subproblem> SubR;
+	//vector<Subproblem> SubC;
 	StackOfSubProblems SubR1;
 	StackOfSubProblems SubC1;
 	int eeR1 = 0, eeC1 = 0;
@@ -2501,7 +2506,7 @@ int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Option
 
 
 	// Get SS_A_R1, SS_B_R1, SS_A_R2 and SS_B_R2 for each fragment
-	std::vector<Fragment_Info> Value(FragInput.matches.size());
+	vector<Fragment_Info> Value(FragInput.matches.size());
 	for (unsigned int t = 0; t < Row.size(); ++t) {
 		for (unsigned int tt = Row[t].pstart; tt < Row[t].pend; ++tt) {
 			//cerr << "Row H tt: " << tt << endl;
@@ -2599,7 +2604,7 @@ int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Option
 	// store the index of points
 	chain.clear();
 	TraceBack(SubR1, SubC1, SubR2, SubC2, Value, max_pos, chain);
-	std::reverse(chain.begin(), chain.end());
+	reverse(chain.begin(), chain.end());
 
 	// Clear SubR and SubC
 	SubR1.Clear(eeR1);
@@ -2608,7 +2613,7 @@ int SparseDP (const Cluster &FragInput, std::vector<unsigned int> &chain, Option
 	SubC2.Clear(eeC2);
 
 	// get the time for the program
-	clock_t end = std::clock();
+	clock_t end = clock();
 	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	//cerr << "Time: " << elapsed_secs << endl;
 	return 0;
