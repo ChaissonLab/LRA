@@ -4,6 +4,8 @@
 #include <vector>
 #include "TupleOps.h"
 #include "SplitClusters.h"
+#include "Timing.h"
+
 
 using namespace std;
 
@@ -124,7 +126,7 @@ DecideCoordinates (Cluster & cluster) {
 // NOTE: The extension for anchors should avoid overlapping;
 //
 void
-LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<unsigned int> & chain, Options & opts, Genome & genome, Read & read) {
+LinearExtend(Timing &timing, vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<unsigned int> & chain, Options & opts, Genome & genome, Read & read) {
 
 	vector<pair<GenomePos, bool>> Set;
 	int next, prev;
@@ -342,6 +344,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<uns
 	
 		assert(clusters[cm]->matches.size() >= extCluster[c].matches.size());
 	}
+	timing.Tick("LinearExtend");
 }
 
 

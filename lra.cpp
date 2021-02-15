@@ -274,7 +274,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			// opts.maxGap=30000;//30000
 			opts.NumAln=2;
    			opts.PrintNumAln = 1;
-   			opts.predefined_coefficient=15;	
+   			// opts.secondcoefficient=15;	
 			// opts.maxDiag=500; //500
 			opts.anchorstoosparse=0.03;
 			// opts.maxGap=1500;
@@ -320,6 +320,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.readname = string(GetArgv(argv, argc, argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "--firstcoefficient")) {
+			opts.firstcoefficient = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--secondcoefficient")) {
+			opts.secondcoefficient = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
 		else if (ArgIs(argv[argi], "--CheckTrueIntervalInFineCluster")) {
 			opts.CheckTrueIntervalInFineCluster = true;
 		}
@@ -330,6 +338,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "--maxGap")) {
 			opts.maxGap= atoi(GetArgv(argv,argc,argi));
 			++argi;
+		}
+		else if (ArgIs(argv[argi], "-o")) {
+			opts.outfile = argv[++argi];
 		}
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;

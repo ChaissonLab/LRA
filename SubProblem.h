@@ -124,6 +124,7 @@ public:
 		return StackSub.size();
 	}
 	void Clear(int & ee);
+	void clear();
 	void Push_Back(int & ee, Subproblem & s); // ee is current position in StackSub
 	void ClearSingle (int & ee);
 
@@ -132,6 +133,11 @@ public:
 	}
 };
 
+void
+StackOfSubProblems::clear() {
+	// clear vectors of each element in StackSub;
+	StackSub.clear();
+}
 
 void
 StackOfSubProblems::Clear (int & ee) {

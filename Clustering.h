@@ -56,6 +56,13 @@ long GapDifference(Tup &a, Tup &b) {
 }
 
 template<typename Tup>
+long minGapDifference (Tup &a, Tup &b) {
+	long aDiff = abs((long)b.first.pos - (long)a.first.pos);
+	long bDiff = abs((long)b.second.pos - (long)a.second.pos);
+	return min(aDiff, bDiff);
+}
+
+template<typename Tup>
 void AVGfreq(int &as, int &ae, vector<pair<Tup, Tup> > &matches, float &avgfreq) {
 	unordered_map<Tuple, int> miniCount;
 	for (int r = as; r < ae; r++) {
@@ -105,7 +112,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, Read &rea
 
 	int minDiagCluster = (int) floor(Largest_ClusterNum/10);
 	// cerr << "Largest_ClusterNum: " << Largest_ClusterNum << " minDiagCluster: " << minDiagCluster << endl;
-	if (opts.readType == Options::contig) {minDiagCluster = 100;}
+	if (opts.readType == Options::contig) {minDiagCluster = 30;}
 
 	// 
 	// Remove bins with number of anchors <= minDiagCluster
@@ -158,7 +165,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, Read &rea
 					// 	}
 					// 	rclust.close();
 					// }
-					if (avgfreq >= 50.0f) {
+					if (avgfreq >= 40.0f) {
 						int MinDiagCluster = 1000;
 						int CleanMaxDiag = 10;
 						SecondRoundCleanOffDiagonal(matches, MinDiagCluster, CleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);						
@@ -175,10 +182,16 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, Options &opts, Read &rea
 					}
 					else if (avgfreq >= 10.0f) {
 						// cerr << "Go second Clean" << endl;
-						int MinDiagCluster = 20;
+						int MinDiagCluster = 60;
 						int CleanMaxDiag = 10;
 						SecondRoundCleanOffDiagonal(matches, MinDiagCluster, CleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
 					}	
+					else if (avgfreq >= 5.0f) {
+						// cerr << "Go second Clean" << endl;
+						int MinDiagCluster = 30;
+						int CleanMaxDiag = 10;
+						SecondRoundCleanOffDiagonal(matches, MinDiagCluster, CleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
+					}
 					counter++;
 				}
 			}
@@ -530,11 +543,13 @@ class Cluster : public ClusterCoordinates {
 		}
 	}
 
-	void SetClusterBoundariesFromMatches (Options &opts) {
-		qStart = matches[0].first.pos;
-		qEnd = qStart + opts.globalK;
-		tStart = matches[0].second.pos;
-		tEnd = tStart + opts.globalK;
+	void SetClusterBoundariesFromMatches (Options &opts, bool append_prev_cluster=0) {
+		if (!append_prev_cluster) {
+			qStart = matches[0].first.pos;
+			qEnd = qStart + opts.globalK;
+			tStart = matches[0].second.pos;
+			tEnd = tStart + opts.globalK;
+		}	
 		for (int i = 1; i < matches.size(); i++) {
 			tEnd = max(tEnd, matches[i].second.pos + opts.globalK);
 			tStart = min(tStart, matches[i].second.pos);
@@ -838,7 +853,7 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 			u_end = k + 1;	
 			reset = 1;				
 			while (k < match_num.size() - 1 and match_num[k+1] == match_num[k] 
-				and abs(DiagonalDifference(matches[pos_start[k+1]], matches[pos_start[k]], strand)) < opts.maxDiag/2) { 
+				and abs(DiagonalDifference(matches[pos_start[k+1]], matches[pos_start[k]], strand)) < opts.maxDiag) { 
 				u_end = k + 2;
 				k++;
 				// reset = 1;
@@ -859,45 +874,55 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 	// Decide the u_minDiag and u_maxDiag of the unique stretches of anchors
 	//
 	int c_s = pos_start[u_maxstart], c_e = pos_start[u_maxend - 1] + 1;
+	assert(c_s >= s and c_e <= e and c_s <= c_e);
 
 	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-		ofstream uniquematch("UniqueMatch.tab", ofstream::app);
-		for (int h = 0; h < Start.size(); h++) {
-			for (int he = Start[h]; he < End[h]; he++) {
-				if (strand == 0) {
-					uniquematch << matches[pos_start[he]].first.pos << "\t"
-						  << matches[pos_start[he]].second.pos << "\t"
-						  << matches[pos_start[he]].first.pos  + opts.globalK << "\t"
-						  << matches[pos_start[he]].second.pos + opts.globalK << "\t"
-						  << outerIteration << "\t"
-						  << h << "\t"
-						  << End[h] - Start[h] << "\t"
-						  << strand << endl;
-				}
-				else {
-					uniquematch << matches[pos_start[he]].first.pos << "\t"
-						  << matches[pos_start[he]].second.pos + opts.globalK << "\t"
-						  << matches[pos_start[he]].first.pos + opts.globalK << "\t"
-						  << matches[pos_start[he]].second.pos << "\t"
-						  << outerIteration << "\t"
-						  << h << "\t"		
-						  << End[h] - Start[h] << "\t"		  
-						  << strand << endl;					
-				}					
-			}
-		}
-		uniquematch.close();
+		// ofstream uniquematch("UniqueMatch.tab", ofstream::app);
+		// for (int h = 0; h < Start.size(); h++) {
+		// 	for (int he = Start[h]; he < End[h]; he++) {
+		// 		if (strand == 0) {
+		// 			uniquematch << matches[pos_start[he]].first.pos << "\t"
+		// 				  << matches[pos_start[he]].second.pos << "\t"
+		// 				  << matches[pos_start[he]].first.pos  + opts.globalK << "\t"
+		// 				  << matches[pos_start[he]].second.pos + opts.globalK << "\t"
+		// 				  << outerIteration << "\t"
+		// 				  << h << "\t"
+		// 				  << End[h] - Start[h] << "\t"
+		// 				  << strand << endl;
+		// 		}
+		// 		else {
+		// 			uniquematch << matches[pos_start[he]].first.pos << "\t"
+		// 				  << matches[pos_start[he]].second.pos + opts.globalK << "\t"
+		// 				  << matches[pos_start[he]].first.pos + opts.globalK << "\t"
+		// 				  << matches[pos_start[he]].second.pos << "\t"
+		// 				  << outerIteration << "\t"
+		// 				  << h << "\t"		
+		// 				  << End[h] - Start[h] << "\t"		  
+		// 				  << strand << endl;					
+		// 		}					
+		// 	}
+		// }
+		// uniquematch.close();
 	}	
 
 	if (c_e - c_s >= opts.minUniqueStretchNum and matches[c_e-1].first.pos + opts.globalK - matches[c_s].first.pos >= opts.minUniqueStretchDist) { 
 		clusters.push_back(Cluster(0, 0, strand)); 
 		vector<bool> AddOrNot(Start.size(), 0);
 		list<int> StretchOfOne;
+		bool append_prev_cluster = 0;
+		int clast = clusters.size() - 2;
 
 		if (c_e - c_s == e - s) { // no need to extend - the whole rough cluster is a unique linear part
+			// // Check if can add to the previous cluster
+			// if (clast > 0 and GapDifference(clusters[clast].matches.back(), matches[c_s]) < opts.maxGap 
+			// 		and abs(DiagonalDifference(clusters[clast].matches.back(), matches[c_s], strand)) < opts.maxDiag) {
+			// 	clusters.pop_back();
+			// 	append_prev_cluster = 1;
+			// } 
 			for (int i = c_s; i < c_e; i++) {
 				clusters.back().matches.push_back(matches[i]);
 			}	
+			AddOrNot[0] = 1;
 		}
 		else {
 			//
@@ -928,8 +953,9 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 					// 	prev_stretch = i;
 					// }
 					// i--;
-
-					if (abs(DiagonalDifference(matches[i_m], matches[prev_anchor], strand)) <= opts.maxDiag) {
+					if ((abs(DiagonalDifference(matches[i_m], matches[prev_anchor], strand)) <= opts.maxDiag 
+							and minGapDifference(matches[i_m], matches[prev_anchor]) <= opts.maxGap)
+									or minGapDifference(matches[i_m], matches[prev_anchor]) <= opts.maxGap/2) {
 						assert(i < StretchOfOne.back());
 						StretchOfOne.push_back(i);
 						AddOrNot[i] = 1; // Add the stretch
@@ -965,8 +991,9 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 					// 	prev_stretch = i;
 					// }
 					// i++;
-
-					if (abs(DiagonalDifference(matches[i_m], matches[prev_anchor], strand)) <= opts.maxDiag) {
+					if ((abs(DiagonalDifference(matches[i_m], matches[prev_anchor], strand)) <= opts.maxDiag 
+							and minGapDifference(matches[i_m], matches[prev_anchor]) <= opts.maxGap)
+										or minGapDifference(matches[i_m], matches[prev_anchor]) <= opts.maxGap/2) {
 						assert(i > StretchOfOne.front());
 						StretchOfOne.push_front(i);
 						AddOrNot[i] = 1; // Add the stretch
@@ -1005,6 +1032,14 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 						prev_match = si;
 					}
 				}
+				// // Check if can add to the previous cluster
+				// if (it == StretchOfOne.rbegin() and !Cluster_index.empty()) {
+				// 	if (clast > 0 and GapDifference(clusters[clast].matches.back(), matches[Cluster_index.back()]) < opts.maxGap 
+				// 			and abs(DiagonalDifference(clusters[clast].matches.back(), matches[Cluster_index.back()], strand)) < opts.maxDiag) {
+				// 		clusters.pop_back();
+				// 		append_prev_cluster = 1;
+				// 	} 					
+				// }
 				for (vector<int>::reverse_iterator ci = Cluster_index.rbegin(); ci != Cluster_index.rend(); ++ci) {
 					clusters.back().matches.push_back(matches[*ci]);
 					//
@@ -1020,31 +1055,40 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 					}
 					*/
 				}
+				// // Check if can add to the previous cluster
+				// if (it == StretchOfOne.rbegin() and Cluster_index.empty()) {
+				// 	if (clast > 0 and GapDifference(clusters[clast].matches.back(), matches[c_s]) < opts.maxGap 
+				// 			and abs(DiagonalDifference(clusters[clast].matches.back(), matches[c_s], strand)) < opts.maxDiag) {
+				// 		clusters.pop_back();
+				// 		append_prev_cluster = 1;
+				// 	} 					
+				// }
 				// insert the unique anchors
 				for (int si = c_s; si < c_e; si++) {
 					clusters.back().matches.push_back(matches[si]);
+					// Check if can add to the previous cluster
 				}
 				if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-					ofstream uniquepart("UniquePart.tab", std::ofstream::app);
-					for (int si = c_s; si < c_e; si++) {
-						if (strand == 0) {
-							uniquepart << matches[si].first.pos << "\t"
-								  << matches[si].second.pos << "\t"
-								  << matches[si].first.pos+ opts.globalK << "\t"
-								  << matches[si].second.pos + opts.globalK << "\t"
-								  << outerIteration << "\t"
-								  << strand << endl;
-						}
-						else {
-							uniquepart << matches[si].first.pos << "\t"
-								  << matches[si].second.pos + opts.globalK << "\t"
-								  << matches[si].first.pos + opts.globalK << "\t"
-								  << matches[si].second.pos << "\t"
-								  << outerIteration << "\t"
-								  << strand << endl;					
-						}							
-					}
-					uniquepart.close();
+					// ofstream uniquepart("UniquePart.tab", std::ofstream::app);
+					// for (int si = c_s; si < c_e; si++) {
+					// 	if (strand == 0) {
+					// 		uniquepart << matches[si].first.pos << "\t"
+					// 			  << matches[si].second.pos << "\t"
+					// 			  << matches[si].first.pos+ opts.globalK << "\t"
+					// 			  << matches[si].second.pos + opts.globalK << "\t"
+					// 			  << outerIteration << "\t"
+					// 			  << strand << endl;
+					// 	}
+					// 	else {
+					// 		uniquepart << matches[si].first.pos << "\t"
+					// 			  << matches[si].second.pos + opts.globalK << "\t"
+					// 			  << matches[si].first.pos + opts.globalK << "\t"
+					// 			  << matches[si].second.pos << "\t"
+					// 			  << outerIteration << "\t"
+					// 			  << strand << endl;					
+					// 	}							
+					// }
+					// uniquepart.close();
 				}						
 				//
 				// extend the right end;
@@ -1073,8 +1117,14 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 		//
 		// Decide the cooridinates of the cluster;
 		//
-		clusters.back().SetClusterBoundariesFromMatches(opts);
+		clusters.back().SetClusterBoundariesFromMatches(opts, append_prev_cluster);
 		clusters.back().chromIndex = ri;
+		// debug
+		if (clusters.size() >= 2) {
+			assert(!(clusters.back().qStart == clusters[clusters.size() - 2].qStart and clusters.back().tStart == clusters[clusters.size() - 2].tStart
+				and clusters.back().qEnd == clusters[clusters.size() - 2].qEnd and clusters.back().tEnd == clusters[clusters.size() - 2].tEnd));
+		}
+
 
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream fineclusters("fineclusters_byunique.tab", std::ofstream::app);
@@ -1110,13 +1160,43 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 		//Check the rest unadded stretches. Add them to clusters
 		
 		for (int ar = 0; ar < AddOrNot.size(); ar++) { 
-			if (!AddOrNot[ar] and End[ar] - Start[ar] >= 10) {
+			if (!AddOrNot[ar] and End[ar] - Start[ar] >= 15) {
 				clusters.push_back(Cluster(0, 0, strand)); 
 				for (int i = pos_start[Start[ar]]; i < pos_start[End[ar] - 1] + 1; i++) {
 					clusters.back().matches.push_back(matches[i]);
 				}		
 				clusters.back().SetClusterBoundariesFromMatches(opts);
-				clusters.back().chromIndex = ri;			
+				clusters.back().chromIndex = ri;
+				if (clusters.size() >= 2) {
+					assert(!(clusters.back().qStart == clusters[clusters.size() - 2].qStart and clusters.back().tStart == clusters[clusters.size() - 2].tStart
+						and clusters.back().qEnd == clusters[clusters.size() - 2].qEnd and clusters.back().tEnd == clusters[clusters.size() - 2].tEnd));
+				}
+				if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+					ofstream fineclusters("fineclusters_byunique.tab", std::ofstream::app);
+					if (clusters.size() > 0) {
+						for (int h = 0; h < clusters.back().matches.size(); h++) {
+							if (strand == 0) {
+							   fineclusters << clusters.back().matches[h].first.pos << "\t"
+									  << clusters.back().matches[h].second.pos << "\t"
+									  << clusters.back().matches[h].first.pos + opts.globalK << "\t"
+									  << clusters.back().matches[h].second.pos + opts.globalK << "\t"
+									  << outerIteration << "\t"
+									  << clusters.size() - 1 << "\t"
+									  << strand << endl;
+							}
+							else {
+								fineclusters << clusters.back().matches[h].first.pos << "\t"
+									  << clusters.back().matches[h].second.pos + opts.globalK << "\t"
+									  << clusters.back().matches[h].first.pos + opts.globalK << "\t"
+									  << clusters.back().matches[h].second.pos<< "\t"
+									  << outerIteration << "\t"
+									  << clusters.size() - 1 << "\t"
+									  << strand << endl;					
+							}
+						}				
+					}
+					fineclusters.close();
+				}			
 			} 
 		}
 	}
@@ -1126,7 +1206,7 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 }
 
 void 
-SplitRoughClustersWithGaps(vector<pair<GenomeTuple, GenomeTuple> > &matches, Cluster &OriginalClusters, vector<Cluster> &split, Options &opts, int strand=0) {
+SplitRoughClustersWithGaps(vector<pair<GenomeTuple, GenomeTuple> > &matches, Cluster &OriginalClusters, vector<Cluster> &split, Options &opts, int &outIter, int strand=0) {
 
 	if (OriginalClusters.end - OriginalClusters.start == 0) {
 		return;
@@ -1144,7 +1224,7 @@ SplitRoughClustersWithGaps(vector<pair<GenomeTuple, GenomeTuple> > &matches, Clu
 		if (gap > opts.maxGap /*or diag_gap > opts.maxGap*/) {
 			// cerr << "GAP: " << gap << "\t" << m << "\t" << clusters[c].matches.size() << "\t" << clusters[c].matches[m].second.pos - clusters[c].matches[m-1].second.pos << "\t" << clusters[c].matches[m].first.pos - clusters[c].matches[m-1].first.pos << endl;
 			if ((m - split_cs) > opts.minClusterSize) {
-				split.push_back(Cluster(split_cs, m, split_qStart, split_qEnd, split_tStart, split_tEnd, OriginalClusters.strand));
+				split.push_back(Cluster(split_cs, m, split_qStart, split_qEnd, split_tStart, split_tEnd, OriginalClusters.strand, outIter));
 			}
 			split_qStart = matches[m].first.pos;
 			split_tStart = matches[m].second.pos;
@@ -1160,7 +1240,9 @@ SplitRoughClustersWithGaps(vector<pair<GenomeTuple, GenomeTuple> > &matches, Clu
 		}
 	}
 	int last = OriginalClusters.end;
-	split.push_back(Cluster(split_cs, last, split_qStart, split_qEnd, split_tStart, split_tEnd, OriginalClusters.strand));
+	if ((last - split_cs) > opts.minClusterSize) {
+		split.push_back(Cluster(split_cs, last, split_qStart, split_qEnd, split_tStart, split_tEnd, OriginalClusters.strand, outIter));
+	}
 }
 
 // void SplitClustersWithGaps(vector<Cluster> &clusters, vector<Cluster> &split, Options &opts) {
@@ -1368,16 +1450,16 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 		// sort fragments in allMatches by forward diagonal, then by first.pos(read)
 		//
 		DiagonalSort<GenomeTuple>(Matches, 500);
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-			ofstream fclust("for-matches_0.dots");
-			for (int m=0; m < Matches.size(); m++) {
-				fclust << Matches[m].first.pos << "\t" << Matches[m].second.pos << "\t" << opts.globalK + Matches[m].first.pos << "\t"
-						<< Matches[m].second.pos + opts.globalK << "\t" << m <<endl;
-			}
-			fclust.close();
-		}
+		// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		// 	ofstream fclust("for-matches_0.dots");
+		// 	for (int m=0; m < Matches.size(); m++) {
+		// 		fclust << Matches[m].first.pos << "\t" << Matches[m].second.pos << "\t" << opts.globalK + Matches[m].first.pos << "\t"
+		// 				<< Matches[m].second.pos + opts.globalK << "\t" << m <<endl;
+		// 	}
+		// 	fclust.close();
+		// }
 		CleanOffDiagonal(Matches, opts, read);
-		timing.Tick("CleanOffDiagonal_forward");
+		timing.Tick("CleanOffDiagonal");
 
 		//
 		// Matches --> roughclusters --> split_roughClusters --> fineclusters 
@@ -1387,15 +1469,15 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 		StoreDiagonalClusters(Matches, roughClusters, opts, 0, Matches.size()); // rough == true means only storing "start and end" in every clusters[i]
 		for (int c = 0; c < roughClusters.size(); c++) {
 			CartesianSort(Matches, roughClusters[c].start, roughClusters[c].end);
-			SplitRoughClustersWithGaps(Matches, roughClusters[c], split_roughClusters, opts, 0);
+			SplitRoughClustersWithGaps(Matches, roughClusters[c], split_roughClusters, opts, c, 0);
 		}
-		timing.Tick("roughclusters_forward");
+		timing.Tick("roughclusters");
 
 		for (int c = 0; c < split_roughClusters.size(); c++) {
 			int rci = genome.header.Find(split_roughClusters[c].tStart);
 			StoreFineClusters(rci, Matches, clusters, opts, split_roughClusters[c].start, split_roughClusters[c].end, genome, read, read.length, 0, c);
 		}
-		timing.Tick("fineclusters_forward");
+		timing.Tick("fineclusters");
 
 		//cerr << "roughClusters.size(): " << roughClusters.size() << " split_roughClusters.size(): " << split_roughClusters.size()<< endl;
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
@@ -1421,7 +1503,7 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 				int rci = genome.header.Find(split_roughClusters[m].tStart);
 				for (int c = split_roughClusters[m].start; c < split_roughClusters[m].end; ++c) {
 					wclust << Matches[c].first.pos << "\t" << Matches[c].second.pos << "\t" << opts.globalK + Matches[c].first.pos << "\t"
-						   << Matches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci] << endl;				
+						   << Matches[c].second.pos + opts.globalK << "\t" << m << "\t" << split_roughClusters[m].coarse << "\t"<< genome.header.names[rci] << endl;				
 				}
 			}
 			wclust.close();
@@ -1429,31 +1511,31 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 	}
 	else {
 		AntiDiagonalSort<GenomeTuple>(Matches, genome.GetSize(), 500);
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-			ofstream rclust("rev-matches_0.dots");
-			for (int m=0; m < Matches.size(); m++) {			
-				rclust << Matches[m].first.pos << "\t" << Matches[m].second.pos + opts.globalK << "\t" << opts.globalK + Matches[m].first.pos << "\t"
-						 << Matches[m].second.pos << "\t" << m << endl;
-			}
-			rclust.close();
-		}
+		// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		// 	ofstream rclust("rev-matches_0.dots");
+		// 	for (int m=0; m < Matches.size(); m++) {			
+		// 		rclust << Matches[m].first.pos << "\t" << Matches[m].second.pos + opts.globalK << "\t" << opts.globalK + Matches[m].first.pos << "\t"
+		// 				 << Matches[m].second.pos << "\t" << m << endl;
+		// 	}
+		// 	rclust.close();
+		// }
 		CleanOffDiagonal(Matches, opts, read, 1);
-		timing.Tick("CleanOffDiagonal_reverse");
+		timing.Tick("CleanOffDiagonal");
 
 		vector<Cluster> revroughClusters;
 		vector<Cluster> split_revroughClusters;
 		StoreDiagonalClusters(Matches, revroughClusters, opts, 0, Matches.size(), 1);
 		for (int c = 0; c < revroughClusters.size(); c++) {
 			CartesianSort(Matches, revroughClusters[c].start, revroughClusters[c].end);
-			SplitRoughClustersWithGaps(Matches, revroughClusters[c], split_revroughClusters, opts, 1);
+			SplitRoughClustersWithGaps(Matches, revroughClusters[c], split_revroughClusters, opts, c, 1);
 		}
-		timing.Tick("roughclusters_reverse");
+		timing.Tick("roughclusters");
 
 		for (int c = 0; c < split_revroughClusters.size(); c++) {
 			int rci = genome.header.Find(split_revroughClusters[c].tStart);
 			StoreFineClusters(rci, Matches, clusters, opts, split_revroughClusters[c].start, split_revroughClusters[c].end, genome, read, read.length, 1, c);
 		}	
-		timing.Tick("fineclusters_reverse");
+		timing.Tick("fineclusters");
 
 		// cerr << "revroughClusters.size(): " << revroughClusters.size() << " split_revroughClusters.dots: " << split_revroughClusters.size()<< endl;
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
@@ -1479,7 +1561,7 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 				int rci = genome.header.Find(split_revroughClusters[m].tStart);
 				for (int c = split_revroughClusters[m].start; c < split_revroughClusters[m].end; ++c) {
 					wclust << Matches[c].first.pos << "\t" << Matches[c].second.pos << "\t" << opts.globalK + Matches[c].first.pos << "\t"
-						   << Matches[c].second.pos + opts.globalK << "\t" << m << "\t" << genome.header.names[rci] << endl;				
+						   << Matches[c].second.pos + opts.globalK << "\t" << m << "\t" << split_revroughClusters[m].coarse << "\t" << genome.header.names[rci] << endl;				
 				}
 			}
 			wclust.close();

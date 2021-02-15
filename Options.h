@@ -61,7 +61,8 @@ public:
 	int minBinNum;
 	bool HighlyAccurate;
 	int splitdist;
-	float coefficient;
+	float firstcoefficient;
+	float secondcoefficient;
 	//int minimizerFreq;
 	int NumOfminimizersPerWindow;
 	bool Printsvsig;
@@ -83,7 +84,6 @@ public:
 	bool RefineBySDP;
 	int refineSpaceDiag;
 	float anchor_rate;
-	int predefined_coefficient;
 	float anchorstoosparse;
 	bool passthroughtag;
 	bool CheckTrueIntervalInFineCluster;
@@ -154,7 +154,8 @@ public:
 		minBinNum = 3;
 		HighlyAccurate = false;
 		splitdist = 100000;
-		coefficient = 18;  
+		firstcoefficient = 18; 
+		secondcoefficient = 12; 
 		//minimizerFreq = 50;
 		NumOfminimizersPerWindow = 5;
 		Printsvsig=false;
@@ -173,7 +174,6 @@ public:
 		RefineBySDP=true;
 		refineSpaceDiag=5;
 		anchor_rate=1.0;
-		predefined_coefficient=12;
 		anchorstoosparse=0.02;
 		passthroughtag=false;
 		CheckTrueIntervalInFineCluster=false;
