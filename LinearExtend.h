@@ -550,4 +550,16 @@ TrimOverlappedAnchors(GenomePairs &ExtendPairs, vector<int> &ExtendPairsMatchesL
 	
 }
 
+void
+LinearExtend_chain(vector<Primary_chain> &Primary_chains, vector<Cluster> &ExtendClusters, vector<Cluster*> &RefinedClusters, 
+			Options &smallOpts, Genome &genome, Read &read, int &p, int &h) {
+	//
+	// Do linear extension for each anchors and avoid overlapping locations;
+	// INPUT: RefinedClusters; OUTPUT: ExtendClusters;
+	// NOTICE: ExtendClusters have members: strand, matches, matchesLengths, GenomePos, chromIndex;
+	//
+	LinearExtend(RefinedClusters, ExtendClusters, Primary_chains[p].chains[h].ch, smallOpts, genome, read);
+	TrimOverlappedAnchors(ExtendClusters);
+}
+
 #endif

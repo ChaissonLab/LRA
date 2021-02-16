@@ -15,7 +15,6 @@
 #include <assert.h>
 #include <chrono> // generate random number
 #include <random> // generate random number
-#include <ctime>
 #include <type_traits>
  
 
@@ -1687,7 +1686,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	//
 	// Decide the rate;
 	//
-	float rate = 8;//2
+	float rate = 2;//2
 	//if ((float)totalMatch / (float) read.length <= 0.005) rate = 4; //2 0.01
 	//cerr << "totalMatch/read.length: " << (float)totalMatch / (float) read.length << " rate: " << rate << endl;
 
@@ -2107,19 +2106,25 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	TraceBack(SubR1, SubC1, SubR2, SubC2, Value, max_pos, finalchain.chain); // NOTICE: This chain is from the last anchors to the first anchor;
 
 	// Clear SubR and SubC
-	SubR1.Clear(eeR1);
-	SubC1.Clear(eeC1);
-	SubR2.Clear(eeR2);
-	SubC2.Clear(eeC2);
+	// SubR1.Clear(eeR1);
+	// SubC1.Clear(eeC1);
+	// SubR2.Clear(eeR2);
+	// SubC2.Clear(eeC2);
+	SubR1.clear();
+	SubC1.clear();
+	SubR2.clear();
+	SubC2.clear();
 	Value.clear();
+	Row.clear();
+	Col.clear();
 	H1.clear();
 	H2.clear();
 
-	// get the time for the program
+	// get the Timing for the program
 	//clock_t end = clock();
 	//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-	//cerr << "Time: " << elapsed_secs << endl;
-
+	//cerr << "Timing: " << elapsed_secs << endl;
+	// timing.Tick("SparseDP_anchors");
 	return 0;
 }
 
@@ -2337,18 +2342,24 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 	DecidePrimaryChains(FragInput, SubR1, SubC1, SubR2, SubC2, Value, Primary_chains, read, opts);
 
 	// Clear SubR and SubC
-	SubR1.Clear(eeR1);
-	SubC1.Clear(eeC1);
-	SubR2.Clear(eeR2);
-	SubC2.Clear(eeC2);
+	// SubR1.Clear(eeR1);
+	// SubC1.Clear(eeC1);
+	// SubR2.Clear(eeR2);
+	// SubC2.Clear(eeC2);
+	SubR1.clear();
+	SubC1.clear();
+	SubR2.clear();
+	SubC2.clear();
 	Value.clear();
+	Row.clear();
+	Col.clear();
 	H1.clear();
 	H2.clear();
 
-	// get the time for the program
+	// get the Timing for the program
 	//clock_t end = clock();
 	//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-	//cerr << "Time: " << elapsed_secs << endl;
+	//cerr << "Timing: " << elapsed_secs << endl;
 
 	return 0;
 }
@@ -2612,17 +2623,12 @@ int SparseDP (const Cluster &FragInput, vector<unsigned int> &chain, Options &op
 	SubR2.Clear(eeR2);
 	SubC2.Clear(eeC2);
 
-	// get the time for the program
+	// get the Timing for the program
 	clock_t end = clock();
 	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-	//cerr << "Time: " << elapsed_secs << endl;
+	//cerr << "Timing: " << elapsed_secs << endl;
 	return 0;
 }
 */
-
-
-
-
-
 
 #endif

@@ -360,7 +360,7 @@ class Alignment {
 		int p=0;
 		nm=nmm=nins=ndel=0;
 		value=0;
-		opts.coefficient = 3;//3
+		float coefficient = 3.0f;//3
 		while (i < query.size()) {
 			p=i;
 			while (i < query.size() and seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
@@ -385,10 +385,10 @@ class Alignment {
 				tdel+=i-p;
 				ndel++;
 				//if (i-p<=10) {ndel++;}
-				if (i-p < 501) {value += -opts.coefficient*logf(i-p) - 1;}
+				if (i-p < 501) {value += -coefficient*logf(i-p) - 1;}
 				else if (i-p <= 10001){
 					int a = (int)floor((i-p-501)/5);
-					value += -opts.coefficient*LookUpTable[a] - 1;
+					value += -coefficient*LookUpTable[a] - 1;
 				}
 				else if (i-p <= 100001) {value += -1000;}
 				else {value += -2000;}
@@ -401,10 +401,10 @@ class Alignment {
 				tins+=i-p;
 				nins++;
 				//if (i-p<=10) {nins++;}
-				if (i-p < 501) {value += -opts.coefficient*logf(i-p) - 1;}
+				if (i-p < 501) {value += -coefficient*logf(i-p) - 1;}
 				else if (i-p <= 10001){
 					int a = (int)floor((i-p-501)/5);
-					value += -opts.coefficient*LookUpTable[a] - 1;
+					value += -coefficient*LookUpTable[a] - 1;
 				}
 				else if (i-p <= 100001) {value += -1000;}
 				else {value += -2000;}

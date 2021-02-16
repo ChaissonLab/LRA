@@ -15,7 +15,6 @@
 #include <assert.h>
 #include <chrono> // generate random number
 #include <random> // generate random number
-#include <ctime>
 #include <type_traits>
  
 
@@ -468,8 +467,15 @@ int SparseDP_ForwardOnly (const GenomePairs &FragInput, const vector<int> &Match
 	//std::reverse(chain.begin(), chain.end());
 
 	// Clear SubR and SubC
-	SubR1.Clear(eeR1);
-	SubC1.Clear(eeC1);
+	// SubR1.Clear(eeR1);
+	// SubC1.Clear(eeC1);
+	SubR1.clear();
+	SubC1.clear();
+	Row.clear();
+	Col.clear();
+	H1.clear();
+	H2.clear();
+
 
 /*	// print out the final chain
 	cerr << "FinalChain: (";
@@ -478,7 +484,6 @@ int SparseDP_ForwardOnly (const GenomePairs &FragInput, const vector<int> &Match
 	}
 	cerr << ")" << endl;
 */
-
 	return 0;
 
 }

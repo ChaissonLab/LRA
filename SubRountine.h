@@ -31,61 +31,73 @@ using std::endl;
 float
 w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts, bool &step_sdp) {  // step_sdp == 0 means the first sdp; step_sdp == 1 means the second sdp;
 	long int x = labs(j - i) + 1; 
-
 	if (x == 1) return 0;
 	int a = (int) floor((x-1)/5);
-
-	if (opts.LookUpTable) {
-		if (x <= 10) {
-			return - x;
+	if (step_sdp == 0) {
+		if (opts.LookUpTable) {
+			if (x <= 20) {
+				return -x;
+			}
+			else if (x <= 10001){
+				// check LookUpTable
+				// TODO(Jingwen): finish the code here
+				return - opts.firstcoefficient*LookUpTable[a] - 1;
+			}
+			else if (x <= 100001){
+				return -2000;
+			}
+			else {
+				return -4000;
+			}
 		}
-		else if (x <= 1000) {
-			return - 18 * LookUpTable[a] - 32;
-		}
-		else if (x <= 2000) {
-			return - 36 * LookUpTable[a] - 156;
-		}
-		else if (x <= 3000) {
-			return - 72 * LookUpTable[a] - 430;
-		}
-		else if (x <= 4000) {
-			return - 144 * LookUpTable[a] - 1006;
-		}
-		else if (x <= 5000) {
-			return - 288 * LookUpTable[a] - 2200;
-		}
-		else if (x <= 6000) {
-			return - 576 * LookUpTable[a] - 4653;
-		}
-		else if (x <= 7000) {
-			return - 1152 * LookUpTable[a] - 9664;
-		}
-		else if (x <= 100000) {
-			return - 533 - 0.2 * x;
-		}
-		// else if (x <= 100000) {
-		// 	if (step_sdp == 1) return -10533 - 0.3 * x; //-800
-		// 	else return -20000;	
-		// }		
 		else {
-			if (step_sdp == 1) return -100000;
-			else return -200000;
-		} 
+			if (x < 501) {
+				return - opts.firstcoefficient*logf(x) - 1;  
+			}
+			else if (x <= 10001) {
+				return - opts.firstcoefficient*logf(x) - 1;  
+			}
+			else if (x <= 100001) {
+				return - opts.firstcoefficient*logf(x) - 1;
+			}
+			else {
+				return - opts.firstcoefficient*logf(x) - 1;	
+			}
+		}
 	}
 	else {
-		if (x < 501) {
-			return - opts.coefficient*logf(x) - 1;  
-		}
-		else if (x <= 10001) {
-			return - opts.coefficient*logf(x) - 1;  
-		}
-		else if (x <= 100001) {
-			return - opts.coefficient*logf(x) - 1;
+		if (opts.LookUpTable) {
+			if (x <= 20) {
+				return -x;
+			}
+			else if (x <= 10001){
+				// check LookUpTable
+				// TODO(Jingwen): finish the code here
+				return - opts.secondcoefficient*LookUpTable[a] - 1;
+			}
+			else if (x <= 100001){
+				return -1000; //-800
+			}
+			else {
+				return -2000;
+			}
 		}
 		else {
-			return - opts.coefficient*logf(x) - 1;	
-		}
+			if (x < 501) {
+				return - opts.secondcoefficient*logf(x) - 1;  
+			}
+			else if (x <= 10001) {
+				return - opts.secondcoefficient*logf(x) - 1;  
+			}
+			else if (x <= 100001) {
+				return - opts.secondcoefficient*logf(x) - 1;
+			}
+			else {
+				return - opts.secondcoefficient*logf(x) - 1;	
+			}
+		}		
 	}
+
 }
 	// original gap penalty
 	// 	if (x < 501) {
