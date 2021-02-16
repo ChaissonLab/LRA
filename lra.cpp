@@ -213,6 +213,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.refineLevel = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "-o")) {
+			opts.outfile = GetArgv(argv, argc, argi);
+			++argi;
+		}
 		else if (ArgIs(argv[argi], "--stride")) {
 			opts.readStride = atoi(GetArgv(argv, argc, argi));
 			++argi;
