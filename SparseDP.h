@@ -34,7 +34,6 @@
 #include "Clustering.h"
 #include "Read.h"
 #include "Chain.h"
-#include "Timing.h"
 
 using std::cerr;
 using std::cout;
@@ -1668,7 +1667,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 // This SDP needs to increase the cost for linking 2 anchors of different directions;
 //
 int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain & finalchain, Options & opts, 
-			 const vector<float> & LookUpTable, Read & read, Timing &timing) {
+			 const vector<float> & LookUpTable, Read & read) {
 
 	if (inputChain.size() == 0) return 0;
 	//
@@ -2125,7 +2124,7 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	//clock_t end = clock();
 	//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	//cerr << "Timing: " << elapsed_secs << endl;
-	timing.Tick("SparseDP_anchors");
+	// timing.Tick("SparseDP_anchors");
 	return 0;
 }
 
@@ -2631,10 +2630,5 @@ int SparseDP (const Cluster &FragInput, vector<unsigned int> &chain, Options &op
 	return 0;
 }
 */
-
-
-
-
-
 
 #endif

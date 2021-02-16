@@ -4,8 +4,6 @@
 #include <vector>
 #include "TupleOps.h"
 #include "SplitClusters.h"
-#include "Timing.h"
-
 
 using namespace std;
 
@@ -126,7 +124,7 @@ DecideCoordinates (Cluster & cluster) {
 // NOTE: The extension for anchors should avoid overlapping;
 //
 void
-LinearExtend(Timing &timing, vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<unsigned int> & chain, Options & opts, Genome & genome, Read & read) {
+LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<unsigned int> & chain, Options & opts, Genome & genome, Read & read) {
 
 	vector<pair<GenomePos, bool>> Set;
 	int next, prev;
@@ -344,7 +342,6 @@ LinearExtend(Timing &timing, vector<Cluster*> clusters, vector<Cluster> & extClu
 	
 		assert(clusters[cm]->matches.size() >= extCluster[c].matches.size());
 	}
-	timing.Tick("LinearExtend");
 }
 
 
@@ -551,6 +548,18 @@ TrimOverlappedAnchors(GenomePairs &ExtendPairs, vector<int> &ExtendPairsMatchesL
 		}
 	}
 	
+}
+
+void
+LinearExtend_chain(vector<Primary_chain> &Primary_chains, vector<Cluster> &ExtendClusters, vector<Cluster*> &RefinedClusters, 
+			Options &smallOpts, Genome &genome, Read &read, int &p, int &h) {
+	//
+	// Do linear extension for each anchors and avoid overlapping locations;
+	// INPUT: RefinedClusters; OUTPUT: ExtendClusters;
+	// NOTICE: ExtendClusters have members: strand, matches, matchesLengths, GenomePos, chromIndex;
+	//
+	LinearExtend(RefinedClusters, ExtendClusters, Primary_chains[p].chains[h].ch, smallOpts, genome, read);
+	TrimOverlappedAnchors(ExtendClusters);
 }
 
 #endif

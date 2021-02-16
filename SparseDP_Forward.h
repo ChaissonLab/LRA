@@ -32,7 +32,6 @@
 #include "TupleOps.h"
 #include "Options.h"
 #include "Clustering.h"
-#include "Timing.h"
 
 
 using std::cerr;
