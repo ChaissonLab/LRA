@@ -11,6 +11,7 @@ class Read {
 	char *passthrough;
 	string name;
 	int flags;
+	bool unaligned; 
 	void Clear() {
 		if (seq != NULL) {
 			delete[] seq;
@@ -34,6 +35,7 @@ class Read {
 		name="";
 		passthrough=NULL;
 		flags=0;
+		unaligned=0;
 	}
 	Read(char* _sq, int _len, string _name, char*_qual=NULL) {
 		seq=_sq;
@@ -41,13 +43,13 @@ class Read {
 		qual=_qual;
 		passthrough=NULL;
 		name=_name;
+		unaligned=0;
 	}
 	Read& operator=(const Read& rhs) {
-
 		length=rhs.length;
 		seq = NULL;
 		qual= NULL;
-
+		unaligned=0;
 		if (rhs.length > 0) {
 			if (rhs.seq != NULL) {
 				seq = new char[length];

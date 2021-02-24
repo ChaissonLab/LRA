@@ -153,7 +153,7 @@ public:
 		binLength = 20000;
 		minBinNum = 3;
 		HighlyAccurate = false;
-		splitdist = 100000;
+		splitdist = 50000;
 		firstcoefficient = 18; 
 		secondcoefficient = 12; 
 		//minimizerFreq = 50;
@@ -174,7 +174,7 @@ public:
 		RefineBySDP=true;
 		refineSpaceDiag=5;
 		anchor_rate=1.0;
-		anchorstoosparse=0.02;
+		anchorstoosparse=0.01;
 		passthroughtag=false;
 		CheckTrueIntervalInFineCluster=false;
 		CalculateMinimizerStats=false;

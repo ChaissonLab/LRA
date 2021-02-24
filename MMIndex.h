@@ -319,9 +319,9 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	//
 	// Get the frequency for minimizers; Store the frequency in Freq;
 	//
-	int rz = 1;
-	if (header.pos.back()/1000000000 > 1) {rz = header.pos.back()/1000000000;}
-	int RANGE = opts.globalMaxFreq * rz;
+	// int rz = 1;
+	// if (header.pos.back()/1000000000 > 1) {rz = header.pos.back()/1000000000;}
+	// int RANGE = opts.globalMaxFreq * rz;
 	vector<bool> Remove (minimizers.size(), 0);
 	vector<uint32_t> Freq(minimizers.size(), 0);
 
@@ -334,7 +334,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	while (n < minimizers.size()) {
 		ne = n + 1;
 		while (ne < minimizers.size() and (minimizers[ne].t & for_mask) == (minimizers[n].t & for_mask)) {ne++;}
-		if (ne - n > RANGE) { // opts.minimizerFreq*rz is the rough threshold
+		if (ne - n > opts.globalMaxFreq) { // opts.minimizerFreq*rz is the rough threshold
 			for (uint32_t i = n; i < ne; i++) {
 				Freq[i] = ne - n;
 				Remove[i] = 1;
@@ -352,7 +352,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		n = ne;
 	}
 	assert(removed + unremoved == Remove.size());
-	cerr << unremoved << " minimizers with multiplicity samller than " << RANGE << endl;
+	cerr << unremoved << " minimizers with multiplicity samller than " << opts.globalMaxFreq << endl;
 	//
 	// Sort unremoved minimizers by frequency 
 	// Use count sort
@@ -360,7 +360,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	uint32_t sz = header.pos.back()/opts.globalWinsize;
 	if (header.pos.back()/opts.globalWinsize % opts.globalWinsize > 0) sz += 1;
 	vector<uint32_t> Sortindex(unremoved, 0);
-	CountSort(Freq, RANGE, Remove, Sortindex);
+	CountSort(Freq, opts.globalMaxFreq, Remove, Sortindex);
 
 	vector<uint32_t> winCount(sz, opts.NumOfminimizersPerWindow); // 50 is a parameter that can be changed 
 	for (uint32_t s = 0; s < Sortindex.size(); s++) {

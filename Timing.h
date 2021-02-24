@@ -56,7 +56,7 @@ public:
 	void Summarize(const string &outFileName) {
 		long total=0;
 		ofstream outFile(outFileName.c_str());
-		for (int i=0;i<ticks.size(); i++) {
+		for (int i=0; i<ticks.size(); i++) {
 			total+= ticks[i];
 		}
 		for (int i=0; i < ticks.size(); i++) {
