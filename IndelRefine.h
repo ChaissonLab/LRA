@@ -187,7 +187,7 @@ void IndelRefineAlignment(Read &read,
 							}
 							if (tOff + ki < qS.size()) {
 								if (qS[tOff+ki] == 0 or qS[tOff+ki] > q) {
-									cout << "START " << startBlock << "\tROW " << tOff+ki << "\tgap qs " << tOff+ki << "\t" << qE[tOff+ki] << "\t" << q << endl;
+									//									cout << "START " << startBlock << "\tROW " << tOff+ki << "\tgap qs " << tOff+ki << "\t" << qE[tOff+ki] << "\t" << q << endl;
 									qS[tOff+ki] = q;
 								}
 							}
