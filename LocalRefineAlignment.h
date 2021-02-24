@@ -680,9 +680,9 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 					alignment->UpdateParameters(str, tinyOpts, LookUpTable, svsigstrm, strands);
 					Alignment *inv_alignment = new Alignment(inv_value, strands[str], read.seq, read.length, read.name, inv_str, read.qual, genome.seqs[chromIndex],  
 																		 genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex); 
-					alignment->NumOfAnchors1 = BtwnChain.size();
+					inv_alignment->NumOfAnchors1 = BtwnChain.size();
 					// alignment->NumOfAnchors0 = BtwnChain.size();
-					alignment->Supplymentary = 1;
+					inv_alignment->Supplymentary = 1;
 					alignments.back().SegAlignment.push_back(inv_alignment);	
 				}
 				
