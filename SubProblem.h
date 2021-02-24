@@ -127,6 +127,7 @@ public:
 	void clear();
 	void Push_Back(int & ee, Subproblem & s); // ee is current position in StackSub
 	void ClearSingle (int & ee);
+	void pop_back();
 
 	Subproblem & operator[](int i) {
 		return StackSub[i];
@@ -139,10 +140,14 @@ StackOfSubProblems::clear() {
 	StackSub.clear();
 }
 
+void 
+StackOfSubProblems::pop_back() {
+	StackSub.pop_back();
+}
+
 void
 StackOfSubProblems::Clear (int & ee) {
 	// clear vectors of each element in StackSub;
-
 	for (int i = 0; i <= ee - 1; ++i) {
 		StackSub[i].num = 0;
 		StackSub[i].now = 0;

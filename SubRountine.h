@@ -39,15 +39,16 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts
 				return -x;
 			}
 			else if (x <= 10001){
-				// check LookUpTable
-				// TODO(Jingwen): finish the code here
 				return - opts.firstcoefficient*LookUpTable[a] - 1;
 			}
-			else if (x <= 100001){
+			else if (x <= 500001) {
 				return -2000;
 			}
-			else {
+			else if (x <= 100001){
 				return -4000;
+			}
+			else {
+				return -6000;
 			}
 		}
 		else {
@@ -71,15 +72,16 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts
 				return -x;
 			}
 			else if (x <= 10001){
-				// check LookUpTable
-				// TODO(Jingwen): finish the code here
 				return - opts.secondcoefficient*LookUpTable[a] - 1;
 			}
+			else if (x <= 500001) {
+				return -2000;
+			}
 			else if (x <= 100001){
-				return -1000; //-800
+				return -4000; //-800
 			}
 			else {
-				return -2000;
+				return -6000;
 			}
 		}
 		else {
@@ -97,7 +99,6 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts
 			}
 		}		
 	}
-
 }
 	// original gap penalty
 	// 	if (x < 501) {
@@ -168,7 +169,6 @@ FindValueInBlock (long int ForwardDiag, std::stack<LPair> & S_1, std::vector<lon
 unsigned int
 FindBoundary (unsigned int first, unsigned int last, unsigned int a, unsigned int b, std::vector<long int> & Di, 
 				std::vector<float> & Dv, std::vector<long int> & Ei, const std::vector<float> & LookUpTable, Options &opts, bool &step_sdp) {
-
 	if (b != -1) {
 		unsigned int it;
 		unsigned int count, step;
@@ -185,7 +185,6 @@ FindBoundary (unsigned int first, unsigned int last, unsigned int a, unsigned in
 	else {
 		first = Ei.size();
 	}
-
 	return first;
 }
 
@@ -234,8 +233,6 @@ Maximization (unsigned int & now, long int & last, std::vector<long int> & Di, s
 				//cerr << "Block: " << Block << ",  S_1: " << S_1 << endl;
 			}
 
-
-
 			// Update the blocks 
 			long int l = S_1.top().first; 
 
@@ -269,9 +266,7 @@ Maximization (unsigned int & now, long int & last, std::vector<long int> & Di, s
 				S_1.push(e);
 				//cerr << "push pair " << e << "to the S_1" << endl;
 			}	
-
 		}
-
 	}
 
 
@@ -295,7 +290,6 @@ Maximization (unsigned int & now, long int & last, std::vector<long int> & Di, s
 	last = now;
 	//cerr << "Block: " << Block << endl;
 	//cerr << "S_1: " << S_1 << endl;
-
 }
 
 

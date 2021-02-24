@@ -40,15 +40,13 @@ using std::cout;
 using std::endl;
 using std::iota;
 
-
 void 
-ComputeMatchStart(vector<unsigned int> & MatchNum, int & totalMatch, const vector<Cluster> & FragInput, SplitChain & inputChain){
-	totalMatch = FragInput[inputChain[0]].matches.size();
+ComputeMatchStart(vector<unsigned int> & MatchNum, int & totalMatch, const vector<Cluster_SameDiag *> & FragInput, SplitChain & inputChain){
+	totalMatch = FragInput[inputChain[0]]->size();
 	for (int c = 1; c < inputChain.size(); c++) {
-		totalMatch += FragInput[inputChain[c]].matches.size();
-		MatchNum[c] = FragInput[inputChain[c - 1]].matches.size();
+		totalMatch += FragInput[inputChain[c]]->size();
+		MatchNum[c] = FragInput[inputChain[c - 1]]->size();
 	}
-
 	for (int c = 1; c < MatchNum.size(); c++) {
 		MatchNum[c] = MatchNum[c-1] + MatchNum[c]; 
 	}
@@ -56,8 +54,7 @@ ComputeMatchStart(vector<unsigned int> & MatchNum, int & totalMatch, const vecto
 
 
 void
-insertPointsPair(const vector<Cluster> & FragInput, vector<Point> & H1, unsigned int frag_num, GenomePos & qs, GenomePos & ts, 
-									int & length, int & clusterNum, int & matchstartNum, int Pair, int strand) {
+insertPointsPair(vector<Point> & H1, unsigned int frag_num, GenomePos qs, GenomePos ts, int length, int &clusterNum, int Pair, int strand) {
 	if (Pair == 0) {
 		// 
 		// Insert pair s1 and e1;
@@ -71,7 +68,7 @@ insertPointsPair(const vector<Cluster> & FragInput, vector<Point> & H1, unsigned
 		H1.back().se.second = ts;										
 		H1.back().orient = strand; // forward strand
 		H1.back().clusterNum = clusterNum; 
-		H1.back().matchstartNum = matchstartNum;
+		// H1.back().matchstartNum = matchstartNum;
 
 		// insert end point e1 into H1
 		Point e1;
@@ -83,7 +80,7 @@ insertPointsPair(const vector<Cluster> & FragInput, vector<Point> & H1, unsigned
 		H1.back().se.second = ts + length;
 		H1.back().orient = strand; 	
 		H1.back().clusterNum = clusterNum; 
-		H1.back().matchstartNum = matchstartNum;		
+		// H1.back().matchstartNum = matchstartNum;		
 	}
 	else {
 		// 
@@ -95,10 +92,10 @@ insertPointsPair(const vector<Cluster> & FragInput, vector<Point> & H1, unsigned
 		H1.back().inv = 0; // backward direction
 		H1.back().frag_num = frag_num;
 		H1.back().se.first = qs; 
-		H1.back().se.second = ts + length - 1; //// TODO(Jingwen): fix this "-1" in the other SparseDP
+		H1.back().se.second = ts + length; //// TODO(Jingwen): fix this "-1" in the other SparseDP
 		H1.back().orient = strand; // reversed strand			
 		H1.back().clusterNum = clusterNum; 
-		H1.back().matchstartNum = matchstartNum;	
+		// H1.back().matchstartNum = matchstartNum;	
 
 		// insert end point e2 into H1
 		Point e2;
@@ -108,10 +105,10 @@ insertPointsPair(const vector<Cluster> & FragInput, vector<Point> & H1, unsigned
 		H1.back().frag_num = frag_num;
 		H1.back().se.first = qs + length;
 		assert(ts != 0); // IF this happens, just delete all the "-1" in the section of inserting points;
-		H1.back().se.second = ts - 1;
+		H1.back().se.second = ts;
 		H1.back().orient = strand; // reversed strand			
 		H1.back().clusterNum = clusterNum; 
-		H1.back().matchstartNum = matchstartNum;		
+		// H1.back().matchstartNum = matchstartNum;		
 	}
 
 }
@@ -200,10 +197,6 @@ PassValueToD1 (unsigned int i, vector<Fragment_Info> & Value, const vector<Point
 	}
 	//cerr << endl << endl;
 }
-
-
-
-
 
 
 void 
@@ -714,16 +707,16 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 						// if the current anchor is reverse oriented and the previous anchor is also reverse oriented, then do not update Value[ii]
 						// Otherwise update Value[ii]
 						//if (! (Value[ii].orient == 0 and Value[p].orient == 0)) { 
-							if (Value[ii].val < SubR1[j].Ev[i1]) {  
-								Value[ii].val = SubR1[j].Ev[i1];
-								Value[ii].prev_sub = SubR1[j].num;
-								Value[ii].prev_ind = i1;
-								Value[ii].prev = 1; // the best value comes from row subproblem
-								Value[ii].inv = 1; // the best value comes from SubR1
-								//cerr << "update the value of this point\n";
-								//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
-								//", Value[ii].prev: " << Value[ii].prev << endl;
-							}			
+						if (Value[ii].val < SubR1[j].Ev[i1]) {  
+							Value[ii].val = SubR1[j].Ev[i1];
+							Value[ii].prev_sub = SubR1[j].num;
+							Value[ii].prev_ind = i1;
+							Value[ii].prev = 1; // the best value comes from row subproblem
+							Value[ii].inv = 1; // the best value comes from SubR1
+							//cerr << "update the value of this point\n";
+							//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
+							//", Value[ii].prev: " << Value[ii].prev << endl;
+						}			
 						//}	
 						assert(Value[ii].counter_B_R1 != 0);
 						--Value[ii].counter_B_R1;	
@@ -796,16 +789,16 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 						// If the current anchor is reverse oriented and the previous anchor is also reverse oriented, then do not update Value[ii]
 						// Otherwise update Value[ii]
 						//if (! (Value[ii].orient == 0 and Value[p].orient == 0)) {
-							if (Value[ii].val < SubC1[j].Ev[i1]) {  
-								Value[ii].val = SubC1[j].Ev[i1];
-								Value[ii].prev_sub = SubC1[j].num;
-								Value[ii].prev_ind = i1;
-								Value[ii].prev = 0; // the best value comes from col subproblem
-								Value[ii].inv = 1; // the best value comes from SubC1
-								//cerr << "update the value of this point\n";
-								//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
-								//", Value[ii].prev: " << Value[ii].prev << endl;
-							}	
+						if (Value[ii].val < SubC1[j].Ev[i1]) {  
+							Value[ii].val = SubC1[j].Ev[i1];
+							Value[ii].prev_sub = SubC1[j].num;
+							Value[ii].prev_ind = i1;
+							Value[ii].prev = 0; // the best value comes from col subproblem
+							Value[ii].inv = 1; // the best value comes from SubC1
+							//cerr << "update the value of this point\n";
+							//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
+							//", Value[ii].prev: " << Value[ii].prev << endl;
+						}	
 						//}
 						assert(Value[ii].counter_B_C1 != 0);
 						--Value[ii].counter_B_C1;	
@@ -986,7 +979,7 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 template<typename Tup>
 void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
 				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, Options & opts, 
-				 const vector<float> & LookUpTable, const vector<Tup> & FragInput, SplitChain & inputChain, 
+				 const vector<float> & LookUpTable, const vector<Tup*> &FragInput, SplitChain & inputChain, 
 				 	const vector<unsigned int> & MatchStart, float & rate) { // vector<ClusterCoordinates> & FragInput
 	bool step_sdp = 1;
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
@@ -998,8 +991,9 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 		//cerr << "the Value[" << H1[H3[i]].frag_num << "] of this point:  " <<  Value[H1[H3[i]].frag_num] << "\n";
 		
 		unsigned int ii = H1[i].frag_num;
-		int mi = H1[i].matchstartNum;
-
+		// int mi = H1[i].matchstartNum;
+		int fi = H1[i].clusterNum;
+		int ms = FragInput[fi]->matchStart;
 
 		if (H1[i].ind == 1 and H1[i].inv == 1) { // H1[i] is a start point s1
 			//cerr << "----------------------------------------this is a start point (s1) ------------------------------------" << endl;
@@ -1050,8 +1044,8 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 						
 
 						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step_sdp) + 
-																rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
-																//min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
+																rate * FragInput[fi]->length(ii - ms);
+																//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]];
 						SubR1[j].Ep[i1] = i2;							
 
 						//cerr << "SubR1[" << j << "].Ev[" << i1 << "]: " << SubR1[j].Ev[i1] << ", SubR1[" << j << "].Ep[" << i1 << "]: " << SubR1[j].Ep[i1] << "\n"; 
@@ -1134,8 +1128,8 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 	//					SubC1[j].Ep[i1] = i2;							
 
 						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step_sdp) + 
-																	rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
-																//min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
+																	rate * FragInput[fi]->length(ii - ms);
+																//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]];
 						SubC1[j].Ep[i1] = i2;							
 
 						//cerr << "SubC1[" << j << "].Ev[" << i1 << "]: " << SubC1[j].Ev[i1] << ", SubC1[" << j << "].Ep[" << i1 << "]: " << SubC1[j].Ep[i1] << "\n"; 
@@ -1215,8 +1209,8 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 						//cerr << "the index in Di which is the best candidate for BackDiag ---- i2: " << i2 << "\n";
 
 						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts, step_sdp) + 
-														rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
-																	//min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
+														rate * FragInput[fi]->length(ii - ms);
+																	//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]];
 						SubR2[j].Ep[i1] = i2;							
 
 						//cerr << "SubR2[" << j << "].Ev[" << i1 << "]: " << SubR2[j].Ev[i1] << ", SubR2[" << j << "].Ep[" << i1 << "]: " << SubR2[j].Ep[i1] << "\n"; 
@@ -1290,8 +1284,8 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 					
 
 						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step_sdp) + 
-														rate * FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]];
-																	//min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate; 
+														rate * FragInput[fi]->length(ii - ms);
+																	// FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]];
 						SubC2[j].Ep[i1] = i2;							
 
 						//cerr << "SubC2[" << j << "].Ev[" << i1 << "]: " << SubC2[j].Ev[i1] << ", SubC2[" << j << "].Ep[" << i1 << "]: " << SubC2[j].Ep[i1] << "\n"; 
@@ -1508,7 +1502,7 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 //
 void 
 TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
-					const vector<Fragment_Info> & Value, unsigned int i, vector<unsigned int> & Chain) {
+					const vector<Fragment_Info> & Value, unsigned int i, vector<unsigned int> & Chain, vector<bool> & link) {
 
 	long int prev_sub = Value[i].prev_sub;
 	long int prev_ind = Value[i].prev_ind;
@@ -1523,6 +1517,7 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 			unsigned int ind = SubR1[prev_sub].Ep[prev_ind];
 			assert(ind < SubR1[prev_sub].Dp.size());
 			i = SubR1[prev_sub].Dp[ind];
+			link.push_back(0);
 			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR1[prev_sub].Dp[ind], Chain);
 		}
 		else if (Value[i].prev == 1 and Value[i].inv == 0) { // The previous subproblem is SubR2
@@ -1531,6 +1526,7 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 			unsigned int ind = SubR2[prev_sub].Ep[prev_ind];
 			assert(ind < SubR2[prev_sub].Dp.size());
 			i = SubR2[prev_sub].Dp[ind];
+			link.push_back(1);
 			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubR2[prev_sub].Dp[ind], Chain);
 		}
 		else if (Value[i].prev == 0 and Value[i].inv == 1) { // The previous subproblem is SubC1
@@ -1539,6 +1535,7 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 			unsigned int ind = SubC1[prev_sub].Ep[prev_ind];
 			assert(ind < SubC1[prev_sub].Dp.size());
 			i = SubC1[prev_sub].Dp[ind];
+			link.push_back(0);
 			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC1[prev_sub].Dp[ind], Chain);
 		}		
 		else { // The previous subproblem is SubC2
@@ -1547,6 +1544,7 @@ TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubPro
 			unsigned int ind = SubC2[prev_sub].Ep[prev_ind];
 			assert(ind < SubC2[prev_sub].Dp.size());
 			i = SubC2[prev_sub].Dp[ind];
+			link.push_back(1);
 			//TraceBack(SubR1, SubC1, SubR2, SubC2, Value, SubC2[prev_sub].Dp[ind], Chain);
 		}
 		prev_sub = Value[i].prev_sub;
@@ -1574,14 +1572,13 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 
 	vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-	float value_thres = max(opts.alnthres*fragments_valueOrder[0], fragments_valueOrder[0]-100*opts.globalK);//30 for 50kb
+	float value_thres = max(opts.alnthres * fragments_valueOrder[0], fragments_valueOrder[0] - 100*opts.globalK);//30 for 50kb
 	//float value_thres = opts.alnthres*fragments_valueOrder[0];
-	//cerr << "value_thres: " << value_thres << endl;
-	//cerr << "fragments_valueOrder[0]: " << fragments_valueOrder[0] << " fragments_valueOrder[1]: " << 
-	//			fragments_valueOrder[1] << endl;
-	unsigned int fv = 0;
+	// cerr << "value_thres: " << value_thres << endl;
+	// cerr << "fragments_valueOrder[0]: " << fragments_valueOrder[0] << " fragments_valueOrder[1]: " << 
+	// 			fragments_valueOrder[1] << endl;
+	int fv = 0;
 	while (fv < fragments_valueOrder.size() and fragments_valueOrder[fv] >= value_thres) {
-
 		unsigned int d = fragments_valueOrder.index[fv];
 		vector<unsigned int> onechain;
 		vector<bool> link;
@@ -1604,7 +1601,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 			//
 			// If this chain overlap with read greater than 0.5%, insert it to chains
 			//
-			// cerr << "overlap rate: " << (float)(qEnd - qStart)/read.length << endl;
+			assert(qEnd - qStart>10);
 			if (((float)(qEnd - qStart)/read.length) > 0.005) {
 				//
 				// Compute the # of anchors on this chain
@@ -1666,9 +1663,9 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 // This SDP needs to insert 4 points for only anchors in the overlapping region between Clusters;
 // This SDP needs to increase the cost for linking 2 anchors of different directions;
 //
-int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain & finalchain, Options & opts, 
-			 const vector<float> & LookUpTable, Read & read) {
-
+int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, FinalChain &finalchain, Options &opts, 
+			 const vector<float> &LookUpTable, Read &read) {
+	if (read.unaligned) return 0;
 	if (inputChain.size() == 0) return 0;
 	//
 	// Input: vector<Cluster> & FragInput and vector<unsigned int> inputChain;
@@ -1695,46 +1692,49 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	//
 	vector<Point> H1;		
 	int next, prev;
+	int totalanchors = 0;
 	for (int c = 0; c < inputChain.size(); c++) {
 
 		int cm = inputChain[c];
+		FragInput[cm]->matchStart = MatchStart[c]; // set the matchStart for each Cluster
+		totalanchors += FragInput[cm]->size();
 		prev = c - 1;
 		next = c + 1;
-		int curstrand = FragInput[cm].strand;
+		int curstrand = FragInput[cm]->strand;
 		int prevstrand, nextstrand;
 
 		// qsb, qeb, tsb, teb form the unoverlapping region in the current Cluster;
-		GenomePos qsb = FragInput[cm].qStart;
-		GenomePos qeb = FragInput[cm].qEnd;
-		GenomePos tsb = FragInput[cm].tStart;
-		GenomePos teb = FragInput[cm].tEnd;
+		GenomePos qsb = FragInput[cm]->qStart;
+		GenomePos qeb = FragInput[cm]->qEnd;
+		GenomePos tsb = FragInput[cm]->tStart;
+		GenomePos teb = FragInput[cm]->tEnd;
 
 		if (prev != -1) {
-			prevstrand = FragInput[inputChain[prev]].strand;
-			GenomePos q1 = FragInput[inputChain[prev]].qStart;
+			prevstrand = FragInput[inputChain[prev]]->strand;
+			GenomePos q1 = FragInput[inputChain[prev]]->qStart;
 			if (q1 > qsb and q1 < qeb) qeb = q1;
 
 			if (inputChain.link[prev] == 0) { // prev is on the upper right corner of the current Cluster;
-				GenomePos t1 = FragInput[inputChain[prev]].tStart;
+				GenomePos t1 = FragInput[inputChain[prev]]->tStart;
 				if (t1 > tsb and t1 < teb) teb = t1;				
 			}
 			else {
-				GenomePos t2 = FragInput[inputChain[prev]].tEnd;
+				GenomePos t2 = FragInput[inputChain[prev]]->tEnd;
 				if (t2 > tsb and t2 < teb) tsb = t2;
 			}
 		}
 
 		if (next < inputChain.size()) {
- 			nextstrand = FragInput[inputChain[next]].strand;
-			GenomePos q2 = FragInput[inputChain[next]].qEnd; 
+ 			nextstrand = FragInput[inputChain[next]]->strand;
+			GenomePos q2 = FragInput[inputChain[next]]->qEnd; 
 			if (q2 > qsb and q2 < qeb) qsb = q2;
 
-			if (inputChain.link[cm] == 0) { // next is on the lower left corner of the current Cluster;
-				GenomePos t2 = FragInput[inputChain[next]].tEnd;
+			if (inputChain.link[c] == 0) { // next is on the lower left corner of the current Cluster;
+				GenomePos t2 = FragInput[inputChain[next]]->tEnd;
 				if (t2 > tsb and t2 < teb) tsb = t2;
 			}
 			else {
-				GenomePos t1 = FragInput[inputChain[next]].tStart;
+				GenomePos t1 = FragInput[inputChain[next]]->tStart;
 				if (t1 > tsb and t1 < teb) teb = t1;
 
 			}
@@ -1779,18 +1779,24 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 		//
 		// Insert points into H1;
 		//
-		for (unsigned int i = 0; i < FragInput[cm].matches.size(); i++) {
-
+		// for (unsigned int i = 0; i < FragInput[cm]->matches.size(); i++) {
+		for (unsigned int i = 0; i < FragInput[cm]->size(); i++) {
+			int add = 0;
 			// If the current anchor is inside the non-overlapping region, then insert two points for it;
 			//
 			// If it is forward stranded, then insert s1 and s2 for it;
 			//
 			if (curstrand == 0) { 
-
 				// insert start point s1 into H1
-				insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-											FragInput[cm].matchesLengths[i], cm, c, 0, 1);
-			/*
+				// insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->matches[i].first.pos, FragInput[cm]->matches[i].second.pos, 
+				// 							FragInput[cm]->matchesLengths[i], cm, c, 0, 1);
+				insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->GetqStart(i),  FragInput[cm]->GettStart(i), FragInput[cm]->length(i), cm, 0, 1);
+				// if (FragInput[cm].anchorfreq >= 2) {
+				// 	insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+				// 							FragInput[cm].matchesLengths[i], cm, c, 1, 1);		
+				// 	add = 1;			
+				// } 
+			/* Cannot be deleted!!!
 				Point s1;
 				H1.push_back(s1);
 				H1.back().ind = 1; // start
@@ -1818,8 +1824,15 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 			}
 			else { 
 				// insert start point s2 into H1
-				insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-											FragInput[cm].matchesLengths[i], cm, c, 1, 0);
+				// insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->matches[i].first.pos, FragInput[cm]->matches[i].second.pos, 
+				// 							FragInput[cm]->matchesLengths[i], cm, c, 1, 0);
+				insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->GetqStart(i), FragInput[cm]->GettStart(i), FragInput[cm]->length(i), cm, 1, 0);
+				// if (FragInput[cm].anchorfreq >= 2) {
+				// 	insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+				// 								FragInput[cm].matchesLengths[i], cm, c, 0, 0);		
+				// 	add = 1;			
+				// }
+
 				/*
 				Point s2;
 				H1.push_back(s2);
@@ -1847,107 +1860,117 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 				*/		
 			}
 
-		/*
-			//
-			// If the anchor is in the overlapping region, then insert the rest 2 points;
-			if (!(FragInput[cm].matches[i].first.pos >= qsb and FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i] <= qeb
-					and FragInput[cm].matches[i].second.pos >= tsb and FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i] <= teb)) {
+		
+			// //
+			// // If the anchor is in the overlapping region, then insert the rest 2 points;
+			// if (!(FragInput[cm].matches[i].first.pos >= qsb and FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i] <= qeb
+			// 		and FragInput[cm].matches[i].second.pos >= tsb and FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i] <= teb)) {
 
-				//
-				// If it is forward stranded, then insert s2 and e2 for it;
-				if (FragInput[cm].strand == 0) {
-					// insert start point s2 into H1
-					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-												FragInput[cm].matchesLengths[i], cm, c, 1, 1);
-				}
-				else {
-					// 
-					// If it is reversed stranded, then insert s1 and e1 for it;
-					// insert start point s1 into H1
-					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-												FragInput[cm].matchesLengths[i], cm, c, 0, 0);
-				}
-			}
-		*/
-			
-			//
+			// 	//
+			// 	// If it is forward stranded, then insert s2 and e2 for it;
+			// 	if (FragInput[cm].strand == 0) {
+			// 		// insert start point s2 into H1
+			// 		insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+			// 									FragInput[cm].matchesLengths[i], cm, c, 1, 1);
+			// 	}
+			// 	else {
+			// 		// 
+			// 		// If it is reversed stranded, then insert s1 and e1 for it;
+			// 		// insert start point s1 into H1
+			// 		insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
+			// 									FragInput[cm].matchesLengths[i], cm, c, 0, 0);
+			// 	}
+			// }
+		
+			/*		
+			// ######## The below code is to only add 4 points for overlapped clusters regions;
 			// If 1. the anchor is in the left overlapping region, 2. curstrand != prevstrand, insert the rest 2 points;
 			// If 1. the anchor is in the right overlapping region, 2. curstrand != nextstrand, insert the rest 2 points;
-			//
 			// The left overlapping region;
-			//
-			int add = 0;
-			if (prev != -1 and curstrand != prevstrand) {
-				if (curstrand == 0 and 
-					(FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i] > qeb or
-					 FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i] > teb)) {
-					//
-					// If it is forward stranded, then insert s2 and e2 for it;					
-					// insert start point s2 into H1
-					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-												FragInput[cm].matchesLengths[i], cm, c, 1, 1);
-					add++;
+			if (add == 0) {
+				if (prev != -1 and curstrand != prevstrand) {
+					if (curstrand == 0 and (FragInput[cm]->GetqEnd(i) > qeb or FragInput[cm]->GettEnd(i) > teb)) {
+						// (FragInput[cm]->matches[i].first.pos + FragInput[cm]->matchesLengths[i] > qeb or
+						//  FragInput[cm]->matches[i].second.pos + FragInput[cm]->matchesLengths[i] > teb)) {
+						//
+						// If it is forward stranded, then insert s2 and e2 for it;					
+						// insert start point s2 into H1
+						// insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->matches[i].first.pos, FragInput[cm]->matches[i].second.pos, 
+						// 							FragInput[cm]->matchesLengths[i], cm, c, 1, 1);
+						insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->GetqStart(i), FragInput[cm]->GettStart(i), FragInput[cm]->length(i), cm, 1, 1);
+						add++;
+					}
+					else if (curstrand == 1 and 
+						// (FragInput[cm]->matches[i].first.pos + FragInput[cm]->matchesLengths[i] > qeb or 
+						//  FragInput[cm]->matches[i].second.pos < tsb)) {
+						(FragInput[cm]->GetqEnd(i) > qeb or FragInput[cm]->GettStart(i) < tsb)) {
+						// 
+						// If it is reversed stranded, then insert s1 and e1 for it;
+						// insert start point s1 into H1
+						// insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->matches[i].first.pos, FragInput[cm]->matches[i].second.pos, 
+						// 							FragInput[cm]->matchesLengths[i], cm, c, 0, 0);
+						insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->GetqStart(i), FragInput[cm]->GettStart(i), FragInput[cm]->length(i), cm, 0, 0);
+						add++;
+					}
 				}
-				else if (curstrand == 1 and 
-					(FragInput[cm].matches[i].first.pos + FragInput[cm].matchesLengths[i] > qeb or 
-					 FragInput[cm].matches[i].second.pos < tsb)) {
-					// 
-					// If it is reversed stranded, then insert s1 and e1 for it;
-					// insert start point s1 into H1
-					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-												FragInput[cm].matchesLengths[i], cm, c, 0, 0);
-					add++;
-				}
-			}
 
-			//
-			// The right overlapping region;
-			//
-			if (next < inputChain.size() and add < 1 and curstrand != nextstrand) {
-
-				if (curstrand == 0 and (FragInput[cm].matches[i].first.pos < qsb or FragInput[cm].matches[i].second.pos < tsb)) {
-					//
-					// If it is forward stranded, then insert s2 and e2 for it;					
-					// insert start point s2 into H1
-					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-												FragInput[cm].matchesLengths[i], cm, c, 1, 1);	
-					add++;			
+				//
+				// The right overlapping region;
+				//
+				if (next < inputChain.size() and add < 1 and curstrand != nextstrand) {
+					// if (curstrand == 0 and (FragInput[cm]->matches[i].first.pos < qsb or FragInput[cm]->matches[i].second.pos < tsb)) {
+					if (curstrand == 0 and (FragInput[cm]->GetqStart(i) < qsb or FragInput[cm]->GettStart(i) < tsb)) {
+						//
+						// If it is forward stranded, then insert s2 and e2 for it;					
+						// insert start point s2 into H1
+						// insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->matches[i].first.pos, FragInput[cm]->matches[i].second.pos, 
+						// 							FragInput[cm]->matchesLengths[i], cm, c, 1, 1);	
+						insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->GetqStart(i), FragInput[cm]->GettStart(i), FragInput[cm]->length(i), cm, 1, 1);	
+						add++;			
+					}
+					// else if (curstrand == 1 and (FragInput[cm]->matches[i].first.pos < qsb or 
+					// 			FragInput[cm]->matches[i].second.pos + FragInput[cm]->matchesLengths[i] > teb)) {
+					else if (curstrand == 1 and (FragInput[cm]->GetqStart(i) < qsb or FragInput[cm]->GettEnd(i) > teb)) {
+						// 
+						// If it is reversed stranded, then insert s1 and e1 for it;
+						// insert start point s1 into H1
+						// insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->matches[i].first.pos, FragInput[cm]->matches[i].second.pos, 
+						// 							FragInput[cm]->matchesLengths[i], cm, c, 0, 0);
+						insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->GetqStart(i), FragInput[cm]->GettStart(i), FragInput[cm]->length(i), cm, 0, 0);
+						add++;
+					}		
 				}
-				else if (curstrand == 1 and (FragInput[cm].matches[i].first.pos < qsb or 
-							FragInput[cm].matches[i].second.pos + FragInput[cm].matchesLengths[i] > teb)) {
-					// 
-					// If it is reversed stranded, then insert s1 and e1 for it;
-					// insert start point s1 into H1
-					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-												FragInput[cm].matchesLengths[i], cm, c, 0, 0);
-					add++;
-				}		
-			}
 
-			//
-			// In case there is no overlap btwn different clusters, we need to insert 4 points for the 1st and last anchor
-			//
-			if (add < 1 and (i == 0 or i == FragInput[cm].matches.size() - 1)) {
-				if (curstrand == 0) {
-					//
-					// If it is forward stranded, then insert s2 and e2 for it;					
-					// insert start point s2 into H1
-					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-												FragInput[cm].matchesLengths[i], cm, c, 1, 1);
-					add++;						
+				//
+				// In case there is no overlap btwn different clusters, we need to insert 4 points for the 1st and last anchor
+				//
+				// if (add < 1 and (i == 0 or i == FragInput[cm]->matches.size() - 1)) {
+				if (add < 1 and (i == 0 or i == FragInput[cm]->size() - 1)) {
+					if (curstrand == 0) {
+						//
+						// If it is forward stranded, then insert s2 and e2 for it;					
+						// insert start point s2 into H1
+						// insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->matches[i].first.pos, FragInput[cm]->matches[i].second.pos, 
+						// 							FragInput[cm]->matchesLengths[i], cm, c, 1, 1);
+						insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->GetqStart(i), FragInput[cm]->GettStart(i), FragInput[cm]->length(i), cm, 1, 1);
+						add++;						
+					}
+					else {
+						// 
+						// If it is reversed stranded, then insert s1 and e1 for it;
+						// insert start point s1 into H1
+						// insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->matches[i].first.pos, FragInput[cm]->matches[i].second.pos, 
+						// 							FragInput[cm]->matchesLengths[i], cm, c, 0, 0);
+						insertPointsPair(H1, i + MatchStart[c], FragInput[cm]->GetqStart(i), FragInput[cm]->GettStart(i), FragInput[cm]->length(i), cm, 0, 0);
+						add++;						
+					}				
 				}
-				else {
-					// 
-					// If it is reversed stranded, then insert s1 and e1 for it;
-					// insert start point s1 into H1
-					insertPointsPair(FragInput, H1, i + MatchStart[c], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, 
-												FragInput[cm].matchesLengths[i], cm, c, 0, 0);
-					add++;						
-				}				
+				assert(add <= 1);				
 			}
-			assert(add <= 1);
+			*/
 		}
 	}
+	if (totalanchors >= 100000) cerr << "totalanchors: " << totalanchors << " read.name: " << read.name << endl;
 
 	//clock_t begin = clock();
 
@@ -2000,14 +2023,14 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 
 			unsigned int ii = H1[tt].frag_num;
 			int fi = H1[tt].clusterNum;
-			int mi = H1[tt].matchstartNum;
+			// int mi = H1[tt].matchstartNum; // inputChain index
 
 			if (H1[tt].ind == 1 and H1[tt].inv == 1) { //H1[tt] is a start point (s1)
 				Value[ii].SS_B_R1 = Row[t].SS_B1;
 				Value[ii].counter_B_R1 = Row[t].SS_B1.size();
-				Value[ii].val = FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].val = FragInput[fi]->length(ii - FragInput[fi]->matchStart)*rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
-				Value[ii].matchstartNum = mi;
+				// Value[ii].matchstartNum = mi;
 				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
 				Value[ii].orient = H1[tt].orient;
 			}
@@ -2020,9 +2043,9 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
 				Value[ii].SS_B_R2 = Row[t].SS_B2;
 				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
-				Value[ii].val = FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].val = FragInput[fi]->length(ii - FragInput[fi]->matchStart)*rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
-				Value[ii].matchstartNum = mi;
+				// Value[ii].matchstartNum = mi;
 				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
 				Value[ii].orient = H1[tt].orient;
 			}
@@ -2043,14 +2066,14 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 
 			unsigned int ii = H1[H2[tt]].frag_num;
 			int fi = H1[H2[tt]].clusterNum;
-			int mi = H1[H2[tt]].matchstartNum;
+			// int mi = H1[H2[tt]].matchstartNum;
 
 			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
 				Value[ii].SS_B_C1 = Col[t].SS_B1;
 				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
-				Value[ii].val = FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].val = FragInput[fi]->length(ii - FragInput[fi]->matchStart)*rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
-				Value[ii].matchstartNum = mi;
+				// Value[ii].matchstartNum = mi;
 				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
 				Value[ii].orient = H1[H2[tt]].orient;
 			}
@@ -2063,9 +2086,9 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
 				Value[ii].SS_B_C2 = Col[t].SS_B2;
 				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
-				Value[ii].val = FragInput[inputChain[mi]].matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].val = FragInput[fi]->length(ii - FragInput[fi]->matchStart)*rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
-				Value[ii].matchstartNum = mi;
+				// Value[ii].matchstartNum = mi;
 				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
 				Value[ii].orient = H1[H2[tt]].orient;				
 			}
@@ -2081,9 +2104,8 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 
 	//cerr << "Value: " << Value << endl;
 	//cerr << "ProcessPoint\n";
-	finalchain.InitializeOtherParts (MatchStart, totalMatch, Value);
-	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, inputChain, MatchStart, rate); 
-
+	// finalchain.InitializeOtherParts (MatchStart, totalMatch, Value);
+	ProcessPoint<Cluster_SameDiag>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, inputChain, MatchStart, rate); 
 	//
 	// find the max_value for the FinalChain 
 	//
@@ -2101,15 +2123,18 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 	//cerr << "TraceBack\n";
 	// Trace back to get the FinalChain
 	// store the index of points
-	finalchain.chain.clear();
+	vector<unsigned int> chain;
 	finalchain.SecondSDPValue = max_value;
-	TraceBack(SubR1, SubC1, SubR2, SubC2, Value, max_pos, finalchain.chain); // NOTICE: This chain is from the last anchors to the first anchor;
+	vector<bool> link;
+	TraceBack(SubR1, SubC1, SubR2, SubC2, Value, max_pos, chain, link); // NOTICE: This chain is from the last anchors to the first anchor;
+	finalchain.Initialize(chain, Value);
 
 	// Clear SubR and SubC
 	// SubR1.Clear(eeR1);
 	// SubC1.Clear(eeC1);
 	// SubR2.Clear(eeR2);
 	// SubC2.Clear(eeC2);
+	chain.clear();
 	SubR1.clear();
 	SubC1.clear();
 	SubR2.clear();
@@ -2135,7 +2160,6 @@ int SparseDP (SplitChain & inputChain, vector<Cluster> & FragInput, FinalChain &
 // This SDP needs to insert 4 points for any anchors
 //
 int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, Options & opts, const vector<float> & LookUpTable, Read & read, float & rate) {
-
 	if (FragInput.size() == 0) return 0;
 	// if (Primary_chains.size() != 0 and Primary_chains[0].chains.size() == opts.NumAln) return 0;
 	vector<Point>  H1;
@@ -2143,13 +2167,7 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 	// get points from FragInput and store them in H1		
 
 	for (unsigned int i = 0; i < FragInput.size(); i++) {
-		if (FragInput[i].qEnd > FragInput[i].qStart + 2 and FragInput[i].tEnd > FragInput[i].tStart + 2) {
-			FragInput[i].qStart += 1;
-			FragInput[i].qEnd -= 1;
-			FragInput[i].tStart += 1;
-			FragInput[i].tEnd -= 1;			
-		}
-		else continue;
+
 		// insert start point s1 into H1
 		Point s1;
 		H1.push_back(s1);
@@ -2172,8 +2190,8 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 		H1.back().ind = 0; // end
 		H1.back().inv = 1; // forward direction		
 		H1.back().frag_num = i;
-		H1.back().se.first = FragInput[i].qEnd;
-		H1.back().se.second = FragInput[i].tEnd;
+		H1.back().se.first = FragInput[i].qEnd - 1; // -1 for chaining overlapped anchors
+		H1.back().se.second = FragInput[i].tEnd - 1; // -1 for chaining overlapped anchors
 		if (FragInput[i].strand == 0) {
 			H1.back().orient = 1; 
 		}
@@ -2188,7 +2206,7 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 		H1.back().inv = 0; // backward direction
 		H1.back().frag_num = i;
 		H1.back().se.first = FragInput[i].qStart; 
-		H1.back().se.second = FragInput[i].tEnd;	
+		H1.back().se.second = FragInput[i].tEnd - 1; // -1 for chaining overlapped anchors	 
 		if (FragInput[i].strand == 0) {
 			H1.back().orient = 1; 
 		}
@@ -2203,7 +2221,7 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 		H1.back().ind = 0; // end
 		H1.back().inv = 0; // backward direction		
 		H1.back().frag_num = i;
-		H1.back().se.first = FragInput[i].qEnd;
+		H1.back().se.first = FragInput[i].qEnd - 1; // -1 for chaining overlapped anchors
 		H1.back().se.second = FragInput[i].tStart;	
 		if (FragInput[i].strand == 0) {
 			H1.back().orient = 1; 
