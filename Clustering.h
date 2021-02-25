@@ -777,12 +777,12 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, vector<Cluster>
 	vector<int> End;
 	if (match_num.size() == 1) {
 		assert(pos_start[0] == s);
-		if (match_num[0] == 1) {
+		//		if (match_num[0] == 1) {
 			u_maxstart = 0; 
 			u_maxend = 1;	
 			Start.push_back(u_maxstart);
 			End.push_back(u_maxend);		
-		}
+			//		}
 	}
 	else {
 		// int k = 0;
