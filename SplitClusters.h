@@ -60,24 +60,41 @@ public:
 };
 
 
-void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters) {
+void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, Read &read) {
+	if (read.unaligned) return;
 	set<GenomePos> qSet;
 	set<GenomePos> tSet;
-
 	//
 	// insert q/t coordinates of each cluster into qSet/tSet;
 	//
 	for (int m = 0; m < clusters.size(); m++) {
-		qSet.insert(clusters[m].qStart);
-		qSet.insert(clusters[m].qEnd);
-		tSet.insert(clusters[m].tStart);
-		tSet.insert(clusters[m].tEnd);
+		// qSet.insert(clusters[m].qStart);
+		// qSet.insert(clusters[m].qEnd);
+		// tSet.insert(clusters[m].tStart);
+		// tSet.insert(clusters[m].tEnd);	
+		if (clusters[m].anchorfreq <= 1.05f and min(clusters[m].tEnd - clusters[m].tStart, clusters[m].qEnd - clusters[m].qStart) >= 10000) {
+			// cerr << "cluster " << m << " freq: " << clusters[m].anchorfreq << endl;
+			clusters[m].split = 1;
+			qSet.insert(clusters[m].qStart);
+			qSet.insert(clusters[m].qEnd);
+			tSet.insert(clusters[m].tStart);
+			tSet.insert(clusters[m].tEnd);			
+		}
+		else {
+			clusters[m].split = 0;
+			splitclusters.push_back(Cluster(clusters[m].qStart, clusters[m].qEnd, clusters[m].tStart, clusters[m].tEnd, clusters[m].strand, m));
+			// cerr << "splitclusters: " << splitclusters.size() << " " << clusters[m].qStart << " " << clusters[m].qEnd << endl;				
+		}
 	} 
 
 	//
 	// Find what coordinates appear in the interval of each cluster
 	//
 	for (int m = 0; m < clusters.size(); m++) {
+		// cerr << "clusters: " << m << endl;
+		if (clusters[m].split == 0) {
+			continue;
+		}
 	
 		IntervalSet itlSet(clusters[m]);
 		set<GenomePos>::iterator its, ite;
@@ -111,10 +128,11 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters) 
 				GenomePos t = (GenomePos) ceil(itlSet.slope * it->first + itlSet.intercept);
 
 				if (prev.first < it->first) { 
-					if (clusters[m].strand == 0) 
+					if (clusters[m].strand == 0 and it->first >= prev.first + 2 and t >= prev.second + 2)
 						splitclusters.push_back(Cluster(prev.first, it->first, prev.second, t, clusters[m].strand, m)); // initialize coarse to specify the index of original index
-					else 
-						splitclusters.push_back(Cluster(prev.first, it->first, t, prev.second, clusters[m].strand, m));					
+					else if (clusters[m].strand ==  1 and it->first >= prev.first + 2 and prev.second >= t + 2)
+						splitclusters.push_back(Cluster(prev.first, it->first, t, prev.second, clusters[m].strand, m));	
+					// cerr << "splitclusters: " << splitclusters.size() << " " << prev.first << " " << it->first << endl;				
 				}
 				else continue;
 
@@ -124,10 +142,11 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters) 
 				GenomePos q = (GenomePos) ceil((it->first - itlSet.intercept) / itlSet.slope);
 				
 				if (prev.first < q) {
-					if (clusters[m].strand == 0) 
+					if (clusters[m].strand == 0 and q >= prev.first + 2 and it->first >= prev.second + 2) 
 						splitclusters.push_back(Cluster(prev.first, q, prev.second, it->first, clusters[m].strand, m));
-					else 
+					else if (clusters[m].strand ==  1 and q >= prev.first + 2 and prev.second >= it->first + 2)
 						splitclusters.push_back(Cluster(prev.first, q, it->first, prev.second, clusters[m].strand, m));
+					// cerr << "splitclusters: " << splitclusters.size() << " " << prev.first << " " << q << endl;
 				}
 				else continue;
 
@@ -137,19 +156,21 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters) 
 		} 
 
 		if (prev.first < clusters[m].qEnd) {
-			if (clusters[m].strand == 0) {
+			if (clusters[m].strand == 0 and clusters[m].qEnd >= prev.first + 2 and clusters[m].tEnd >= prev.second + 2) {
 				splitclusters.push_back(Cluster(prev.first, clusters[m].qEnd, prev.second, clusters[m].tEnd, clusters[m].strand, m));
 			}
-			else {
+			else if (clusters[m].strand ==  1 and clusters[m].qEnd >= prev.first + 2 and prev.second >= clusters[m].tStart + 2){
 				splitclusters.push_back(Cluster(prev.first, clusters[m].qEnd, clusters[m].tStart, prev.second, clusters[m].strand, m));	
 			}		
+			// cerr << "splitclusters: " << splitclusters.size() << " " << prev.first << " " << clusters[m].qEnd << endl;
 		}
 
 	}
 }
 
 
-void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & splitclusters, Options & opts) {
+void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & splitclusters, Options & opts, Read &read) {
+	if (read.unaligned) return;
 	if (splitclusters.size() == 0) return;
 	//
 	// Compute matches bases/the Cluster length for each Cluster in clusters;

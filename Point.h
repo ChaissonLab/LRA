@@ -13,7 +13,7 @@ public:
 	bool inv; // inv = 1 means this is forward directiion; inv = 0 means this is a backward direction
 	unsigned int frag_num; // store the index of the fragment that contains this point
 	int clusterNum; // store the index of the Cluster which the current point comes from;
-	int matchstartNum; 
+	// int matchstartNum; 
 	Point(unsigned int & frag_num1);
 	Point() {};
 	~Point() {};

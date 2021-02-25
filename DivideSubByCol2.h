@@ -156,8 +156,8 @@ DivideSubProbByCol2 (std::vector<Point> & H1, std::vector<unsigned int> & H2, st
 		
 		}
 		else {
-			//Sub.pop_back(); // delete subproblem ss
-			Sub.ClearSingle(eeC);
+			Sub.pop_back(); // delete subproblem ss
+			// Sub.ClearSingle(eeC);
 			--eeC;
 			--n;			
 		}
@@ -177,7 +177,8 @@ DivideSubProbByCol2 (std::vector<Point> & H1, std::vector<unsigned int> & H2, st
 		ScanPoints_Col2(V, H1, H2, Sub[eeC-1].Di, med, end, DE, n);
 
 		if (Sub[eeC-1].Ei.empty() and Sub[eeC-1].Di.empty()) { // Di is empty and Ei is empty 
-			Sub.ClearSingle(eeC);
+			Sub.pop_back(); // delete subproblem ss
+			// Sub.ClearSingle(eeC);
 			--eeC;
 			--n;
 		}

@@ -412,8 +412,8 @@ DivideSubProbByRow1 (std::vector<Point> & H1, std::vector<info> & V, unsigned in
 	
 		}
 		else {
-			//Sub.pop_back(); // delete subproblem ss
-			Sub.ClearSingle(eeR);
+			Sub.pop_back(); // delete subproblem ss
+			// Sub.ClearSingle(eeR);
 			--eeR;		
 			--n;			
 		}
@@ -435,8 +435,8 @@ DivideSubProbByRow1 (std::vector<Point> & H1, std::vector<info> & V, unsigned in
 
 
 		if (Sub[eeR -1].Ei.empty() and Sub[eeR -1].Di.empty()) { // Di is empty and Ei is empty  
-			//Sub.pop_back();
-			Sub.ClearSingle(eeR);
+			Sub.pop_back();
+			// Sub.ClearSingle(eeR);
 			--eeR;	
 			--n;
 		}

@@ -27,6 +27,8 @@ class Alignment {
 	string name;
 	string queryString, alignString, refString;
 	int nblocks;
+	int qPos, tPos;
+	vector<Block> blocks; // The positions in every block are relative to qPos and tPos;
 	int nm, nmm, nins, ndel;
 	int tm, tmm, tins, tdel;
 	int preClip, sufClip;
@@ -35,7 +37,6 @@ class Alignment {
 	char *read;
 	char *forward;
 	char *qual;
-	int nanchors;
 	int readLen;
 	int refLen;
 	GenomePos genomeLen;
@@ -49,7 +50,6 @@ class Alignment {
  	bool Supplymentary; // Supplymentary == 1 means this is a Supplymentary alignment;
  	//int primary; // When ISsecondary == 1, primary stores the index of the primary chain in vector<LogCluster>
  	//vector<int> secondary; // When ISsecondary == 0, secondary stores the indices of the secondary chains	
- 	bool split;
  	float value; // base level alignment value
  	float SecondSDPValue;
  	float FirstSDPValue;
@@ -76,7 +76,6 @@ class Alignment {
 	}
 
 	Alignment() {
-		nanchors=0;
 		runtime=0;
 		qual=NULL;
 		flag=0;
@@ -90,7 +89,6 @@ class Alignment {
 		forward=NULL;
 		ISsecondary=0;
 		Supplymentary=0;
-		split=0;
 		value=0;
 		SecondSDPValue=0;
 		FirstSDPValue=0;
@@ -100,10 +98,17 @@ class Alignment {
 		NumOfAnchors1=0;
 		typeofaln=0;
 	}
+ 	Alignment(char *_read, int _rl, string _rn, char *_qual) : Alignment() {  // unaligned
+		read=_read; 
+		qual=_qual;
+		readLen = _rl; 
+		readName= _rn;
+	}
+
  	Alignment(float _FirstSDPValue, char *_read, char *_forward, 
 					 int _rl, string _rn, int _str, 
 						char *_qual,
-						char *_genome, GenomePos _gl, string &_chrom, int _ci, long _cl) : Alignment() { 
+						char *_genome, GenomePos _gl, string &_chrom, int _ci) : Alignment() { 
  		FirstSDPValue = _FirstSDPValue;
 		read=_read; 
 		qual=_qual;
@@ -116,6 +121,8 @@ class Alignment {
 		chrom=_chrom;
 		chromIndex=_ci;
 		typeofaln=0;
+		ISsecondary=0;
+		Supplymentary=0;
 	}
 
 	int GetQStart() const {
@@ -130,9 +137,6 @@ class Alignment {
 		}
 		return 0;
 	}
-	int qPos, tPos;
-	// The positions in every block are relative to qPos and tPos;
-	vector<Block> blocks;
 	int size() const {
 		return blocks.size();
 	}
@@ -180,12 +184,11 @@ class Alignment {
 			}
 		}
 	}
-	
 
 	void CreateAlignmentStrings(char *query, char* text, string &queryStr, string &alignStr, string &textStr) {
 		GenomePos q = qPos;
 		GenomePos t = tPos;
-		GenomePos qPos, tPos;
+		// GenomePos qPos, tPos;
 		GenomePos  g;
 		char mismatchChar = '*';
 		char matchChar = '|';
@@ -208,15 +211,12 @@ class Alignment {
 
 		for (int b = 0; b < blocks.size(); b++) {
 
-			for (int bl = 0; bl < blocks[b].length; bl++ ) {
+			for (int bl = 0; bl < blocks[b].length; bl++) {
 				assert(t < genomeLen);
 				queryStr.push_back(query[q]);
 				textStr.push_back(text[t]);
-				if (seqMap[query[q]] != 
-						seqMap[text[t]])
-					alignStr.push_back(mismatchChar);
-				else
-					alignStr.push_back(matchChar);
+				if (seqMap[query[q]] != seqMap[text[t]]) alignStr.push_back(mismatchChar);
+				else alignStr.push_back(matchChar);
 				q++;
 				t++;
 			}
@@ -229,8 +229,6 @@ class Alignment {
 			if (b == blocks.size() - 1) {
 				continue;
 			}
-
-
 			int queryGapLen = (blocks[b+1].qPos - blocks[b].qPos - blocks[b].length);
 			int textGapLen  = (blocks[b+1].tPos - blocks[b].tPos - blocks[b].length);
 			assert(queryGapLen >= 0);
@@ -244,27 +242,24 @@ class Alignment {
 				textGapLen -= commonGapLen;
 				queryGapLen -= commonGapLen;
 
-				for (g = 0; g < queryGapLen; g++, q++ ){
+				for (g = 0; g < queryGapLen; g++, q++){
 					assert(t < genomeLen);
 					textStr.push_back(gapChar);
 					alignStr.push_back(gapSeparationChar);
 					queryStr.push_back(query[q]);
 				}
-				for (g = 0; g < textGapLen; g++, t++ ){
+				for (g = 0; g < textGapLen; g++, t++){
 					assert(t < genomeLen);
 					textStr.push_back(text[t]);
 					alignStr.push_back(gapSeparationChar);
 					queryStr.push_back(gapChar);
 				}
 
-				for (g = 0; g < commonGapLen; g++ ) {
+				for (g = 0; g < commonGapLen; g++) {
 					assert(t < genomeLen);
 					textStr.push_back(text[t]);
-					if (seqMap[query[q]] != 
-							seqMap[text[t]])
-						alignStr.push_back(mismatchChar);
-					else
-						alignStr.push_back(matchChar);
+					if (seqMap[query[q]] != seqMap[text[t]]) alignStr.push_back(mismatchChar);
+					else alignStr.push_back(matchChar);
 
 					queryStr.push_back(query[q]);
 					t++;
@@ -364,30 +359,29 @@ class Alignment {
 		while (i < query.size()) {
 			p=i;
 			while (i < query.size() and seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
-			
 			if (i > p) {
 				cigarstrm << i-p << '=';
-				nm+=i-p;				
-				value+=i-p;
+				nm += i-p;				
+				value += i-p;
 				continue;
 			}
 			while (i < query.size() and seqMap[query[i]] != seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'X';
-				nmm+=i-p;
-				value-=i-p;
+				nmm += i-p;
+				value -= i-p;
 				continue;
 			}
 			while (i < query.size() and query[i] == '-' and target[i] != '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'D';
-				//ndel+=i-p;
-				tdel+=i-p;
+				tdel += i-p;
 				ndel++;
-				//if (i-p<=10) {ndel++;}
-				if (i-p < 501) {value += -coefficient*logf(i-p) - 1;}
+				if (i-p <= 20) {
+					value -= i-p;
+				}
 				else if (i-p <= 10001){
-					int a = (int)floor((i-p-501)/5);
+					int a = (int)floor((i-p-1)/5);
 					value += -coefficient*LookUpTable[a] - 1;
 				}
 				else if (i-p <= 100001) {value += -1000;}
@@ -397,13 +391,13 @@ class Alignment {
 			while (i < query.size() and query[i] != '-' and target[i] == '-') {	i++;}
 			if (i > p) {
 				cigarstrm << i-p << 'I';
-				//nins+=i-p;
 				tins+=i-p;
 				nins++;
-				//if (i-p<=10) {nins++;}
-				if (i-p < 501) {value += -coefficient*logf(i-p) - 1;}
+				if (i-p <= 20) {
+					value -= i-p;
+				}
 				else if (i-p <= 10001){
-					int a = (int)floor((i-p-501)/5);
+					int a = (int)floor((i-p-1)/5);
 					value += -coefficient*LookUpTable[a] - 1;
 				}
 				else if (i-p <= 100001) {value += -1000;}
@@ -532,11 +526,13 @@ class Alignment {
 			strandChar = '-';
 		}
 
-		out << readName << "\t" << queryString.size() << "\t" << "qStart:" << qStart << "\t" << "qEnd:" << qEnd << "\t" 
-				<< strandChar << "\t" << chrom << "\t" << genomeLen << "\t" 
-				<< "wholegenomeLen:" << wholegenomeLen <<  "\t" // (Revision) delete wholegenomeLen
-				<< "tStart:" << tStart << "\t" << "tEnd:" << tEnd 
-				<< "\t" << "NumofSV:" << nm+nmm+nins+ndel << "\t" << "LenofSV:" << nm+nmm+tins+tdel << "\t" << "mapqv: " << (int)mapqv << "\t" << "AO:i:" << order;
+		out << readName << "\t" << queryString.size() << "\t";
+		if (strand == 0) out << "qStart:" << qStart << "\t" << "qEnd:" << qEnd << "\t";
+		else out << "qStart:" << readLen - qEnd << "\t" << "qEnd:" << readLen - qStart << "\t";
+		out << strandChar << "\t" << chrom << "\t" << genomeLen << "\t" 
+			<< "wholegenomeLen:" << wholegenomeLen <<  "\t" // (Revision) delete wholegenomeLen
+			<< "tStart:" << tStart << "\t" << "tEnd:" << tEnd 
+			<< "\t" << "NumofSV:" << nm+nmm+nins+ndel << "\t" << "Numofbases:" << nm+nmm+tins+tdel << "\t" << "mapqv: " << (int)mapqv << "\t" << "AO:i:" << order;
 		out << "\tNM:i:" << nm << "\t";
 		out << "NX:i:" << nmm << "\t";
 		out << "ND:i:" << ndel << "\t";
@@ -573,6 +569,7 @@ class Alignment {
 		}
 		out << endl;
 	}
+
 	void PrintSAM(ostream &out, Options &opts, const vector<Alignment*> &alngroup, int as, char *passthrough=NULL) {
 		stringstream samStrm;
 		samStrm << readName << "\t";
@@ -585,18 +582,14 @@ class Alignment {
 			tStart=0;
 			tEnd=0;
 			order=0;
-			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t" << string(read,readLen) << "\t*" << endl;
+			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t" << string(read,readLen) << "\t*";
 		}
 		else {
-
 			int last = blocks.size();
-			samStrm << (unsigned int) flag << "\t"
-							<< chrom << "\t" 
-							<< tStart+1 << "\t"
-							<< (unsigned int) mapqv << "\t";
+			samStrm << (unsigned int) flag << "\t" << chrom << "\t" << tStart+1 << "\t" << (unsigned int) mapqv << "\t";
 			char clipOp = 'S';
-			if (opts.hardClip) {
-				clipOp = 'H';
+			if (Supplymentary) {
+				clipOp = 'H';				
 			}
 			if (preClip > 0) {
 				samStrm << preClip << clipOp;
@@ -610,27 +603,24 @@ class Alignment {
 			// Template length
 			samStrm << tEnd - tStart << "\t";
 			string qualStr;
-			if (opts.hardClip) {
-				string subStr;
-				subStr=string(read, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);								
-				samStrm << subStr;
-				if (qual != NULL and strncmp(qual,"*",1) != 0) {
-					qualStr = string(qual, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);
-				}
-				else {
-					qualStr= "*";
-				}
+			string readStr;	
+			if (Supplymentary == 0) assert(flag == 0 or flag == 16 or flag == 256 or flag == 272);
+			if (!Supplymentary) {
+				readStr = string(read, readLen);
+				samStrm << readStr;					
 			}
 			else {
-				string readStr(read, 0, readLen);
-				samStrm << readStr;
-				if (qual[0] == '*') {
-					qualStr = "*";
-				}
-				else {
-					qualStr.assign(qual, readLen);
-				}
+				readStr = string(read + qStart, qEnd - qStart);
+				samStrm << readStr;						
 			}
+			if (qual[0] == '*') {
+				qualStr = "*";
+			}
+			else {
+				if (Supplymentary) qualStr = string(qual + blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length - blocks[0].qPos);
+				else qualStr.assign(qual, readLen);
+			}
+			// }
 			samStrm << "\t";
 			if ( qual == NULL ) {
 				samStrm << "*";
@@ -680,7 +670,7 @@ class Alignment {
 		}
 		out << samStrm.str();
 		if (opts.passthroughtag and passthrough != NULL ) {
-			// // converts character array to string 
+		 // // converts character array to string 
 		 //    int iq = strlen((char*)passthrough);
 		 //    string passthrough_string = ""; 
 		 //    for (int qt = 0; qt < iq; qt++) { 
@@ -692,10 +682,10 @@ class Alignment {
 		out.flush();
 	}
 
+	// No SA tag
 	void SimplePrintSAM(ostream &out, Options &opts, char *passthrough=NULL) {
 		stringstream samStrm;
 		samStrm << readName << "\t";
-		assert(prepared);
 		if (blocks.size() == 0) {
 			//
 			// Create a null alignment
@@ -704,15 +694,11 @@ class Alignment {
 			tStart=0;
 			tEnd=0;
 			order=0;
-			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t" << string(read,readLen) << "\t*" << endl;
+			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t" << string(read,readLen) << "\t*";
 		}
 		else {
-
 			int last = blocks.size();
-			samStrm << (unsigned int) flag << "\t"
-							<< chrom << "\t" 
-							<< tStart+1 << "\t"
-							<< (unsigned int) mapqv << "\t";
+			samStrm << (unsigned int) flag << "\t" << chrom << "\t" << tStart+1 << "\t" << (unsigned int) mapqv << "\t";
 			char clipOp = 'S';
 			if (opts.hardClip) {
 				clipOp = 'H';
@@ -731,17 +717,17 @@ class Alignment {
 			string qualStr;
 			if (opts.hardClip) {
 				string subStr;
-				subStr=string(read, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);								
+				subStr=string(read + blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length - blocks[0].qPos);								
 				samStrm << subStr;
 				if (qual != NULL and strncmp(qual,"*",1) != 0) {
-					qualStr = string(qual, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);
+					qualStr = string(qual + blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length - blocks[0].qPos);
 				}
 				else {
 					qualStr= "*";
 				}
 			}
 			else {
-				string readStr(read, 0, readLen);
+				string readStr(read, readLen);
 				samStrm << readStr;
 				if (qual[0] == '*') {
 					qualStr = "*";
@@ -766,7 +752,6 @@ class Alignment {
 			samStrm << "TI:i:" << tins << "\t";
 			samStrm << "NV:f:" << value << "\t";
 			samStrm << "AO:i:" << order;
-
 		}
 		out << samStrm.str();
 		if (opts.passthroughtag and passthrough != NULL ) {
@@ -814,13 +799,13 @@ public:
 	~SegAlignmentGroup () {};
 
 	void SetFromSegAlignment(Options &opts) {
-		ISsecondary = SegAlignment[0]->ISsecondary;
+		ISsecondary = SegAlignment[0]->ISsecondary; // the SegAlignment[0] contains the info for the whole alignment
 		NumOfAnchors0 =  SegAlignment[0]->NumOfAnchors0;
-		NumOfAnchors1 =  SegAlignment[0]->NumOfAnchors1;
 		FirstSDPValue = SegAlignment[0]->FirstSDPValue;
 		SecondSDPValue = SegAlignment[0]->SecondSDPValue;
 
 		for (int s = 0; s < SegAlignment.size(); s++) {
+			NumOfAnchors1 +=  SegAlignment[s]->NumOfAnchors1;
 			qStart = min(qStart, SegAlignment[s]->qStart);
 			qEnd   = max(qEnd, SegAlignment[s]->qEnd);
 			tStart = min(tStart, SegAlignment[s]->tStart);
@@ -837,7 +822,7 @@ public:
 			// SegAlignment[s]->SecondValue = SecondValue;
 			if (s >= 1) {
 				SegAlignment[s]->ISsecondary = ISsecondary;
-				SegAlignment[s]->Supplymentary = 1;
+				// SegAlignment[s]->Supplymentary = 1; already set in LcoalRefineAlignment.h
 			}
 			//
 			// Flag that the stats are calculated for methods that need them.

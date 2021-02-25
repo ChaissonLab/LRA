@@ -252,51 +252,52 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "--skipBandedRefine")) {
 			opts.skipBandedRefine = true;
 		}
+		else if (ArgIs(argv[argi], "-CONTIG")) {
+			opts.readType=Options::contig;
+			opts.HighlyAccurate = true;
+			opts.anchor_rate=1.0; // boost the match score for 1st SDP
+			opts.cleanMaxDiag=100; // For CleanOffDiagonal
+			opts.maxDiag=100; // For StoreFineCluster
+			opts.maxGap=1000; // for SplitRoughCluster
+			opts.NumAln=2; 
+   			opts.PrintNumAln = 1;
+   			opts.anchorstoosparse=0.01; // For Cluster Refinement
+   			opts.minDiagCluster=10;
+   			opts.minClusterLength=100;
+   			opts.minClusterSize=30;
+   			// opts.secondcoefficient=15;
+   			// opts.rate_FirstSDPValue=0;
+			// opts.rate_value=1;	
+		}
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.readType=Options::ccs;
-			opts.HighlyAccurate = true;
-			opts.rate_FirstSDPValue=0;
-			opts.rate_value=1;
+			opts.HighlyAccurate = false;
 			opts.anchor_rate=8.0;
+			opts.NumAln=3;
+   			opts.PrintNumAln = 1;
+			// opts.rate_FirstSDPValue=0;
+			// opts.rate_value=1;
+
 			// opts.maxDiag=500;
 			// opts.maxGap=5000;
-			// opts.NumAln=3;
-   // 			opts.PrintNumAln = 1;
+
 			// opts.globalMaxFreq = 30;
 			// opts.NumOfminimizersPerWindow = 1;	
 			//opts.minClusterSize=5; 
 			//opts.minClusterLength=50;  
 			// opts.maxGapBtwnAnchors=1500;
 		}
-		else if (ArgIs(argv[argi], "-CONTIG")) {
-			opts.readType=Options::contig;
-			opts.HighlyAccurate = true;
-			opts.rate_FirstSDPValue=0;
-			opts.rate_value=1;
-			opts.anchor_rate=4.0;
-			opts.cleanMaxDiag=400;
-			// opts.maxGap=30000;//30000
-			opts.NumAln=2;
-   			opts.PrintNumAln = 1;
-   			// opts.secondcoefficient=15;	
-			// opts.maxDiag=500; //500
-			opts.anchorstoosparse=0.03;
-			// opts.maxGap=1500;
-			// opts.globalMaxFreq = 30;
-			// opts.NumOfminimizersPerWindow = 1;	
-			opts.minClusterSize=5; 
-			opts.minClusterLength=50;  
-			// opts.maxGapBtwnAnchors=1500;
-		}
 		else if (ArgIs(argv[argi], "-CLR")) {
-			opts.rate_FirstSDPValue=0;
-			opts.rate_value=1;		
-			// opts.NumAln=3;
-   // 			opts.PrintNumAln = 1;
-			// opts.rate_FirstSDPValue=0;
-			// opts.rate_value=1;	
 			opts.HighlyAccurate = false;
 			opts.anchor_rate=8.0;
+			opts.NumAln=3;
+   			opts.PrintNumAln = 1;
+			// opts.rate_FirstSDPValue=0;
+			// opts.rate_value=1;		
+			// opts.NumAln=3;
+   			// opts.PrintNumAln = 1;
+			// opts.rate_FirstSDPValue=0;
+			// opts.rate_value=1;	
 			// opts.maxDiag=800;
 			// opts.maxGap=5000;
 			// opts.globalMaxFreq = 50;
@@ -306,14 +307,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			// opts.maxGapBtwnAnchors=1800;
 		}		
 		else if (ArgIs(argv[argi], "-ONT")) {
-			// opts.rate_FirstSDPValue=0.5;
-			// opts.rate_value=0.5;		
-			// opts.NumAln=3;
-   // 			opts.PrintNumAln = 1;
-			opts.rate_FirstSDPValue=0;
-			opts.rate_value=1;	
 			opts.HighlyAccurate = false;
 			opts.anchor_rate=8.0;
+			opts.NumAln=3;
+   			opts.PrintNumAln = 1;
+			// opts.rate_FirstSDPValue=0;
+			// opts.rate_value=1;	
+			// opts.HighlyAccurate = false;
+			// opts.anchor_rate=8.0;
 			// opts.maxDiag=800;
 			// opts.maxGap=5000;
 			// opts.globalMaxFreq = 50;
@@ -336,7 +337,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.CheckTrueIntervalInFineCluster = true;
 		}
 		else if (ArgIs(argv[argi], "--anchor_rate")) {
-			opts.anchor_rate = atoi(GetArgv(argv,argc,argi));
+			opts.anchor_rate = atof(GetArgv(argv,argc,argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--maxGap")) {
@@ -632,32 +633,32 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			++argi;
 			opts.globalK = atoi(argv[argi]);
 		}
-		else if (ArgIs(argv[argi], "-CCS")) {
-			opts.globalK = 15;
-			opts.globalW = 10;
-			opts.globalMaxFreq = 200;
-			opts.globalWinsize = 12;
-			opts.NumOfminimizersPerWindow = 1;			
-		}	
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.globalK = 17;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 80;//80
-			opts.globalWinsize = 18;
+			opts.globalMaxFreq = 60;//80
+			opts.globalWinsize = 12;
 			opts.NumOfminimizersPerWindow = 1;	
 		}
+		else if (ArgIs(argv[argi], "-CCS")) {
+			opts.globalK = 15;
+			opts.globalW = 10;
+			opts.globalMaxFreq = 900;
+			opts.globalWinsize = 9;
+			opts.NumOfminimizersPerWindow = 1;			
+		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.globalK = 15;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 200;
-			opts.globalWinsize = 12;
+			opts.globalMaxFreq = 900;
+			opts.globalWinsize = 9;
 			opts.NumOfminimizersPerWindow = 1;		
 		}
 		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.globalK = 15;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 200;
-			opts.globalWinsize = 12;
+			opts.globalMaxFreq = 900;
+			opts.globalWinsize = 9;
 			opts.NumOfminimizersPerWindow = 1;			
 		}
 		else if (ArgIs(argv[argi], "-F")) {

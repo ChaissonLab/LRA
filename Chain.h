@@ -89,8 +89,6 @@ int CHain::OverlapsOnT (GenomePos &tS, GenomePos &tE, float rate) {
 	else {return false;}
 }
 
-
-
 class Primary_chain {
 public:
 	vector<CHain> chains;
@@ -101,63 +99,106 @@ public:
 	}
 };
 
-
 class FinalChain {
 public: 
-	vector<Cluster> *ExtendClusters;
+	vector<Cluster_SameDiag *> * ExtendClusters;
 	vector<unsigned int> chain;
-	vector<unsigned int> MatchStart;
 	vector<int> ClusterIndex; // ClusterIndex[i] stores the index of the Cluster that anchor i comes from;
-	vector<int> StartIndex; // StartIndex[i] stores the index of the start for Cluster inputchain[i];
 	float SecondSDPValue;
-
-	FinalChain (vector<Cluster> *clusters) {
-		ExtendClusters = clusters;
-	}
-
-	void InitializeOtherParts (vector<unsigned int> & matchstart, int & totalMatch, vector<Fragment_Info> & Value) {
-		MatchStart = matchstart;
-		ClusterIndex.resize(totalMatch);
-		StartIndex.resize(totalMatch);
-		assert(ClusterIndex.size() == totalMatch);
-
-		for (int v = 0; v < Value.size(); v ++) {
-			ClusterIndex[v] = Value[v].clusterNum;
-			StartIndex[v] = Value[v].matchstartNum;
+	// vector<unsigned int> MatchStart;
+	// vector<int> StartIndex; // StartIndex[i] stores the index of the start for Cluster inputchain[i];
+	FinalChain() {}
+	FinalChain (vector<Cluster_SameDiag *> * c) : ExtendClusters(c) {}
+	~FinalChain() {};
+	void Initialize(vector<unsigned int> &ch, vector<Fragment_Info> &Value) {
+		chain.resize(ch.size());
+		ClusterIndex.resize(ch.size());
+		for (int i = 0; i < ch.size(); i++) {
+			ClusterIndex[i] = Value[ch[i]].clusterNum;
+			assert((*ExtendClusters)[ClusterIndex[i]]->matchStart != -1);
+			chain[i] = ch[i] - (*ExtendClusters)[ClusterIndex[i]]->matchStart;
 		}
 	}
+	int size () {
+		return chain.size();
+	}
+	void clear() {
+		chain.clear();
+		ClusterIndex.clear();
 
+	}
+	int ClusterNum (int i) {
+		return ClusterIndex[i];
+	}
 	bool strand (int i) {
-		return (*ExtendClusters)[ClusterIndex[chain[i]]].strand;
+		assert(ClusterIndex[i] < ExtendClusters->size());
+		return (*ExtendClusters)[ClusterIndex[i]]->strand;
+	}
+	void resize(int m) {
+		chain.resize(m);
+		ClusterIndex.resize(m);
+	}
+	GenomePos qStart(int i) {
+		int clusterNum = ClusterIndex[i];
+		assert(chain[i] < (*ExtendClusters)[clusterNum]->size());
+		return 	(*ExtendClusters)[clusterNum]->GetqStart(chain[i]);
+	}
+	GenomePos tStart(int i) {
+		int clusterNum = ClusterIndex[i];
+		assert(chain[i] < (*ExtendClusters)[clusterNum]->size());
+		return 	(*ExtendClusters)[clusterNum]->GettStart(chain[i]);
+	}
+	int length (int i) {
+		int clusterNum = ClusterIndex[i];
+		assert(chain[i] < (*ExtendClusters)[clusterNum]->size());
+		return (*ExtendClusters)[clusterNum]->length(chain[i]);		
+	}
+};
+
+class UltimateChain {
+public: 
+	vector<Cluster> * clusters;
+	vector<unsigned int> chain;
+	vector<int> ClusterIndex; // ClusterIndex[i] stores the index of the Cluster that anchor i comes from;
+	float SecondSDPValue;
+	UltimateChain() {}
+	UltimateChain(vector<Cluster> * c, float &s) : clusters(c), SecondSDPValue(s) {}
+	~UltimateChain() {};
+	bool strand (int i) {
+		assert(ClusterIndex[i] < clusters->size());
+		return (*clusters)[ClusterIndex[i]].strand;
 	}
 
 	int ClusterNum (int i) {
-		return ClusterIndex[chain[i]];
+		return ClusterIndex[i];
 	}
 
 	int size () {
 		return chain.size();
 	}
 
-	void resize(int & m) {
+	void resize(int m) {
 		chain.resize(m);
+		ClusterIndex.resize(m);
+	}
+
+	void clear() {
+		chain.clear();
+		ClusterIndex.clear();
 	}
 
 	GenomePair & operator[](int i) {
-		int clusterNum = ClusterIndex[chain[i]];
-		int matchstartNum = StartIndex[chain[i]];
-		assert(chain[i] - MatchStart[matchstartNum] < (*ExtendClusters)[clusterNum].matches.size());
-		return (*ExtendClusters)[clusterNum].matches[chain[i] - MatchStart[matchstartNum]];
+		int clusterNum = ClusterIndex[i];
+		assert(chain[i] < (*clusters)[clusterNum].matches.size());
+		return (*clusters)[clusterNum].matches[chain[i]];
 	}
 
 	int length (int i) {
-		int clusterNum = ClusterIndex[chain[i]];
-		int matchstartNum = StartIndex[chain[i]];		
-		assert(chain[i] - MatchStart[matchstartNum] < (*ExtendClusters)[clusterNum].matchesLengths.size());
-		return (*ExtendClusters)[clusterNum].matchesLengths[chain[i] - MatchStart[matchstartNum]];		
+		int clusterNum = ClusterIndex[i];
+		assert(chain[i] < (*clusters)[clusterNum].matches.size());
+		return (*clusters)[clusterNum].matchesLengths[chain[i]];		
 	}
 };
-
 
 class SplitChain {
 public:
