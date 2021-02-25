@@ -160,8 +160,10 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts) {
 				pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 >= 5? 1.0f : 0.1f ) * pen_cm_1;
 				float identity = (float) alignmentsOrder[r].SegAlignment[s]->nm / (alignmentsOrder[r].SegAlignment[s]->nmm + 
 																	alignmentsOrder[r].SegAlignment[s]->ndel + alignmentsOrder[r].SegAlignment[s]->nins);
+				identity = (identity < 1? identity : 1);
 				float l = ( alignmentsOrder[r].SegAlignment[s]->value > 3? logf(alignmentsOrder[r].SegAlignment[s]->value / opts.globalK) : 0);
-				uint32_t mapq = (int)(pen_cm_1 * q_coef * l * identity);
+				// long mapq = (int)(pen_cm_1 * q_coef * l);
+				long mapq = (int)(pen_cm_1 * q_coef * l * identity);
 				mapq = mapq > 0? mapq : 0;
 				alignmentsOrder[r].SegAlignment[s]->mapqv = mapq < 60? mapq : 60;
 				if (r == 0 && len == 2 && alignmentsOrder[r].SegAlignment[s]->mapqv == 0) alignmentsOrder[r].SegAlignment[s]->mapqv = 1;
@@ -176,7 +178,9 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts) {
 				float identity = (float) alignmentsOrder[r].SegAlignment[s]->nm / (alignmentsOrder[r].SegAlignment[s]->nmm + 
 																	alignmentsOrder[r].SegAlignment[s]->ndel + alignmentsOrder[r].SegAlignment[s]->nins);
 				float l = ( alignmentsOrder[r].SegAlignment[s]->value > 3? logf(alignmentsOrder[r].SegAlignment[s]->value / opts.globalK) : 0);
-				uint32_t mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l * identity);
+				identity = (identity < 1? identity : 1);
+				long mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l * identity);
+				// long mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l);
 				mapq -= (int)(4.343f * logf(len) + .499f);
 				mapq = mapq > 0? mapq : 0;
 				alignmentsOrder[r].SegAlignment[s]->mapqv = mapq < 60? mapq : 60;
@@ -616,15 +620,15 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 	CompareLists<GenomeTuple, Tuple>(readmm, genomemm, allMatches, opts, true);
 	timing.Tick("CompareLists");
 
-	// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-	// 	ofstream clust("all-matches.dots");
-	// 	for (int m = 0; m < allMatches.size(); m++) {
-	// 		clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos
-	// 					<< "\t" << allMatches[m].first.pos + opts.globalK << "\t" 
-	// 					<< allMatches[m].second.pos+ opts.globalK << endl;
-	// 	}
-	// 	clust.close();
-	// }
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		ofstream clust("all-matches.dots");
+		for (int m = 0; m < allMatches.size(); m++) {
+			clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos
+						<< "\t" << allMatches[m].first.pos + opts.globalK << "\t" 
+						<< allMatches[m].second.pos+ opts.globalK << endl;
+		}
+		clust.close();
+	}
 
 	SeparateMatchesByStrand(read, genome, opts.globalK, allMatches, forMatches, revMatches, baseName);
 	if (forMatches.size() == 0 and revMatches.size() == 0) {
@@ -1031,7 +1035,7 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		tinyOpts.globalK=smallOpts.globalK-3;
 
 		REFINEclusters(clusters, refinedclusters, genome, read,  glIndex, localIndexes, smallOpts, opts);
-		cerr << "refine cluster done!" << endl;
+		// cerr << "refine cluster done!" << endl;
 		// refinedclusters have GenomePos, chromIndex, coarse, matches, strand, refinespace;
 		for (int s = 0; s < clusters.size(); s++) {
 			refinedclusters[s].anchorfreq = clusters[s].anchorfreq; // inherit anchorfreq
@@ -1113,15 +1117,11 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		read.unaligned = 1;
 		output_unaligned(read, opts, *output);
 		return 0;
-	}
+	}	
 	//
 	// For each chain, check the two ends and spaces between adjacent clusters. If the spaces are too wide, go to find anchors in the banded region.
 	// For each chain, we have vector<Cluster> btwnClusters to store anchors;
 	//
-	int SizeOriginalRefinedClusters = 0;
-	for (int p = 0; p < RefinedClusters.size(); p++) {
-		SizeOriginalRefinedClusters += RefinedClusters[p]->matches.size();
-	}
 	// cerr << "SizeOriginalRefinedClusters: " << SizeOriginalRefinedClusters << endl;
 	//
 	// RefineBtwnClusters and Do Liear extension for anchors
@@ -1152,6 +1152,11 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 	}
 	for (int ep = 0; ep < extend_clusters.size(); ep++) {
 		SizeExtendClusters += extend_clusters[ep].matches.size();
+	}	
+	if (SizeRefinedClusters == 0) {
+		read.unaligned = 1;
+		output_unaligned(read, opts, *output);
+		return 0;
 	}	
 	// cerr << "SizeRefinedClusters: " << SizeRefinedClusters << "   SizeExtendClusters: " << SizeExtendClusters << endl;
 	// 	   << "  read.name:"<< read.name <<  endl;
@@ -1184,7 +1189,6 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		}
 		clust.close();
 	}	
-	assert(SizeRefinedClusters != 0);
 
 	clusters.clear();
 	refinedclusters.clear();

@@ -237,9 +237,9 @@ void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & spl
 		n++;
 		if (n < splitclusters.size()) ic_n = splitclusters[n].coarse;
 	}
-	if (splitclusters.size() > 1) {	
-		splitclusters[n-1].NumofAnchors0 = clusters[ic_m].matches.size() - matchS;	
-	}
+	// if (splitclusters.size() > 1) {	
+	splitclusters[n-1].NumofAnchors0 = clusters[ic_m].matches.size() - matchS;	
+	// }
 	
 }
 

@@ -265,6 +265,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
    			opts.minDiagCluster=10;
    			opts.minClusterLength=100;
    			opts.minClusterSize=30;
+   			opts.firstcoefficient=24;
    			// opts.secondcoefficient=15;
    			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
@@ -636,7 +637,7 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.globalK = 17;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 60;//80
+			opts.globalMaxFreq = 60;
 			opts.globalWinsize = 12;
 			opts.NumOfminimizersPerWindow = 1;	
 		}
