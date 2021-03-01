@@ -108,6 +108,7 @@ void MapReads(MapInfo *mapInfo) {
 	stringstream strm;
 	stringstream svsigstrm;
 	vector<Read> reads;
+	IndelRefineBuffers indelRefineBuffers;
 	while (mapInfo->reader->BufferedRead(reads,IO_BUFFER_SIZE,(*mapInfo->opts))) {
 		if (mapInfo->opts->readStride != 1 and
 				mapInfo->reader->nReads % mapInfo->opts->readStride != mapInfo->opts->readStart ) {
@@ -116,7 +117,8 @@ void MapReads(MapInfo *mapInfo) {
 		else {
 			for (int i = 0; i< reads.size(); i++) {
 				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm,
-											 *mapInfo->glIndex, *mapInfo->opts, &strm, &svsigstrm, mapInfo->timing, mapInfo->semaphore);
+																			*mapInfo->glIndex, *mapInfo->opts, &strm, &svsigstrm, mapInfo->timing, indelRefineBuffers, 
+																			mapInfo->semaphore);
 				reads[i].Clear();
 			}
 			reads.clear();
@@ -248,6 +250,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "--CalculateMinimizerStats")) {
 			opts.CalculateMinimizerStats = true;
+		}
+    else if (ArgIs(argv[argi], "--refineBand")) {
+			opts.refineBand=atoi(GetArgv(argv, argc, argi));
+			++argi;
 		}
 		else if (ArgIs(argv[argi], "--skipBandedRefine")) {
 			opts.skipBandedRefine = true;
@@ -498,9 +504,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	}
 	else {
 		Timing timing;
+		IndelRefineBuffers indelRefineBuffers;
 		while (reader.GetNext(read, opts)) {
 			int rstmm = 0;			
-			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr, outSVsig, timing);
+
+			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr, outSVsig, timing, indelRefineBuffers);
 			if (opts.timing != "") {
 				timing.Summarize(opts.timing);
 			}

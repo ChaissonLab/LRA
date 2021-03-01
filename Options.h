@@ -48,6 +48,7 @@ public:
  	int localMismatch;
 	int localIndel;
 	int localBand;
+	int refineBand;
 	int MergeSplit;
 	int flagRemove;
 	int maxRemovePairedIndelsLength; // if an anchor's length is larger than this parameter, 
@@ -99,6 +100,7 @@ public:
 		localMismatch=-3;
 		localIndel=-4;
 		localBand=15;
+		refineBand=7;
 		sseBand=30;
 		readStart=0;
 		readStride=1;
