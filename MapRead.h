@@ -571,7 +571,7 @@ output_unaligned(Read &read, Options &opts, ostream &output) {
 
 int 
 MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, 
-			ostream *output, ostream *svsigstrm, Timing &timing, pthread_mutex_t *semaphore=NULL) {
+				ostream *output, ostream *svsigstrm, Timing &timing, IndelRefineBuffers &indelRefineBuffers, pthread_mutex_t *semaphore=NULL) {
 	read.unaligned = 0;
 	string baseName = read.name;
 	for (int i=0; i < baseName.size(); i++) {	
@@ -1237,7 +1237,7 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 
 				for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
 					if (opts.skipBandedRefine == false) {
-						IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts);
+						IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts, indelRefineBuffers);
 					}
 					alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
 				}

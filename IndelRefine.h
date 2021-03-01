@@ -8,7 +8,7 @@
 #include "AffineOneGapAlign.h"
 #include <algorithm>
 
-void FlatPrintMat(vector<int> &mat, vector<int> &qS, vector<int> &qE) {
+void FlatPrintMat(vector                        <int> &mat, vector<int> &qS, vector<int> &qE) {
 	int mi=0;
 	for (int r=0; r< qS.size(); r++) {
 		cout << r << "\t" << qS[r] << "\t" << qE[r] << "\t";
@@ -34,18 +34,8 @@ void PrintMat(vector<int> &mat, vector<int> &qS, vector<int> &qE) {
 		for (int j=0; j < qE[i] - qS[i] + 1; j++) { cout << setw(w) << mat[m]; m++;} cout << endl;
 	}
 }
-
-void IndelRefineAlignment(Read &read, 
-													Genome &genome, 
-													Alignment &alignment, 
-													Options &opts) {
-
-	int startBlock=0, endBlock=0;
-	int k=5;
-	int maxGap=k-1;
-	long qPos,tPos;
-
-	vector<Block> refined;
+class IndelRefineBuffers {
+ public:
 
 	vector<int> cuMatSize;
 	vector<int> qS, qE;
@@ -56,22 +46,39 @@ void IndelRefineAlignment(Read &read,
 	vector<int> scoreMat;
 	vector<int> pathMat;
 	vector<int> indexMat;
+	
+
+};
+
+void IndelRefineAlignment(Read &read, 
+													Genome &genome, 
+													Alignment &alignment, 
+													Options &opts,
+													IndelRefineBuffers &buffers) {
+
+	int startBlock=0, endBlock=0;
+	int k=opts.refineBand;
+	int maxGap=k-1;
+	long qPos,tPos;
+
+	vector<Block> refined;
+
+	vector<int> &cuMatSize=buffers.cuMatSize;
+	vector<int> &qS=buffers.qS;
+	vector<int> &qE=buffers.qE;
+
+	vector<int> &insScoreMat=buffers.insScoreMat, &insPathMat=buffers.insPathMat, &insIndexMat=buffers.insIndexMat;
+	vector<int> &delScoreMat=buffers.delScoreMat, & delPathMat=buffers.delPathMat, & delIndexMat=buffers.delIndexMat;
+	
+	vector<int> &scoreMat=buffers.scoreMat;
+	vector<int> &pathMat=buffers.pathMat;
+	vector<int> &indexMat=buffers.indexMat;
 	//
 	// No modification on empty or ungapped alignment
 	//
 	if (alignment.blocks.size() == 0 or alignment.blocks.size() == 1) { return; }
 	int st=0,sq=0;
 	int tbe=min(10,(int) alignment.blocks.size());
-	/*
-	for (int tb=0;tb<tbe; tb++) {
-		
-		cout << "tb\t" << alignment.blocks[tb].qPos - alignment.blocks[0].qPos << "\t"
-				 << alignment.blocks[tb].tPos - alignment.blocks[0].tPos << "\t"
-				 << alignment.blocks[tb].length << "\t" << sq << "\t" << sq << endl;
-	}
-	*/
-	//	cout << "ql: " << alignment.blocks[tbe-1].qPos + alignment.blocks[tbe-1].length - alignment.blocks[0].qPos << endl;
-	//	cout << "tl: " << alignment.blocks[tbe-1].tPos + alignment.blocks[tbe-1].length - alignment.blocks[0].tPos << endl;
 
 	while (endBlock < alignment.blocks.size()) {
 		
