@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 #include "Types.h"
+#include <algorithm>
 using namespace std;
 
 class Header {
@@ -22,10 +23,10 @@ class Header {
 			return 0;
 		}
 		else {
-			vector<uint64_t>::iterator it = lower_bound(pos.begin(), pos.end(), query);
+			vector<uint64_t>::iterator it = upper_bound(pos.begin(), pos.end(), query); // used to use lower_bound, but not quite right
 			int i = it - pos.begin();
 			assert(i > 0);
-			return i-1;
+			return i - 1;
 		}
 	}
 	uint64_t GetChromPos(uint64_t query) {
@@ -44,10 +45,10 @@ class Header {
 		return pos[i+1];
 	}
 		
-	int GetChromStart(uint64_t query) {
-		vector<uint64_t>::iterator it = lower_bound(pos.begin(), pos.end(), query);
-		return query - *it;
-	}
+	// int GetChromStart(uint64_t query) {
+	// 	vector<uint64_t>::iterator it = lower_bound(pos.begin(), pos.end(), query);
+	// 	return query - *it;
+	// }
 
 	void Add(const char* name, uint64_t p) {
 		names.push_back(string(name));

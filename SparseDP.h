@@ -104,7 +104,7 @@ insertPointsPair(vector<Point> & H1, unsigned int frag_num, GenomePos qs, Genome
 		H1.back().inv = 0; // backward direction		
 		H1.back().frag_num = frag_num;
 		H1.back().se.first = qs + length;
-		assert(ts != 0); // IF this happens, just delete all the "-1" in the section of inserting points;
+		// assert(ts != 0); // IF this happens, just delete all the "-1" in the section of inserting points;
 		H1.back().se.second = ts;
 		H1.back().orient = strand; // reversed strand			
 		H1.back().clusterNum = clusterNum; 

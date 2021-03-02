@@ -1021,7 +1021,6 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 	//
 	vector<Cluster> refinedclusters(clusters.size());
  	vector<Cluster*> RefinedClusters(clusters.size());
-
 	if (opts.HighlyAccurate == false or (opts.HighlyAccurate == true and sparse == 1) ) {
 			
 		smallOpts.globalK=glIndex.k;
@@ -1044,15 +1043,8 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		clusters.clear();
 	}
 	else {
-		tinyOpts.globalK=smallOpts.globalK-8;//-8
+		tinyOpts.globalK=smallOpts.globalK-3;
 		for (int s = 0; s < clusters.size(); s++) {	
-
-			// Determine the chromIndex of each Cluster;
-			int pass = clusters[s].CHROMIndex(genome);
-			if (pass == 1) {
-				clusters[s].matches.clear();
-				continue;				
-			}
 			// Subtract chromOffSet from t coord.
 			GenomePos chromOffset = genome.header.pos[clusters[s].chromIndex];
 			for (int m = 0; m < clusters[s].matches.size(); m++) {
