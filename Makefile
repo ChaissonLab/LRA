@@ -1,4 +1,4 @@
-all:  lra 
+all:  lra alchemy2
 PROF=/home/cmb-16/mjc/shared/lib/
 CCOPTS_BASE=
 DEBUG?=""
@@ -61,32 +61,34 @@ lra: lra.o
 	$(CXX) $(STATIC) $(CCOPTS) $^ -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib  -lhts -lz -lpthread -ldeflate -lbz2  -o $@ 
 
 alchemy2: Alchemy2.o
-	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib  -lhts -lz -lpthread -o $@  -Wl,-rpath,$(PWD)/htslib/lib
+	$(CXX) $(STATIC) $(CCOPTS) $^  -L $(CONDA_PREFIX)/lib  -lhts -lz -lpthread -o $@  -Wl,-rpath,$(PWD)/htslib/lib
 
 qti: QueryTime.o
-	$(CXX) $(STATIC) $(CCOPTS) $^  -L htslib/lib -lhts -lz -lpthread -o $@
+	$(CXX) $(STATIC) $(CCOPTS) $^  -L $(CONDA_PREFIX)/lib -lhts -lz -lpthread -o $@
 
 lra.o: lra.cpp $(HEADERS) 
-	$(CXX) $(CCOPTS) -c  -I $(CONDA_PREFIX)/include/  lra.cpp 
+	$(CXX) $(CCOPTS) -c  -I $(CONDA_PREFIX)/include  lra.cpp 
 #  $(CXX) $(CCOPTS) -c  -I htslib/include  lra.cpp 
 
-Alchemy2.o: Alchemy2.cpp Genome.h htslib/lib/libhts.a
-	$(CXX) $(CCOPTS) -c  -I htslib/include Alchemy2.cpp
+# Alchemy2.o: Alchemy2.cpp Genome.h htslib/lib/libhts.a
+Alchemy2.o: Alchemy2.cpp Genome.h
+	$(CXX) $(CCOPTS) -c  -I $(CONDA_PREFIX)/include Alchemy2.cpp
 
+# QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
 QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
-	$(CXX) $(CCOPTS) -c  -I htslib/include QueryTime.cpp
+	$(CXX) $(CCOPTS) -c  -I $(CONDA_PREFIX)/include QueryTime.cpp
 
 writeblock: WriteBlock.cpp
 	$(CXX) $(CCOPTS) WriteBlock.cpp -o writeblock
 
 IndexInformativeKmers.o: IndexInformativeKmers.cpp 
-	$(CXX) $(CCOPTS) $^ -c -I htslib -I bwa
+	$(CXX) $(CCOPTS) $^ -c -I $(CONDA_PREFIX)/include/htslib -I bwa
 
 bwa/bwa.o:
 	cd bwa && make
 
 iik: IndexInformativeKmers.o bwa/bwa.o bwa/kstring.o bwa/utils.o bwa/kthread.o bwa/kstring.o bwa/ksw.o bwa/bwt.o bwa/bntseq.o bwa/bwamem.o bwa/bwamem_pair.o bwa/bwamem_extra.o bwa/malloc_wrap.o	bwa/QSufSort.o bwa/bwt_gen.o bwa/rope.o bwa/rle.o bwa/is.o bwa/bwtindex.o
-	$(CXX) $(CCOPTS) $^ -o iik -L htslib/lib/libhts.a -lz -lpthread -I htslib
+	$(CXX) $(CCOPTS) $^ -o iik -L $(CONDA_PREFIX)/lib/libhts.a -lz -lpthread -I $(CONDA_PREFIX)/include
 
 clean:
-	rm -f lra lra.o iik IndexInformativeKmers.o
+	rm -f lra lra.o iik IndexInformativeKmers.o alchemy2 Alchemy2.o

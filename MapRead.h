@@ -150,7 +150,7 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 
 void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts) {
 	if (read.unaligned) return;
-	float q_coef = 40.0f;
+	float q_coef = 1.0f; // 40
 	int len = alignmentsOrder.size(); // number of primary aln and secondary aln
 	for (int r = 0; r < len; r++) {
 		if (r == 0 and len == 1) {
@@ -165,6 +165,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts) {
 				// long mapq = (int)(pen_cm_1 * q_coef * l);
 				long mapq = (int)(pen_cm_1 * q_coef * l * identity);
 				mapq = mapq > 0? mapq : 0;
+				// if (1/identity >= 0.95f) {mapq = mapq < 60? mapq : 10;}
 				alignmentsOrder[r].SegAlignment[s]->mapqv = mapq < 60? mapq : 60;
 				if (r == 0 && len == 2 && alignmentsOrder[r].SegAlignment[s]->mapqv == 0) alignmentsOrder[r].SegAlignment[s]->mapqv = 1;
 			}			
@@ -183,6 +184,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts) {
 				// long mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l);
 				mapq -= (int)(4.343f * logf(len) + .499f);
 				mapq = mapq > 0? mapq : 0;
+				// if (1/identity >= 0.95f) {mapq = mapq < 60? mapq : 10;}
 				alignmentsOrder[r].SegAlignment[s]->mapqv = mapq < 60? mapq : 60;
 				if (r == 0 && len == 2 && alignmentsOrder[r].SegAlignment[s]->mapqv == 0) alignmentsOrder[r].SegAlignment[s]->mapqv = 1;
 			}

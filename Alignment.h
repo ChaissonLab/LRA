@@ -360,7 +360,7 @@ class Alignment {
 			p=i;
 			while (i < query.size() and seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
 			if (i > p) {
-				cigarstrm << i-p << '=';
+				cigarstrm << i-p << 'M';
 				nm += i-p;				
 				value += i-p;
 				continue;
@@ -418,7 +418,7 @@ class Alignment {
 			while (i < query.size() and seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
 			
 			if (i > p) {
-				cigarstrm << i-p << '=';
+				cigarstrm << i-p << 'M';
 				continue;
 			}
 			while (i < query.size() and seqMap[query[i]] != seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
@@ -532,13 +532,13 @@ class Alignment {
 		out << strandChar << "\t" << chrom << "\t" << genomeLen << "\t" 
 			<< "wholegenomeLen:" << wholegenomeLen <<  "\t" // (Revision) delete wholegenomeLen
 			<< "tStart:" << tStart << "\t" << "tEnd:" << tEnd 
-			<< "\t" << "NumofSV:" << nm+nmm+nins+ndel << "\t" << "Numofbases:" << nm+nmm+tins+tdel << "\t" << "mapqv: " << (int)mapqv << "\t" << "AO:i:" << order;
-		out << "\tNM:i:" << nm << "\t";
-		out << "NX:i:" << nmm << "\t";
-		out << "ND:i:" << ndel << "\t";
-		out << "TD:i:" << tdel << "\t";
-		out << "NI:i:" << nins << "\t";
-		out << "TI:i:" << tins << "\t";
+			<< "\t" << "Number of residue matches:" << nm << "\t" << "mapqv: " << (int)mapqv << "\t" << "AO:i:" << order;
+		out << "\tNM:i:" << nmm + ndel + nins << "\t";
+		// out << "NX:i:" << nmm << "\t";
+		// out << "ND:i:" << ndel << "\t";
+		// out << "TD:i:" << tdel << "\t";
+		// out << "NI:i:" << nins << "\t";
+		// out << "TI:i:" << tins << "\t";
     	out << "NV:f:" << value << "\t";
 		if (typeofaln == 0) {
 			out << "TP:A:" << "P\t";
@@ -629,12 +629,12 @@ class Alignment {
 				samStrm << qualStr;
 			}
 			samStrm << "\t";
-			samStrm << "NM:i:" << nm << "\t";
-			samStrm << "NX:i:" << nmm << "\t";
-			samStrm << "ND:i:" << ndel << "\t";
-			samStrm << "TD:i:" << tdel << "\t";
-			samStrm << "NI:i:" << nins << "\t";
-			samStrm << "TI:i:" << tins << "\t";
+			samStrm << "NM:i:" << nmm + ndel + nins << "\t";
+			// samStrm << "NX:i:" << nmm << "\t";
+			// samStrm << "ND:i:" << ndel << "\t";
+			// samStrm << "TD:i:" << tdel << "\t";
+			// samStrm << "NI:i:" << nins << "\t";
+			// samStrm << "TI:i:" << tins << "\t";
 			samStrm << "NV:f:" << value << "\t";
 			samStrm << "AO:i:" << order << "\t";
 
@@ -744,12 +744,12 @@ class Alignment {
 				samStrm << qualStr;
 			}
 			samStrm << "\t";
-			samStrm << "NM:i:" << nm << "\t";
-			samStrm << "NX:i:" << nmm << "\t";
-			samStrm << "ND:i:" << ndel << "\t";
-			samStrm << "TD:i:" << tdel << "\t";
-			samStrm << "NI:i:" << nins << "\t";
-			samStrm << "TI:i:" << tins << "\t";
+			samStrm << "NM:i:" << nmm + ndel + nins << "\t";
+			// samStrm << "NX:i:" << nmm << "\t";
+			// samStrm << "ND:i:" << ndel << "\t";
+			// samStrm << "TD:i:" << tdel << "\t";
+			// samStrm << "NI:i:" << nins << "\t";
+			// samStrm << "TI:i:" << tins << "\t";
 			samStrm << "NV:f:" << value << "\t";
 			samStrm << "AO:i:" << order;
 		}

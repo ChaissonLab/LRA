@@ -652,21 +652,21 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.globalK = 15;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 900;
+			opts.globalMaxFreq = 200;
 			opts.globalWinsize = 9;
 			opts.NumOfminimizersPerWindow = 1;			
 		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.globalK = 15;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 900;
+			opts.globalMaxFreq = 200;
 			opts.globalWinsize = 9;
 			opts.NumOfminimizersPerWindow = 1;		
 		}
 		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.globalK = 15;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 900;
+			opts.globalMaxFreq = 200;
 			opts.globalWinsize = 9;
 			opts.NumOfminimizersPerWindow = 1;			
 		}
