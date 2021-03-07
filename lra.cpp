@@ -272,6 +272,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
    			opts.minClusterLength=100;
    			opts.minClusterSize=30;
    			opts.firstcoefficient=24;
+     		opts.merge_dist = 100;
    			// opts.secondcoefficient=15;
    			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
@@ -282,6 +283,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.anchor_rate=8.0;
 			opts.NumAln=3;
    			opts.PrintNumAln = 1;
+      		opts.merge_dist = 100;
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;
 
@@ -299,6 +301,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.anchor_rate=8.0;
 			opts.NumAln=3;
    			opts.PrintNumAln = 1;
+     		opts.merge_dist = 30;
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;		
 			// opts.NumAln=3;
@@ -318,6 +321,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.anchor_rate=8.0;
 			opts.NumAln=3;
    			opts.PrintNumAln = 1;
+   			opts.merge_dist = 30;
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
 			// opts.HighlyAccurate = false;
@@ -684,6 +688,12 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 		}					
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;
+		}
+		else if (ArgIs(argv[argi], "--SkipLocalMinimizer")) {
+			opts.SkipLocalMinimizer = true;
+		}
+		else if (ArgIs(argv[argi], "--SkipClusering")) {
+			opts.SkipClusering = true;
 		}
 		else if (ArgIs(argv[argi], "-i")) {
 			++argi;
