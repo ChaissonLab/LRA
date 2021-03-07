@@ -1023,7 +1023,7 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 	//
 	vector<Cluster> refinedclusters(clusters.size());
  	vector<Cluster*> RefinedClusters(clusters.size());
-	if (opts.HighlyAccurate == false or (opts.HighlyAccurate == true and sparse == 1) ) {
+	if (!opts.SkipLocalMinimizer and (opts.HighlyAccurate == false or (opts.HighlyAccurate == true and sparse == 1))) {
 			
 		smallOpts.globalK=glIndex.k;
 		smallOpts.globalW=glIndex.w;
@@ -1189,7 +1189,7 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 	RefinedClusters.clear();
 
 	vector<Cluster_SameDiag> samediag_clusters;
-	MergeMatchesSameDiag(extend_clusters, samediag_clusters); // There are a lot matches on the same diagonal, especially for contig;
+	MergeMatchesSameDiag(extend_clusters, samediag_clusters, opts); // There are a lot matches on the same diagonal, especially for contig;
 	timing.Tick("Merged ExtendClusters");
 
 	vector<SegAlignmentGroup> alignments;

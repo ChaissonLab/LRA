@@ -580,7 +580,7 @@ LinearExtend_chain (vector<unsigned int> &chain, vector<Cluster> &ExtendClusters
 }
 
 void 
-MergeMatchesSameDiag (vector<Cluster> &ExtendClusters, vector<Cluster_SameDiag> &MergedClusters) {
+MergeMatchesSameDiag (vector<Cluster> &ExtendClusters, vector<Cluster_SameDiag> &MergedClusters, Options &opts) {
 	int original = 0, reduced = 0;
 	for (int c = 0; c < ExtendClusters.size(); c++) {
 		original += ExtendClusters[c].matches.size();
@@ -595,7 +595,7 @@ MergeMatchesSameDiag (vector<Cluster> &ExtendClusters, vector<Cluster_SameDiag> 
 			long cur_diag = GetDiag(ExtendClusters[c].matches[q],ExtendClusters[c].matchesLengths[q],  ExtendClusters[c].strand);
 			if (ExtendClusters[c].overlap[q - 1] == 0 and ExtendClusters[c].overlap[q] == 0 
 				and prev_diag == cur_diag and prev_qEnd < ExtendClusters[c].matches[q].first.pos
-				and GapDifference(ExtendClusters[c].matches[q - 1], ExtendClusters[c].matches[q], ExtendClusters[c].matchesLengths[q - 1]) <= 100) { // 100 for contig
+				and GapDifference(ExtendClusters[c].matches[q - 1], ExtendClusters[c].matches[q], ExtendClusters[c].matchesLengths[q - 1]) <= opts.merge_dist) { // 100 for contig
 				MergedClusters[c].end.back() = q + 1;
 			}
 			else {

@@ -91,6 +91,9 @@ public:
 	bool CalculateMinimizerStats;
 	bool skipBandedRefine;
 	string readname;
+	int merge_dist;
+	bool SkipLocalMinimizer;
+	bool SkipClusering;
 
 	Options() {
 		skipBandedRefine=false;
@@ -180,6 +183,9 @@ public:
 		passthroughtag=false;
 		CheckTrueIntervalInFineCluster=false;
 		CalculateMinimizerStats=false;
+		merge_dist=100;
+		SkipLocalMinimizer=false;
+		SkipClusering=false;
 	}
 };
 #endif
