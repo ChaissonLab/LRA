@@ -588,7 +588,7 @@ class Alignment {
 			int last = blocks.size();
 			samStrm << (unsigned int) flag << "\t" << chrom << "\t" << tStart+1 << "\t" << (unsigned int) mapqv << "\t";
 			char clipOp = 'S';
-			if (Supplymentary) {
+			if (Supplymentary and opts.hardClip) {
 				clipOp = 'H';				
 			}
 			if (preClip > 0) {
@@ -610,14 +610,20 @@ class Alignment {
 				samStrm << readStr;					
 			}
 			else {
-				readStr = string(read + qStart, qEnd - qStart);
-				samStrm << readStr;						
+				if (opts.hardClip) {
+					readStr = string(read + qStart, qEnd - qStart);
+					samStrm << readStr;						
+				}
+				else{
+					readStr = string(read, readLen);
+					samStrm << readStr;						
+				}	
 			}
 			if (qual[0] == '*') {
 				qualStr = "*";
 			}
 			else {
-				if (Supplymentary) qualStr = string(qual + blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length - blocks[0].qPos);
+				if (Supplymentary and opts.hardClip) qualStr = string(qual + blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length - blocks[0].qPos);
 				else qualStr.assign(qual, readLen);
 			}
 			// }
