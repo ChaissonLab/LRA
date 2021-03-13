@@ -1683,7 +1683,7 @@ int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, Fin
 	//
 	// Decide the rate;
 	//
-	float rate = 2;//2
+	// float rate = 2;//2
 	//if ((float)totalMatch / (float) read.length <= 0.005) rate = 4; //2 0.01
 	//cerr << "totalMatch/read.length: " << (float)totalMatch / (float) read.length << " rate: " << rate << endl;
 
@@ -2028,7 +2028,7 @@ int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, Fin
 			if (H1[tt].ind == 1 and H1[tt].inv == 1) { //H1[tt] is a start point (s1)
 				Value[ii].SS_B_R1 = Row[t].SS_B1;
 				Value[ii].counter_B_R1 = Row[t].SS_B1.size();
-				Value[ii].val = FragInput[fi]->length(ii - FragInput[fi]->matchStart)*rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].val = FragInput[fi]->length(ii - FragInput[fi]->matchStart) * opts.second_anchor_rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
 				// Value[ii].matchstartNum = mi;
 				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
@@ -2043,7 +2043,7 @@ int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, Fin
 			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
 				Value[ii].SS_B_R2 = Row[t].SS_B2;
 				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
-				Value[ii].val = FragInput[fi]->length(ii - FragInput[fi]->matchStart)*rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].val = FragInput[fi]->length(ii - FragInput[fi]->matchStart) * opts.second_anchor_rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
 				// Value[ii].matchstartNum = mi;
 				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
@@ -2071,7 +2071,7 @@ int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, Fin
 			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
 				Value[ii].SS_B_C1 = Col[t].SS_B1;
 				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
-				Value[ii].val = FragInput[fi]->length(ii - FragInput[fi]->matchStart)*rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].val = FragInput[fi]->length(ii - FragInput[fi]->matchStart) * opts.second_anchor_rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
 				// Value[ii].matchstartNum = mi;
 				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
@@ -2086,7 +2086,7 @@ int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, Fin
 			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
 				Value[ii].SS_B_C2 = Col[t].SS_B2;
 				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
-				Value[ii].val = FragInput[fi]->length(ii - FragInput[fi]->matchStart)*rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].val = FragInput[fi]->length(ii - FragInput[fi]->matchStart) * opts.second_anchor_rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
 				// Value[ii].matchstartNum = mi;
 				//Value[ii].val = min(FragInput[ii].qEnd - FragInput[ii].qStart, FragInput[ii].tEnd - FragInput[ii].tStart) * rate;
@@ -2105,7 +2105,7 @@ int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, Fin
 	//cerr << "Value: " << Value << endl;
 	//cerr << "ProcessPoint\n";
 	// finalchain.InitializeOtherParts (MatchStart, totalMatch, Value);
-	ProcessPoint<Cluster_SameDiag>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, inputChain, MatchStart, rate); 
+	ProcessPoint<Cluster_SameDiag>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, inputChain, MatchStart, opts.second_anchor_rate); 
 	//
 	// find the max_value for the FinalChain 
 	//
@@ -2165,7 +2165,6 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 	vector<Point>  H1;
 	// FragInput is vector<Cluster>
 	// get points from FragInput and store them in H1		
-
 	for (unsigned int i = 0; i < FragInput.size(); i++) {
 
 		// insert start point s1 into H1
@@ -2174,8 +2173,8 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 		H1.back().ind = 1; // start
 		H1.back().inv = 1; // forward direction
 		H1.back().frag_num = i;
-		H1.back().se.first = FragInput[i].qStart; 
-		H1.back().se.second = FragInput[i].tStart;	
+		H1.back().se.first = FragInput[i].qStart + 1; 
+		H1.back().se.second = FragInput[i].tStart + 1;	
 		if (FragInput[i].strand == 0) {
 			H1.back().orient = 1; 
 		}
@@ -2205,7 +2204,7 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 		H1.back().ind = 1; // start
 		H1.back().inv = 0; // backward direction
 		H1.back().frag_num = i;
-		H1.back().se.first = FragInput[i].qStart; 
+		H1.back().se.first = FragInput[i].qStart + 1; 
 		H1.back().se.second = FragInput[i].tEnd - 1; // -1 for chaining overlapped anchors	 
 		if (FragInput[i].strand == 0) {
 			H1.back().orient = 1; 
@@ -2222,7 +2221,7 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 		H1.back().inv = 0; // backward direction		
 		H1.back().frag_num = i;
 		H1.back().se.first = FragInput[i].qEnd - 1; // -1 for chaining overlapped anchors
-		H1.back().se.second = FragInput[i].tStart;	
+		H1.back().se.second = FragInput[i].tStart + 1;	
 		if (FragInput[i].strand == 0) {
 			H1.back().orient = 1; 
 		}

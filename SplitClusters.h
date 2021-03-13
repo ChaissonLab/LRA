@@ -72,8 +72,9 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, 
 		// qSet.insert(clusters[m].qEnd);
 		// tSet.insert(clusters[m].tStart);
 		// tSet.insert(clusters[m].tEnd);	
-		if (clusters[m].anchorfreq <= 1.05f and min(clusters[m].tEnd - clusters[m].tStart, clusters[m].qEnd - clusters[m].qStart) >= 10000) {
-			// cerr << "cluster " << m << " freq: " << clusters[m].anchorfreq << endl;
+		if (clusters[m].anchorfreq <= 1.05f or (clusters[m].anchorfreq <= 3.0f and max(clusters[m].tEnd - clusters[m].tStart, clusters[m].qEnd - clusters[m].qStart) <= 2000)) { 
+			// either low avgfreq cluster or a small cluster with relatively large avgfreq (but it's an important short piece, like INV and pieces at the end)
+			//cerr << "cluster " << m << " freq: " << clusters[m].anchorfreq << endl;
 			clusters[m].split = 1;
 			qSet.insert(clusters[m].qStart);
 			qSet.insert(clusters[m].qEnd);
@@ -128,9 +129,9 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, 
 				GenomePos t = (GenomePos) ceil(itlSet.slope * it->first + itlSet.intercept);
 
 				if (prev.first < it->first) { 
-					if (clusters[m].strand == 0 and it->first >= prev.first + 2 and t >= prev.second + 2)
+					if (clusters[m].strand == 0 and it->first >= prev.first + 3 and t >= prev.second + 3)
 						splitclusters.push_back(Cluster(prev.first, it->first, prev.second, t, clusters[m].strand, m)); // initialize coarse to specify the index of original index
-					else if (clusters[m].strand ==  1 and it->first >= prev.first + 2 and prev.second >= t + 2)
+					else if (clusters[m].strand ==  1 and it->first >= prev.first + 3 and prev.second >= t + 3)
 						splitclusters.push_back(Cluster(prev.first, it->first, t, prev.second, clusters[m].strand, m));	
 					// cerr << "splitclusters: " << splitclusters.size() << " " << prev.first << " " << it->first << endl;				
 				}
@@ -142,9 +143,9 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, 
 				GenomePos q = (GenomePos) ceil((it->first - itlSet.intercept) / itlSet.slope);
 				
 				if (prev.first < q) {
-					if (clusters[m].strand == 0 and q >= prev.first + 2 and it->first >= prev.second + 2) 
+					if (clusters[m].strand == 0 and q >= prev.first + 3 and it->first >= prev.second + 3) 
 						splitclusters.push_back(Cluster(prev.first, q, prev.second, it->first, clusters[m].strand, m));
-					else if (clusters[m].strand ==  1 and q >= prev.first + 2 and prev.second >= it->first + 2)
+					else if (clusters[m].strand ==  1 and q >= prev.first + 3 and prev.second >= it->first + 3)
 						splitclusters.push_back(Cluster(prev.first, q, it->first, prev.second, clusters[m].strand, m));
 					// cerr << "splitclusters: " << splitclusters.size() << " " << prev.first << " " << q << endl;
 				}
@@ -156,10 +157,10 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, 
 		} 
 
 		if (prev.first < clusters[m].qEnd) {
-			if (clusters[m].strand == 0 and clusters[m].qEnd >= prev.first + 2 and clusters[m].tEnd >= prev.second + 2) {
+			if (clusters[m].strand == 0 and clusters[m].qEnd >= prev.first + 3 and clusters[m].tEnd >= prev.second + 3) {
 				splitclusters.push_back(Cluster(prev.first, clusters[m].qEnd, prev.second, clusters[m].tEnd, clusters[m].strand, m));
 			}
-			else if (clusters[m].strand ==  1 and clusters[m].qEnd >= prev.first + 2 and prev.second >= clusters[m].tStart + 2){
+			else if (clusters[m].strand ==  1 and clusters[m].qEnd >= prev.first + 3 and prev.second >= clusters[m].tStart + 3){
 				splitclusters.push_back(Cluster(prev.first, clusters[m].qEnd, clusters[m].tStart, prev.second, clusters[m].strand, m));	
 			}		
 			// cerr << "splitclusters: " << splitclusters.size() << " " << prev.first << " " << clusters[m].qEnd << endl;
@@ -201,7 +202,7 @@ void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & spl
 		int ic = splitclusters[m].coarse;
 		float pika = (float)min(splitclusters[m].qEnd - splitclusters[m].qStart, splitclusters[m].tEnd - splitclusters[m].tStart) / 
 										(float)min(clusters[ic].qEnd - clusters[ic].qStart, clusters[ic].tEnd - clusters[ic].tStart);
-		splitclusters[m].Val = (int)clusters[ic].Val*pika;
+		splitclusters[m].Val = (int)clusters[ic].Val * pika;
 		//cerr << "m: " << m << " ic: " << ic << " length/totallenth: " << pika << 
 		//" clusters[ic].Val: " << clusters[ic].Val << endl;
 	}

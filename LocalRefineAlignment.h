@@ -725,7 +725,6 @@ void
 SparseDP_and_RefineAlignment_btwn_anchors(vector<Primary_chain> &Primary_chains, vector<SplitChain> &splitchains, vector<Cluster_SameDiag *> &ExtendClusters, 
 		vector<SegAlignmentGroup> &alignments, Options &smallOpts, const vector<float> & LookUpTable, Read &read, char *strands[2], int &p, int &h, 
 		Genome &genome, int &LSC, Options &tinyOpts, AffineAlignBuffers &buff, ostream *svsigstrm, vector<Cluster> &extend_clusters){
-
 	for (int st = 0; st < splitchains.size(); st++) {
 		//
 		// Apply SparseDP on extended anchors on every splitchain;
@@ -735,8 +734,8 @@ SparseDP_and_RefineAlignment_btwn_anchors(vector<Primary_chain> &Primary_chains,
 		SparseDP(splitchains[st], ExtendClusters, finalchain, smallOpts, LookUpTable, read);
 		// timing.Tick("2nd SDP");
 		
-		// RemovePairedIndels(finalchain); (This is deleting lots of good anchors)
-		RemoveSpuriousAnchors(finalchain, smallOpts);
+		if (tinyOpts.RemovePairedIndels) RemovePairedIndels(finalchain); //(This is deleting lots of good anchors)
+		if (tinyOpts.RemoveSpuriousAnchors) RemoveSpuriousAnchors(finalchain, smallOpts);
 		//
 		// switch back to the original anchors;
 		//
@@ -754,7 +753,7 @@ SparseDP_and_RefineAlignment_btwn_anchors(vector<Primary_chain> &Primary_chains,
 						  << ultimatechain[ep].second.pos << "\t"
 						  << ultimatechain[ep].first.pos + ultimatechain.length(ep) << "\t"
 						  << ultimatechain[ep].second.pos + ultimatechain.length(ep) << "\t"
-						  << h << "\t"
+						  << st << "\t"
 						  << ultimatechain.ClusterNum(ep) << "\t"
 						  << ultimatechain.strand(ep) << endl;
 				}
@@ -763,7 +762,7 @@ SparseDP_and_RefineAlignment_btwn_anchors(vector<Primary_chain> &Primary_chains,
 						  << ultimatechain[ep].second.pos + ultimatechain.length(ep) << "\t"
 						  << ultimatechain[ep].first.pos + ultimatechain.length(ep) << "\t"
 						  << ultimatechain[ep].second.pos << "\t"
-						  << h << "\t"
+						  << st << "\t"
 						  << ultimatechain.ClusterNum(ep) << "\t"
 						  << ultimatechain.strand(ep) << endl;					
 				}

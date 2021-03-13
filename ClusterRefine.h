@@ -223,10 +223,10 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 		if (clusters[ph].strand == 1) SwapStrand(read, smallOpts, refinedclusters[ph]);
 		refinedclusters[ph].SetClusterBoundariesFromMatches(smallOpts);
 		refinedclusters[ph].strand = clusters[ph].strand;
-		//refinedclusters[ph].minDiagNum = clusters[ph].minDiagNum;
-		//refinedclusters[ph].maxDiagNum = clusters[ph].maxDiagNum;
 		refinedclusters[ph].coarse = -1;
 		refinedclusters[ph].refinespace = 0;
+		refinedclusters[ph].refineEffiency = ((float) refinedclusters[ph].matches.size()) / min(refinedclusters[ph].qEnd - refinedclusters[ph].qStart, 
+																							refinedclusters[ph].tEnd - refinedclusters[ph].tStart);
 	}
 	return 0;
 }
@@ -244,8 +244,7 @@ int RefineSpace(bool consider_str, GenomePairs &EndPairs, Options & opts, Genome
 	maxDiagNum = max(diag1, diag2) + opts.refineSpaceDiag; 
 
 	vector<GenomeTuple> EndReadTup, EndGenomeTup;
-	StoreMinimizers<GenomeTuple, Tuple>(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength, opts.globalK, opts.globalW, 
-											EndGenomeTup, true, false);
+	StoreMinimizers<GenomeTuple, Tuple>(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength, opts.globalK, opts.globalW, EndGenomeTup, true, false);
 	sort(EndGenomeTup.begin(), EndGenomeTup.end());
 	StoreMinimizers<GenomeTuple, Tuple>(strands[st] + qs, qe - qs, opts.globalK, opts.globalW, EndReadTup, true, false);
 	sort(EndReadTup.begin(), EndReadTup.end());
@@ -267,7 +266,8 @@ int RefineSpace(bool consider_str, GenomePairs &EndPairs, Options & opts, Genome
 // This function find anchors btwn two adjacent Clusters;
 //
 int 			
-RefineBtwnSpace(Cluster *cluster, Options &opts, Genome &genome, Read &read, char *strands[2], GenomePos qe, GenomePos qs, 
+RefineBtwnSpace(vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluster, 
+							Options &opts, Genome &genome, Read &read, char *strands[2], GenomePos qe, GenomePos qs, 
 							GenomePos te, GenomePos ts, bool st, GenomePos lrts=0, GenomePos lrlength=0) {
 
 	int ChromIndex = cluster->chromIndex;
@@ -285,24 +285,92 @@ RefineBtwnSpace(Cluster *cluster, Options &opts, Genome &genome, Read &read, cha
 	GenomePairs EndPairs;
 	opts.refineSpaceDiag = 300;
 	RefineSpace(1, EndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, st, lrts, lrlength);
-
-	if (EndPairs.size() > 0) {
-		cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end());  // TODO(Jingwen): Timing consuming???????
+	float eff = ((float) EndPairs.size()) / min(qe - qs, te - ts);
+	if (twoblocks) cerr << "refineEffiency: " << eff << " original: " << cluster->refineEffiency << endl;
+	if (EndPairs.size() > 0 and twoblocks) {
+		cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
 		cluster->SetClusterBoundariesFromMatches(opts);
 		cluster->refinespace = 1;
+		return 0;
 	}
-	return 0;
+	cerr << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+
+	if (twoblocks) return 0;
+	bool rst = (st == 1? 0 : 1);
+	GenomePos t = qs;
+	qs = read.length - qe;
+	qe = read.length - t;
+	GenomePairs revEndPairs;
+	opts.refineSpaceDiag = 300;
+	RefineSpace(1, revEndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, rst, lrts, lrlength);		
+	float reff = ((float) revEndPairs.size()) / min(qe - qs, te - ts);
+	
+	cerr << "refineEffiency: " << eff << "  reff: " <<  reff << " original: " << cluster->refineEffiency << endl;
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		ofstream clust("RevBtwnCluster.tab", std::ofstream::app);
+		for (int t = 0; t < revEndPairs.size(); t++) {
+				if (rst == 0) {
+					clust << revEndPairs[t].first.pos << "\t"
+						  << revEndPairs[t].second.pos << "\t"
+						  << revEndPairs[t].first.pos + opts.globalK << "\t"
+						  << revEndPairs[t].second.pos + opts.globalK << "\t"
+						  << rst << endl;
+				}
+				else {
+					clust << revEndPairs[t].first.pos << "\t"
+						  << revEndPairs[t].second.pos + opts.globalK << "\t"
+						  << revEndPairs[t].first.pos + opts.globalK << "\t"
+						  << revEndPairs[t].second.pos<< "\t"
+						  << rst << endl;					
+				}
+		}
+		for (int t = 0; t < EndPairs.size(); t++) {
+				if (st == 0) {
+					clust << EndPairs[t].first.pos << "\t"
+						  << EndPairs[t].second.pos << "\t"
+						  << EndPairs[t].first.pos + opts.globalK << "\t"
+						  << EndPairs[t].second.pos + opts.globalK << "\t"
+						  << st << endl;
+				}
+				else {
+					clust << EndPairs[t].first.pos << "\t"
+						  << EndPairs[t].second.pos + opts.globalK << "\t"
+						  << EndPairs[t].first.pos + opts.globalK << "\t"
+						  << EndPairs[t].second.pos<< "\t"
+						  << st << endl;					
+				}
+		}
+		clust.close();
+	}	
+	if (eff >= reff) {
+		cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
+		cluster->SetClusterBoundariesFromMatches(opts);
+		cluster->refinespace = 1;
+		return 0;
+	}
+	else{
+		cerr << "rev happens, refineEffiency: " << eff << "  reff: " <<  reff << " original: " << cluster->refineEffiency << endl;
+		cerr << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+		RevBtwnCluster.push_back(Cluster(0, 0, rst));
+		RevBtwnCluster.back().matches.insert(RevBtwnCluster.back().matches.end(), revEndPairs.begin(), revEndPairs.end()); 
+		RevBtwnCluster.back().SetClusterBoundariesFromMatches(opts);
+		RevBtwnCluster.back().refinespace = 1;
+		return 1;
+	}
 }
 
 void
-RefineBtwenClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*> &RefinedClusters, Genome &genome, 
-	Read &read, Options &smallOpts, int &p, int &h, char *strands[2]) {
+RefineBtwnClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*> &RefinedClusters, vector<Cluster> &RevBtwnCluster, 
+						vector<tuple<int, int, int> > &tracerev, Genome &genome, Read &read, Options &smallOpts, int &p, int &h, char *strands[2]) {
 	//
 	// Find matches btwn every two adjacent Clusters;
 	//
 	int c = 1;
-	GenomePos qe, qs, te, ts;
-	bool st; GenomePos SpaceLength;
+	GenomePos qe, qs, te1, ts1;
+	GenomePos te2 = 0, ts2 = 0;
+	bool st1, st2; 
+	bool twoblocks = 0;
+	GenomePos SpaceLength;
 	while (c < Primary_chains[p].chains[h].ch.size()) {
 
 		int cur = Primary_chains[p].chains[h].ch[c];
@@ -310,43 +378,89 @@ RefineBtwenClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*
 		//
 		// Decide the boudaries of space and strand direction btwn RefinedClusters[cur] and RefinedClusters[prev]
 		//
-		if (RefinedClusters[cur]->strand == RefinedClusters[prev]->strand) st = RefinedClusters[cur]->strand;
-		else st = RefinedClusters[cur]->strand;
 		qs = RefinedClusters[cur]->qEnd; 
 		qe = RefinedClusters[prev]->qStart;
-
-		if (RefinedClusters[cur]->tEnd <= RefinedClusters[prev]->tStart) {
-			ts = RefinedClusters[cur]->tEnd;
-			te = RefinedClusters[prev]->tStart;
-			//st = 0;
-			//st = 1;
-		}
-		else if (RefinedClusters[cur]->tStart > RefinedClusters[prev]->tEnd) {
-			ts = RefinedClusters[prev]->tEnd;
-			te = RefinedClusters[cur]->tStart;
-			//st = 1;
-			//st = 0;
+		if (qe <= qs) {c++; continue;}
+		if (RefinedClusters[cur]->strand == RefinedClusters[prev]->strand) {
+			twoblocks = 0;
+			st1 = RefinedClusters[cur]->strand;
+			if (RefinedClusters[cur]->tEnd <= RefinedClusters[prev]->tStart) {
+				ts1 = RefinedClusters[cur]->tEnd;
+				te1 = RefinedClusters[prev]->tStart;
+			}
+			else if (RefinedClusters[cur]->tStart > RefinedClusters[prev]->tEnd) {
+				ts1 = RefinedClusters[prev]->tEnd;
+				te1 = RefinedClusters[cur]->tStart;
+			}
+			else {c++; continue;}// No need to refine the space!
+			ts2 = 0; te2 = 0;
 		}
 		else {
-			c++;
-			continue; // No need to refine the space!					
-		}
-		//cerr << "btwn  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
-		if (qe > qs and te > ts) {
-			SpaceLength = max(qe - qs, te - ts); 
-			//cerr << "SpaceLength: " << SpaceLength << "st: " << st << endl; 
-			//used to be 100000; mapping contigs requires larger threshold;
-			if (SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
-				// btwnClusters have GenomePos, st, matches, coarse
-				// This function also set the "coarse" flag for RefinedClusters[cur]
-				RefineBtwnSpace(RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te, ts, st);
+			st1 = RefinedClusters[cur]->strand; 
+			st2 = RefinedClusters[prev]->strand; 
+			twoblocks = 1;
+			if (RefinedClusters[cur]->tEnd <= RefinedClusters[prev]->tStart) {
+				if (st1 == 0) {
+					ts1 = RefinedClusters[cur]->tEnd; te1 = ts1 + qe - qs;
+					ts2 = RefinedClusters[prev]->tEnd; te2 = ts2 + qe - qs;
+				}
+				else {
+					te1 = RefinedClusters[cur]->tStart; ts1 = (te1 > (qe - qs)? te1 - (qe - qs) : 0);
+					te2 = RefinedClusters[prev]->tStart; ts2 = (te2 > (qe - qs)? te2 - (qe - qs) : 0);
+				}
 			}
+			else if (RefinedClusters[cur]->tStart > RefinedClusters[prev]->tEnd) {
+				if (st1 == 0) {
+					ts1 = RefinedClusters[cur]->tEnd; te1 = ts1 + qe - qs;
+					te2 = RefinedClusters[cur]->tStart; ts2 = (te2 > (qe - qs)? te2 - (qe - qs) : 0); 
+				}
+				else {
+					te1 = RefinedClusters[cur]->tStart; ts1 = (te1 > (qe - qs)? te1 - (qe - qs) : 0);
+					te2 = RefinedClusters[prev]->tStart; ts2 = (te2 > (qe - qs)? te2 - (qe - qs) : 0);
+				}
+			}
+			else {c++; continue;}// No need to refine the space!
 		}
+
+		// //cerr << "btwn  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+		// if (qe > qs and te1 > ts1) {
+		// 	SpaceLength = max(qe - qs, te1 - ts1); 
+		// 	//cerr << "SpaceLength: " << SpaceLength << "st: " << st << endl; 
+		// 	//used to be 100000; mapping contigs requires larger threshold;
+		// 	if (SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {
+		// 		// btwnClusters have GenomePos, st, matches, coarse
+		// 		// This function also set the "coarse" flag for RefinedClusters[cur]
+		// 		RefineBtwnSpace(RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te1, ts1, st);
+		// 	}
+		// }
+		if (te1 <= ts1) {c++; continue;}
+		SpaceLength = min(qe - qs, te1 - ts1); 
+		if (twoblocks) cerr << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;
+		if (SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
+			// btwnClusters have GenomePos, st, matches, coarse
+			// This function also set the "coarse" flag for RefinedClusters[cur]
+			if (RefineBtwnSpace(RevBtwnCluster, twoblocks, RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te1, ts1, st1)) {
+				// 
+				// Insert a rev cluster
+				//
+				tracerev.push_back(make_tuple(h, c, RevBtwnCluster.size() - 1));
+			}
+		}		
+		if (te2 <= ts2) {c++; continue;}
+		SpaceLength = min(qe - qs, te2 - ts2); 
+		if (twoblocks) cerr << read.name << " qs: " << qs << " qe: " << qe << " ts2: " << ts2 << " te2: " << te2 << endl;
+		if (SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
+			// btwnClusters have GenomePos, st, matches, coarse
+			// This function also set the "coarse" flag for RefinedClusters[cur]
+			RefineBtwnSpace(RevBtwnCluster, twoblocks, RefinedClusters[prev], smallOpts, genome, read, strands, qe, qs, te2, ts2, st2);
+		}			
 		c++;
 	}
 	//
 	// Find matches at the right end;
 	//
+	GenomePos te, ts;
+	bool st;
 	int rh = Primary_chains[p].chains[h].ch[0];
 	st = RefinedClusters[rh]->strand;
 	qs = RefinedClusters[rh]->qEnd;
@@ -362,7 +476,7 @@ RefineBtwenClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*
 	}
 	//cerr << "right  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 	if (qe > qs and te > ts) {
-		SpaceLength = max(qe - qs, te - ts); 
+		SpaceLength = min(qe - qs, te - ts); 
 		if (SpaceLength < 50000 and te+500 < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (1000, 6000)
 			GenomePos lrts=0, lrlength=0;
 			if (st==0) {
@@ -374,7 +488,7 @@ RefineBtwenClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*
 				lrlength=lrts;						
 			}
 			//cerr << "right: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
-			RefineBtwnSpace(RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
+			RefineBtwnSpace(RevBtwnCluster, 1, RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
 		}			
 	}
 	//
@@ -395,7 +509,7 @@ RefineBtwenClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*
 	}
 	//cerr << "left  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 	if (qe > qs and te > ts) {
-		SpaceLength = max(qe - qs, te - ts);
+		SpaceLength = min(qe - qs, te - ts);
 		if (SpaceLength < 50000 and te+500 < genome.lengths[RefinedClusters[lh]->chromIndex]) { // used (1000, 6000)
 			GenomePos lrts=0, lrlength=0;
 			if (st==0) { 
@@ -407,7 +521,7 @@ RefineBtwenClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*
 				lrlength=500;						
 			}
 			//cerr << "left: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
-			RefineBtwnSpace(RefinedClusters[lh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
+			RefineBtwnSpace(RevBtwnCluster, 1, RefinedClusters[lh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
 		}			
 	}
 	// timing.Tick("refine_btwnclusters");

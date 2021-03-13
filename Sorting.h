@@ -11,7 +11,6 @@ using std::sort;
 using std::pair;
 using std::tuple;
 
-
 template<typename Tup>
 class DiagonalIndexSort {
 public:
@@ -154,19 +153,6 @@ class CartesianSortOp {
 	}
 };
 
-template<typename Tup> 
-class CartesianSortOp_freq {
- public:
-	int operator()(const pair<Tup, Tup> &a, const pair<Tup, Tup> &b) {
-		if (a.first.pos != b.first.pos) {
-			return a.first.pos < b.first.pos;
-		}
-		else {
-			return a.second.pos < b.second.pos;
-		}
-	}
-};
-
 template<typename Tup>
 void CartesianSort(vector<pair<Tup, Tup> > &vals, int s, int e) {
 	sort(vals.begin() + s, vals.begin() + e, CartesianSortOp<Tup>());
@@ -203,6 +189,7 @@ class CartesianTargetSortOp {
 		}
 	}
 };
+
 
 template<typename Tup>
 void CartesianTargetSort(vector<pair<Tup, Tup> > &vals) {

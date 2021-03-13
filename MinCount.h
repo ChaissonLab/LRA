@@ -26,17 +26,6 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 	// If canonical == True, for_mask = 0111...11 --> minimizer & for_mask = 0minimizer; rev_mask = 1000...00 --> minimizer | rev_mask = 1minimizer
 	// Else for_mask = 111...11 --> minimizer & for_mask = minimizer, rev_mask = 000...00 --> minimizer | rev_mask = minimizer
 	//
-/*
-	Tup for_mask = TupPos::for_mask_s;	
-	Tup rev_mask = ~for_mask;
-	if (!Global) { // for LocalTuple, rev_mask = 000...00 (20 bits)
-		rev_mask = rev_mask & 0;
-	}
-	if (!canonical and Global) {
-		rev_mask = rev_mask & 0;
-		for_mask = ~rev_mask;
-	}
-*/
 	Tup for_mask = TupPos::for_mask_s;	
 	Tup rev_mask = TupPos::rev_mask_s;
 	Tup mask = 0;
@@ -76,10 +65,9 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 		assert(testrc == curRC);
 		*/
 		curMinimizer.pos = p;
-
 		if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
 		else curMinimizer.t = (curRC.t | rev_mask); 
-		if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) {  
+		if (curMinimizer.t < activeMinimizer.t) {  
 			activeMinimizer.t = curMinimizer.t;
 			activeMinimizer.pos = p;
 		}	

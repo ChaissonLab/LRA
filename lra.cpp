@@ -264,7 +264,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.anchor_rate=1.0; // boost the match score for 1st SDP
 			opts.cleanMaxDiag=100; // For CleanOffDiagonal
 			opts.maxDiag=100; // For StoreFineCluster
-			opts.maxGap=1000; // for SplitRoughCluster
+			opts.maxGap=500; // for StoreFineCluster; cannot be too large, otherwise lose lots of INV
+			opts.RoughClustermaxGap=500;  // for SplitRoughCluster; cannot be too large, otherwise cannot find INV
 			opts.NumAln=2; 
    			opts.PrintNumAln = 1;
    			opts.anchorstoosparse=0.01; // For Cluster Refinement
@@ -273,6 +274,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
    			opts.minClusterSize=30;
    			opts.firstcoefficient=24;
      		opts.merge_dist = 100;
+     		opts.SecondCleanMinDiagCluster=40;
+     		opts.minDiagCluster=30;
    			// opts.secondcoefficient=15;
    			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
@@ -280,10 +283,17 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.readType=Options::ccs;
 			opts.HighlyAccurate = false;
-			opts.anchor_rate=8.0;
+			opts.anchor_rate=18.0;
 			opts.NumAln=3;
    			opts.PrintNumAln = 1;
       		opts.merge_dist = 100;
+      		opts.RoughClustermaxGap=500; 
+     		opts.maxGap = 400;
+     		opts.SecondCleanMinDiagCluster=40;
+     		opts.minDiagCluster=10;
+     		opts.cleanClustersize=100;
+     		opts.punish_anchorfreq=10;
+     		opts.anchorPerlength=10;
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;
 
@@ -301,7 +311,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.anchor_rate=8.0;
 			opts.NumAln=3;
    			opts.PrintNumAln = 1;
-     		opts.merge_dist = 30;
+     		opts.merge_dist = 100;
+     		opts.RoughClustermaxGap = 500; 
+     		opts.maxGap = 500;
+     		opts.SecondCleanMinDiagCluster=20;
+     		opts.minDiagCluster=10;
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;		
 			// opts.NumAln=3;
@@ -322,6 +336,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.NumAln=3;
    			opts.PrintNumAln = 1;
    			opts.merge_dist = 30;
+   			opts.RoughClustermaxGap=5000; 
+     		opts.maxGap = 500;
+     		opts.SecondCleanMinDiagCluster=30;
+     		opts.minDiagCluster=10;
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
 			// opts.HighlyAccurate = false;
@@ -331,6 +349,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			// opts.globalMaxFreq = 50;
 			// opts.NumOfminimizersPerWindow = 1;
 			// opts.maxGapBtwnAnchors=1800;
+		}
+		else if (ArgIs(argv[argi], "--debug")) {
+			opts.debug = true;
 		}
 		else if (ArgIs(argv[argi], "--read")) {
 			opts.readname = string(GetArgv(argv, argc, argi));
@@ -344,11 +365,43 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.secondcoefficient = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "--merge_dist")) {
+			opts.merge_dist = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--minDiagCluster")) {
+			opts.minDiagCluster = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--SecondCleanMinDiagCluster")) {
+			opts.SecondCleanMinDiagCluster = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--anchorPerlength")) {
+			opts.anchorPerlength = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--punish_anchorfreq")) {
+			opts.punish_anchorfreq = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--cleanClustersize")) {
+			opts.cleanClustersize = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--RoughClustermaxGap")) {
+			opts.RoughClustermaxGap = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
 		else if (ArgIs(argv[argi], "--CheckTrueIntervalInFineCluster")) {
 			opts.CheckTrueIntervalInFineCluster = true;
 		}
 		else if (ArgIs(argv[argi], "--anchor_rate")) {
 			opts.anchor_rate = atof(GetArgv(argv,argc,argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--second_anchor_rate")) {
+			opts.second_anchor_rate = atof(GetArgv(argv,argc,argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--maxGap")) {
@@ -361,6 +414,12 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;
 		}		
+		else if (ArgIs(argv[argi], "--SkipRemovePairedIndels")) {
+			opts.RemovePairedIndels = false;
+		}
+		else if (ArgIs(argv[argi], "--SkipRemoveSpuriousAnchors")) {
+			opts.RemoveSpuriousAnchors = false;
+		}
 		else if (ArgIs(argv[argi], "--locBand")) {
 			opts.localBand = atoi(GetArgv(argv,argc,argi));
 			++argi;
@@ -371,6 +430,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "--locIndel")) {
 			opts.localIndel = atoi(GetArgv(argv,argc,argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--SecondCleanMaxDiag")) {
+			opts.SecondCleanMaxDiag = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--cleanMaxDiag")) {

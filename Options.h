@@ -94,7 +94,16 @@ public:
 	int merge_dist;
 	bool SkipLocalMinimizer;
 	bool SkipClusering;
-
+	bool RemovePairedIndels;
+	bool RemoveSpuriousAnchors;
+	float second_anchor_rate;
+	int RoughClustermaxGap;
+	int SecondCleanMinDiagCluster;
+	int SecondCleanMaxDiag;
+	bool debug;
+	int anchorPerlength;
+	int punish_anchorfreq;
+	int cleanClustersize;
 	Options() {
 		skipBandedRefine=false;
 		storeTiming=false;
@@ -152,7 +161,7 @@ public:
    		//minRemoveSpuriousAnchorsLength=100;
      	maxRemoveSpuriousAnchorsDist=500;
    		minRemoveSpuriousAnchorsNum=10;
-   		NumAln = 3;//3
+   		NumAln = 3;
    		PrintNumAln = 1;
    		BtnSubClusterswindow = 800;
 		binLength = 20000;
@@ -186,6 +195,16 @@ public:
 		merge_dist=100;
 		SkipLocalMinimizer=false;
 		SkipClusering=false;
+		RemovePairedIndels=true;
+		RemoveSpuriousAnchors=true;
+		second_anchor_rate=2;
+		RoughClustermaxGap=1000;
+		SecondCleanMinDiagCluster=40;
+		SecondCleanMaxDiag=10;
+		debug=false;
+		anchorPerlength=10;
+		punish_anchorfreq=10;
+		cleanClustersize=100;
 	}
 };
 #endif

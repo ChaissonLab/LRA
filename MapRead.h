@@ -462,80 +462,36 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 // This function splits the chain if Clusters on the chain are mapped to different chromosomes or different locations (quite far, default: 100000) on the same chromosome;
 // Also split the chain when two forward/reverse clusters are chained in reverse/forward direction.
 void
-SPLITChain(vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitChain> & splitchains, vector<bool> & link, Options & opts) {
-	//
-	// Split the chain if Clusters are mapped to different chromosomes;
-	//
-	vector<int> Index; // Index stores the chromIndex of Clusters on chain
-	vector<int> posIndex(ExtendClusters.size(), 0); // posIndex[i] means ExtendClusters[i] has chromIndex Index[posIndex[i]];
+SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitChain> & splitchains, vector<bool> & link, Options & opts) {
+	int im = 0;
+	vector<unsigned int> onec; 
+	vector<bool> lk;
+	onec.push_back(im);
+	int cur = 0, prev = 0;
 
-	//
-	// Get Index and posIndex;
-	//
-	for (int im = 0; im < ExtendClusters.size(); im++) {
-
-		int curChromIndex = ExtendClusters[im]->cluster->chromIndex;
-		if (Index.empty()) {
-			Index.push_back(curChromIndex);
-			posIndex[im] = Index.size() - 1;
-		}
+	while (im < ExtendClusters.size() - 1) {
+		cur = im + 1; prev = im;
+		if (ExtendClusters[cur]->tStart > ExtendClusters[prev]->tEnd + opts.splitdist // too far
+			or ExtendClusters[cur]->tEnd + opts.splitdist < ExtendClusters[prev]->tStart
+			or (link[im] == 1 and ExtendClusters[cur]->strand == 0 and ExtendClusters[prev]->strand == 0) // repetitive mapping
+			or (link[im] == 0 and ExtendClusters[cur]->strand == 1 and ExtendClusters[prev]->strand == 1) // repetitive mapping
+			or (ExtendClusters[cur]->strand == 0 and ExtendClusters[prev]->strand == 1) // inversion
+			or (ExtendClusters[cur]->strand == 1 and ExtendClusters[prev]->strand == 0) // inversion
+			or (ExtendClusters[prev]->OverlaprateOnGenome(ExtendClusters[cur]) >= 0.3)
+			or  (ExtendClusters[prev]->OverlapOnGenome(ExtendClusters[cur]) >= 100 // If two clusters overlap exceeds 0.3, then it is a DUP
+				and ExtendClusters[prev]->anchorfreq <= 1.05f and ExtendClusters[cur]->anchorfreq <= 1.05f)) {  // If two clusters overlap exceeds 100bp and they are both linear, then it is a DUP
+			splitchains.push_back(SplitChain(onec, lk));
+			onec.clear();
+			lk.clear();
+			onec.push_back(cur);
+		}	
 		else {
-			int ex = 0;
-			while (ex < Index.size()) {
-				if (Index[ex] == curChromIndex) {
-					posIndex[im] = ex;
-					break;
-				}
-				ex++;
-			}
-			if (ex == Index.size()) {
-				Index.push_back(curChromIndex);
-				posIndex[im] = Index.size() - 1;
-			}
-		}
+			onec.push_back(cur);
+			lk.push_back(link[im]);
+		}	
+		im++;
 	}
-	//
-	// Get sptchain based on Index and posIndex;
-	//
-	vector<vector<unsigned int>> sptchain(Index.size()); //// TODO(Jingwen): make sure this initialization is right!
-	for (int im = 0; im < posIndex.size(); im++) {
-		sptchain[posIndex[im]].push_back(im);
-	}
-	//
-	// split the chain if an inversion happens, or Clusters are mapped to different locations of the same chromosome;
-	//
-	int bf = 0;
-	for (int im = 0; im < sptchain.size(); im++) {
-		int in = 1;
-		vector<unsigned int> onec; 
-		vector<bool> lk;
-		onec.push_back(sptchain[im][0]);
-
-		while (in < sptchain[im].size()) {
-
-			int prev = sptchain[im][in-1];
-			int cur = sptchain[im][in];
-
-			if (ExtendClusters[cur]->tStart > ExtendClusters[prev]->tEnd + opts.splitdist // too far
-				or ExtendClusters[cur]->tEnd + opts.splitdist < ExtendClusters[prev]->tStart
-				or (link[bf+in-1] == 1 and ExtendClusters[cur]->strand == 0 and ExtendClusters[prev]->strand == 0) // repetitive mapping
-				or (link[bf+in-1] == 0 and ExtendClusters[cur]->strand == 1 and ExtendClusters[prev]->strand == 1) // repetitive mapping
-				or (link[bf+in-1] == 1 and ExtendClusters[cur]->strand == 0 and ExtendClusters[prev]->strand == 1) // inversion
-				or ((link[bf+in-1] == 1 and ExtendClusters[cur]->strand == 1 and ExtendClusters[prev]->strand == 0))) { // inversion
-				splitchains.push_back(SplitChain(onec, lk));
-				onec.clear();
-				lk.clear();
-				onec.push_back(cur);
-			}
-			else {
-				onec.push_back(cur);
-				lk.push_back(link[bf+in-1]);
-			}
-			in++;
-		}
-		splitchains.push_back(SplitChain(onec, lk));
-		bf += sptchain[im].size() - 1;
-	}
+	if (!onec.empty()) splitchains.push_back(SplitChain(onec, lk));
 }
 
 /*
@@ -638,7 +594,20 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		output_unaligned(read, opts, *output);
 		return 0;
 	} 
-		
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		ofstream fclust("for-matches_original.dots");
+		for (int m = 0; m < forMatches.size(); m++) {
+			fclust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"
+					<< forMatches[m].second.pos + opts.globalK << "\t" << m << endl;
+		}
+		fclust.close();
+		ofstream rclust("rev-matches_original.dots");
+		for (int m=0; m < revMatches.size(); m++) {			
+			rclust << revMatches[m].first.pos << "\t" << revMatches[m].second.pos + opts.globalK << "\t" << opts.globalK + revMatches[m].first.pos  << "\t"
+					 << revMatches[m].second.pos << "\t" << m << endl;
+		}
+		rclust.close();
+	}		
 	vector<Cluster> clusters;
 	vector<float> for_avgfreq(forMatches.size(), 0), rev_avgfreq(revMatches.size(), 0);
 	MatchesToFineClusters(forMatches, clusters, genome, read, opts, timing);
@@ -824,6 +793,7 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 	vector<Primary_chain> Primary_chains;
 	float rate = opts.anchor_rate;
 	if (splitclusters.size()/clusters.size() > 20) rate = rate / 2.0;// mapping to repetitive region
+
 	// cerr << "clusters.size(): " << clusters.size() << " splitclusters.size(): " << splitclusters.size() << " rate: " << rate << " read.name: " << read.name << endl;
 
 	SparseDP (splitclusters, Primary_chains, opts, LookUpTable, read, rate);
@@ -1115,17 +1085,32 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 	//
 	// For each chain, check the two ends and spaces between adjacent clusters. If the spaces are too wide, go to find anchors in the banded region.
 	// For each chain, we have vector<Cluster> btwnClusters to store anchors;
-	//
-	// cerr << "SizeOriginalRefinedClusters: " << SizeOriginalRefinedClusters << endl;
-	//
 	// RefineBtwnClusters and Do Liear extension for anchors
 	//
+	vector<Cluster> RevBtwnCluster;
+	vector<tuple<int, int, int> > tracerev;
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
 			if (Primary_chains[p].chains[h].ch.size() == 0) continue;
-				RefineBtwenClusters_chain(Primary_chains, RefinedClusters, genome, read, smallOpts, p, h, strands);
+				RefineBtwnClusters_chain(Primary_chains, RefinedClusters, RevBtwnCluster, tracerev, genome, read, smallOpts, p, h, strands);
 		}
 	}	
+	//
+	// Add back RevBtwnCluster; Edit Primary_chains based on tracerev;
+	//
+	for (int p = 0; p < tracerev.size() ; p++) {
+		int h = get<0>(tracerev[p]); 
+		int I = get<1>(tracerev[p]); 
+		Primary_chains[0].chains[h].ch.insert(Primary_chains[0].chains[h].ch.begin() + I, get<2>(tracerev[p]) + RefinedClusters.size());
+		Primary_chains[0].chains[h].link.insert(Primary_chains[0].chains[h].link.begin() + (I - 1), 1);
+		Primary_chains[0].chains[h].link[I] = 1;
+	}
+	int a = RefinedClusters.size();
+	RefinedClusters.resize(a + RevBtwnCluster.size());
+	for (int p = 0; p < RevBtwnCluster.size(); p++) {
+		RefinedClusters[a + p] = &RevBtwnCluster[p];
+	}
+
 	timing.Tick("Refine_btwnclusters");
 
 	vector<Cluster> extend_clusters;
@@ -1187,6 +1172,7 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 	clusters.clear();
 	refinedclusters.clear();
 	RefinedClusters.clear();
+	RevBtwnCluster.size();
 
 	vector<Cluster_SameDiag> samediag_clusters;
 	MergeMatchesSameDiag(extend_clusters, samediag_clusters, opts); // There are a lot matches on the same diagonal, especially for contig;
@@ -1215,7 +1201,7 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 				// INPUT: vector<Cluster> ExtendClusters; OUTPUT:  vector<vector<unsigned int>> splitchain;
 				//
 				vector<SplitChain> splitchains;
-				SPLITChain(ExtendClusters, splitchains, Primary_chains[p].chains[h].link, smallOpts);
+				SPLITChain(read, ExtendClusters, splitchains, Primary_chains[p].chains[h].link, smallOpts);
 				// cerr << "splitchains.size(): " << splitchains.size() << endl;
 				int LSC = LargestSplitChain(splitchains);
 				//

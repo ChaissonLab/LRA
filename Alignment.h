@@ -601,7 +601,7 @@ class Alignment {
 			// Rnext, Pnext
 			samStrm << "\t*\t0\t";
 			// Template length
-			samStrm << tEnd - tStart << "\t";
+			samStrm << "0\t"; // samStrm << tEnd - tStart << "\t";
 			string qualStr;
 			string readStr;	
 			if (Supplymentary == 0) assert(flag == 0 or flag == 16 or flag == 256 or flag == 272);
@@ -648,11 +648,11 @@ class Alignment {
 			if (alngroup.size() > 1) {
 				samStrm << "SA:Z:";
 			}
-			for (int ag = 0; ag < alngroup.size(); ag++) {
+			for (int ag = alngroup.size() - 1; ag >= 0; ag--) {
 				if (ag == as) {continue;}
 				samStrm << alngroup[ag]->chrom << "," 
 						<< alngroup[ag]->tStart + 1 << ",";
-				if (alngroup[ag]->strand == 1) {
+				if (alngroup[ag]->strand == 0) {
 					samStrm << "+" << ",";
 				}
 				else {
