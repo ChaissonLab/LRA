@@ -159,10 +159,14 @@ class UltimateChain {
 public: 
 	vector<Cluster> * clusters;
 	vector<unsigned int> chain;
+	vector<bool> link;
 	vector<int> ClusterIndex; // ClusterIndex[i] stores the index of the Cluster that anchor i comes from;
 	float SecondSDPValue;
+	float FirstSDPValue;
+	int NumOfAnchors0;
 	UltimateChain() {}
 	UltimateChain(vector<Cluster> * c, float &s) : clusters(c), SecondSDPValue(s) {}
+	UltimateChain(vector<Cluster> * cl): clusters(cl) {}
 	~UltimateChain() {};
 	bool strand (int i) {
 		assert(ClusterIndex[i] < clusters->size());
@@ -198,6 +202,19 @@ public:
 		assert(chain[i] < (*clusters)[clusterNum].matches.size());
 		return (*clusters)[clusterNum].matchesLengths[chain[i]];		
 	}
+
+	GenomePos & qStart(int &i) {
+		return (*clusters)[ClusterIndex[i]].matches[chain[i]].first.pos;
+	}
+	GenomePos & tStart(int &i) {
+		return (*clusters)[ClusterIndex[i]].matches[chain[i]].second.pos;
+	}
+	GenomePos qEnd(int &i) {
+		return (*clusters)[ClusterIndex[i]].matches[chain[i]].first.pos + (*clusters)[ClusterIndex[i]].matchesLengths[chain[i]];
+	}
+	GenomePos tEnd(int &i) {
+		return (*clusters)[ClusterIndex[i]].matches[chain[i]].second.pos + (*clusters)[ClusterIndex[i]].matchesLengths[chain[i]];
+	}	
 };
 
 class SplitChain {

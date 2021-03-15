@@ -378,19 +378,17 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 	}
 
 	if (opts.dotPlot) {
-		stringstream outNameStrm;
-		outNameStrm << "minimizers.txt";
-		ofstream baseDots(outNameStrm.str().c_str());
+		ofstream outNameStrm("minimizers.txt");
 		for (int m=0; m < minimizers.size(); m++) {
 			if (Remove[m] == 0) {
-				baseDots << minimizers[m].t << "\t"
+				outNameStrm << minimizers[m].t << "\t"
 						 << minimizers[m].pos << "\t" 
 						 << minimizers[m].pos + opts.globalK << "\t"
 						 << Freq[m] << "\t" 
 						 << Remove[m] << endl;					
 			}	
 		}
-		baseDots.close();
+		outNameStrm.close();
 	}
 	//
 	// Remove too frequent minimizers;

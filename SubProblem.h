@@ -50,7 +50,12 @@ Subproblem::Subproblem(unsigned int num1) {
 	now = 0;
 }
 
-
+// std::ostream & operator<<(std::ostream & os, const Subproblem & M) {
+// 	os << "{num: " << M.num << "\n";
+// 	os << "Di: " << M.Di << ", Dp: " << M.Dp << ", Dv: " << M.Dv <<  ", Db: " << M.Db << ", Ei: " << M.Ei << ", Ep: " << M.Ep << ", Ev: " << M.Ev << ", Eb: " << M.Eb << ", last: " << M.last << ", now: "
+// 	 << M.now << ", Block: " << M.Block << ", S_1: " << M.S_1 << "\n"; 
+// 	return os;
+// }
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,15 +105,6 @@ Subproblem::Subproblem(unsigned int & num1, std::vector<long int> & Di1, std::ve
 	S_1.push(dummy_pair); 
 }
 */
-
-
-
-std::ostream & operator<<(std::ostream & os, const Subproblem & M) {
-	os << "{num: " << M.num << "\n";
-	os << "Di: " << M.Di << ", Dp: " << M.Dp << ", Dv: " << M.Dv <<  ", Db: " << M.Db << ", Ei: " << M.Ei << ", Ep: " << M.Ep << ", Ev: " << M.Ev << ", Eb: " << M.Eb << ", last: " << M.last << ", now: "
-	 << M.now << ", Block: " << M.Block << ", S_1: " << M.S_1 << "\n"; 
-	return os;
-}
 
 
 

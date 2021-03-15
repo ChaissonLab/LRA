@@ -23,7 +23,7 @@
 #include "SubRountine.h"
 #include "Fragment_Info.h"
 #include "Info.h"
-#include "overload.h"
+// #include "overload.h"
 #include "DivideSubByRow1.h"
 #include "DivideSubByCol1.h"
 #include "DivideSubByRow2.h"
@@ -281,346 +281,6 @@ PassValueToD2 (unsigned int i, vector<Fragment_Info> & Value, const vector<Point
 	}
 	//cerr << endl << endl;
 }
-
-
-
-
-/*
-//This function is for fragments which are resulting from MergeSplit step. 
-// Each fragment has different length, so we need to pass vector<Cluster> vt to the function
-template<typename Tup>
-void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
-				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, Options & opts, 
-				 const vector<float> & LookUpTable, const Tup & FragInput, int rate) { // vector<ClusterCoordinates> & FragInput
-
-	for (unsigned int i = 0; i < H1.size(); i++) { // process points by row
-
-		long int ForwardDiag = (long int)(H1[i].se.second) - (long int)(H1[i].se.first);
-		long int BackDiag = (long int)(H1[i].se.second) + (long int)(H1[i].se.first);
-
-		//cerr << "\n\n\n\nprocessing point " << H1[H3[i]] << endl;
-		//cerr << "the Value[" << H1[H3[i]].frag_num << "] of this point:  " <<  Value[H1[H3[i]].frag_num] << "\n";
-		
-		unsigned int ii = H1[i].frag_num;
-
-
-		if (H1[i].ind == 1 and H1[i].inv == 1) { // H1[i] is a start point s1
-			//cerr << "----------------------------------------this is a start point (s1) ------------------------------------" << endl;
-			//cerr << "dealing with the subproblem B first. Solve Value[" << H1[i].frag_num << "].SS_B_R1 and SS_B_C1" << endl;
-			//cerr <<"----------------Solve SS_B_R1 -------------------" << endl;
-			//
-			// For each subproblem B_R1 that point H1[i] is in, get Ev[ForwardDiag] and update Value[H1[i]].frag_num].val
-			//
-			for (unsigned int k = 0; k < Value[ii].SS_B_R1.size(); ++k) {
-				unsigned int j = Value[ii].SS_B_R1[Value[ii].SS_B_R1.size() - 1 - k];
-				//cerr << "Solving SubR1[" << j << "]: " << SubR1[j]<< "\n";
-
-				// If subproblem SubR1[j] is a leaf case, then 
-				if (SubR1[j].Di.empty()) {
-					//cerr << "SubR1[" << j << "] is a leaf case or non-leaf case but Di is empty" << "\n";
-					--Value[ii].counter_B_R1;
-					continue;
-				}
-				else {
-					// Then subproblem SubR1[j] is non-leaf case. find the index of the point in E array
-					vector<unsigned int>::iterator t = Lower_Bound<vector<unsigned int>::iterator,long int>(SubR1[j].E.begin(), SubR1[j].E.end(), ForwardDiag, SubR1[j].Ei);
-					//cerr << "SubR1[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
-					//cerr << "SubR1[" << j << "].Ei: " << SubR1[j].Ei << "/n";
-					//cerr << "The index of this point in E array: " << *t << "\n";
-
-					if (SubR1[j].Eb[*t] == -1) {
-						//cerr << "SubR1[" << j << "] is a non-leaf case but there is no forward diag smaller than the current in D array" << endl;
-						--Value[ii].counter_B_R1;
-						continue;
-					}
-					else {
-						//assert(SubR1[j].counter_D[SubR1[j].Eb[*t]] == 0);
-						//cerr << "SubR1[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already." << endl;
-						//cerr << "Start to compute the maximization structure.\n";
-
-						SubR1[j].now = SubR1[j].Eb[*t];
-						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts); // TODO(Jingwen) anything change for SubC????
-						SubR1[j].last = SubR1[j].Eb[*t];
-
-						//cerr << "retrieve the value from the maximization structure\n";
-						unsigned int i1 = *t; // i1 stores the index in Ei that ForwardDiag is in
-						unsigned int i2; // i2 stores the index in Di which is the best candidate for ForwardDiag
-						FindValueInBlock(ForwardDiag, SubR1[j].S_1, SubR1[j].Ei, SubR1[j].Block, i1, i2);
-						//cerr << "the index in Ei that ForwardDiag is in----i1: " << i1 << "\n";
-						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
-						
-
-						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts) + FragInput.matchesLengths[ii] * rate; 
-						SubR1[j].Ep[i1] = i2;							
-
-						//cerr << "SubR1[" << j << "].Ev[" << i1 << "]: " << SubR1[j].Ev[i1] << ", SubR1[" << j << "].Ep[" << i1 << "]: " << SubR1[j].Ep[i1] << "\n"; 
-
-
-						// Update the value of this point
-						//TODO(Jingwen): if this point is a s1 of a reverse orientated anchor, only update the value when  SubR1[j].Dp[Ep[i1]] points to a forward orientated anchor
-
-						//TODO(Jingwen): only for debug
-						assert(Value[ii].orient == H1[i].orient);
-						int p = SubR1[j].Dp[SubR1[j].Ep[i1]];
-						//
-						// If the current anchor is reverse oriented and the previous anchor is also reverse oriented, then do not update Value[ii]
-						// Otherwise update Value[ii]
-						//
-						//if (! (Value[ii].orient == 0 and Value[p].orient == 0)) { 
-							if (Value[ii].val < SubR1[j].Ev[i1]) {  
-								Value[ii].val = SubR1[j].Ev[i1];
-								Value[ii].prev_sub = SubR1[j].num;
-								Value[ii].prev_ind = i1;
-								Value[ii].prev = 1; // the best value comes from row subproblem
-								Value[ii].inv = 1; // the best value comes from SubR1
-								//cerr << "update the value of this point\n";
-								//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
-								//", Value[ii].prev: " << Value[ii].prev << endl;
-							}			
-						//}	
-						--Value[ii].counter_B_R1;	
-						//cerr << "Do not update the value of this point\n";
-					}
-				}
-			}		
-
-
-			//cerr << endl << endl;
-			//cerr << "--------------Solve SS_B_C1 ----------------" << endl;
-			// For each subproblem B_C1 that point H1[i] is in, get Ev[H1[i].first - H1[i].second] and update Value[H1[i]].val
-			for (unsigned int k = 0; k < Value[ii].SS_B_C1.size(); ++k) {
-				unsigned int j = Value[ii].SS_B_C1[Value[ii].SS_B_C1.size() - 1 - k];
-				//cerr << "SubC1[" << j << "]: " << SubC1[j]<< "\n";
-
-				// If subproblem SubC1[j] is a leaf case, then 
-				if (SubC1[j].Di.empty()) {
-
-					//cerr << "SubC1[" << j << "] is a leaf case or it's a non-leaf case with an empty Di" << "\n";
-					--Value[ii].counter_B_C1;
-					continue;
-				}
-				else {
-
-					// find the index of this point in E array
-					vector<unsigned int>::reverse_iterator t = Lower_Bound<vector<unsigned int>::reverse_iterator,long int>(SubC1[j].E.rbegin(), SubC1[j].E.rend(), ForwardDiag, SubC1[j].Ei);
-					//cerr << "SubC1[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
-					//cerr << "SubC1[" << j << "].Ei: " << SubC1[j].Ei << "/n";
-					//cerr << "The index of this point in E array: " << *t << "\n";
-
-					if (SubC1[j].Eb[*t] == -1) {
-						//cerr << "SubC1[" << j << "] is a non-leaf case but there is no forward diag larger than the current\n ";
-						--Value[ii].counter_B_C1;
-						continue;
-					}
-					else {
-
-						//assert(SubC1[j].counter_D[SubC1[j].Eb[*t]] == 0);
-						//cerr << "SubC1[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
-						//cerr << "Start to compute the maximization structure.\n";
-						SubC1[j].now = SubC1[j].Eb[*t]; 
-						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts); 
-						SubC1[j].last = SubC1[j].Eb[*t];
-
-						//cerr << "retrieve the value from the maximization structure\n";
-			
-						unsigned int i1 = *t; // i1 stores the index in Ei that ForwardDiag is in
-						unsigned int i2; // i2 stores the index in Di which is the best candidate for ForwardDiag
-						FindValueInBlock(ForwardDiag, SubC1[j].S_1, SubC1[j].Ei, SubC1[j].Block, i1, i2);
-						//cerr << "the index in Ei that ForwardDiag is in----i1: " << i1 << "\n";
-						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
-					
-	//					SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + opts.globalK; 
-	//					SubC1[j].Ep[i1] = i2;							
-
-						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts) + FragInput.matchesLengths[ii] * rate; 
-						SubC1[j].Ep[i1] = i2;							
-
-						//cerr << "SubC1[" << j << "].Ev[" << i1 << "]: " << SubC1[j].Ev[i1] << ", SubC1[" << j << "].Ep[" << i1 << "]: " << SubC1[j].Ep[i1] << "\n"; 
-
-						// Update the value of this point
-						//TODO(Jingwen): if this point is a s1 of a reverse orientated anchor, only update the value when  SubR1[j].Dp[Ep[i1]] points to a forward orientated anchor
-						//TODO(Jingwen): Only for debug
-						assert(Value[ii].orient == H1[i].orient);
-						int p = SubC1[j].Dp[SubC1[j].Ep[i1]];
-						//
-						// If the current anchor is reverse oriented and the previous anchor is also reverse oriented, then do not update Value[ii]
-						// Otherwise update Value[ii]
-						//if (! (Value[ii].orient == 0 and Value[p].orient == 0)) {
-							if (Value[ii].val < SubC1[j].Ev[i1]) {  
-								Value[ii].val = SubC1[j].Ev[i1];
-								Value[ii].prev_sub = SubC1[j].num;
-								Value[ii].prev_ind = i1;
-								Value[ii].prev = 0; // the best value comes from col subproblem
-								Value[ii].inv = 1; // the best value comes from SubC1
-								//cerr << "update the value of this point\n";
-								//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
-								//", Value[ii].prev: " << Value[ii].prev << endl;
-							}	
-						//}
-						--Value[ii].counter_B_C1;	
-						//cerr << "Do not update the value of this point\n";
-					}
-				}
-			}
-		}
-		else if (H1[i].ind == 1 and H1[i].inv == 0) { // H1[i] is a start point s2
-
-			//cerr << "----------------------------------------this is a start point (s2) ------------------------------------" << endl;
-			//cerr << "dealing with the subproblem B first. Solve Value[" << H1[i].frag_num << "].SS_B_R2 and SS_B_C2" << endl;
-			//cerr <<"----------------Solve SS_B_R2 -------------------" << endl;
-
-			// For each subproblem B_R2 that point H1[i] is in, get Ev[BackDiag] and update Value[H1[i]].frag_num].val
-			for (unsigned int k = 0; k < Value[ii].SS_B_R2.size(); ++k) {
-				unsigned int j = Value[ii].SS_B_R2[Value[ii].SS_B_R2.size() - 1 - k];
-				//cerr << "Solving SubR2[" << j << "]: " << SubR2[j]<< "\n";
-
-				// If subproblem SubR2[j] is a leaf case, then 
-				if (SubR2[j].Di.empty()) {
-					//cerr << "SubR2[" << j << "] is a leaf case or non-leaf case but Di is empty" << "\n";
-					--Value[ii].counter_B_R2;
-					continue;
-				}
-				else {
-					// Then subproblem SubR2[j] is non-leaf case. find the index of the point in E array
-					vector<unsigned int>::reverse_iterator t = Lower_Bound<vector<unsigned int>::reverse_iterator,long int>(SubR2[j].E.rbegin(), SubR2[j].E.rend(), BackDiag, SubR2[j].Ei);
-					//cerr << "SubR2[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
-					//cerr << "SubR2[" << j << "].Ei: " << SubR2[j].Ei << "/n";
-					//cerr << "The index of this point in E array: " << *t << "\n";
-
-					if (SubR2[j].Eb[*t] == -1) {
-						//cerr << "SubR2[" << j << "] is a non-leaf case but there is no back diag larger than the current" << endl;
-						--Value[ii].counter_B_R2;
-						continue;
-					}
-					else {
-						//assert(SubR2[j].counter_D[SubR2[j].Eb[*t]] == 0);
-						//cerr << "SubR2[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already." << endl;
-						//cerr << "Start to compute the maximization structure.\n";
-
-						SubR2[j].now = SubR2[j].Eb[*t];
-						Maximization (SubR2[j].now, SubR2[j].last, SubR2[j].Di, SubR2[j].Ei, SubR2[j].Dv, SubR2[j].Db, SubR2[j].Block, SubR2[j].S_1, LookUpTable, opts); // TODO(Jingwen) anything change for SubC????
-						SubR2[j].last = SubR2[j].Eb[*t];
-
-						//cerr << "retrieve the value from the maximization structure\n";
-						unsigned int i1 = *t; // i1 stores the index in Ei that BackDiag is in
-						unsigned int i2; // i2 stores the index in Di which is the best candidate for BackDiag
-						FindValueInBlock(BackDiag, SubR2[j].S_1, SubR2[j].Ei, SubR2[j].Block, i1, i2);
-						//cerr << "the index in Ei that BackDiag is in----i1: " << i1 << "\n";
-						//cerr << "the index in Di which is the best candidate for BackDiag ---- i2: " << i2 << "\n";
-
-						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts) + FragInput.matchesLengths[ii] * rate; 
-						SubR2[j].Ep[i1] = i2;							
-
-						//cerr << "SubR2[" << j << "].Ev[" << i1 << "]: " << SubR2[j].Ev[i1] << ", SubR2[" << j << "].Ep[" << i1 << "]: " << SubR2[j].Ep[i1] << "\n"; 
-
-
-						// Update the value of this point
-						if (Value[ii].val < SubR2[j].Ev[i1]) {  
-							Value[ii].val = SubR2[j].Ev[i1];
-							Value[ii].prev_sub = SubR2[j].num;
-							Value[ii].prev_ind = i1;
-							Value[ii].prev = 1; // the best value comes from row subproblem
-							Value[ii].inv = 0; // the best value comes from SubR2
-							//cerr << "update the value of this point\n";
-							//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
-							//", Value[ii].prev: " << Value[ii].prev << endl;
-						}			
-						--Value[ii].counter_B_R2;	
-						//cerr << "Do not update the value of this point\n";
-					}
-				}
-			}		
-
-
-			//cerr << endl << endl;
-			//cerr << "--------------Solve SS_B_C2 ----------------" << endl;
-			// For each subproblem B_C2 that point H1[i] is in, get Ev[H1[i].first - H1[i].second] and update Value[H1[i]].val
-			for (unsigned int k = 0; k < Value[ii].SS_B_C2.size(); ++k) {
-				//cerr << "k: " << k << endl;
-				unsigned int j = Value[ii].SS_B_C2[Value[ii].SS_B_C2.size() - 1 - k];
-				//cerr << "j: " << j << endl;
-				//cerr << "SubC2[" << j << "]: " << SubC2[j]<< "\n";
-
-				// If subproblem SubC2[j] is a leaf case, then 
-				if (SubC2[j].Di.empty()) {
-
-					//cerr << "SubC2[" << j << "] is a leaf case or it's a non-leaf case with an empty Di" << "\n";
-					--Value[ii].counter_B_C2;
-					continue;
-				}
-				else {
-
-					// find the index of this point in E array
-					vector<unsigned int>::iterator t = Lower_Bound<vector<unsigned int>::iterator,long int>(SubC2[j].E.begin(), SubC2[j].E.end(), BackDiag, SubC2[j].Ei);
-					//cerr << "SubC2[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
-					//cerr << "SubC2[" << j << "].Ei: " << SubC2[j].Ei << "/n";
-					//cerr << "The index of this point in E array: " << *t << "\n";
-
-					if (SubC2[j].Eb[*t] == -1) {
-						//cerr << "SubC2[" << j << "] is a non-leaf case but there is no forward diag larger than the current\n ";
-						--Value[ii].counter_B_C2;
-						continue;
-					}
-					else {
-
-						//assert(SubC2[j].counter_D[SubC2[j].Eb[*t]] == 0);
-						//cerr << "SubC2[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
-						//cerr << "Start to compute the maximization structure.\n";
-						SubC2[j].now = SubC2[j].Eb[*t]; 
-						Maximization (SubC2[j].now, SubC2[j].last, SubC2[j].Di, SubC2[j].Ei, SubC2[j].Dv, SubC2[j].Db, SubC2[j].Block, SubC2[j].S_1, LookUpTable, opts); 
-						SubC2[j].last = SubC2[j].Eb[*t];
-
-						//cerr << "retrieve the value from the maximization structure\n";
-			
-						unsigned int i1 = *t; // i1 stores 
-						unsigned int i2;
-						FindValueInBlock(BackDiag, SubC2[j].S_1, SubC2[j].Ei, SubC2[j].Block, i1, i2);
-						//cerr << "the index in Ei that ForwardDiag is in----i1: " << i1 << "\n";
-						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
-					
-
-						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts) + FragInput.matchesLengths[ii] * rate; 
-						SubC2[j].Ep[i1] = i2;							
-
-						//cerr << "SubC2[" << j << "].Ev[" << i1 << "]: " << SubC2[j].Ev[i1] << ", SubC2[" << j << "].Ep[" << i1 << "]: " << SubC2[j].Ep[i1] << "\n"; 
-
-						// Update the value of this point
-						if (Value[ii].val < SubC2[j].Ev[i1]) {  
-							Value[ii].val = SubC2[j].Ev[i1];
-							Value[ii].prev_sub = SubC2[j].num;
-							Value[ii].prev_ind = i1;
-							Value[ii].prev = 0; // the best value comes from col subproblem
-							Value[ii].inv = 0; // the best value comes from SubC2
-							//cerr << "update the value of this point\n";
-							//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
-							//", Value[ii].prev: " << Value[ii].prev << endl;
-						}			
-						--Value[ii].counter_B_C2;	
-						//cerr << "Do not update the value of this point\n";
-					}
-				}
-			}
-		}
-		else if (H1[i].ind == 0 and H1[i].inv == 1) { // H1[i] is an end point (e1)
-			//cerr << "---------------------------------This is an end point (e1) --------------------------------"<< endl;
-			//cerr << "Pass the value Value[ii].val to SS_A_R1 and SS_A_C1" << endl;
-
-			// If all the subproblems B that the point H1[i] is in are already processed, then Value[H1[i]].val is ready
-			// For each subproblem A that the point H1[i] is in, Pass the Value[H1[i]].val to the D array 
-			PassValueToD1(ii, Value, H1, SubR1, SubC1, ForwardDiag);
-		}
-		else { // H1[i] is an end point (e2)
-			//cerr << "---------------------------------This is an end point (e2) --------------------------------"<< endl;
-			//cerr << "Pass the value Value[ii].val to SS_A_R2 and SS_A_C2" << endl;
-
-			// If all the subproblems B that the point H1[i] is in are already processed, then Value[H1[i]].val is ready
-			// For each subproblem A that the point H1[i] is in, Pass the Value[H1[i]].val to the D array 
-			PassValueToD2(ii, Value, H1, SubR2, SubC2, BackDiag);
-		}
-	}
-}
-*/
-
 		
 //
 // Each fragment has different length, so we need to pass FragInput to this function
@@ -971,7 +631,6 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 	}
 }
 
-
 //
 // Each fragment has different length, so we need to pass vector<Cluster> vt to the function
 // This function is for ExtendClusters;
@@ -1286,6 +945,343 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step_sdp) + 
 														rate * FragInput[fi]->length(ii - ms);
 																	// FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]];
+						SubC2[j].Ep[i1] = i2;							
+
+						//cerr << "SubC2[" << j << "].Ev[" << i1 << "]: " << SubC2[j].Ev[i1] << ", SubC2[" << j << "].Ep[" << i1 << "]: " << SubC2[j].Ep[i1] << "\n"; 
+
+						// Update the value of this point
+						if (Value[ii].val < SubC2[j].Ev[i1]) {  
+							Value[ii].val = SubC2[j].Ev[i1];
+							Value[ii].prev_sub = SubC2[j].num;
+							Value[ii].prev_ind = i1;
+							Value[ii].prev = 0; // the best value comes from col subproblem
+							Value[ii].inv = 0; // the best value comes from SubC2
+							//cerr << "update the value of this point\n";
+							//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
+							//", Value[ii].prev: " << Value[ii].prev << endl;
+						}			
+						assert(Value[ii].counter_B_C2 > 0);
+						--Value[ii].counter_B_C2;	
+						//cerr << "Do not update the value of this point\n";
+					}
+				}
+			}
+		}
+		else if (H1[i].ind == 0 and H1[i].inv == 1) { // H1[i] is an end point (e1)
+			//cerr << "---------------------------------This is an end point (e1) --------------------------------"<< endl;
+			//cerr << "Pass the value Value[ii].val to SS_A_R1 and SS_A_C1" << endl;
+
+			// If all the subproblems B that the point H1[i] is in are already processed, then Value[H1[i]].val is ready
+			// For each subproblem A that the point H1[i] is in, Pass the Value[H1[i]].val to the D array 
+			PassValueToD1(ii, Value, H1, SubR1, SubC1, ForwardDiag);
+		}
+		else { // H1[i] is an end point (e2)
+			//cerr << "---------------------------------This is an end point (e2) --------------------------------"<< endl;
+			//cerr << "Pass the value Value[ii].val to SS_A_R2 and SS_A_C2" << endl;
+
+			// If all the subproblems B that the point H1[i] is in are already processed, then Value[H1[i]].val is ready
+			// For each subproblem A that the point H1[i] is in, Pass the Value[H1[i]].val to the D array 
+			PassValueToD2(ii, Value, H1, SubR2, SubC2, BackDiag);
+		}
+	}
+}
+
+//
+// Each fragment has different length,
+// This function is for pure matches;
+//
+template<typename Tup>
+void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
+				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, Options & opts, 
+				 const vector<float> & LookUpTable, const vector<Tup> &FragInput, const vector<int> & MatchStart, float & rate) { 
+	bool step_sdp = 1;
+	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
+
+		long int ForwardDiag = (long int)(H1[i].se.second) - (long int)(H1[i].se.first);
+		long int BackDiag = (long int)(H1[i].se.second) + (long int)(H1[i].se.first);
+
+		//cerr << "\n\n\n\nprocessing point " << H1[H3[i]] << endl;
+		//cerr << "the Value[" << H1[H3[i]].frag_num << "] of this point:  " <<  Value[H1[H3[i]].frag_num] << "\n";
+		
+		unsigned int ii = H1[i].frag_num;
+		// int mi = H1[i].matchstartNum;
+		int fi = H1[i].clusterNum;
+		int ms = MatchStart[fi];
+
+		if (H1[i].ind == 1 and H1[i].inv == 1) { // H1[i] is a start point s1
+			//cerr << "----------------------------------------this is a start point (s1) ------------------------------------" << endl;
+			//cerr << "dealing with the subproblem B first. Solve Value[" << H1[i].frag_num << "].SS_B_R1 and SS_B_C1" << endl;
+			//cerr <<"----------------Solve SS_B_R1 -------------------" << endl;
+			//
+			// For each subproblem B_R1 that point H1[i] is in, get Ev[ForwardDiag] and update Value[H1[i]].frag_num].val
+			//
+			for (unsigned int k = 0; k < Value[ii].SS_B_R1.size(); ++k) {
+				unsigned int j = Value[ii].SS_B_R1[Value[ii].SS_B_R1.size() - 1 - k];
+				//cerr << "Solving SubR1[" << j << "]: " << SubR1[j]<< "\n";
+
+				// If subproblem SubR1[j] is a leaf case, then 
+				if (SubR1[j].Di.empty()) {
+					//cerr << "SubR1[" << j << "] is a leaf case or non-leaf case but Di is empty" << "\n";
+					assert(Value[ii].counter_B_R1 != 0);
+					--Value[ii].counter_B_R1;
+					continue;
+				}
+				else {
+					// Then subproblem SubR1[j] is non-leaf case. find the index of the point in E array
+					vector<unsigned int>::iterator t = Lower_Bound<vector<unsigned int>::iterator,long int>(SubR1[j].E.begin(), SubR1[j].E.end(), ForwardDiag, SubR1[j].Ei);
+					//cerr << "SubR1[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
+					//cerr << "SubR1[" << j << "].Ei: " << SubR1[j].Ei << "/n";
+					//cerr << "The index of this point in E array: " << *t << "\n";
+
+					if (SubR1[j].Eb[*t] == -1) {
+						//cerr << "SubR1[" << j << "] is a non-leaf case but there is no forward diag smaller than the current in D array" << endl;
+						assert(Value[ii].counter_B_R1 != 0);
+						--Value[ii].counter_B_R1;
+						continue;
+					}
+					else {
+						//assert(SubR1[j].counter_D[SubR1[j].Eb[*t]] == 0);
+						//cerr << "SubR1[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already." << endl;
+						//cerr << "Start to compute the maximization structure.\n";
+
+						SubR1[j].now = SubR1[j].Eb[*t];
+						Maximization (SubR1[j].now, SubR1[j].last, SubR1[j].Di, SubR1[j].Ei, SubR1[j].Dv, SubR1[j].Db, SubR1[j].Block, SubR1[j].S_1, LookUpTable, opts, step_sdp); // TODO(Jingwen) anything change for SubC????
+						SubR1[j].last = SubR1[j].Eb[*t];
+
+						//cerr << "retrieve the value from the maximization structure\n";
+						unsigned int i1 = *t; // i1 stores the index in Ei that ForwardDiag is in
+						unsigned int i2; // i2 stores the index in Di which is the best candidate for ForwardDiag
+						FindValueInBlock(ForwardDiag, SubR1[j].S_1, SubR1[j].Ei, SubR1[j].Block, i1, i2);
+						//cerr << "the index in Ei that ForwardDiag is in----i1: " << i1 << "\n";
+						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
+						
+
+						SubR1[j].Ev[i1] = SubR1[j].Dv[i2] + w(SubR1[j].Di[i2], SubR1[j].Ei[i1], LookUpTable, opts, step_sdp) + rate * FragInput[fi].matchesLengths[ii - ms];
+						SubR1[j].Ep[i1] = i2;							
+
+						//cerr << "SubR1[" << j << "].Ev[" << i1 << "]: " << SubR1[j].Ev[i1] << ", SubR1[" << j << "].Ep[" << i1 << "]: " << SubR1[j].Ep[i1] << "\n"; 
+
+
+						// Update the value of this point
+						//TODO(Jingwen): if this point is a s1 of a reverse orientated anchor, only update the value when  SubR1[j].Dp[Ep[i1]] points to a forward orientated anchor
+						assert(Value[ii].orient == H1[i].orient);
+						int p = SubR1[j].Dp[SubR1[j].Ep[i1]];
+						// if the current anchor is reverse oriented and the previous anchor is also reverse oriented, then do not update Value[ii]
+						// Otherwise update Value[ii]
+						//if (! (Value[ii].orient == 0 and Value[p].orient == 0)) { 
+							if (Value[ii].val < SubR1[j].Ev[i1]) {  
+								Value[ii].val = SubR1[j].Ev[i1];
+								Value[ii].prev_sub = SubR1[j].num;
+								Value[ii].prev_ind = i1;
+								Value[ii].prev = 1; // the best value comes from row subproblem
+								Value[ii].inv = 1; // the best value comes from SubR1
+								//cerr << "update the value of this point\n";
+								//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
+								//", Value[ii].prev: " << Value[ii].prev << endl;
+							}			
+						//}	
+						assert(Value[ii].counter_B_R1 != 0);
+						--Value[ii].counter_B_R1;	
+						//cerr << "Do not update the value of this point\n";
+					}
+				}
+			}		
+
+
+			//cerr << endl << endl;
+			//cerr << "--------------Solve SS_B_C1 ----------------" << endl;
+			// For each subproblem B_C1 that point H1[i] is in, get Ev[H1[i].first - H1[i].second] and update Value[H1[i]].val
+			for (unsigned int k = 0; k < Value[ii].SS_B_C1.size(); ++k) {
+				unsigned int j = Value[ii].SS_B_C1[Value[ii].SS_B_C1.size() - 1 - k];
+				//cerr << "SubC1[" << j << "]: " << SubC1[j]<< "\n";
+
+				// If subproblem SubC1[j] is a leaf case, then 
+				if (SubC1[j].Di.empty()) {
+					//cerr << "SubC1[" << j << "] is a leaf case or it's a non-leaf case with an empty Di" << "\n";
+					assert(Value[ii].counter_B_C1 != 0);
+					--Value[ii].counter_B_C1;
+					continue;
+				}
+				else {
+
+					// find the index of this point in E array
+					vector<unsigned int>::reverse_iterator t = Lower_Bound<vector<unsigned int>::reverse_iterator,long int>(SubC1[j].E.rbegin(), SubC1[j].E.rend(), ForwardDiag, SubC1[j].Ei);
+					//cerr << "SubC1[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
+					//cerr << "SubC1[" << j << "].Ei: " << SubC1[j].Ei << "/n";
+					//cerr << "The index of this point in E array: " << *t << "\n";
+
+					if (SubC1[j].Eb[*t] == -1) {
+						//cerr << "SubC1[" << j << "] is a non-leaf case but there is no forward diag larger than the current\n ";
+						assert(Value[ii].counter_B_C1 != 0);
+						--Value[ii].counter_B_C1;
+						continue;
+					}
+					else {
+
+						//assert(SubC1[j].counter_D[SubC1[j].Eb[*t]] == 0);
+						//cerr << "SubC1[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
+						//cerr << "Start to compute the maximization structure.\n";
+						SubC1[j].now = SubC1[j].Eb[*t]; 
+						Maximization (SubC1[j].now, SubC1[j].last, SubC1[j].Di, SubC1[j].Ei, SubC1[j].Dv, SubC1[j].Db, SubC1[j].Block, SubC1[j].S_1, LookUpTable, opts, step_sdp); 
+						SubC1[j].last = SubC1[j].Eb[*t];
+
+						//cerr << "retrieve the value from the maximization structure\n";
+			
+						unsigned int i1 = *t; // i1 stores the index in Ei that ForwardDiag is in
+						unsigned int i2; // i2 stores the index in Di which is the best candidate for ForwardDiag
+						FindValueInBlock(ForwardDiag, SubC1[j].S_1, SubC1[j].Ei, SubC1[j].Block, i1, i2);
+						//cerr << "the index in Ei that ForwardDiag is in----i1: " << i1 << "\n";
+						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
+						SubC1[j].Ev[i1] = SubC1[j].Dv[i2] + w(SubC1[j].Di[i2], SubC1[j].Ei[i1], LookUpTable, opts, step_sdp) + rate * FragInput[fi].matchesLengths[ii - ms];
+						SubC1[j].Ep[i1] = i2;							
+
+						//cerr << "SubC1[" << j << "].Ev[" << i1 << "]: " << SubC1[j].Ev[i1] << ", SubC1[" << j << "].Ep[" << i1 << "]: " << SubC1[j].Ep[i1] << "\n"; 
+
+						// Update the value of this point
+						//TODO(Jingwen): if this point is a s1 of a reverse orientated anchor, only update the value when  SubR1[j].Dp[Ep[i1]] points to a forward orientated anchor
+						//TODO(Jingwen): Only for debug
+						assert(Value[ii].orient == H1[i].orient);
+						int p = SubC1[j].Dp[SubC1[j].Ep[i1]];
+						//
+						// If the current anchor is reverse oriented and the previous anchor is also reverse oriented, then do not update Value[ii]
+						// Otherwise update Value[ii]
+						//if (! (Value[ii].orient == 0 and Value[p].orient == 0)) {
+							if (Value[ii].val < SubC1[j].Ev[i1]) {  
+								Value[ii].val = SubC1[j].Ev[i1];
+								Value[ii].prev_sub = SubC1[j].num;
+								Value[ii].prev_ind = i1;
+								Value[ii].prev = 0; // the best value comes from col subproblem
+								Value[ii].inv = 1; // the best value comes from SubC1
+								//cerr << "update the value of this point\n";
+								//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
+								//", Value[ii].prev: " << Value[ii].prev << endl;
+							}	
+						//}
+						assert(Value[ii].counter_B_C1 != 0);
+						--Value[ii].counter_B_C1;	
+						//cerr << "Do not update the value of this point\n";
+					}
+				}
+			}
+		}
+		else if (H1[i].ind == 1 and H1[i].inv == 0) { // H1[i] is a start point s2
+
+			//cerr << "----------------------------------------this is a start point (s2) ------------------------------------" << endl;
+			//cerr << "dealing with the subproblem B first. Solve Value[" << H1[i].frag_num << "].SS_B_R2 and SS_B_C2" << endl;
+			//cerr <<"----------------Solve SS_B_R2 -------------------" << endl;
+
+			// For each subproblem B_R2 that point H1[i] is in, get Ev[BackDiag] and update Value[H1[i]].frag_num].val
+			for (unsigned int k = 0; k < Value[ii].SS_B_R2.size(); ++k) {
+				unsigned int j = Value[ii].SS_B_R2[Value[ii].SS_B_R2.size() - 1 - k];
+				//cerr << "Solving SubR2[" << j << "]: " << SubR2[j]<< "\n";
+
+				// If subproblem SubR2[j] is a leaf case, then 
+				if (SubR2[j].Di.empty()) {
+					//cerr << "SubR2[" << j << "] is a leaf case or non-leaf case but Di is empty" << "\n";
+					assert(Value[ii].counter_B_R2 > 0);
+					--Value[ii].counter_B_R2;
+					continue;
+				}
+				else {
+					// Then subproblem SubR2[j] is non-leaf case. find the index of the point in E array
+					vector<unsigned int>::reverse_iterator t = Lower_Bound<vector<unsigned int>::reverse_iterator,long int>(SubR2[j].E.rbegin(), SubR2[j].E.rend(), BackDiag, SubR2[j].Ei);
+					//cerr << "SubR2[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
+					//cerr << "SubR2[" << j << "].Ei: " << SubR2[j].Ei << "/n";
+					//cerr << "The index of this point in E array: " << *t << "\n";
+
+					if (SubR2[j].Eb[*t] == -1) {
+						//cerr << "SubR2[" << j << "] is a non-leaf case but there is no back diag larger than the current" << endl;
+						assert(Value[ii].counter_B_R2 > 0);
+						--Value[ii].counter_B_R2;
+						continue;
+					}
+					else {
+						//assert(SubR2[j].counter_D[SubR2[j].Eb[*t]] == 0);
+						//cerr << "SubR2[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already." << endl;
+						//cerr << "Start to compute the maximization structure.\n";
+
+						SubR2[j].now = SubR2[j].Eb[*t];
+						Maximization (SubR2[j].now, SubR2[j].last, SubR2[j].Di, SubR2[j].Ei, SubR2[j].Dv, SubR2[j].Db, SubR2[j].Block, SubR2[j].S_1, LookUpTable, opts, step_sdp); // TODO(Jingwen) anything change for SubC????
+						SubR2[j].last = SubR2[j].Eb[*t];
+
+						//cerr << "retrieve the value from the maximization structure\n";
+						unsigned int i1 = *t; // i1 stores the index in Ei that BackDiag is in
+						unsigned int i2; // i2 stores the index in Di which is the best candidate for BackDiag
+						FindValueInBlock(BackDiag, SubR2[j].S_1, SubR2[j].Ei, SubR2[j].Block, i1, i2);
+						//cerr << "the index in Ei that BackDiag is in----i1: " << i1 << "\n";
+						//cerr << "the index in Di which is the best candidate for BackDiag ---- i2: " << i2 << "\n";
+
+						SubR2[j].Ev[i1] = SubR2[j].Dv[i2] + w(SubR2[j].Di[i2], SubR2[j].Ei[i1], LookUpTable, opts, step_sdp) + rate * FragInput[fi].matchesLengths[ii - ms];
+						SubR2[j].Ep[i1] = i2;							
+
+						//cerr << "SubR2[" << j << "].Ev[" << i1 << "]: " << SubR2[j].Ev[i1] << ", SubR2[" << j << "].Ep[" << i1 << "]: " << SubR2[j].Ep[i1] << "\n"; 
+
+						// Update the value of this point
+						if (Value[ii].val < SubR2[j].Ev[i1]) {  
+							Value[ii].val = SubR2[j].Ev[i1];
+							Value[ii].prev_sub = SubR2[j].num;
+							Value[ii].prev_ind = i1;
+							Value[ii].prev = 1; // the best value comes from row subproblem
+							Value[ii].inv = 0; // the best value comes from SubR2
+							//cerr << "update the value of this point\n";
+							//cerr << "Value[ii].val: " << Value[ii].val << ", Value[ii].prev_sub: " << Value[ii].prev_sub << ", Value[ii].prev_ind: " << Value[ii].prev_ind << 
+							//", Value[ii].prev: " << Value[ii].prev << endl;
+						}			
+						assert(Value[ii].counter_B_R2 > 0);
+						--Value[ii].counter_B_R2;	
+						//cerr << "Do not update the value of this point\n";
+					}
+				}
+			}		
+
+
+			//cerr << endl << endl;
+			//cerr << "--------------Solve SS_B_C2 ----------------" << endl;
+			// For each subproblem B_C2 that point H1[i] is in, get Ev[H1[i].first - H1[i].second] and update Value[H1[i]].val
+			for (unsigned int k = 0; k < Value[ii].SS_B_C2.size(); ++k) {
+				//cerr << "k: " << k << endl;
+				unsigned int j = Value[ii].SS_B_C2[Value[ii].SS_B_C2.size() - 1 - k];
+				//cerr << "j: " << j << endl;
+				//cerr << "SubC2[" << j << "]: " << SubC2[j]<< "\n";
+
+				// If subproblem SubC2[j] is a leaf case, then 
+				if (SubC2[j].Di.empty()) {
+					//cerr << "SubC2[" << j << "] is a leaf case or it's a non-leaf case with an empty Di" << "\n";
+					assert(Value[ii].counter_B_C2 > 0);
+					--Value[ii].counter_B_C2;
+					continue;
+				}
+				else {
+
+					// find the index of this point in E array
+					vector<unsigned int>::iterator t = Lower_Bound<vector<unsigned int>::iterator,long int>(SubC2[j].E.begin(), SubC2[j].E.end(), BackDiag, SubC2[j].Ei);
+					//cerr << "SubC2[" << j << "] is a non-leaf case!      Find the index of the point in E array" << "/n";
+					//cerr << "SubC2[" << j << "].Ei: " << SubC2[j].Ei << "/n";
+					//cerr << "The index of this point in E array: " << *t << "\n";
+
+					if (SubC2[j].Eb[*t] == -1) {
+						//cerr << "SubC2[" << j << "] is a non-leaf case but there is no forward diag larger than the current\n ";
+						assert(Value[ii].counter_B_C2 > 0);
+						--Value[ii].counter_B_C2;
+						continue;
+					}
+					else {
+
+						//assert(SubC2[j].counter_D[SubC2[j].Eb[*t]] == 0);
+						//cerr << "SubC2[" << j << "] is a non-leaf case and The part of D array where forward diags are smaller than current is filled out already.\n";
+						//cerr << "Start to compute the maximization structure.\n";
+						SubC2[j].now = SubC2[j].Eb[*t]; 
+						Maximization (SubC2[j].now, SubC2[j].last, SubC2[j].Di, SubC2[j].Ei, SubC2[j].Dv, SubC2[j].Db, SubC2[j].Block, SubC2[j].S_1, LookUpTable, opts, step_sdp); 
+						SubC2[j].last = SubC2[j].Eb[*t];
+
+						//cerr << "retrieve the value from the maximization structure\n";
+			
+						unsigned int i1 = *t; // i1 stores 
+						unsigned int i2;
+						FindValueInBlock(BackDiag, SubC2[j].S_1, SubC2[j].Ei, SubC2[j].Block, i1, i2);
+						//cerr << "the index in Ei that ForwardDiag is in----i1: " << i1 << "\n";
+						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
+						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step_sdp) + rate * FragInput[fi].matchesLengths[ii - ms];
 						SubC2[j].Ep[i1] = i2;							
 
 						//cerr << "SubC2[" << j << "].Ev[" << i1 << "]: " << SubC2[j].Ev[i1] << ", SubC2[" << j << "].Ep[" << i1 << "]: " << SubC2[j].Ep[i1] << "\n"; 
@@ -1653,6 +1649,59 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 		}
 		onechain.clear();
 		link.clear();
+		fv++;
+	}
+}
+
+//
+// This function is for pure matches
+//
+void 
+DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
+					const vector<Fragment_Info> & Value, vector<UltimateChain> &chains, Read & read, Options & opts) {
+
+	Fragment_valueOrder fragments_valueOrder(&Value);
+	float value_thres = max(opts.alnthres * fragments_valueOrder[0], fragments_valueOrder[0] - 100*opts.globalK);//30 for 50kb
+	//float value_thres = opts.alnthres*fragments_valueOrder[0];
+	// cerr << "value_thres: " << value_thres << endl;
+	// cerr << "fragments_valueOrder[0]: " << fragments_valueOrder[0] << " fragments_valueOrder[1]: " << 
+	// 			fragments_valueOrder[1] << endl;
+	int fv = 0;
+	while (fv < fragments_valueOrder.size() and fragments_valueOrder[fv] >= value_thres) {
+		unsigned int d = fragments_valueOrder.index[fv];
+		if (fv < opts.NumAln) chains.push_back(UltimateChain(&FragInput));
+		else break;
+		TraceBack(SubR1, SubC1, SubR2, SubC2, Value, d, chains.back().chain, chains.back().link);
+
+		if (chains.back().chain.size() != 0) {
+			// Note: onechain store index from the last one to the first one
+			GenomePos qEnd = FragInput[chains.back().chain[0]].qEnd;
+			GenomePos tEnd = FragInput[chains.back().chain[0]].tEnd;
+			GenomePos qStart = FragInput[chains.back().chain.back()].qStart;
+			GenomePos tStart = FragInput[chains.back().chain.back()].tStart;	
+
+			// Somethimes not all onechain[i] align to the same chromosom
+			for (int c = 0; c < chains.back().size(); c++) {
+				qEnd = max(FragInput[chains.back().chain[c]].qEnd, qEnd);
+				tEnd = max(FragInput[chains.back().chain[c]].tEnd, tEnd);
+				qStart = min(FragInput[chains.back().chain[c]].qStart, qStart);
+				tStart = min(FragInput[chains.back().chain[c]].tStart, tStart);
+			}
+			//
+			// If this chain overlap with read greater than 0.5%, insert it to chains
+			//
+			assert(qEnd - qStart > 10);
+			if (((float)(qEnd - qStart)/read.length) > 0.005) {
+				//
+				// Compute the # of anchors on this chain
+				//
+				int Num_Anchors = 0;
+				ComputeNumOfAnchors (FragInput, chains.back().chain, Num_Anchors);
+				chains.back().NumOfAnchors0 = Num_Anchors;
+				chains.back().FirstSDPValue = fragments_valueOrder[fv];
+			}
+			else {chains.pop_back();}			
+		}
 		fv++;
 	}
 }
@@ -2378,6 +2427,193 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 	//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 	//cerr << "Timing: " << elapsed_secs << endl;
 
+	return 0;
+}
+
+//
+// The input to this SparseDP is pure matches
+//
+int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> chains, Options &opts, const vector<float> &LookUpTable, Read &read) {
+	if (read.unaligned) return 0;
+	//
+	// Input: vector<Cluster> & FragInput and vector<unsigned int> inputChain;
+	// Generally input 2 points for each anchor; s1 and e1 for forward anchor, while s2 and e2 for reversed anchor;
+	// For anchors in the overlapping region between Clusters, we need to insert 4 points for them;
+	//
+
+	//
+	// Compute the matches start in each Cluster;
+	//
+	vector<int> MatchStart(FragInput.size(), 0);
+	for (int c = 1; c < FragInput.size(); c++){
+		MatchStart[c] = FragInput[c - 1].matches.size();
+	}
+	for (int c = 1; c < FragInput.size(); c++){
+		MatchStart[c] += MatchStart[c - 1];
+	}	
+	vector<Point>  H1;
+	int totalMatch = 0;
+	for (int cm = 0; cm < FragInput.size(); cm++) {
+		//
+		// Insert points into H1;
+		//
+		for (unsigned int i = 0; i < FragInput[cm].matches.size(); i++) {
+			if (FragInput[cm].strand == 0) { 				
+				insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 0, 1);
+				insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 1, 1);
+			}
+			else { 
+				// insert start point s2 into H1
+				insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 1, 0);
+				insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 0, 0);	
+			}
+		}
+		totalMatch += FragInput[cm].matches.size();
+	}
+	//if (totalanchors >= 100000) cerr << "totalanchors: " << totalanchors << " read.name: " << read.name << endl;
+
+	//clock_t begin = clock();
+	//Sort the point by row
+	//
+	sort(H1.begin(), H1.end(), SortByRowOp<Point>()); // with same q and t coordinates, end point < start point
+	vector<unsigned int> H2(H1.size());
+	iota(H2.begin(), H2.end(), 0);
+	sort(H2.begin(), H2.end(), SortByColOp<Point, unsigned int>(H1));
+
+	
+	vector<info> Row;
+	vector<info> Col;
+	GetRowInfo(H1, Row);
+	GetColInfo(H1, H2, Col);
+	//cerr << "Row: " << Row << "\n";
+	//cerr << "Col: " << Col << "\n";
+
+	unsigned int n1 = 0;
+	unsigned int m1 = 0;
+	unsigned int n2 = 0;
+	unsigned int m2 = 0;
+
+	StackOfSubProblems SubR1;
+	StackOfSubProblems SubC1;
+	int eeR1 = 0, eeC1 = 0;
+
+	StackOfSubProblems SubR2;
+	StackOfSubProblems SubC2;
+	int eeR2 = 0, eeC2 = 0;
+
+	//cerr << "DivideSubByRow\n";
+	DivideSubProbByRow1(H1, Row, 0, Row.size(), n1, SubR1, eeR1);
+	//cerr << "SubR: " << SubR << endl;
+
+	//cerr << "DivideSubByCol\n";
+	DivideSubProbByCol1(H1, H2, Col, 0, Col.size(), m1, SubC1, eeC1);
+	//cerr << "SubC: " << SubC << endl;
+
+	DivideSubProbByRow2(H1, Row, 0, Row.size(), n2, SubR2, eeR2);	
+	DivideSubProbByCol2(H1, H2, Col, 0, Col.size(), m2, SubC2, eeC2);
+
+	//
+	// Get SS_A_R1, SS_B_R1, SS_A_R2 and SS_B_R2 for each fragment 
+	//
+	vector<Fragment_Info> Value(totalMatch);
+	for (unsigned int t = 0; t < Row.size(); ++t) {
+
+		for (unsigned int tt = Row[t].pstart; tt < Row[t].pend; ++tt) {
+
+			unsigned int ii = H1[tt].frag_num;
+			int fi = H1[tt].clusterNum;
+			// int mi = H1[tt].matchstartNum; // inputChain index
+
+			if (H1[tt].ind == 1 and H1[tt].inv == 1) { //H1[tt] is a start point (s1)
+				Value[ii].SS_B_R1 = Row[t].SS_B1;
+				Value[ii].counter_B_R1 = Row[t].SS_B1.size();
+				Value[ii].val = FragInput[fi].matchesLengths[ii - MatchStart[fi]] * opts.second_anchor_rate;
+				Value[ii].clusterNum = fi;
+				Value[ii].orient = H1[tt].orient;
+			}
+			else if (H1[tt].ind == 0 and H1[tt].inv == 1) { // H1[tt] is an end point (e1)
+				Value[ii].SS_A_R1 = Row[t].SS_A1;
+				Value[ii].counter_A_R1 = Row[t].SS_A1.size();
+			}
+			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
+				Value[ii].SS_B_R2 = Row[t].SS_B2;
+				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
+				Value[ii].val = FragInput[fi].matchesLengths[ii - MatchStart[fi]] * opts.second_anchor_rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].clusterNum = fi;
+				Value[ii].orient = H1[tt].orient;
+			}
+			else { // H1[tt] is an end point (e2)
+				Value[ii].SS_A_R2 = Row[t].SS_A2;
+				Value[ii].counter_A_R2 = Row[t].SS_A2.size();
+			}
+		}
+	}
+
+	//
+	// Get SS_A_C1, SS_B_C1, SS_A_C2 and SS_B_C2 for each fragment
+	//
+	for (unsigned int t = 0; t < Col.size(); ++t) {
+		for (unsigned int tt = Col[t].pstart; tt < Col[t].pend; ++tt) { 
+
+			unsigned int ii = H1[H2[tt]].frag_num;
+			int fi = H1[H2[tt]].clusterNum;
+			// int mi = H1[H2[tt]].matchstartNum;
+
+			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
+				Value[ii].SS_B_C1 = Col[t].SS_B1;
+				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
+				Value[ii].val = FragInput[fi].matchesLengths[ii - MatchStart[fi]] * opts.second_anchor_rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].clusterNum = fi;
+				Value[ii].orient = H1[H2[tt]].orient;
+			}
+			else if (H1[H2[tt]].ind == 0 and H1[H2[tt]].inv == 1) { // H1[H2[tt]] is an end point (e1)
+				Value[ii].SS_A_C1 = Col[t].SS_A1;
+				Value[ii].counter_A_C1 = Col[t].SS_A1.size();
+			}
+			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
+				Value[ii].SS_B_C2 = Col[t].SS_B2;
+				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
+				Value[ii].val = FragInput[fi].matchesLengths[ii - MatchStart[fi]] * opts.second_anchor_rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].clusterNum = fi;
+				Value[ii].orient = H1[H2[tt]].orient;				
+			}
+			else { // H1[H2[tt]] is an end point (e2)
+				Value[ii].SS_A_C2 = Col[t].SS_A2;
+				Value[ii].counter_A_C2 = Col[t].SS_A2.size();
+			}
+
+		}
+	}
+
+	//cerr << "Value: " << Value << endl;
+	//cerr << "ProcessPoint\n";
+	// finalchain.InitializeOtherParts (MatchStart, totalMatch, Value);
+	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, MatchStart, opts.second_anchor_rate); 
+	DecidePrimaryChains(FragInput, SubR1, SubC1, SubR2, SubC2, Value, chains, read, opts);
+	for (int c = 0; c < chains.size(); c++) {
+		chains[c].ClusterIndex.resize(chains[c].chain.size());
+		for (int s = 0; s < chains[c].chain.size(); s++) {
+			int ii = chains[c].chain[s];
+			chains[c].chain[s] -= MatchStart[Value[ii].clusterNum];
+			chains[c].ClusterIndex[s] = Value[ii].clusterNum;
+		}
+	}
+	// Clear SubR and SubC
+	SubR1.clear();
+	SubC1.clear();
+	SubR2.clear();
+	SubC2.clear();
+	Value.clear();
+	Row.clear();
+	Col.clear();
+	H1.clear();
+	H2.clear();
+
+	// get the Timing for the program
+	//clock_t end = clock();
+	//double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+	//cerr << "Timing: " << elapsed_secs << endl;
+	// timing.Tick("SparseDP_anchors");
 	return 0;
 }
 

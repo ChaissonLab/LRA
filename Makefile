@@ -44,8 +44,7 @@ HEADERS=MinCount.h \
   Timing.h \
   IndelRefine.h
 
-CXX=g++
-# -std=c++14 
+CXX=g++ -std=c++11 
 
 tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 	$(CXX) -g TestAffineOneGapAlign.cpp -o tag 

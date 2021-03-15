@@ -104,6 +104,7 @@ public:
 	int anchorPerlength;
 	int punish_anchorfreq;
 	int cleanClustersize;
+	bool bypassClustering;
 	Options() {
 		skipBandedRefine=false;
 		storeTiming=false;
@@ -205,6 +206,7 @@ public:
 		anchorPerlength=10;
 		punish_anchorfreq=10;
 		cleanClustersize=100;
+		bypassClustering=false;
 	}
 };
 #endif

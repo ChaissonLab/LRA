@@ -439,7 +439,7 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 			for (int c = 1; c < Primary_chains[p].chains[h].ch.size(); c++) {
 				int cr = Primary_chains[p].chains[h].ch[c];
 				int cp = Primary_chains[p].chains[h].ch[c - 1];
-				if (cremove[c - 1] = 0 and clusters[cr].qStart >= clusters[cp].qStart and clusters[cr].qEnd <= clusters[cp].qEnd){
+				if (cremove[c - 1] == 0 and clusters[cr].qStart >= clusters[cp].qStart and clusters[cr].qEnd <= clusters[cp].qEnd){
 					cremove[c] = 1;
 				}
 			}
@@ -494,18 +494,38 @@ SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitC
 	if (!onec.empty()) splitchains.push_back(SplitChain(onec, lk));
 }
 
-/*
 //
-// This function sorts the SeperateChain by the number of anchors in the descending order;
-//
-template <typename T> 
-class SortChainByAnchorNumOp {
-public: 
-	int operator() (const T & a, const T & b) {
-		return a.back() - a[0] > b.back() - b[0];
+// This function splits the chain if Clusters on the chain are mapped to different chromosomes or different locations (quite far, default: 100000) on the same chromosome;
+// Also split the chain when two forward/reverse clusters are chained in reverse/forward direction.
+void
+SPLITChain(Read &read, UltimateChain &chain, vector<SplitChain> &splitchains, vector<bool> &link, Options &opts) {
+	int im = 0;
+	vector<unsigned int> onec; 
+	vector<bool> lk;
+	onec.push_back(im);
+	int cur = 0, prev = 0;
+
+	while (im < chain.size() - 1) {
+		cur = im + 1; prev = im;
+		if (chain.tStart(cur) > chain.tEnd(prev) + opts.splitdist // too far
+			or chain.tEnd(cur) + opts.splitdist < chain.tStart(prev)
+			or (link[im] == 1 and chain.strand(cur) == 0 and chain.strand(prev) == 0) // repetitive mapping and DUP
+			or (link[im] == 0 and chain.strand(cur)== 1 and chain.strand(prev) == 1) // repetitive mapping and DUP
+			or (chain.strand(cur) == 0 and chain.strand(prev) == 1) // inversion
+			or (chain.strand(cur) == 1 and chain.strand(prev) == 0)) {
+			splitchains.push_back(SplitChain(onec, lk));
+			onec.clear();
+			lk.clear();
+			onec.push_back(cur);
+		}	
+		else {
+			onec.push_back(cur);
+			lk.push_back(link[im]);
+		}	
+		im++;
 	}
-};
-*/
+	if (!onec.empty()) splitchains.push_back(SplitChain(onec, lk));
+}
 
 int 
 LargestSplitChain(vector<SplitChain> &splitchains) {
@@ -524,6 +544,37 @@ output_unaligned(Read &read, Options &opts, ostream &output) {
 	if (opts.printFormat == "s") {
 		Alignment unaligned = Alignment(read.seq, read.length, read.name, read.qual);
 		unaligned.SimplePrintSAM(output, opts, read.passthrough);
+	}
+}
+
+void 
+OUTPUT(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts, Genome &genome, ostream *output){
+
+	if (alignmentsOrder.size() > 0 and alignmentsOrder[0].SegAlignment.size() > 0) {
+	for (int a = 0; a < (int) min(alignmentsOrder.size(), opts.PrintNumAln); a++){
+		int primary_num = 0;
+		for (int s = alignmentsOrder[a].SegAlignment.size() - 1; s >= 0; s--) {
+			if (alignmentsOrder[a].SegAlignment[s]->Supplymentary == 0) primary_num++;
+			alignmentsOrder[a].SegAlignment[s]->order = alignmentsOrder[a].SegAlignment.size() - 1 - s;
+			alignmentsOrder[a].SegAlignment[s]->wholegenomeLen = genome.header.pos[alignmentsOrder[a].SegAlignment[s]->chromIndex];
+			if (opts.printFormat == "b") {
+				alignmentsOrder[a].SegAlignment[s]->PrintBed(*output);
+			}
+			else if (opts.printFormat == "s") {
+				alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts, alignmentsOrder[a].SegAlignment, s, read.passthrough);
+			}
+			else if (opts.printFormat == "a") {
+				alignmentsOrder[a].SegAlignment[s]->PrintPairwise(*output);
+			}
+			else if (opts.printFormat == "p" or opts.printFormat == "pc") {
+				alignmentsOrder[a].SegAlignment[s]->PrintPAF(*output, opts.printFormat == "pc");
+			}
+		}
+		assert(primary_num == opts.PrintNumAln);
+	}
+	}
+	else if (read.unaligned == 1) {
+	output_unaligned(read, opts, *output);
 	}
 }
 
@@ -612,17 +663,6 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 	vector<float> for_avgfreq(forMatches.size(), 0), rev_avgfreq(revMatches.size(), 0);
 	MatchesToFineClusters(forMatches, clusters, genome, read, opts, timing);
 	MatchesToFineClusters(revMatches, clusters, genome, read, opts, timing, 1);
-
-	if (opts.CheckTrueIntervalInFineCluster) {
-		CheckTrueIntervalInFineCluster(clusters, read.name, genome, read);
-	}
-	if (clusters.size() == 0) {
-		read.unaligned = 1;
-		output_unaligned(read, opts, *output);
-		return 0;
-	}
-	//cerr << "clusters.size(): " <<  clusters.size() << endl;
-
 	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream cpclust("clusters-pre-remove.tab");
 		for (int m = 0; m < clusters.size(); m++) {
@@ -649,6 +689,125 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		}
 		cpclust.close();
 	}
+
+	if (opts.bypassClustering) {
+		vector<Cluster> ext_clusters(clusters.size());
+		vector<UltimateChain> chains;
+		//
+		// Linear Extend on pure matches
+		//
+		for (int d = 0; d < clusters.size(); d++) {
+			LinearExtend(&clusters[d].matches, ext_clusters[d].matches, ext_clusters[d].matchesLengths, opts, genome, read, clusters[d].chromIndex, clusters[d].strand);
+		}
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+			ofstream clust("ExtendClusters.tab", ofstream::app);
+			for (int ep = 0; ep < ext_clusters.size(); ep++) {
+				for (int eh = 0; eh < ext_clusters[ep].matches.size(); eh++) {	
+					if (ext_clusters[ep].strand == 0) {
+						clust << ext_clusters[ep].matches[eh].first.pos << "\t"
+							  << ext_clusters[ep].matches[eh].second.pos << "\t"
+							  << ext_clusters[ep].matches[eh].first.pos + ext_clusters[ep].matchesLengths[eh] << "\t"
+							  << ext_clusters[ep].matches[eh].second.pos + ext_clusters[ep].matchesLengths[eh] << "\t"
+							  << genome.header.names[ext_clusters[ep].chromIndex]<< "\t"
+							  << ext_clusters[ep].strand << "\t"
+							  << ep << endl;
+					}
+					else {
+						clust << ext_clusters[ep].matches[eh].first.pos << "\t"
+							  << ext_clusters[ep].matches[eh].second.pos + ext_clusters[ep].matchesLengths[eh] << "\t"
+							  << ext_clusters[ep].matches[eh].first.pos + ext_clusters[ep].matchesLengths[eh] << "\t"
+							  << ext_clusters[ep].matches[eh].second.pos<< "\t"
+							  << genome.header.names[ext_clusters[ep].chromIndex]<< "\t"
+							  << ext_clusters[ep].strand << "\t"
+							  << ep << endl;					
+					}
+				}
+			}
+			clust.close();
+		}	
+		clusters.clear();
+		//
+		// SDP on matches
+		//
+		SparseDP(ext_clusters, chains, opts, LookUpTable, read);
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+			ofstream clust("SparseDP.tab", ofstream::app);
+			for (int s = 0; s < chains.size(); s++) {
+				for (int ep = 0; ep < chains[s].chain.size(); ep++) {
+					if (chains[s].strand(ep) == 0) {
+						clust << chains[s].qStart(ep) << "\t"
+							  << chains[s].tStart(ep) << "\t"
+							  << chains[s].qEnd(ep) << "\t"
+							  << chains[s].tEnd(ep) << "\t"
+							  << s << "\t"
+							  << chains[s].ClusterNum(ep) << "\t"
+							  << chains[s].strand(ep) << endl;
+					}
+					else {
+						clust << chains[s].qStart(ep) << "\t"
+							  << chains[s].tEnd(ep) << "\t"
+							  << chains[s].qEnd(ep) << "\t"
+							  << chains[s].tStart(ep) << "\t"
+							  << s << "\t"
+							  << chains[s].ClusterNum(ep) << "\t"
+							  << chains[s].strand(ep) << endl;					
+					}
+				}				
+			}
+
+			clust.close();
+		}	
+		if (chains.size() == 0) {
+			cerr << "unaligned" << endl;
+			read.unaligned = 1;
+			output_unaligned(read, opts, *output);
+			return 0;
+		} 		
+		//
+		// Close the space btwn matches
+		//
+		Options smallOpts=opts;
+		//smallOpts.secondcoefficient=opts.predefined_coefficient; // used to be 12
+		Options tinyOpts=smallOpts;
+		tinyOpts.globalMaxFreq=3;
+		tinyOpts.maxDiag=5;
+		tinyOpts.minDiagCluster=2;
+		smallOpts.globalK=glIndex.k;
+		smallOpts.globalW=glIndex.w;
+		smallOpts.secondcoefficient+=3; // used to be 15
+		smallOpts.globalMaxFreq=6;
+		smallOpts.cleanMaxDiag=10;// used to be 25
+		smallOpts.maxDiag=50;
+		smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large
+		smallOpts.minDiagCluster=3; // used to be 3
+		tinyOpts.globalK=smallOpts.globalK-3;
+
+		vector<SegAlignmentGroup> alignments;
+		AlignmentsOrder alignmentsOrder(&alignments);
+		AffineAlignBuffers buff;
+		for (int p = 0; p < chains.size(); p++) {
+			vector<SplitChain> splitchains;
+			SPLITChain(read, chains[p], splitchains, chains[p].link, opts);
+			int LSC = LargestSplitChain(splitchains);
+			SparseDP_and_RefineAlignment_btwn_anchors(chains[p], splitchains, ext_clusters, alignments, smallOpts, 
+									LookUpTable, read, strands, p, genome, LSC, tinyOpts, buff, svsigstrm);
+		}
+		OUTPUT(alignmentsOrder, read, opts, genome, output);
+		return 0;
+	}
+	//
+	// Continue work on Clusters
+	//
+	if (opts.CheckTrueIntervalInFineCluster) {
+		CheckTrueIntervalInFineCluster(clusters, read.name, genome, read);
+	}
+	if (clusters.size() == 0) {
+		read.unaligned = 1;
+		output_unaligned(read, opts, *output);
+		return 0;
+	}
+	//cerr << "clusters.size(): " <<  clusters.size() << endl;
+
 
 	allMatches.clear();
 	forMatches.clear(); 
@@ -1268,32 +1427,8 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 			}
 		}
 	}
-	if (alignmentsOrder.size() > 0 and alignmentsOrder[0].SegAlignment.size() > 0) {
-		for (int a = 0; a < (int) min(alignmentsOrder.size(), opts.PrintNumAln); a++){
-			int primary_num = 0;
-			for (int s = alignmentsOrder[a].SegAlignment.size() - 1; s >= 0; s--) {
-				if (alignmentsOrder[a].SegAlignment[s]->Supplymentary == 0) primary_num++;
-				alignmentsOrder[a].SegAlignment[s]->order = alignmentsOrder[a].SegAlignment.size() - 1 - s;
-				alignmentsOrder[a].SegAlignment[s]->wholegenomeLen = genome.header.pos[alignmentsOrder[a].SegAlignment[s]->chromIndex];
-				if (opts.printFormat == "b") {
-					alignmentsOrder[a].SegAlignment[s]->PrintBed(*output);
-				}
-				else if (opts.printFormat == "s") {
-					alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts, alignmentsOrder[a].SegAlignment, s, read.passthrough);
-				}
-				else if (opts.printFormat == "a") {
-					alignmentsOrder[a].SegAlignment[s]->PrintPairwise(*output);
-				}
-				else if (opts.printFormat == "p" or opts.printFormat == "pc") {
-					alignmentsOrder[a].SegAlignment[s]->PrintPAF(*output, opts.printFormat == "pc");
-				}
-			}
-			assert(primary_num == opts.PrintNumAln);
-		}
-	}
-	else if (read.unaligned == 1) {
-		output_unaligned(read, opts, *output);
-	}
+	OUTPUT(alignmentsOrder, read, opts, genome, output);
+
 
 	/*
 	if (semaphore != NULL ) {
