@@ -1683,7 +1683,7 @@ DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, Sta
 			// If this chain overlap with read greater than 0.5%, insert it to chains
 			//
 			// assert(qEnd - qStart > 10);
-			if (qEnd > qStart and ((float)(qEnd - qStart)/read.length) > 0.005) {
+			if (qEnd > qStart and ((float)(qEnd - qStart)/read.length) > 0.005 and qEnd - qStart >= 1000) {
 				chains.back().NumOfAnchors0 = chains.back().chain.size();
 				chains.back().FirstSDPValue = fragments_valueOrder[fv];
 			}
@@ -2575,7 +2575,7 @@ int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options
 	//cerr << "Value: " << Value << endl;
 	//cerr << "ProcessPoint\n";
 	// finalchain.InitializeOtherParts (MatchStart, totalMatch, Value);
-	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, MatchStart, opts.second_anchor_rate); 
+	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, MatchStart, opts.anchor_rate); 
 	DecidePrimaryChains(FragInput, SubR1, SubC1, SubR2, SubC2, Value, chains, read, opts, MatchStart);
 	for (int c = 0; c < chains.size(); c++) {
 		chains[c].ClusterIndex.resize(chains[c].chain.size());

@@ -669,7 +669,17 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 
 		CleanMatches(forMatches, clusters, genome, read, opts, timing);
 		CleanMatches(revMatches, clusters, genome, read, opts, timing, 1);
+		forMatches.clear(); revMatches.clear();
 		if (clusters.size() == 0) {
+			read.unaligned = 1;
+			output_unaligned(read, opts, *output);
+			return 0;
+		}
+		bool NolinearCluster = true;
+		for (int s = 0; s < clusters.size(); s++) {	
+			if (clusters[s].anchorfreq <= 1.5f and clusters[s].matches.size() >= 10) {NolinearCluster = false; break;}
+		}		
+		if (NolinearCluster) {
 			read.unaligned = 1;
 			output_unaligned(read, opts, *output);
 			return 0;
@@ -685,7 +695,8 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 							  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
 							  << m << "\t"
 							  << genome.header.names[clusters[m].chromIndex]<< "\t"
-							  << clusters[m].strand << endl;
+							  << clusters[m].strand << "\t"
+							  << clusters[m].anchorfreq<< endl;
 					}
 					else {
 						cpclust << clusters[m].matches[n].first.pos << "\t"
@@ -694,7 +705,8 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 							  << clusters[m].matches[n].second.pos << "\t"
 							  << m << "\t"
 							  << genome.header.names[clusters[m].chromIndex]<< "\t"
-							  << clusters[m].strand << endl;
+							  << clusters[m].strand << "\t"
+							  << clusters[m].anchorfreq<< endl;
 					}				
 				}
 			}
@@ -722,6 +734,17 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 			ext_clusters[d].chromIndex = clusters[d].chromIndex;
 			DecideCoordinates(ext_clusters[d]);
 		}
+		//
+		// Linear Extend efficiency
+		//
+		int o = 0, a = 0;
+		for (int s = 0; s < clusters.size(); s++) {
+			o += clusters[s].matches.size();
+		}
+		for (int s = 0; s < clusters.size(); s++) {
+			a += ext_clusters[s].matches.size();
+		}
+		//cerr << "Linear Extend efficiency: " << (float) a/o << endl;
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream clust("ExtendClusters.tab", ofstream::app);
 			for (int ep = 0; ep < ext_clusters.size(); ep++) {
@@ -826,18 +849,27 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		AlignmentsOrder alignmentsOrder(&alignments);
 		AffineAlignBuffers buff;
 		for (int p = 0; p < chains.size(); p++) {
+			assert(chains[p].chain.size() > 0);
 			alignments.resize(alignments.size() + 1);	
 			vector<SplitChain> splitchains;
 			SPLITChain(read, chains[p], splitchains, chains[p].link, opts);
 			int LSC = LargestSplitChain(splitchains);
 			SparseDP_and_RefineAlignment_btwn_anchors(chains[p], splitchains, ext_clusters, alignments, smallOpts, 
 									LookUpTable, read, strands, p, genome, LSC, tinyOpts, buff, svsigstrm);
+			if (alignments.back().SegAlignment.size() == 0) {
+				read.unaligned = 1;
+				break;
+			}
 			for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
 				if (opts.skipBandedRefine == false) { IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts, indelRefineBuffers); }
 				alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
 			}
 			alignments.back().SetFromSegAlignment(smallOpts);
 		}
+		if (read.unaligned) {
+			output_unaligned(read, opts, *output);
+			return 0;
+		} 	
 		alignmentsOrder.Update(&alignments);
 		SimpleMapQV(alignmentsOrder, read, smallOpts);	
 		OUTPUT(alignmentsOrder, read, opts, genome, output);
@@ -850,13 +882,8 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 				delete alignments[a].SegAlignment[s];
 			}
 		}
-		
-		//read.Clear();
 		if (alignments.size() > 0) {
 			return 1;
-		}
-		else {
-			return 0;
 		}
 		return 0;
 	}
@@ -1539,14 +1566,8 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 			delete alignments[a].SegAlignment[s];
 		}
 	}
-	
 	//read.Clear();
-	if (alignments.size() > 0) {
-		return 1;
-	}
-	else {
-		return 0;
-	}
+	if (alignments.size() > 0) return 1;
 	return 0;
 }
 

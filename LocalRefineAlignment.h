@@ -910,6 +910,7 @@ SparseDP_and_RefineAlignment_btwn_anchors( UltimateChain &ultimatechain, vector<
 		vector<SegAlignmentGroup> &alignments, Options &smallOpts, const vector<float> & LookUpTable, Read &read, char *strands[2], int &h,
 		Genome &genome, int &LSC, Options &tinyOpts, AffineAlignBuffers &buff, ostream *svsigstrm){
 	for (int st = 0; st < splitchains.size(); st++) {
+		if (splitchains[st].size() <= 1) continue;
 		//
 		// Refine and store the alignment; NOTICE: when filling in the space between two adjacent anchors, 
 		// the process works in forward direction, so we need to flip the small matches
