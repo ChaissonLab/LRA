@@ -406,6 +406,7 @@ class Alignment {
 			}
 		}
 		cigar=cigarstrm.str();
+		prepared=true;
 	}
 
 	void SimpleAlignStringsToCigar(string &query, string &target, string &cigar) {

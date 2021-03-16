@@ -1658,7 +1658,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 //
 void 
 DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
-					const vector<Fragment_Info> & Value, vector<UltimateChain> &chains, Read & read, Options & opts) {
+					const vector<Fragment_Info> & Value, vector<UltimateChain> &chains, Read & read, Options & opts, vector<int> &MatchStart) {
 
 	Fragment_valueOrder fragments_valueOrder(&Value);
 	float value_thres = max(opts.alnthres * fragments_valueOrder[0], fragments_valueOrder[0] - 100*opts.globalK);//30 for 50kb
@@ -1675,29 +1675,16 @@ DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, Sta
 
 		if (chains.back().chain.size() != 0) {
 			// Note: onechain store index from the last one to the first one
-			GenomePos qEnd = FragInput[chains.back().chain[0]].qEnd;
-			GenomePos tEnd = FragInput[chains.back().chain[0]].tEnd;
-			GenomePos qStart = FragInput[chains.back().chain.back()].qStart;
-			GenomePos tStart = FragInput[chains.back().chain.back()].tStart;	
-
-			// Somethimes not all onechain[i] align to the same chromosom
-			for (int c = 0; c < chains.back().size(); c++) {
-				qEnd = max(FragInput[chains.back().chain[c]].qEnd, qEnd);
-				tEnd = max(FragInput[chains.back().chain[c]].tEnd, tEnd);
-				qStart = min(FragInput[chains.back().chain[c]].qStart, qStart);
-				tStart = min(FragInput[chains.back().chain[c]].tStart, tStart);
-			}
+			int f = chains.back().chain[0]; int l = chains.back().chain.back();
+			int fi = Value[f].clusterNum; int li = Value[l].clusterNum;
+			GenomePos qEnd = FragInput[fi].matches[f - MatchStart[fi]].first.pos + FragInput[fi].matchesLengths[f - MatchStart[fi]];
+			GenomePos qStart = FragInput[li].matches[l - MatchStart[li]].first.pos;
 			//
 			// If this chain overlap with read greater than 0.5%, insert it to chains
 			//
-			assert(qEnd - qStart > 10);
-			if (((float)(qEnd - qStart)/read.length) > 0.005) {
-				//
-				// Compute the # of anchors on this chain
-				//
-				int Num_Anchors = 0;
-				ComputeNumOfAnchors (FragInput, chains.back().chain, Num_Anchors);
-				chains.back().NumOfAnchors0 = Num_Anchors;
+			// assert(qEnd - qStart > 10);
+			if (qEnd > qStart and ((float)(qEnd - qStart)/read.length) > 0.005) {
+				chains.back().NumOfAnchors0 = chains.back().chain.size();
 				chains.back().FirstSDPValue = fragments_valueOrder[fv];
 			}
 			else {chains.pop_back();}			
@@ -2433,7 +2420,7 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 //
 // The input to this SparseDP is pure matches
 //
-int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> chains, Options &opts, const vector<float> &LookUpTable, Read &read) {
+int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options &opts, const vector<float> &LookUpTable, Read &read) {
 	if (read.unaligned) return 0;
 	//
 	// Input: vector<Cluster> & FragInput and vector<unsigned int> inputChain;
@@ -2589,7 +2576,7 @@ int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> chains, Options 
 	//cerr << "ProcessPoint\n";
 	// finalchain.InitializeOtherParts (MatchStart, totalMatch, Value);
 	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, MatchStart, opts.second_anchor_rate); 
-	DecidePrimaryChains(FragInput, SubR1, SubC1, SubR2, SubC2, Value, chains, read, opts);
+	DecidePrimaryChains(FragInput, SubR1, SubC1, SubR2, SubC2, Value, chains, read, opts, MatchStart);
 	for (int c = 0; c < chains.size(); c++) {
 		chains[c].ClusterIndex.resize(chains[c].chain.size());
 		for (int s = 0; s < chains[c].chain.size(); s++) {

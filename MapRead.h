@@ -150,7 +150,9 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 
 void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts) {
 	if (read.unaligned) return;
-	float q_coef = 1.0f; // 40
+	float q_coef;
+	if (opts.bypassClustering) q_coef = 20.0f; // 40
+	else q_coef = 1.0f; // 40
 	int len = alignmentsOrder.size(); // number of primary aln and secondary aln
 	for (int r = 0; r < len; r++) {
 		if (r == 0 and len == 1) {
@@ -660,44 +662,65 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		rclust.close();
 	}		
 	vector<Cluster> clusters;
-	vector<float> for_avgfreq(forMatches.size(), 0), rev_avgfreq(revMatches.size(), 0);
-	MatchesToFineClusters(forMatches, clusters, genome, read, opts, timing);
-	MatchesToFineClusters(revMatches, clusters, genome, read, opts, timing, 1);
-	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-		ofstream cpclust("clusters-pre-remove.tab");
-		for (int m = 0; m < clusters.size(); m++) {
-			for (int n = 0; n < clusters[m].matches.size(); n++) {
-				if (clusters[m].strand == 0) {
-					cpclust << clusters[m].matches[n].first.pos << "\t"
-						  << clusters[m].matches[n].second.pos << "\t"
-						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
-						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
-						  << m << "\t"
-						  << genome.header.names[clusters[m].chromIndex]<< "\t"
-						  << clusters[m].strand << endl;
-				}
-				else {
-					cpclust << clusters[m].matches[n].first.pos << "\t"
-						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
-						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
-						  << clusters[m].matches[n].second.pos << "\t"
-						  << m << "\t"
-						  << genome.header.names[clusters[m].chromIndex]<< "\t"
-						  << clusters[m].strand << endl;
-				}				
-			}
-		}
-		cpclust.close();
-	}
+
+
 
 	if (opts.bypassClustering) {
+
+		CleanMatches(forMatches, clusters, genome, read, opts, timing);
+		CleanMatches(revMatches, clusters, genome, read, opts, timing, 1);
+		if (clusters.size() == 0) {
+			read.unaligned = 1;
+			output_unaligned(read, opts, *output);
+			return 0;
+		}
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+			ofstream cpclust("clusters-pre-remove.tab");
+			for (int m = 0; m < clusters.size(); m++) {
+				for (int n = 0; n < clusters[m].matches.size(); n++) {
+					if (clusters[m].strand == 0) {
+						cpclust << clusters[m].matches[n].first.pos << "\t"
+							  << clusters[m].matches[n].second.pos << "\t"
+							  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
+							  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
+							  << m << "\t"
+							  << genome.header.names[clusters[m].chromIndex]<< "\t"
+							  << clusters[m].strand << endl;
+					}
+					else {
+						cpclust << clusters[m].matches[n].first.pos << "\t"
+							  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
+							  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
+							  << clusters[m].matches[n].second.pos << "\t"
+							  << m << "\t"
+							  << genome.header.names[clusters[m].chromIndex]<< "\t"
+							  << clusters[m].strand << endl;
+					}				
+				}
+			}
+			cpclust.close();
+		}
+
+
+		for (int s = 0; s < clusters.size(); s++) {	
+			// Subtract chromOffSet from t coord.
+			GenomePos chromOffset = genome.header.pos[clusters[s].chromIndex];
+			for (int m = 0; m < clusters[s].matches.size(); m++) {
+				clusters[s].matches[m].second.pos -= chromOffset;
+			}
+			clusters[s].tStart -= chromOffset;
+			clusters[s].tEnd -= chromOffset;
+		}
 		vector<Cluster> ext_clusters(clusters.size());
 		vector<UltimateChain> chains;
 		//
 		// Linear Extend on pure matches
 		//
 		for (int d = 0; d < clusters.size(); d++) {
-			LinearExtend(&clusters[d].matches, ext_clusters[d].matches, ext_clusters[d].matchesLengths, opts, genome, read, clusters[d].chromIndex, clusters[d].strand);
+			LinearExtend(&clusters[d].matches, ext_clusters[d].matches, ext_clusters[d].matchesLengths, opts, genome, read, clusters[d].chromIndex, clusters[d].strand, 1);
+			ext_clusters[d].strand = clusters[d].strand;
+			ext_clusters[d].chromIndex = clusters[d].chromIndex;
+			DecideCoordinates(ext_clusters[d]);
 		}
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream clust("ExtendClusters.tab", ofstream::app);
@@ -724,12 +747,35 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 				}
 			}
 			clust.close();
+		}
+		for (int s = 0; s < ext_clusters.size(); s++) {	
+			// Subtract chromOffSet from t coord.
+			GenomePos chromOffset = genome.header.pos[clusters[s].chromIndex];
+			for (int m = 0; m < ext_clusters[s].matches.size(); m++) {
+				ext_clusters[s].matches[m].second.pos += chromOffset;
+			}
+			ext_clusters[s].tStart += chromOffset;
+			ext_clusters[s].tEnd += chromOffset;
 		}	
 		clusters.clear();
 		//
 		// SDP on matches
 		//
 		SparseDP(ext_clusters, chains, opts, LookUpTable, read);
+		if (chains.size() == 0) {
+			read.unaligned = 1;
+			output_unaligned(read, opts, *output);
+			return 0;
+		} 		
+		for (int s = 0; s < ext_clusters.size(); s++) {	
+			// Subtract chromOffSet from t coord.
+			GenomePos chromOffset = genome.header.pos[clusters[s].chromIndex];
+			for (int m = 0; m < ext_clusters[s].matches.size(); m++) {
+				ext_clusters[s].matches[m].second.pos -= chromOffset;
+			}
+			ext_clusters[s].tStart -= chromOffset;
+			ext_clusters[s].tEnd -= chromOffset;
+		}
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream clust("SparseDP.tab", ofstream::app);
 			for (int s = 0; s < chains.size(); s++) {
@@ -757,12 +803,6 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 
 			clust.close();
 		}	
-		if (chains.size() == 0) {
-			cerr << "unaligned" << endl;
-			read.unaligned = 1;
-			output_unaligned(read, opts, *output);
-			return 0;
-		} 		
 		//
 		// Close the space btwn matches
 		//
@@ -786,14 +826,69 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		AlignmentsOrder alignmentsOrder(&alignments);
 		AffineAlignBuffers buff;
 		for (int p = 0; p < chains.size(); p++) {
+			alignments.resize(alignments.size() + 1);	
 			vector<SplitChain> splitchains;
 			SPLITChain(read, chains[p], splitchains, chains[p].link, opts);
 			int LSC = LargestSplitChain(splitchains);
 			SparseDP_and_RefineAlignment_btwn_anchors(chains[p], splitchains, ext_clusters, alignments, smallOpts, 
 									LookUpTable, read, strands, p, genome, LSC, tinyOpts, buff, svsigstrm);
+			for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
+				if (opts.skipBandedRefine == false) { IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts, indelRefineBuffers); }
+				alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
+			}
+			alignments.back().SetFromSegAlignment(smallOpts);
 		}
+		alignmentsOrder.Update(&alignments);
+		SimpleMapQV(alignmentsOrder, read, smallOpts);	
 		OUTPUT(alignmentsOrder, read, opts, genome, output);
+		//
+		// Done with one read. Clean memory.
+		//
+		delete[] readRC;
+		for (int a = 0; a < alignments.size(); a++) {
+			for (int s = 0; s < alignments[a].SegAlignment.size(); s++) {
+				delete alignments[a].SegAlignment[s];
+			}
+		}
+		
+		//read.Clear();
+		if (alignments.size() > 0) {
+			return 1;
+		}
+		else {
+			return 0;
+		}
 		return 0;
+	}
+
+
+	MatchesToFineClusters(forMatches, clusters, genome, read, opts, timing);
+	MatchesToFineClusters(revMatches, clusters, genome, read, opts, timing, 1);
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		ofstream cpclust("clusters-pre-remove.tab");
+		for (int m = 0; m < clusters.size(); m++) {
+			for (int n = 0; n < clusters[m].matches.size(); n++) {
+				if (clusters[m].strand == 0) {
+					cpclust << clusters[m].matches[n].first.pos << "\t"
+						  << clusters[m].matches[n].second.pos << "\t"
+						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
+						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
+						  << m << "\t"
+						  << genome.header.names[clusters[m].chromIndex]<< "\t"
+						  << clusters[m].strand << endl;
+				}
+				else {
+					cpclust << clusters[m].matches[n].first.pos << "\t"
+						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
+						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
+						  << clusters[m].matches[n].second.pos << "\t"
+						  << m << "\t"
+						  << genome.header.names[clusters[m].chromIndex]<< "\t"
+						  << clusters[m].strand << endl;
+				}				
+			}
+		}
+		cpclust.close();
 	}
 	//
 	// Continue work on Clusters

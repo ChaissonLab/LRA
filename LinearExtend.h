@@ -452,11 +452,11 @@ TrimOverlappedAnchors(vector<Cluster> & extCluster, int start) {
 // NOTE: Only forward strand;
 //
 void LinearExtend(GenomePairs * pairs, GenomePairs & Extendpairs, vector<int> &ExtendpairsMatchesLength, Options &opts, 
-				Genome &genome, Read &read, int &chromIndex, bool strand) {
+				Genome &genome, Read &read, int &chromIndex, bool strand, bool skipsorting) {
 	//
 	// Sort each Cluster
 	//
-	DiagonalSort<GenomeTuple>((*pairs).begin(), (*pairs).end());
+	if (!skipsorting) DiagonalSort<GenomeTuple>((*pairs).begin(), (*pairs).end());
 	//
 	// Linear Extension;
 	// NOTICE: anchors have the same strand;
