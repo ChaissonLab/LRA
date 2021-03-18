@@ -104,6 +104,7 @@ public:
 	vector<Cluster_SameDiag *> * ExtendClusters;
 	vector<unsigned int> chain;
 	vector<int> ClusterIndex; // ClusterIndex[i] stores the index of the Cluster that anchor i comes from;
+	vector<bool> link;
 	float SecondSDPValue;
 	// vector<unsigned int> MatchStart;
 	// vector<int> StartIndex; // StartIndex[i] stores the index of the start for Cluster inputchain[i];
@@ -134,10 +135,10 @@ public:
 		assert(ClusterIndex[i] < ExtendClusters->size());
 		return (*ExtendClusters)[ClusterIndex[i]]->strand;
 	}
-	void resize(int m) {
-		chain.resize(m);
-		ClusterIndex.resize(m);
-	}
+	// void resize(int m) {
+	// 	chain.resize(m);
+	// 	ClusterIndex.resize(m);
+	// }
 	GenomePos qStart(int i) {
 		int clusterNum = ClusterIndex[i];
 		assert(chain[i] < (*ExtendClusters)[clusterNum]->size());
@@ -164,10 +165,13 @@ public:
 	float SecondSDPValue;
 	float FirstSDPValue;
 	int NumOfAnchors0;
+	GenomePos QStart, QEnd, TStart, TEnd;
+
 	UltimateChain() {}
 	UltimateChain(vector<Cluster> * c, float &s) : clusters(c), SecondSDPValue(s) {}
 	UltimateChain(vector<Cluster> * cl): clusters(cl) {}
 	~UltimateChain() {};
+
 	bool strand (int i) {
 		assert(ClusterIndex[i] < clusters->size());
 		return (*clusters)[ClusterIndex[i]].strand;
@@ -179,11 +183,6 @@ public:
 
 	int size () {
 		return chain.size();
-	}
-
-	void resize(int m) {
-		chain.resize(m);
-		ClusterIndex.resize(m);
 	}
 
 	void clear() {
@@ -203,36 +202,195 @@ public:
 		return (*clusters)[clusterNum].matchesLengths[chain[i]];		
 	}
 
-	GenomePos & qStart(int &i) {
-		return (*clusters)[ClusterIndex[i]].matches[chain[i]].first.pos;
+	GenomePos &qStart(int i) {return (*clusters)[ClusterIndex[i]].matches[chain[i]].first.pos;}
+	GenomePos &tStart(int i) {return (*clusters)[ClusterIndex[i]].matches[chain[i]].second.pos;}
+	GenomePos qEnd(int i) {return (*clusters)[ClusterIndex[i]].matches[chain[i]].first.pos + (*clusters)[ClusterIndex[i]].matchesLengths[chain[i]];}
+	GenomePos tEnd(int i) {return (*clusters)[ClusterIndex[i]].matches[chain[i]].second.pos + (*clusters)[ClusterIndex[i]].matchesLengths[chain[i]];}
+	// GenomePos trans_qStart(int i, int length) {
+	// 	if (strand(i) == 0) {return qStart(i);}
+	// 	else {return length - qEnd(i);} 
+	// }	
+	// GenomePos trans_qEnd(int i, int length) {
+	// 	if (strand(i) == 0) {return qEnd(i);}
+	// 	else {return length - qStart(i);}
+	// }
+	// GenomePos trans_tStart(int i, GenomePos offset) { return tStart(i) - offset;}
+	// GenomePos trans_tEnd(int i, GenomePos offset) { return tEnd(i) - offset;}
+
+	bool OverlapsOnT (GenomePos tS, GenomePos tE, float rate);
+	void CleanSpuriousJumpingAnchors ();
+	long diag(int i) {
+		if (strand(i) == 0) { return (long) qStart(i) + (long) tStart(i);}
+		else { return (long) tStart(i) - (long) qStart(i);}
 	}
-	GenomePos & tStart(int &i) {
-		return (*clusters)[ClusterIndex[i]].matches[chain[i]].second.pos;
+	
+	void Initialize(vector<unsigned int> &ch, vector<Fragment_Info> &Value, vector<bool> &lk) {
+		chain.resize(ch.size());
+		link = lk;
+		ClusterIndex.resize(ch.size());
+		for (int i = 0; i < ch.size(); i++) {
+			ClusterIndex[i] = Value[ch[i]].clusterNum;
+			assert((*clusters)[ClusterIndex[i]].matchStart != -1);
+			chain[i] = ch[i] - (*clusters)[ClusterIndex[i]].matchStart;
+		}
 	}
-	GenomePos qEnd(int &i) {
-		return (*clusters)[ClusterIndex[i]].matches[chain[i]].first.pos + (*clusters)[ClusterIndex[i]].matchesLengths[chain[i]];
-	}
-	GenomePos tEnd(int &i) {
-		return (*clusters)[ClusterIndex[i]].matches[chain[i]].second.pos + (*clusters)[ClusterIndex[i]].matchesLengths[chain[i]];
-	}	
 };
+
+
+bool UltimateChain::OverlapsOnT (GenomePos tS, GenomePos tE, float rate) {
+
+	int ovp = 0;
+	if (tS >= TStart and tS < TEnd) {
+		ovp = min(tE, TEnd) - tS;
+	}
+	else if (tE > TStart and tE <= TEnd) {
+		ovp = tE - max(tS, TStart);
+	}
+	else if (tS < TStart and tE > TEnd) {
+		ovp = TEnd - TStart;
+	}
+	float denomA = TEnd - TStart;
+	if (ovp/denomA <= rate) {return true;}
+	else {return false;}
+}
+
+void UltimateChain::CleanSpuriousJumpingAnchors () {
+	//
+	// Clean spurious anchors jumping far
+	//
+	vector<bool> remove(chain.size(), 0);
+	int im = 0, cur = 0, prev = 0;
+	int jump = -1; GenomePos jump_tpos;
+	while (im < chain.size() - 1) {
+		cur = im + 1; prev = im;
+		if (jump == -1) {
+			if (strand(cur) == strand(prev)) {
+				if (strand(cur) == 0) {
+					if (tEnd(cur) > tStart(prev)) {jump = cur; jump_tpos = tStart(prev);}
+				}
+				else {
+					if (tStart(cur) < tEnd(prev)) {jump = cur; jump_tpos = tEnd(prev);}
+				}
+			}
+		}
+		else {
+			if (strand(cur) == 0) {
+				if (tEnd(cur) <= jump_tpos and cur - jump <= 3) {
+					for (int i = jump; i < cur; i++) {remove[i] = 1;}
+					jump = -1;					
+				}
+			}
+			else {
+				if (tStart(cur) >= jump_tpos and cur - jump <= 3) {
+					for (int i = jump; i < cur; i++) {remove[i] = 1;}
+					jump = -1;					
+				}
+			}
+		}
+		im++;					
+	}
+	if (jump != -1 and cur - jump <= 3) {
+		for (int i = jump; i <= cur; i++) {remove[i] = 1;}
+	}
+	int c = 0;
+	for (int i = 0; i < remove.size(); i++) {
+		if (!remove[i]) {
+			chain[c] = chain[i]; 
+			ClusterIndex[c] = ClusterIndex[i];
+			if (c > 1) {link[c - 1] = link[i - 1];}
+			c++;
+		}
+	}
+	chain.resize(c);
+	ClusterIndex.resize(c);
+	link.resize(c-1);
+	return;
+}
 
 class SplitChain {
 public:
-	vector<unsigned int> sptc;
+	vector<int> sptc;
 	vector<bool> link;
-
-	SplitChain (vector<unsigned int> &sp, vector<bool> &lk) {
+	GenomePos QStart, QEnd, TStart, TEnd;
+	int chromIndex;
+	UltimateChain *chain;
+	bool Strand;
+	int clusterIndex;
+	// int readlength;
+	// int offset;
+	SplitChain() {}
+	~SplitChain() {}
+	SplitChain (vector<int> &sp, vector<bool> &lk) {
 		sptc = sp;
 		link = lk;
 	}
-
+	SplitChain (vector<int> &sp, vector<bool> &lk, UltimateChain *c, bool str, int cI) : chain(c) {
+		sptc = sp;
+		link = lk;
+		Strand = str;
+		clusterIndex = cI;
+	}
+	SplitChain (int c) {
+		clusterIndex = c;
+	}
 	int size() const {
 		return sptc.size();
 	}
 
-	unsigned int & operator[] (int i) {
+	int & operator[] (int i) {
 		return sptc[i];
 	}
+
+	GenomePair & genomepair(int i) {
+		return (*chain)[sptc[i]];
+	}
+
+	int length(int i) {
+		return (*chain).length(sptc[i]);
+	}
+
+	int CHROMIndex(Genome & genome) {
+		if (sptc.size() == 0) return 1;
+		int firstChromIndex = genome.header.Find(TStart);
+		int lastChromIndex;
+		lastChromIndex = genome.header.Find(TEnd);
+		if (firstChromIndex != lastChromIndex ) {return 1;}
+		chromIndex = firstChromIndex;  
+		return 0;
+	}	
+	bool strand (int i) { return chain->strand(sptc[i]);}
+	GenomePos &qStart(int i) {return chain->qStart(sptc[i]);}
+	GenomePos &tStart(int i) {return chain->tStart(sptc[i]);}
+	GenomePos qEnd(int i) {return chain->qEnd(sptc[i]);}
+	GenomePos tEnd(int i) {return chain->tEnd(sptc[i]);}
+
+	// GenomePos trans_qStart(int i) {
+	// 	if (strand(i) == 0) {return qStart(i);}
+	// 	else {return readlength - qEnd(i);} 
+	// }	
+	// GenomePos trans_qEnd(int i) {
+	// 	if (strand(i) == 0) {return qEnd(i);}
+	// 	else {return readlength - qStart(i);}
+	// }
+	// GenomePos trans_tStart(int i) { return tStart(i) - offset;}
+	// GenomePos trans_tEnd(int i) { return tEnd(i) - offset;}
+
+	//
+	// Sort first by tStart, then by qStart
+	//
+	int operator()(const int &a, const int &b) {
+		if (tStart(a) != tStart(b)) { return tStart(a) < tStart(b);}
+		else { return qStart(a) < qStart(b);}
+	}
+
+	int CartesianTargetLowerBound(int b, int e, int query) {
+		return lower_bound(sptc.begin() - b, sptc.end() - e, query, *this) - sptc.begin();
+	}
+
+	int CartesianTargetUpperBound(int b, int e, int query) {
+		return upper_bound(sptc.begin() - b, sptc.end() - e, query, *this) - sptc.begin();
+	}
 };
+
+
 #endif

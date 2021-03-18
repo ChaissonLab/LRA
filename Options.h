@@ -105,6 +105,8 @@ public:
 	int punish_anchorfreq;
 	int cleanClustersize;
 	bool bypassClustering;
+	bool refineEnd;
+	int refineSpaceDist;
 	Options() {
 		skipBandedRefine=false;
 		storeTiming=false;
@@ -207,6 +209,9 @@ public:
 		punish_anchorfreq=10;
 		cleanClustersize=100;
 		bypassClustering=false;
+		refineEnd=false;
+		refineSpaceDist=10000;
+
 	}
 };
 #endif

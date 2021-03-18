@@ -15,7 +15,7 @@ class ClusterCoordinates {
  public:
 	int start;
 	int end;
-	int strand;
+	bool strand;
 	char *seq;
 	GenomePos qStart, qEnd, tStart, tEnd;
 	int chromIndex;	
@@ -200,6 +200,7 @@ class Cluster : public ClusterCoordinates {
 	bool split; // whether to enter the splitting step
 	float anchorfreq;
 	float refineEffiency;
+	int matchStart;
 	vector<bool> overlap;
 	Cluster() { refined=0; coarse=-1; rank=-1;}
  Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1; refined=0;}
@@ -311,7 +312,7 @@ class Cluster : public ClusterCoordinates {
 	//
 	// This function decide the chromIndex
 	//
-	int CHROMIndex(Genome & genome) {
+	bool CHROMIndex(Genome & genome) {
 		if (matches.size() == 0) return 1;
 		int firstChromIndex = genome.header.Find(tStart);
 		int lastChromIndex;
@@ -322,6 +323,18 @@ class Cluster : public ClusterCoordinates {
 		chromIndex = firstChromIndex;  
 		return 0;
 	}	
+	GenomePos GetqStart(int i) {
+		return matches[i].first.pos;
+	}
+	GenomePos GetqEnd(int i) {
+		return matches[i].first.pos + matchesLengths[i];
+	}
+	GenomePos GettStart(int i) {
+		return matches[i].second.pos;			
+	}
+	GenomePos GettEnd(int i) {
+		return matches[i].second.pos + matchesLengths[i];
+	}
 };
 
 class Cluster_SameDiag {

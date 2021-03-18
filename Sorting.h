@@ -209,20 +209,16 @@ void CartesianTargetSort(vector<pair<Tup, Tup>> &matches, int s, int e) {
 
 
 template<typename Tup>
-int CartesianTargetLowerBound(typename vector<pair<Tup, Tup> >::iterator  begin,
-							 typename vector<pair<Tup, Tup> >::iterator  end, int64_t query) {
+int CartesianTargetLowerBound(typename vector<pair<Tup, Tup> >::iterator begin, typename vector<pair<Tup, Tup> >::iterator end, int64_t query) {
 	pair<Tup, Tup> queryTup;
-	queryTup.second.pos = query;
-	queryTup.first.pos = 0;
+	queryTup.second.pos = query; queryTup.first.pos = 0;
 	return lower_bound(begin, end, queryTup, CartesianTargetSortOp<Tup>()) - begin;
 }
 
 template<typename Tup>
-int CartesianTargetUpperBound(typename vector<pair<Tup, Tup> >::iterator  begin, typename vector<pair<Tup, Tup> >::iterator  end, 
-															int64_t query) {
+int CartesianTargetUpperBound(typename vector<pair<Tup, Tup> >::iterator begin, typename vector<pair<Tup, Tup> >::iterator end, int64_t query) {
 	pair<Tup, Tup> queryTup;
-	queryTup.second.pos = query;
-	queryTup.first.pos = 0;
+	queryTup.second.pos = query; queryTup.first.pos = 0;
 	return upper_bound(begin, end, queryTup, CartesianTargetSortOp<Tup>()) - begin;
 }
 

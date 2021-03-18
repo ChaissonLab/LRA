@@ -124,8 +124,10 @@ DecideCoordinates (Cluster & cluster) {
 // This function implements linear extension for each Cluster on the chain;
 // NOTE: The extension for anchors should avoid overlapping;
 //
+template<typename Tup>
 void
-LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<unsigned int> & chain, Options & opts, Genome & genome, Read & read, int start, int &overlap) {
+LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup> & chain, Options & opts, Genome & genome, Read & read, 
+			int start, int &overlap, bool skiprepetitive) {
 
 	vector<pair<GenomePos, bool>> Set;
 	int next, prev;
@@ -141,7 +143,6 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<uns
 		GenomePos qeb = clusters[cm]->qEnd;
 		GenomePos tsb = clusters[cm]->tStart;
 		GenomePos teb = clusters[cm]->tEnd;
-
 		//
 		// Compute the ChromIndex for cluster
 		//
@@ -149,7 +150,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<uns
 		extCluster[c + start].anchorfreq = clusters[cm]->anchorfreq;
 		// cerr << "clusters[cm]->anchorfreq: " << clusters[cm]->anchorfreq << endl;
 		
-		if (extCluster[c + start].anchorfreq <= 1.1f ) { // Do not check overlap for repetitive clusters;
+		if (skiprepetitive and extCluster[c + start].anchorfreq <= 1.1f ) { // Do not check overlap for repetitive clusters;
 			//
 			// Check the previous Cluster to get the overlapping points;
 			//			
@@ -575,15 +576,16 @@ TrimOverlappedAnchors(GenomePairs &ExtendPairs, vector<int> &ExtendPairsMatchesL
 	}	
 }
 
+template<typename Tup>
 void
-LinearExtend_chain (vector<unsigned int> &chain, vector<Cluster> &ExtendClusters, vector<Cluster*> &RefinedClusters, 
-			Options &smallOpts, Genome &genome, Read &read, int start, int &overlap) {
+LinearExtend_chain (vector<Tup> &chain, vector<Cluster> &ExtendClusters, vector<Cluster*> &RefinedClusters, 
+			Options &smallOpts, Genome &genome, Read &read, int start, int &overlap, bool skiprepetitive) {
 	//
 	// Do linear extension for each anchors and avoid overlapping locations;
 	// INPUT: RefinedClusters; OUTPUT: ExtendClusters;
 	// NOTICE: ExtendClusters have members: strand, matches, matchesLengths, GenomePos, chromIndex;
 	//
-	LinearExtend(RefinedClusters, ExtendClusters, chain, smallOpts, genome, read, start, overlap);
+	LinearExtend(RefinedClusters, ExtendClusters, chain, smallOpts, genome, read, start, overlap, skiprepetitive);
 	TrimOverlappedAnchors(ExtendClusters, start);
 }
 

@@ -210,8 +210,8 @@ class LocalIndex {
 		GenomePos netSize=0;		
 		for (int i = 0; i < nIndex; i++) {
 			locMinimizers.clear();
-			StoreMinimizers<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos)seqLen, (GenomePos) (seqPos+localIndexWindow)) - seqPos,
-																 k, w, locMinimizers, false, false); 
+			StoreMinimizers_noncanonical<LocalTuple, SmallTuple>(&seq[seqPos], min((GenomePos)seqLen, (GenomePos) (seqPos+localIndexWindow)) - seqPos,
+																 k, w, locMinimizers, false); 
 			//RemoveFrequent(locMinimizers, maxFreq)
 			// Sort minimzers by tuple value.
 			//

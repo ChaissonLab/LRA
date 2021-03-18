@@ -251,8 +251,12 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "--CalculateMinimizerStats")) {
 			opts.CalculateMinimizerStats = true;
 		}
-    else if (ArgIs(argv[argi], "--refineBand")) {
+    	else if (ArgIs(argv[argi], "--refineBand")) {
 			opts.refineBand=atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+    	else if (ArgIs(argv[argi], "--anchorstoosparse")) {
+			opts.anchorstoosparse=atof(GetArgv(argv, argc, argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--skipBandedRefine")) {
@@ -276,6 +280,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.merge_dist = 100;
      		opts.SecondCleanMinDiagCluster=40;
      		opts.minDiagCluster=30;
+     		opts.refineSpaceDist=100000;
    			// opts.secondcoefficient=15;
    			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
@@ -294,6 +299,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.cleanClustersize=100;
      		opts.punish_anchorfreq=10;
      		opts.anchorPerlength=10;
+     		opts.refineSpaceDist=10000;
+
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;
 
@@ -316,6 +323,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.maxGap = 500;
      		opts.SecondCleanMinDiagCluster=20;
      		opts.minDiagCluster=10;
+      		opts.refineSpaceDist=10000;
+    	
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;		
 			// opts.NumAln=3;
@@ -340,6 +349,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.maxGap = 500;
      		opts.SecondCleanMinDiagCluster=30;
      		opts.minDiagCluster=10;
+      		opts.refineSpaceDist=10000;
+    		
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
 			// opts.HighlyAccurate = false;
@@ -352,6 +363,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "--bypassClustering")) {
 			opts.bypassClustering = true;
+			opts.NumAln=2;
 		}
 		else if (ArgIs(argv[argi], "--debug")) {
 			opts.debug = true;
@@ -414,6 +426,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-o")) {
 			opts.outfile = argv[++argi];
 		}
+		else if (ArgIs(argv[argi], "--refineEnd")) {
+			opts.refineEnd = true;
+		}	
 		else if (ArgIs(argv[argi], "-d")) {
 			opts.dotPlot = true;
 		}		
@@ -847,6 +862,7 @@ void InitStatic() {
 		LocalTuple::for_mask_s += 1; // for_mask_s = 111...11 (20 bit)
 	}
 	LocalTuple::rev_mask_s = 0;
+	// CreateLookUpTable(LookUpTable);
 	// cerr << "GenomeTuple::for_mask_s: " << GenomeTuple::for_mask_s << endl;
 	// cerr << "LocalTuple::for_mask_s: " << LocalTuple::for_mask_s << endl;
 	// u_int32_t local_mask = 1;
