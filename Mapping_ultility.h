@@ -291,7 +291,7 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 		int qdist = chain.qStart(prev) - chain.qEnd(cur);
 		int tdist = (chain.tStart(prev) > chain.tEnd(cur))? chain.tStart(prev) - chain.tEnd(cur) : chain.tEnd(cur) - chain.tStart(prev);
 		dist = min(qdist, tdist);
-		if (chain.strand(cur) == chain.strand(prev) and abs(chain.diag(cur) - chain.diag(prev)) <= ceil(0.15 * dist)) {  // missing TRA and INV
+		if (chain.strand(cur) == chain.strand(prev) and dist >= 1000 and abs(chain.diag(cur) - chain.diag(prev)) <= ceil(0.15 * dist)) {  // missing TRA and INV
 			if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
 				splitchains_link.push_back(0);
 			}	
