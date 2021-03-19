@@ -1705,7 +1705,7 @@ DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, Sta
 			chains.back().TStart = FragInput[li].matches[l - MatchStart[li]].second.pos;
 
 			for (int c = 0; c < chains.back().chain.size(); c++) {
-				f = chains.back().chain[c];
+				f = chains.back().chain[c]; fi = Value[f].clusterNum;
 				chains.back().QEnd = max(chains.back().QEnd , FragInput[fi].matches[f - MatchStart[fi]].first.pos + FragInput[fi].matchesLengths[f - MatchStart[fi]]);
 				chains.back().TEnd = max(chains.back().TEnd, FragInput[fi].matches[f - MatchStart[fi]].second.pos + FragInput[fi].matchesLengths[f - MatchStart[fi]]);
 				chains.back().QStart = min(chains.back().QStart, FragInput[fi].matches[f - MatchStart[fi]].first.pos);
