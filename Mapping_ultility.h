@@ -287,13 +287,14 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 	while (im < chain.size() - 1) {
 		cur = im + 1; prev = im;
 		int dist = 0;
-		if (chain.strand(cur) == chain.strand(prev) and abs(chain.diag(cur) - chain.diag(prev)) <= 500) { // INS/DEL/TRA
-			assert(chain.qStart(prev) >= chain.qEnd(cur));
-			int qdist = chain.qStart(prev) - chain.qEnd(cur);
-			int tdist = (chain.tStart(prev) > chain.tEnd(cur))? chain.tStart(prev) - chain.tEnd(cur) : chain.tEnd(cur) - chain.tStart(prev);
-			dist = min(qdist, tdist) >= 1000 ? min(qdist, tdist) : 0; // TRA
-			// cerr << chain.qStart(prev) - chain.qEnd(cur) << " " << chain.tEnd(cur) - chain.tStart(prev) << "  im: " << im << endl;
-			// dist = (chain.qStart(prev) >= chain.qEnd(cur) + 1500)? chain.qStart(prev) - chain.qEnd(cur) : 0;
+		assert(chain.qStart(prev) >= chain.qEnd(cur));
+		int qdist = chain.qStart(prev) - chain.qEnd(cur);
+		int tdist = (chain.tStart(prev) > chain.tEnd(cur))? chain.tStart(prev) - chain.tEnd(cur) : chain.tEnd(cur) - chain.tStart(prev);
+		dist = min(qdist, tdist);
+		if (chain.strand(cur) == chain.strand(prev) and abs(chain.diag(cur) - chain.diag(prev)) <= ceil(0.15 * dist)) {  // missing TRA and INV
+			if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
+				splitchains_link.push_back(0);
+			}	
 		}
 		if (chain.tStart(cur) > chain.tEnd(prev) + opts.splitdist or chain.tEnd(cur) + opts.splitdist < chain.tStart(prev)) {// TRA
 			if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
@@ -311,12 +312,12 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 				splitchains_link.push_back(1);
 			}				
 		}
-		else if (chain.strand(cur) == chain.strand(prev) and dist != 0) { // Missing INV and TRA
-			if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
-				splitchains_link.push_back(0);
-// cerr << "dist:" << dist << " diag: " << chain.diag(cur) - chain.diag(prev)<< "  im: " << im << endl;
-			}			
-		}
+// 		else if (chain.strand(cur) == chain.strand(prev) and dist != 0) { // Missing INV and TRA
+// 			if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
+// 				splitchains_link.push_back(0);
+// // cerr << "dist:" << dist << " diag: " << chain.diag(cur) - chain.diag(prev)<< "  im: " << im << endl;
+// 			}			
+// 		}
 		else {
 			onec.push_back(cur);
 			lk.push_back(chain.link[im]);
