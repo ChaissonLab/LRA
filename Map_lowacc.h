@@ -293,9 +293,11 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		Refine_splitchain(spchain, chains[p], refined_clusters, ext_clusters, genome, read, glIndex, localIndexes, smallOpts, opts);
 		// chains[p].chain.pop_back(); chains[p].ClusterIndex.pop_back(); ext_clusters.pop_back(); // remove dummy
 		//
-		// refine between splitchain
+		// refine between splitchain -- uncomment the next block!
 		//
+		
 		vector<Cluster> RevBtwnCluster; // in case INV happens
+		/*
 		vector<tuple<int, int, int> > tracerev;
 		Refine_Btwnsplitchain(spchain, refined_clusters, RevBtwnCluster, tracerev, genome, read, smallOpts, strands, spchain_link);
 		//
@@ -307,6 +309,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			spchain_link.insert(spchain_link.begin() + (I - 1), 1);
 			spchain_link[I] = 1;
 		}
+		*/
 
 		//
 		// SplitChain spcluster -- each element points to a refined_cluster on the chain
@@ -321,7 +324,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		int a = refined_clusters.size();
 		vector<Cluster *> Refined_Clusters(a + RevBtwnCluster.size());
 		for (int t = 0; t < refined_clusters.size(); t++) {Refined_Clusters[t] = &refined_clusters[t];}
-		for (int t = 0; t < RevBtwnCluster.size(); t++) {Refined_Clusters[a + t] = &RevBtwnCluster[t];}
+		/*for (int t = 0; t < RevBtwnCluster.size(); t++) {Refined_Clusters[a + t] = &RevBtwnCluster[t];}*/
 		if (Refined_Clusters.size() == 0) {
 			read.unaligned = 1;
 			output_unaligned(read, opts, *output);
