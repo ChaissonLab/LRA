@@ -156,6 +156,7 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 							qEnd, splitchains[ph].TStart - chromOffset, splitchains[ph].TEnd - chromOffset, prev_readStart, prev_readEnd);					
 			}
 		}
+		splitchains[ph].clusterIndex = ph;
 		if (refinedclusters[ph].matches.size() == 0) continue;
 		if (splitchains[ph].Strand == 1) SwapStrand(read, smallOpts, refinedclusters[ph]);
 		refinedclusters[ph].SetClusterBoundariesFromMatches(smallOpts);
@@ -166,7 +167,7 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 											refinedclusters[ph].qStart, refinedclusters[ph].tEnd - refinedclusters[ph].tStart);
 		// // remove dummy 
 		// splitchains[ph].sptc.pop_back();
-		splitchains[ph].clusterIndex = ph;
+		
 	}
 	return 0;
 }
