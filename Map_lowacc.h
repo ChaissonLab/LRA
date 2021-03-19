@@ -301,7 +301,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		//
 		// Add back RevBtwnCluster; Edit spchain based on tracerev;
 		//
-		for (int t = 0; t < tracerev.size() ; p++) {
+		for (int t = 0; t < tracerev.size(); t++) {
 			int I = get<1>(tracerev[t]);
 			spchain.insert(spchain.begin() + I, SplitChain(get<2>(tracerev[t]) + refined_clusters.size()));
 			spchain_link.insert(spchain_link.begin() + (I - 1), 1);
@@ -362,7 +362,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		vector<Cluster> extend_clusters;
 		extend_clusters.resize(spcluster.size());
 		LinearExtend_chain(spcluster.sptc, extend_clusters, Refined_Clusters, smallOpts, genome, read, 0, overlap, 0);
-		
+
 		int SizeRefinedClusters = 0, SizeExtendClusters = 0;
 		for (int p = 0; p < Refined_Clusters.size(); p++) {
 			SizeRefinedClusters += Refined_Clusters[p]->matches.size();
