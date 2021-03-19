@@ -202,19 +202,20 @@ class Cluster : public ClusterCoordinates {
 	float refineEffiency;
 	int matchStart;
 	vector<bool> overlap;
-	Cluster() { refined=0; coarse=-1; rank=-1;}
- Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1; refined=0;}
+	bool flip = 0;
+	Cluster() { refined=0; coarse=-1; rank=-1; flip = 0;}
+ Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1; refined=0; flip = 0;}
 
- Cluster(int s, int e, int st) : ClusterCoordinates(s,e,st) { coarse=-1; refined=0;}
+ Cluster(int s, int e, int st) : ClusterCoordinates(s,e,st) { coarse=-1; refined=0;flip = 0;}
 
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
 					GenomePos ts, GenomePos te, 
-					int st) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=-1; refined=0;} 
+					int st) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=-1; refined=0;flip = 0;} 
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
 					GenomePos ts, GenomePos te, 
-					int st, int cs) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=cs; refined=0;} 
+					int st, int cs) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=cs; refined=0;flip = 0;} 
 	
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
@@ -228,6 +229,7 @@ class Cluster : public ClusterCoordinates {
 		refinespace = 0;
 		Val = 0;
 		NumofAnchors0 = 0;
+		flip = 0;
 	}
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
@@ -240,6 +242,7 @@ class Cluster : public ClusterCoordinates {
 		minDiagNum=0;
 		Val = 0;
 		NumofAnchors0 = 0;
+		flip = 0;
 	}
   Cluster(GenomePos qs, GenomePos qe, GenomePos ts, GenomePos te, int st, int coa) {
 		qStart = qs;
@@ -251,6 +254,7 @@ class Cluster : public ClusterCoordinates {
 		Val = 0;
 		NumofAnchors0 = 0;
 		split = 0;
+		flip = 0;
 	}
   Cluster(int st, GenomePairs::iterator gpBegin, GenomePairs::iterator gpEnd, vector<int>::iterator stBegin, vector<int>::iterator stEnd) {
   		strand = st;

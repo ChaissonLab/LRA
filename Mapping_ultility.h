@@ -281,8 +281,13 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 	while (im < chain.size() - 1) {
 		cur = im + 1; prev = im;
 		int dist = 0;
-		if (chain.strand(cur) == chain.strand(prev) and abs(chain.diag(cur) - chain.diag(prev) <= 500)) {
-			dist = (chain.qStart(prev) >= chain.qEnd(cur) + 1500)? chain.qStart(prev) - chain.qEnd(cur) : 0;
+		if (chain.strand(cur) == chain.strand(prev) and abs(chain.diag(cur) - chain.diag(prev)) <= 500) { // INS/DEL/TRA
+			assert(chain.qStart(prev) >= chain.qEnd(cur));
+			int qdist = chain.qStart(prev) - chain.qEnd(cur);
+			int tdist = (chain.tStart(prev) > chain.tEnd(cur))? chain.tStart(prev) - chain.tEnd(cur) : chain.tEnd(cur) - chain.tStart(prev);
+			dist = min(qdist, tdist) >= 1000 ? min(qdist, tdist) : 0; // TRA
+			// cerr << chain.qStart(prev) - chain.qEnd(cur) << " " << chain.tEnd(cur) - chain.tStart(prev) << "  im: " << im << endl;
+			// dist = (chain.qStart(prev) >= chain.qEnd(cur) + 1500)? chain.qStart(prev) - chain.qEnd(cur) : 0;
 		}
 		if (chain.tStart(cur) > chain.tEnd(prev) + opts.splitdist or chain.tEnd(cur) + opts.splitdist < chain.tStart(prev)) {// TRA
 			if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
@@ -332,6 +337,17 @@ LargestSplitChain(vector<SplitChain> &splitchains) {
 	int maxi = 0;
 	for (int mi = 1; mi < splitchains.size(); mi++) {
 		if (splitchains[mi].sptc.size() > splitchains[maxi].sptc.size()) {
+			maxi = mi;
+		}
+	}
+	return maxi;
+}
+
+int 
+LargestUltimateChain(vector<UltimateChain> &ultimatechains) {
+	int maxi = 0;
+	for (int mi = 1; mi < ultimatechains.size(); mi++) {
+		if (ultimatechains[mi].size() > ultimatechains[maxi].size()) {
 			maxi = mi;
 		}
 	}

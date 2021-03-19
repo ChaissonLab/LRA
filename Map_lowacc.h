@@ -256,6 +256,15 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		//
 		vector<SplitChain> spchain; vector<bool> spchain_link;
 		SPLITChain(genome, read, chains[p], spchain, spchain_link, opts);
+		//
+		// debug
+		//
+		for (int t = 0; t < spchain.size(); t++) {
+			for (int l = 0; l < spchain[t].size(); l++) {
+				int sl = spchain[t].chain->ClusterNum(spchain[t][0]);
+				assert(spchain[t].chain->ClusterNum(spchain[t][l]) == sl);
+			}
+		}
 		RemoveSpuriousSplitChain(spchain, spchain_link); // remove spurious splitchain of <= 3 anchors
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream clust("Initial_splitchain.tab", ofstream::app);
@@ -367,8 +376,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		LinearExtend_chain(spcluster.sptc, extend_clusters, Refined_Clusters, smallOpts, genome, read, 0, overlap, 0);
 
 		int SizeRefinedClusters = 0, SizeExtendClusters = 0;
-		for (int p = 0; p < Refined_Clusters.size(); p++) {
-			SizeRefinedClusters += Refined_Clusters[p]->matches.size();
+		for (int r = 0; r < Refined_Clusters.size(); r++) {
+			SizeRefinedClusters += Refined_Clusters[r]->matches.size();
 		}
 		for (int ep = 0; ep < extend_clusters.size(); ep++) {
 			SizeExtendClusters += extend_clusters[ep].matches.size();
@@ -390,6 +399,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 							  << extend_clusters[ep].matches[eh].second.pos + extend_clusters[ep].matchesLengths[eh] << "\t"
 							  << genome.header.names[extend_clusters[ep].chromIndex]<< "\t"
 							  << extend_clusters[ep].strand << "\t"
+							  << ep << "\t"
 							  << p <<  endl;
 					}
 					else {
@@ -399,6 +409,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 							  << extend_clusters[ep].matches[eh].second.pos<< "\t"
 							  << genome.header.names[extend_clusters[ep].chromIndex]<< "\t"
 							  << extend_clusters[ep].strand << "\t"
+							  << ep << "\t"
 							  << p <<endl;					
 					}
 				}
@@ -411,44 +422,51 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		//
 		// SDP on clusters
 		//
-		UltimateChain ultimatechain(&extend_clusters);
-		SparseDP(spcluster, extend_clusters, ultimatechain, opts, LookUpTable, read);
+		vector<UltimateChain> ultimatechains(spcluster.size());
+		for (int t = 0; t < spcluster.size(); t++) {
+			ultimatechains[t].clusters = &extend_clusters;
+			SparseDP(spcluster[t], extend_clusters, ultimatechains[t], opts, LookUpTable, read);
+			RemovePairedIndels<UltimateChain>(ultimatechains[t]); 
+			// ultimatechains[t].CleanSpurious();
+		}
+		// 
+		// SparseDP(spcluster, extend_clusters, ultimatechain, opts, LookUpTable, read);
 
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream Rclust("Refined_SparseDP.tab", ofstream::app);
-			for (int s = 0; s < ultimatechain.size(); s++) {
-				// for (int ep = 0; ep < ultimatechain[s].chain.size(); ep++) {
-					if (ultimatechain.strand(s) == 0) {
-						Rclust << ultimatechain.qStart(s) << "\t"
-							  << ultimatechain.tStart(s) << "\t"
-							  << ultimatechain.qEnd(s) << "\t"
-							  << ultimatechain.tEnd(s) << "\t"
-							  << p << "\t"
-							  << ultimatechain.ClusterNum(s) << "\t"
-							  << ultimatechain.strand(s) << endl;
+			for (int t = 0; t < ultimatechains.size(); t++) {
+				for (int s = 0; s < ultimatechains[t].chain.size(); s++) {
+					if (ultimatechains[t].strand(s) == 0) {
+						Rclust << ultimatechains[t].qStart(s) << "\t"
+							  << ultimatechains[t].tStart(s) << "\t"
+							  << ultimatechains[t].qEnd(s) << "\t"
+							  << ultimatechains[t].tEnd(s) << "\t"
+							  << p << "\t" // chain_num
+							  << s << "\t" // cluster_num
+							  << ultimatechains[t].ClusterNum(s) << "\t"
+							  << ultimatechains[t].strand(s) << endl;
 					}
 					else {
-						Rclust << ultimatechain.qStart(s) << "\t"
-							  << ultimatechain.tEnd(s) << "\t"
-							  << ultimatechain.qEnd(s) << "\t"
-							  << ultimatechain.tStart(s) << "\t"
-							  << p << "\t"
-							  << ultimatechain.ClusterNum(s) << "\t"
-							  << ultimatechain.strand(s) << endl;					
+						Rclust << ultimatechains[t].qStart(s) << "\t"
+							  << ultimatechains[t].tEnd(s) << "\t"
+							  << ultimatechains[t].qEnd(s) << "\t"
+							  << ultimatechains[t].tStart(s) << "\t"
+							  << p << "\t" // chain_num
+							  << s << "\t" // cluster_num
+							  << ultimatechains[t].ClusterNum(s) << "\t"
+							  << ultimatechains[t].strand(s) << endl;					
 					}
-				// }				
+				}				
 			}
 			Rclust.close();
 		}	
-		RemovePairedIndels<UltimateChain>(ultimatechain); 
-		// ultimatechain.CleanSpurious();
+
 
 		alignments.resize(alignments.size() + 1); 
-		vector<SplitChain> sp_ulchain; vector<bool> sp_ulink; vector<pair<GenomePos, GenomePos>> sp_ulpos;
-		SPLITChain(read, ultimatechain, sp_ulchain, sp_ulink, sp_ulpos, opts);
-		int LSC = LargestSplitChain(sp_ulchain);
-		LocalRefineAlignment(ultimatechain, sp_ulchain, sp_ulink, sp_ulpos, extend_clusters, alignments, smallOpts, 
-								LookUpTable, read, strands, p, genome, LSC, tinyOpts, buff, svsigstrm);
+		// vector<SplitChain> sp_ulchain; vector<bool> sp_ulink; vector<pair<GenomePos, GenomePos>> sp_ulpos;
+		// SPLITChain(read, ultimatechain, sp_ulchain, sp_ulink, sp_ulpos, opts);
+		int LSC = LargestUltimateChain(ultimatechains);
+		LocalRefineAlignment(ultimatechains, extend_clusters, alignments, smallOpts, LookUpTable, read, strands, p, genome, LSC, tinyOpts, buff, svsigstrm);
 		if (alignments.back().SegAlignment.size() == 0) {
 			read.unaligned = 1;
 			break;

@@ -53,7 +53,10 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		// splitchains[ph].offset = chromOffset;
 		// splitchains[ph].readlength = read.length;
 
-		if (clusters[splitchains[ph].clusterIndex].strand == 1) SwapStrand(read, opts, clusters[splitchains[ph].clusterIndex]);
+		if (clusters[splitchains[ph].clusterIndex].flip == 0 and clusters[splitchains[ph].clusterIndex].strand == 1) {
+			SwapStrand(read, opts, clusters[splitchains[ph].clusterIndex]);
+			clusters[splitchains[ph].clusterIndex].flip = 1;
+		}
 
 		int64_t maxDN, minDN;
 		maxDN = (int64_t) splitchains[ph].tStart(0) - (int64_t) splitchains[ph].qStart(0); // trans_ takes care of reverse strand and offset
