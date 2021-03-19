@@ -38,8 +38,8 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		refinedclusters[ph].chromIndex = splitchains[ph].chromIndex;
 		refinedclusters[ph].refined = 1;
 
-		splitchains[ph].sptc.push_back(chain.size() - 1); // the last one is dummy
-		clusters.back().strand = splitchains[ph].Strand; // the last one is dummy
+		// splitchains[ph].sptc.push_back(chain.size() - 1); // the last one is dummy
+		// clusters.back().strand = splitchains[ph].Strand; // the last one is dummy
 
 		// Make the anchors reference this chromosome for easier bookkeeping 
 		// NOTICE: Remember to add chromOffset back in refinedclusters
@@ -93,23 +93,25 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 			GenomePos genomeLocalIndexStart = glIndex.seqOffsets[lsi]  - chromOffset;
 			GenomePos genomeLocalIndexEnd   = glIndex.seqOffsets[lsi + 1] - 1 - chromOffset;
 
-			assert(clusters.back().matches.size() == 1); // dummy matches
-			clusters.back().matches[0].first.pos = 0; clusters.back().matches[0].second.pos = genomeLocalIndexStart;
-			int matchStart = splitchains[ph].CartesianTargetLowerBound(0, 1, splitchains[ph].sptc.size() - 1);
+			// assert(clusters.back().matches.size() == 1); // dummy matches
+			// clusters.back().matches[0].first.pos = 0; clusters.back().matches[0].second.pos = genomeLocalIndexStart;
+			// int matchStart = splitchains[ph].CartesianTargetLowerBound(0, 1, splitchains[ph].sptc.size() - 1);
 
-			if (matchStart >= splitchains[ph].size() - 1) continue;
-			clusters.back().matches[0].first.pos = 0; clusters.back().matches[0].second.pos = genomeLocalIndexEnd;
-			int matchEnd = splitchains[ph].CartesianTargetUpperBound(matchStart, 1, splitchains[ph].sptc.size() - 1);
+			// if (matchStart >= splitchains[ph].size() - 1) continue;
+			// clusters.back().matches[0].first.pos = 0; clusters.back().matches[0].second.pos = genomeLocalIndexEnd;
+			// int matchEnd = splitchains[ph].CartesianTargetUpperBound(matchStart, 1, splitchains[ph].sptc.size() - 1);
 
-			// matchEnd += matchStart;
-			assert(matchEnd >= matchStart);
-			if (matchEnd == splitchains[ph].size() - 1) matchEnd--;
-			if (matchStart >= splitchains[ph].size() - 1 or matchStart >= matchEnd) continue; // If there is no overlap with this cluster
+			// // matchEnd += matchStart;
+			// assert(matchEnd >= matchStart);
+			// if (matchEnd == splitchains[ph].size() - 1) matchEnd--;
+			// if (matchStart >= splitchains[ph].size() - 1 or matchStart >= matchEnd) continue; // If there is no overlap with this cluster
 
 			GenomePos prev_readEnd = 0;
 			GenomePos prev_readStart = read.length;
-			GenomePos readStart = splitchains[ph].qStart(matchStart);
-			GenomePos readEnd = splitchains[ph].qStart(matchEnd);
+			// GenomePos readStart = splitchains[ph].qStart(matchStart);
+			// GenomePos readEnd = splitchains[ph].qStart(matchEnd);
+			GenomePos readStart = splitchains[ph].qStart(0);
+			GenomePos readEnd = splitchains[ph].qEnd(splitchains[ph].size()-1);
 			if (readStart == readEnd) { // there is a gap
 				if (lsi > ls and readStart > prev_readEnd) {readStart = prev_readEnd;} 
 			}
@@ -157,8 +159,8 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		refinedclusters[ph].refinespace = 0;
 		refinedclusters[ph].refineEffiency = ((float) refinedclusters[ph].matches.size()) / min(refinedclusters[ph].qEnd - 
 											refinedclusters[ph].qStart, refinedclusters[ph].tEnd - refinedclusters[ph].tStart);
-		// remove dummy 
-		splitchains[ph].sptc.pop_back();
+		// // remove dummy 
+		// splitchains[ph].sptc.pop_back();
 		splitchains[ph].clusterIndex = ph;
 	}
 	return 0;

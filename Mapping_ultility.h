@@ -382,7 +382,7 @@ OUTPUT(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts, Genome &geno
 void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts) {
 	if (read.unaligned) return;
 	float q_coef;
-	if (opts.bypassClustering) q_coef = 40.0f; // 40
+	if (opts.bypassClustering) q_coef = 20.0f; // 40
 	else q_coef = 1.0f; // 40
 	int len = alignmentsOrder.size(); // number of primary aln and secondary aln
 	for (int r = 0; r < len; r++) {

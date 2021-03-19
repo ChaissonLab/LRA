@@ -2853,10 +2853,10 @@ int SparseDP (SplitChain &inputChain, vector<Cluster> &FragInput, UltimateChain 
 	// store the index of points
 	vector<unsigned int> chain;
 	ultimatechain.FirstSDPValue = max_value;
-	ultimatechain.NumOfAnchors0 = chain.size();
 	vector<bool> link;
 	TraceBack(SubR1, SubC1, SubR2, SubC2, Value, max_pos, chain, link); // NOTICE: This chain is from the last anchors to the first anchor;
 	ultimatechain.Initialize(chain, Value, link);
+	ultimatechain.NumOfAnchors0 = chain.size();
 	// Clear SubR and SubC
 	chain.clear();
 	clear(H1, H2, SubR1, SubC1, SubR2, SubC2, Value, Row, Col);

@@ -639,7 +639,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 				// NOTICE: Insert 4 points for anchors in the overlapping regions between Clusters;
 				//
 				//cerr << "splitchains.size(): " << splitchains.size()  << endl;
-				RefineAlignment_btwn_anchors(Primary_chains, splitchains, ExtendClusters, alignments, smallOpts, 
+				LocalRefineAlignment(Primary_chains, splitchains, ExtendClusters, alignments, smallOpts, 
 										LookUpTable, read, strands, p, h, genome, LSC, tinyOpts, buff, svsigstrm, extend_clusters);
 				ExtendClusters.clear();
 

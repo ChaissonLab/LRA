@@ -746,7 +746,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 					Alignment *inv_alignment = new Alignment(inv_value, strands[str], read.seq, read.length, read.name, inv_str, read.qual, genome.seqs[chromIndex],  
 																		 genome.lengths[chromIndex], genome.header.names[chromIndex], chromIndex); 
 					inv_alignment->NumOfAnchors1 = BtwnChain.size();
-					// alignment->NumOfAnchors0 = BtwnChain.size();
+					inv_alignment->NumOfAnchors0 = BtwnChain.size();
 					inv_alignment->Supplymentary = 1;
 					alignments.back().SegAlignment.push_back(inv_alignment);	
 				}
@@ -787,7 +787,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 }
 
 void
-RefineAlignment_btwn_anchors(vector<Primary_chain> &Primary_chains, vector<SplitChain> &splitchains, vector<Cluster_SameDiag *> &ExtendClusters, 
+LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &splitchains, vector<Cluster_SameDiag *> &ExtendClusters, 
 		vector<SegAlignmentGroup> &alignments, Options &smallOpts, const vector<float> & LookUpTable, Read &read, char *strands[2], int &p, int &h, 
 		Genome &genome, int &LSC, Options &tinyOpts, AffineAlignBuffers &buff, ostream *svsigstrm, vector<Cluster> &extend_clusters){
 	for (int st = 0; st < splitchains.size(); st++) {
@@ -1082,7 +1082,7 @@ void RefindEnds(GenomePos &qPos, int cur, UltimateChain &chain, bool str, Alignm
 // For chaining of pure matches
 //
 void
-RefineAlignment_btwn_anchors( UltimateChain &ultimatechain, vector<SplitChain> &splitchains, vector<bool> &splitchains_link, 
+LocalRefineAlignment( UltimateChain &ultimatechain, vector<SplitChain> &splitchains, vector<bool> &splitchains_link, 
 		vector<pair<GenomePos, GenomePos>> &splitchains_qpos, vector<Cluster> &ext_clusters, vector<SegAlignmentGroup> &alignments, 
 		Options &smallOpts, const vector<float> & LookUpTable, Read &read, char *strands[2], int &h, Genome &genome, int &LSC, 
 		Options &tinyOpts, AffineAlignBuffers &buff, ostream *svsigstrm){
