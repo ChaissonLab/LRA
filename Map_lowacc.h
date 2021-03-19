@@ -322,7 +322,11 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		vector<Cluster *> Refined_Clusters(a + RevBtwnCluster.size());
 		for (int t = 0; t < refined_clusters.size(); t++) {Refined_Clusters[t] = &refined_clusters[t];}
 		for (int t = 0; t < RevBtwnCluster.size(); t++) {Refined_Clusters[a + t] = &RevBtwnCluster[t];}
-
+		if (Refined_Clusters.size() == 0) {
+			read.unaligned = 1;
+			output_unaligned(read, opts, *output);
+			return 0;
+		}	
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream clust("RefinedClusters.tab", std::ofstream::app);
 			for (int t = 0; t < Refined_Clusters.size(); t++) {
@@ -358,7 +362,20 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		vector<Cluster> extend_clusters;
 		extend_clusters.resize(spcluster.size());
 		LinearExtend_chain(spcluster.sptc, extend_clusters, Refined_Clusters, smallOpts, genome, read, 0, overlap, 0);
-	
+		
+		int SizeRefinedClusters = 0, SizeExtendClusters = 0;
+		for (int p = 0; p < Refined_Clusters.size(); p++) {
+			SizeRefinedClusters += Refined_Clusters[p]->matches.size();
+		}
+		for (int ep = 0; ep < extend_clusters.size(); ep++) {
+			SizeExtendClusters += extend_clusters[ep].matches.size();
+		}	
+		if (SizeRefinedClusters == 0) {
+			read.unaligned = 1;
+			output_unaligned(read, opts, *output);
+			return 0;
+		}	
+
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream Eclust("ExtendClusters.tab", ofstream::app);
 			for (int ep = 0; ep < extend_clusters.size(); ep++) {
