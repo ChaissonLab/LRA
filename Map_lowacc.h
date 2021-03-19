@@ -256,15 +256,6 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		//
 		vector<SplitChain> spchain; vector<bool> spchain_link;
 		SPLITChain(genome, read, chains[p], spchain, spchain_link, opts);
-		//
-		// debug
-		//
-		for (int t = 0; t < spchain.size(); t++) {
-			for (int l = 0; l < spchain[t].size(); l++) {
-				int sl = spchain[t].chain->ClusterNum(spchain[t][0]);
-				assert(spchain[t].chain->ClusterNum(spchain[t][l]) == sl);
-			}
-		}
 		RemoveSpuriousSplitChain(spchain, spchain_link); // remove spurious splitchain of <= 3 anchors
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream clust("Initial_splitchain.tab", ofstream::app);
@@ -295,12 +286,17 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		//
 		// refine splitchain
 		//
-		// int o = ext_clusters.size(); ext_clusters.resize(o + 1); // dummy cluster
-		// ext_clusters.back().matches.resize(1); 
-		// chains[p].chain.push_back(0); chains[p].ClusterIndex.push_back(o); // dummy
 		vector<Cluster> refined_clusters(spchain.size());
 		Refine_splitchain(spchain, chains[p], refined_clusters, ext_clusters, genome, read, glIndex, localIndexes, smallOpts, opts);
-		// chains[p].chain.pop_back(); chains[p].ClusterIndex.pop_back(); ext_clusters.pop_back(); // remove dummy
+		// //
+		// // debug
+		// //
+		// for (int t = 0; t < spchain.size(); t++) {
+		// 	for (int l = 0; l < spchain[t].size(); l++) {
+		// 		int sl = spchain[t].chain->ClusterNum(spchain[t][0]);
+		// 		assert(spchain[t].chain->ClusterNum(spchain[t][l]) == sl);
+		// 	}
+		// }
 		//
 		// refine between splitchain -- uncomment the next block!
 		//

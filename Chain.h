@@ -220,7 +220,7 @@ public:
 	bool OverlapsOnT (GenomePos tS, GenomePos tE, float rate);
 	void CleanSpuriousJumpingAnchors ();
 	long diag(int i) {
-		if (strand(i) == 0) { return (long) qStart(i) + (long) tStart(i);}
+		if (strand(i) == 1) { return (long) qEnd(i) + (long) tStart(i);}
 		else { return (long) tStart(i) - (long) qStart(i);}
 	}
 	
@@ -315,7 +315,8 @@ public:
 	int chromIndex;
 	UltimateChain *chain;
 	bool Strand;
-	int clusterIndex;
+	int clusterIndex; // for one refined_clusters
+	vector<int> ClusterIndex; // one splitchain can correspond to multiple ext_clusters
 	// int readlength;
 	// int offset;
 	SplitChain() {}
@@ -324,15 +325,14 @@ public:
 		sptc = sp;
 		link = lk;
 	}
-	SplitChain (vector<int> &sp, vector<bool> &lk, UltimateChain *c, bool str, int cI) : chain(c) {
+	SplitChain (vector<int> &sp, vector<bool> &lk, UltimateChain *c, bool str) : chain(c) {
 		sptc = sp;
 		link = lk;
 		Strand = str;
-		clusterIndex = cI;
 	}
-	SplitChain (int c) {
-		clusterIndex = c;
-	}
+	// SplitChain (int c) {
+	// 	clusterIndex = c;
+	// }
 	int size() const {
 		return sptc.size();
 	}

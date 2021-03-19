@@ -248,7 +248,13 @@ SPLITChain(Read &read, UltimateChain &chain, vector<SplitChain> &splitchains, ve
 
 bool push_new(Genome &genome, vector<int> &onec, vector<bool> &lk, vector<SplitChain> &splitchains, vector<bool> &splitchains_link, UltimateChain &chain, int cur) {
 
-	splitchains.push_back(SplitChain(onec, lk, &chain, chain.strand(onec[0]), chain.ClusterNum(onec[0])));
+	splitchains.push_back(SplitChain(onec, lk, &chain, chain.strand(onec[0])));
+	splitchains.back().ClusterIndex.push_back(chain.ClusterNum(onec[0]));
+	for (int c = 1; c < onec.size(); c++) {
+		if (chain.ClusterNum(onec[c]) != splitchains.back().ClusterIndex.back()) {
+			splitchains.back().ClusterIndex.push_back(chain.ClusterNum(onec[c]));
+		}
+	}
 	splitchains.back().QStart = chain.qStart(onec.back()); splitchains.back().QEnd = chain.qEnd(onec[0]);
 	if (chain.strand(onec[0]) == 0) {
 		splitchains.back().TStart = chain.tStart(onec.back()); splitchains.back().TEnd = chain.tEnd(onec[0]);
@@ -308,6 +314,7 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 		else if (chain.strand(cur) == chain.strand(prev) and dist != 0) { // Missing INV and TRA
 			if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
 				splitchains_link.push_back(0);
+// cerr << "dist:" << dist << " diag: " << chain.diag(cur) - chain.diag(prev)<< "  im: " << im << endl;
 			}			
 		}
 		else {

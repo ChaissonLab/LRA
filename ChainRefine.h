@@ -45,18 +45,20 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		// NOTICE: Remember to add chromOffset back in refinedclusters
 		//
 		GenomePos chromOffset = genome.header.pos[splitchains[ph].chromIndex];
-		for (int m = 0; m < clusters[splitchains[ph].clusterIndex].matches.size(); m++) {
-			clusters[splitchains[ph].clusterIndex].matches[m].second.pos -= chromOffset;
+		for (int c = 0; c < splitchains[ph].ClusterIndex.size(); c++) {
+			int cI = splitchains[ph].ClusterIndex[c];
+			for (int m = 0; m < clusters[cI].matches.size(); m++) {
+				clusters[cI].matches[m].second.pos -= chromOffset;
+			}	
+
+			if (clusters[cI].flip == 0 and clusters[cI].strand == 1) {
+				SwapStrand(read, opts, clusters[cI]);
+				clusters[cI].flip = 1;
+			}					
 		}
+
 		GenomePos GenomeClusterEnd = splitchains[ph].TEnd;
 		GenomePos chromEndOffset = genome.header.GetNextOffset(GenomeClusterEnd);
-		// splitchains[ph].offset = chromOffset;
-		// splitchains[ph].readlength = read.length;
-
-		if (clusters[splitchains[ph].clusterIndex].flip == 0 and clusters[splitchains[ph].clusterIndex].strand == 1) {
-			SwapStrand(read, opts, clusters[splitchains[ph].clusterIndex]);
-			clusters[splitchains[ph].clusterIndex].flip = 1;
-		}
 
 		int64_t maxDN, minDN;
 		maxDN = (int64_t) splitchains[ph].tStart(0) - (int64_t) splitchains[ph].qStart(0); // trans_ takes care of reverse strand and offset
