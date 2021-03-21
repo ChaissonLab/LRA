@@ -191,10 +191,7 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		if (splitchains[ph].size() == 0) continue;
 		refinedclusters[ph].chromIndex = splitchains[ph].chromIndex;
 		refinedclusters[ph].refined = 1;
-
-		// splitchains[ph].sptc.push_back(chain.size() - 1); // the last one is dummy
-		// clusters.back().strand = splitchains[ph].Strand; // the last one is dummy
-
+		//
 		// Make the anchors reference this chromosome for easier bookkeeping 
 		// NOTICE: Remember to add chromOffset back in refinedclusters
 		//
@@ -221,8 +218,8 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 			maxDN = max(maxDN, (int64_t) splitchains[ph].tStart(db) - (int64_t) splitchains[ph].qStart(db));
 			minDN = min(minDN, (int64_t) splitchains[ph].tStart(db) - (int64_t) splitchains[ph].qStart(db));
 		}						
-		refinedclusters[ph].maxDiagNum = maxDN + 20; //20
-		refinedclusters[ph].minDiagNum = minDN - 20;//20
+		refinedclusters[ph].maxDiagNum = maxDN + 50; //20
+		refinedclusters[ph].minDiagNum = minDN - 50;//20
 		//
 		// Get shorthand access to alignment boundaries.
 		//
@@ -319,9 +316,6 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		refinedclusters[ph].refinespace = 0;
 		refinedclusters[ph].refineEffiency = ((float) refinedclusters[ph].matches.size()) / min(refinedclusters[ph].qEnd - 
 											refinedclusters[ph].qStart, refinedclusters[ph].tEnd - refinedclusters[ph].tStart);
-		// // remove dummy 
-		// splitchains[ph].sptc.pop_back();
-		
 	}
 	return 0;
 }
@@ -339,7 +333,6 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 	bool twoblocks = 0; // twoblocks = 1 when INV happens (need to refine the end of INV)
 	GenomePos SpaceLength;
 	while (c < splitchains.size()) {
-		cerr << c << endl;
 		int cur = c; 
 		int prev = c - 1;
 		//
@@ -401,7 +394,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 		// }
 		if (te1 <= ts1) {c++; continue;}
 		SpaceLength = min(qe - qs, te1 - ts1); 
-		if (twoblocks) {cerr << "refinetwoblocks " << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;}
+		// if (twoblocks) {cerr << "refinetwoblocks " << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;}
 		if (SpaceLength <= opts.refineSpaceDist and RefinedClusters[cur].chromIndex == RefinedClusters[prev].chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
 			if (RefineBtwnSpace_AppendCloseCluster(RevBtwnCluster, twoblocks, &RefinedClusters[cur], &RefinedClusters[prev], opts, genome, read, strands, qe, qs, te1, ts1, st1)) {
 				tracerev.push_back(make_tuple(0, c, RevBtwnCluster.size() - 1)); // Insert a rev cluster
@@ -410,7 +403,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 		if (twoblocks) {
 			if (te2 <= ts2) {c++; continue;}
 			SpaceLength = min(qe - qs, te2 - ts2); 
-			if (twoblocks) {cerr << "refinetwoblocks " << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;}
+			// if (twoblocks) {cerr << "refinetwoblocks " << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;}
 			if (SpaceLength <= opts.refineSpaceDist and RefinedClusters[cur].chromIndex == RefinedClusters[prev].chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
 				RefineBtwnSpace(RevBtwnCluster, twoblocks, &RefinedClusters[prev], opts, genome, read, strands, qe, qs, te2, ts2, st2);
 			}				

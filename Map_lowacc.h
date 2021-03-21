@@ -38,7 +38,7 @@ void RemoveSpuriousSplitChain(vector<SplitChain> &chains, vector<bool> &spchain_
 	vector<bool> remove(chains.size(), 0);
 	for (int i = 0; i < chains.size(); i++) {
 		if (chains[i].size() < 3) {
-			remove[i] == 1;
+			remove[i] = 1;
 		}
 	}
 	int c = 0;
@@ -50,7 +50,8 @@ void RemoveSpuriousSplitChain(vector<SplitChain> &chains, vector<bool> &spchain_
 		}
 	}
 	chains.resize(c);
-	spchain_link.resize(c - 1);
+	if (c > 1) spchain_link.resize(c - 1);
+	else spchain_link.clear();
 	return;
 
 }
@@ -257,6 +258,10 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		vector<SplitChain> spchain; vector<bool> spchain_link;
 		SPLITChain(genome, read, chains[p], spchain, spchain_link, opts);
 		RemoveSpuriousSplitChain(spchain, spchain_link); // remove spurious splitchain of <= 3 anchors
+		if (spchain.size() == 0) {
+			read.unaligned = 1; output_unaligned(read, opts, *output);
+			return 0;
+		} 	
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream clust("Initial_splitchain.tab", ofstream::app);
 			for (int s= 0; s < spchain.size(); s++) {
@@ -344,7 +349,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		spcluster.link = spchain_link;
 		for (int t = 0; t < spchain.size(); t++) { spcluster.sptc[t] = spchain[t].clusterIndex;}
 		assert(spcluster.sptc.size() == spcluster.link.size() + 1);
-		// spchain.clear(); spchain_link.clear();
+		spchain.clear(); spchain_link.clear();
 
 		int a = refined_clusters.size();
 		vector<Cluster *> Refined_Clusters(a);
@@ -398,15 +403,15 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		int overlap = 0;
 		vector<Cluster> extend_clusters;
 		extend_clusters.resize(merge_spcluster.size());
-		for (int r = 0; r < Refined_Clusters.size(); r++) {
-			if (Refined_Clusters[r]->strand == 1) {
-				SwapStrand(read, opts, (*Refined_Clusters[r])); // LinearExtend is only for forward direction, so need to flip the reversed strand
-				Refined_Clusters[r]->flip = 1;
-			}
-			else {
-				Refined_Clusters[r]->flip = 0;
-			}
-		}
+		// for (int r = 0; r < Refined_Clusters.size(); r++) {
+		// 	if (Refined_Clusters[r]->strand == 1) {
+		// 		SwapStrand(read, opts, (*Refined_Clusters[r])); // LinearExtend is only for forward direction, so need to flip the reversed strand
+		// 		Refined_Clusters[r]->flip = 1;
+		// 	}
+		// 	else {
+		// 		Refined_Clusters[r]->flip = 0;
+		// 	}
+		// }
 		for (int r = 0; r < mergeinfo.size(); r++) {
 			bool st; int chromIndex; float anchorfreq;
 			assert(mergeinfo[r].merged_clusterIndex.size() > 0);
@@ -420,20 +425,12 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					smallOpts, genome, read, chromIndex, st, 0);
 			}
 			DecideCoordinates(extend_clusters[r], st, chromIndex, anchorfreq);
-			if (st == 1) {
-				assert(Refined_Clusters[cI]->flip == 1);
-				SwapStrand(read, opts, extend_clusters[r]);
-			}
+			// if (st == 1) {
+			// 	assert(Refined_Clusters[cI]->flip == 1);
+			// 	SwapStrand(read, opts, extend_clusters[r]);
+			// }
 		}
 		TrimOverlappedAnchors(extend_clusters, 0);
-
-		// //
-		// // Linear extend matches 
-		// //
-		// int overlap = 0;
-		// vector<Cluster> extend_clusters;
-		// extend_clusters.resize(spcluster.size());
-		// LinearExtend_chain(spcluster.sptc, extend_clusters, Refined_Clusters, smallOpts, genome, read, 0, overlap, 0);
 
 		int SizeRefinedClusters = 0, SizeExtendClusters = 0;
 		for (int r = 0; r < Refined_Clusters.size(); r++) {
@@ -476,9 +473,9 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			}
 			Eclust.close();
 		}	
-		// Refined_Clusters.clear();
-		// refined_clusters.clear();
-		// RevBtwnCluster.clear();
+		Refined_Clusters.clear();
+		refined_clusters.clear();
+		RevBtwnCluster.clear();
 		//
 		// SDP on clusters
 		//
@@ -489,13 +486,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			RemovePairedIndels<UltimateChain>(ultimatechains[t]); 
 			// ultimatechains[t].CleanSpurious();
 		}
-		// vector<UltimateChain> ultimatechains(spcluster.size());
-		// for (int t = 0; t < spcluster.size(); t++) {
-		// 	ultimatechains[t].clusters = &extend_clusters;
-		// 	SparseDP(spcluster[t], extend_clusters, ultimatechains[t], opts, LookUpTable, read);
-		// 	RemovePairedIndels<UltimateChain>(ultimatechains[t]); 
-		// 	// ultimatechains[t].CleanSpurious();
-		// }
+
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream Rclust("Refined_SparseDP.tab", ofstream::app);
 			for (int t = 0; t < ultimatechains.size(); t++) {
@@ -527,8 +518,6 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 
 
 		alignments.resize(alignments.size() + 1); 
-		// vector<SplitChain> sp_ulchain; vector<bool> sp_ulink; vector<pair<GenomePos, GenomePos>> sp_ulpos;
-		// SPLITChain(read, ultimatechain, sp_ulchain, sp_ulink, sp_ulpos, opts);
 		int LSC = LargestUltimateChain(ultimatechains);
 		LocalRefineAlignment(ultimatechains, extend_clusters, alignments, smallOpts, LookUpTable, read, strands, p, genome, LSC, tinyOpts, buff, svsigstrm);
 		if (alignments.back().SegAlignment.size() == 0) {

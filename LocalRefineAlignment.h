@@ -35,10 +35,11 @@
 // This function seperates finalchain by different strands; 
 //
 void 
-debug_alignment (Alignment *alignment) {
+debug_alignment (Alignment *alignment, int &readlength) {
 	// This is for debugging
 	if (alignment->blocks.size() > 1) {
 		int last=alignment->blocks.size();
+		assert(alignment->blocks[last-2].qPos < readlength);
 		assert(alignment->blocks[last-2].qPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].qPos);
 		assert(alignment->blocks[last-2].tPos + alignment->blocks[last-2].length <= alignment->blocks[last-1].tPos);
 	}	
@@ -508,8 +509,11 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 							const vector<float> & LookUpTable, bool &inversion, bool &breakalignment, ostream *svsigstrm) {
 
 	if (str == 0) alignment->blocks.push_back(Block(chain[cur].first.pos, chain[cur].second.pos, chain.length(cur)));
-	else alignment->blocks.push_back(Block(read.length - chain[cur].first.pos - chain.length(cur), chain[cur].second.pos, chain.length(cur)));
-	debug_alignment(alignment);
+	else {
+		assert(chain[cur].first.pos + chain.length(cur) <= read.length);
+		alignment->blocks.push_back(Block(read.length - chain[cur].first.pos - chain.length(cur), chain[cur].second.pos, chain.length(cur)));
+	}
+	debug_alignment(alignment, read.length);
 	//
 	// Refine the alignment in the space between two adjacent anchors;
 	//
@@ -527,6 +531,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 		nextGenomeStart = chain[next].second.pos;
 	}
 	assert(curReadEnd <= nextReadStart);
+	assert(nextReadStart <= read.length);
 	
 	if (curGenomeEnd <= nextGenomeStart) {
 		long read_dist = nextReadStart - curReadEnd;
@@ -766,7 +771,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 
 					alignments.back().SegAlignment.back()->blocks.push_back(Block(ExtendBtwnPairs[BtwnChain[btc]].first.pos, ExtendBtwnPairs[BtwnChain[btc]].second.pos, 
 														ExtendBtwnPairsMatchesLength[BtwnChain[btc]]));
-					debug_alignment(alignments.back().SegAlignment.back());
+					debug_alignment(alignments.back().SegAlignment.back(), read.length);
 					btc_curReadEnd = btc_nextReadStart + ExtendBtwnPairsMatchesLength[BtwnChain[btc]];
 					btc_curGenomeEnd = btc_nextGenomeStart + ExtendBtwnPairsMatchesLength[BtwnChain[btc]];			
 				}
@@ -937,6 +942,7 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 		}
 		// debug checking
 		for (int bb = 1; bb < alignments.back().SegAlignment.back()->blocks.size(); bb++) {
+			assert(alignments.back().SegAlignment.back()->blocks[bb-1].qPos < read.length);
 			assert(alignments.back().SegAlignment.back()->blocks[bb-1].qPos + alignments.back().SegAlignment.back()->blocks[bb-1].length 
 					<= alignments.back().SegAlignment.back()->blocks[bb].qPos);
 			assert(alignments.back().SegAlignment.back()->blocks[bb-1].tPos + alignments.back().SegAlignment.back()->blocks[bb-1].length 
@@ -1072,7 +1078,7 @@ void RefindEnds(GenomePos &qPos, int cur, UltimateChain &chain, bool str, Alignm
 			btc_nextReadStart = ExtendEndPairs[EndChain[btc]].first.pos;
 			RefineByLinearAlignment(btc_curReadEnd, btc_curGenomeEnd, btc_nextReadStart, btc_nextGenomeStart, str, chromIndex, alignment, read, genome, strands, scoreMat, pathMat, opts, buff);					
 			alignment->blocks.push_back(Block(ExtendEndPairs[EndChain[btc]].first.pos, ExtendEndPairs[EndChain[btc]].second.pos, ExtendEndPairsMatchesLength[EndChain[btc]]));
-			debug_alignment(alignment);
+			debug_alignment(alignment, read.length);
 			btc_curReadEnd = btc_nextReadStart + ExtendEndPairsMatchesLength[EndChain[btc]];
 			btc_curGenomeEnd = btc_nextGenomeStart + ExtendEndPairsMatchesLength[EndChain[btc]];			
 		}
@@ -1189,6 +1195,7 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
 		}
 		// debug checking
 		for (int bb = 1; bb < alignments.back().SegAlignment.back()->blocks.size(); bb++) {
+			assert(alignments.back().SegAlignment.back()->blocks[bb-1].qPos < read.length);
 			assert(alignments.back().SegAlignment.back()->blocks[bb-1].qPos + alignments.back().SegAlignment.back()->blocks[bb-1].length 
 					<= alignments.back().SegAlignment.back()->blocks[bb].qPos);
 			assert(alignments.back().SegAlignment.back()->blocks[bb-1].tPos + alignments.back().SegAlignment.back()->blocks[bb-1].length 
