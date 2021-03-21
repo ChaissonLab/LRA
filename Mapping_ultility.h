@@ -296,7 +296,7 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 				splitchains_link.push_back(0);
 			}	
 		}
-		if (chain.tStart(cur) > chain.tEnd(prev) + opts.splitdist or chain.tEnd(cur) + opts.splitdist < chain.tStart(prev)) {// TRA
+		else if (chain.tStart(cur) > chain.tEnd(prev) + opts.splitdist or chain.tEnd(cur) + opts.splitdist < chain.tStart(prev)) {// TRA
 			if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
 				splitchains_link.push_back(0);
 			}
@@ -312,12 +312,6 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 				splitchains_link.push_back(1);
 			}				
 		}
-// 		else if (chain.strand(cur) == chain.strand(prev) and dist != 0) { // Missing INV and TRA
-// 			if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
-// 				splitchains_link.push_back(0);
-// // cerr << "dist:" << dist << " diag: " << chain.diag(cur) - chain.diag(prev)<< "  im: " << im << endl;
-// 			}			
-// 		}
 		else {
 			onec.push_back(cur);
 			lk.push_back(chain.link[im]);

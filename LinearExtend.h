@@ -99,8 +99,8 @@ CheckOverlap(GenomePair & match, Options & opts, vector<pair<GenomePos, bool>> &
 
 
 void 
-DecideCoordinates (Cluster & cluster) {
-
+DecideCoordinates (Cluster & cluster, bool strand, int chromIndex, float anchorfreq) {
+	if (cluster.matches.size() == 0) return;
 	GenomePos qStart, qEnd, tStart, tEnd;
 	qStart = cluster.matches[0].first.pos;
 	qEnd = qStart + cluster.matchesLengths[0];
@@ -117,6 +117,10 @@ DecideCoordinates (Cluster & cluster) {
 	cluster.qEnd = qEnd;
 	cluster.tStart = tStart;
 	cluster.tEnd = tEnd;
+	cluster.strand = strand;
+	cluster.chromIndex = chromIndex;
+	cluster.anchorfreq = anchorfreq;
+	return;
 }
 
 
@@ -200,35 +204,6 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 			AntiDiagonalSort<GenomeTuple>(clusters[cm]->matches, 500);
 			// AntiDiagonalSort<GenomeTuple>(clusters[cm]->matches.begin(), clusters[cm]->matches.end(), read.length);
 		}
-
-		/*
-		if (opts.dotPlot) {
-			ofstream clust("RefinedClusters-sorted.tab");
-
-
-			for (int h = 0; h < clusters[cm]->matches.size(); h++) {
-
-				if (clusters[cm]->strand == 0) {
-					clust << clusters[cm]->matches[h].first.pos << "\t"
-						  << clusters[cm]->matches[h].second.pos << "\t"
-						  << clusters[cm]->matches[h].first.pos + opts.globalK << "\t"
-						  << clusters[cm]->matches[h].second.pos + opts.globalK << "\t"
-						  << c << "\t"
-						  << clusters[cm]->strand << endl;
-				}
-				else {
-					clust << clusters[cm]->matches[h].first.pos << "\t"
-						  << clusters[cm]->matches[h].second.pos + opts.globalK << "\t"
-						  << clusters[cm]->matches[h].first.pos + opts.globalK << "\t"
-						  << clusters[cm]->matches[h].second.pos<< "\t"
-						  << c << "\t"
-						  << clusters[cm]->strand << endl;					
-				}
-			}
-			clust.close();
-		}	
-		*/
-
 		//
 		// Linear Extension;
 		// NOTICE: anchors in "clusters[cm]" have the same strand;
@@ -356,14 +331,232 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 			extCluster[c + start].overlap.push_back(0);
 		}
 
-		extCluster[c + start].strand = clusters[cm]->strand;
-		DecideCoordinates(extCluster[c + start]);
+		// extCluster[c + start].strand = clusters[cm]->strand;
+		// extCluster[c + start].chromIndex = clusters[cm]->chromIndex;
+		// extCluster[c + start].anchorfreq = clusters[cm]->anchorfreq;
+		DecideCoordinates(extCluster[c + start], clusters[cm]->strand, clusters[cm]->chromIndex, clusters[cm]->anchorfreq);
 		//cerr <<"c: " << c << "   mat:" << mat << endl;
 		assert(clusters[cm]->matches.size() >= extCluster[c + start].matches.size());
 		assert(extCluster[c + start].matches.size() == extCluster[c + start].overlap.size());
 	}
 }
 
+// //
+// // This function implements linear extension for each Cluster on the chain;
+// // NOTE: The extension for anchors should avoid overlapping;
+// //
+// template<typename Tup>
+// void
+// LinearExtend_MergedCluster(vector<Merge_SplitChain> &mergeinfo, vector<Cluster*> clusters, vector<Cluster> & extCluster, Options & opts, Genome & genome, Read & read, 
+// 			int start, int &overlap, bool skiprepetitive) {
+
+// 	vector<pair<GenomePos, bool>> Set;
+// 	int next, prev;
+// 	for (int c = 0; c < mergeinfo.size(); c++) {
+// 		int mat = 0;
+// 		int cm = mergeinfo[c][m];
+// 		int f = mergeinfo[c].back();
+// 		int l = mergeinfo[c][0];
+// 		// if (clusters[cm]->matches.size() == 0) continue;
+
+// 		Set.clear();
+// 		prev = c - 1;
+// 		next = c + 1;
+// 		GenomePos qsb = mergeinfo[c].qStart; 
+// 		GenomePos qeb = mergeinfo[c].qEnd;
+// 		GenomePos tsb = mergeinfo[c].tStart;
+// 		GenomePos teb = mergeinfo[c].tEnd;
+// 		//
+// 		// Compute the ChromIndex for cluster
+// 		//
+// 		extCluster[c + start].chromIndex = clusters[l]->chromIndex;
+		
+// 		//
+// 		// Check the previous Cluster to get the overlapping points;
+// 		//			
+// 		GenomePos q1, q2, t1, t2;
+// 		if (prev != -1) {
+// 			q1 = mergeinfo[prev].qStart;
+// 			q2 = mergeinfo[prev].qEnd;
+// 			if (q1 > qsb and q1 < qeb) Set.push_back(make_pair(q1, 0)); 
+// 			if (q2 > qsb and q2 < qeb) Set.push_back(make_pair(q2, 0));
+
+// 			t1 = mergeinfo[prev].tStart;
+// 			t2 = mergeinfo[prev].tEnd;
+// 			if (t1 > tsb and t1 < teb) Set.push_back(make_pair(t1, 1)); 
+// 			if (t2 > tsb and t2 < teb) Set.push_back(make_pair(t2, 1)); 
+// 		} 
+
+// 		//
+// 		// Check the next Cluster to get the overlapping points;
+// 		//
+// 		if (next < chain.size()) {
+// 			q1 = mergeinfo[cur].qStart;
+// 			q2 = clusters[chain[next]]->qEnd;
+// 			if (q1 > qsb and q1 < qeb) Set.push_back(make_pair(q1, 0)); 
+// 			if (q2 > qsb and q2 < qeb) Set.push_back(make_pair(q2, 0));
+
+// 			t1 = clusters[chain[next]]->tStart;
+// 			t2 = clusters[chain[next]]->tEnd;
+// 			if (t1 > tsb and t1 < teb) Set.push_back(make_pair(t1, 1)); 
+// 			if (t2 > tsb and t2 < teb) Set.push_back(make_pair(t2, 1)); 			
+// 		}
+
+// 		for (int m = 0; m < mergeinfo[c].size(); m++) {
+// 			int cm = mergeinfo[c][m];
+// 			extCluster[c + start].anchorfreq = clusters[cm]->anchorfreq;
+
+// 			//
+// 			// Sort each Cluster
+// 			// NOTICE: if the current Cluster get more anchors in the btwn space or end space, we need to sort them. Otherwise we do not sort them;
+// 			//// TODO(Jingwen): Check whether do we need to sort for every Cluster!!!!!!!!!!!!!!!
+// 			//
+			
+// 			if (clusters[cm]->strand == 0) { 
+// 				//if (clusters[cm]->refinespace == 1) DiagonalSort<GenomeTuple>(clusters[cm]->matches.begin(), clusters[cm]->matches.end());
+// 				DiagonalSort<GenomeTuple>(clusters[cm]->matches, 500);
+// 				// DiagonalSort<GenomeTuple>(clusters[cm]->matches.begin(), clusters[cm]->matches.end());
+// 			}
+// 			else {
+// 				//if (clusters[cm]->refinespace == 1) AntiDiagonalSort<GenomeTuple>(clusters[cm]->matches.begin(), clusters[cm]->matches.end());
+// 				AntiDiagonalSort<GenomeTuple>(clusters[cm]->matches, 500);
+// 				// AntiDiagonalSort<GenomeTuple>(clusters[cm]->matches.begin(), clusters[cm]->matches.end(), read.length);
+// 			}
+// 			//
+// 			// Linear Extension;
+// 			// NOTICE: anchors in "clusters[cm]" have the same strand;
+// 			//
+// 			int n = 1;
+// 			int m = 0;
+// 			bool chm = 1; // chm == 1 means we need to check whether m overlaps with "Set";
+// 			while (n < clusters[cm]->matches.size()) {
+// 				//
+// 				// Check whether clusters[cm]->matches[m] overlaps with "Set";
+// 				//
+// 				bool Ovp = 0;
+// 				if (chm == 1) {
+// 					CheckOverlap(clusters[cm]->matches[m], opts, Set, Ovp);
+
+// 					if (Ovp == 1) {
+// 						extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[m].second.pos)));
+// 						extCluster[c + start].matchesLengths.push_back(opts.globalK);	
+// 						extCluster[c + start].overlap.push_back(1);
+// 						overlap++;
+// 						// cerr << "1: " << extCluster[c + start].matches.size() - 1 << " " << clusters[cm]->matches[m].first.pos << " " << clusters[cm]->matches[m].second.pos << endl;
+// 						m = n;
+// 						n++;		
+// 						chm = 1;
+// 						continue;	
+// 					}
+// 					else chm = 0;
+// 				}
+
+// 				//
+// 				// Check whether clusters[cm]->matches[n] overlaps with "Set";
+// 				//
+// 				Ovp = 0;
+// 				CheckOverlap(clusters[cm]->matches[n], opts, Set, Ovp);
+				
+// 				if (Ovp == 1) { // clusters[cm]->matches[n] overlaps with "Set";
+// 					if (clusters[cm]->strand == 0) {
+// 						extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[m].second.pos)));					
+// 					}
+// 					else {
+// 						extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[n-1].second.pos)));	
+// 						// cerr << "2: " << extCluster[c + start].matches.size() - 1 << " " << clusters[cm]->matches[m].first.pos << " " << clusters[cm]->matches[n-1].second.pos << endl;
+// 					}
+// 					extCluster[c + start].matchesLengths.push_back(clusters[cm]->matches[n-1].first.pos + opts.globalK - clusters[cm]->matches[m].first.pos);
+// 					extCluster[c + start].overlap.push_back(0);
+// 					extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[n].first.pos), GenomeTuple(0, clusters[cm]->matches[n].second.pos)));
+// 					extCluster[c + start].matchesLengths.push_back(opts.globalK);
+// 					extCluster[c + start].overlap.push_back(1);
+// 					overlap++;
+// 					// cerr << "3: " << extCluster[c + start].matches.size() - 1 << " " << clusters[cm]->matches[n].first.pos << " " << clusters[cm]->matches[n].second.pos << endl;
+// 					m = n + 1;
+// 					n = m + 1;
+// 					chm = 1;
+// 					continue;
+// 				}
+
+// 				//
+// 				// clusters[cm]->matches[n] does not overlap with "Set";
+// 				//
+// 				int64_t curDiag, nextDiag;
+// 				if (clusters[cm]->strand == 0) {
+// 					curDiag = (int64_t) clusters[cm]->matches[n-1].first.pos - (int64_t) clusters[cm]->matches[n-1].second.pos;
+// 					nextDiag = (int64_t) clusters[cm]->matches[n].first.pos - (int64_t) clusters[cm]->matches[n].second.pos;
+// 				}
+// 				else {
+// 					curDiag = (int64_t) clusters[cm]->matches[n-1].first.pos + (int64_t) clusters[cm]->matches[n-1].second.pos;
+// 					nextDiag = (int64_t) clusters[cm]->matches[n].first.pos + (int64_t) clusters[cm]->matches[n].second.pos;			
+// 				}
+
+// 				if (curDiag == nextDiag) { // those two anchors are on the same diagonal
+
+// 					if (clusters[cm]->matches[n].first.pos < clusters[cm]->matches[n-1].first.pos + opts.globalK) { // anchor n-1 and anchor n are overlapped
+// 						n++;
+// 					}
+// 					else { //  anchor n-1 and anchor n are not overlapped; Need to extend after anchor n-1
+// 						GenomePos qe, te;
+// 						Checkbp(clusters[cm]->matches[n-1], clusters[cm]->matches[n], genome, read, clusters[cm]->chromIndex, qe, te, clusters[cm]->strand, opts, mat);
+// 						if (clusters[cm]->strand == 0 and qe == clusters[cm]->matches[n].first.pos and te == clusters[cm]->matches[n].second.pos) {
+// 							n++;
+// 						}
+// 						else if (clusters[cm]->strand == 1 and qe == clusters[cm]->matches[n].first.pos and te == clusters[cm]->matches[n].second.pos + opts.globalK - 1) {
+// 							n++;
+// 						}
+// 						else {
+// 							if (clusters[cm]->strand == 0) {
+// 								extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[m].second.pos)));
+// 							}
+// 							else {
+// 								extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, te + 1)));
+// 								// cerr << "4: " << extCluster[c + start].matches.size() - 1 << " " << clusters[cm]->matches[m].first.pos << " " << te + 1 << endl;
+
+// 							}
+// 							extCluster[c + start].matchesLengths.push_back(qe - clusters[cm]->matches[m].first.pos);
+// 							extCluster[c + start].overlap.push_back(0);
+// 							m = n;
+// 							n++;
+// 						}
+// 					}
+// 				}
+// 				else {
+// 					if (clusters[cm]->strand == 0) {
+// 						extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[m].second.pos)));					
+// 					}
+// 					else {
+// 						extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[n-1].second.pos)));
+// 						// cerr << "5: " << extCluster[c + start].matches.size() - 1 << " " << clusters[cm]->matches[m].first.pos << " " << clusters[cm]->matches[n-1].second.pos << endl;
+// 					}
+// 					extCluster[c + start].matchesLengths.push_back(clusters[cm]->matches[n-1].first.pos + opts.globalK - clusters[cm]->matches[m].first.pos);
+// 					extCluster[c + start].overlap.push_back(0);
+// 					m = n;
+// 					n++;
+// 				}
+// 				chm = 0;	
+// 			}
+
+// 			if (n == clusters[cm]->matches.size()) { // and m != n-1
+// 				if (clusters[cm]->strand == 0) {
+// 					extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[m].second.pos)));
+// 				}
+// 				else {
+// 					extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[n-1].second.pos)));
+// 					// cerr << "6: " << extCluster[c + start].matches.size() - 1 << " " << clusters[cm]->matches[m].first.pos << " " << clusters[cm]->matches[n-1].second.pos << endl;
+// 				}
+// 				extCluster[c + start].matchesLengths.push_back(clusters[cm]->matches[n-1].first.pos + opts.globalK - clusters[cm]->matches[m].first.pos);
+// 				extCluster[c + start].overlap.push_back(0);
+// 			}
+
+// 			extCluster[c + start].strand = clusters[cm]->strand;
+// 			DecideCoordinates(extCluster[c + start]);
+// 			//cerr <<"c: " << c << "   mat:" << mat << endl;
+// 			assert(clusters[cm]->matches.size() >= extCluster[c + start].matches.size());
+// 			assert(extCluster[c + start].matches.size() == extCluster[c + start].overlap.size());
+// 		}
+// 	}
+// }
 
 //
 // This function trim overlapped long anchors.
@@ -452,8 +645,8 @@ TrimOverlappedAnchors(vector<Cluster> & extCluster, int start) {
 // Input: GenomePairs pairs; Output: GenomePairs ExtendPairs; vector<int> ExtendPairsMatchesLength;
 // NOTE: Only forward strand;
 //
-void LinearExtend(GenomePairs * pairs, GenomePairs & Extendpairs, vector<int> &ExtendpairsMatchesLength, Options &opts, 
-				Genome &genome, Read &read, int &chromIndex, bool strand, bool skipsorting) {
+void LinearExtend(GenomePairs * pairs, GenomePairs &Extendpairs, vector<int> &ExtendpairsMatchesLength, Options &opts, 
+				Genome &genome, Read &read, int chromIndex, bool strand, bool skipsorting) {
 	//
 	// Sort each Cluster
 	//

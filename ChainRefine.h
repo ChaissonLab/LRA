@@ -22,6 +22,153 @@
 #include <climits>
 
 //
+// This function find anchors btwn two adjacent Clusters;
+//
+int 			
+RefineBtwnSpace_AppendCloseCluster (vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluster, Cluster *prevcluster, Options &opts, Genome &genome, Read &read, char *strands[2], GenomePos qe, GenomePos qs, 
+				GenomePos te, GenomePos ts, bool st, GenomePos lrts=0, GenomePos lrlength=0) {
+
+	int ChromIndex = cluster->chromIndex;
+	if (st == 1) { 	// If st == 1, then we need to flip this Cluster, since the following code of fining matches requiers that;
+		GenomePos t = qs;
+		qs = read.length - qe;
+		qe = read.length - t;
+	}
+	//
+	// Find matches in read and reference 
+	//
+	GenomePairs EndPairs;
+	RefineSpace(300, 1, EndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, st, lrts, lrlength);
+	float eff = ((float) EndPairs.size()) / min(qe - qs, te - ts);
+	// if (twoblocks) cerr << "refineEffiency: " << eff << " original: " << cluster->refineEffiency << endl;
+	if ((EndPairs.size() > 0 and twoblocks) or (EndPairs.size() > 0 and eff >= opts.anchorstoosparse * 2)) {
+		cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
+		cluster->SetClusterBoundariesFromMatches(opts);
+		cluster->refinespace = 1;
+		return 0;
+	}
+	
+	// if (EndPairs.size() > 0 and twoblocks) {
+	// 	cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
+	// 	cluster->SetClusterBoundariesFromMatches(opts);
+	// 	cluster->refinespace = 1;
+	// 	return 0;
+	// }
+	// else if (EndPairs.size() > 0 and eff >= opts.anchorstoosparse * 2 and cluster->strand == prevcluster->strand) { // check if the EndPairs is close to the current cluster, otherwise append to the previous
+	// 	CartesianSort(EndPairs);
+	// 	int start = 0, end = 1;
+	// 	while (end < EndPairs.size() and minGapDifference(EndPairs[start], EndPairs[end]) <= 1000) {
+	// 		end++;
+	// 	}
+	// 	if (end == EndPairs.size()) { // judge which cluster should EndPairs belong to
+	// 		GenomePos qStart = EndPairs[0].first.pos,  qEnd = qStart + opts.globalK,
+	// 				  tStart = EndPairs[0].second.pos, tEnd = tStart + opts.globalK;
+	// 		for (int i = 1; i < EndPairs.size(); i++) {
+	// 			tEnd = max(tEnd, EndPairs[i].second.pos + opts.globalK);
+	// 			tStart = min(tStart, EndPairs[i].second.pos);
+	// 			qEnd = max(qEnd, EndPairs[i].first.pos + opts.globalK);
+	// 			qStart = min(qStart, EndPairs[i].first.pos);
+	// 		}
+	// 		int qdist = 0, tdist = 0, dist_cur = 0, dist_prev;
+	// 		qdist = (qStart >= cluster->qEnd) ? qStart - cluster->qEnd : 0;
+	// 		if (st == 0) tdist = (tStart >= cluster->tEnd) ? tStart - cluster->tEnd : 0;
+	// 		else tdist = (cluster->tStart >= tEnd) ? cluster->tStart - tEnd : 0;
+	// 		dist_cur = max(qdist, tdist);
+
+	// 		qdist = (prevcluster->qStart >= qEnd) ? prevcluster->qStart - qEnd : 0;
+	// 		if (st == 0) tdist = (prevcluster->tStart >= tEnd) ? prevcluster->tStart - tEnd : 0;
+	// 		else tdist = (tStart >= prevcluster->tEnd) ? tStart - prevcluster->tEnd : 0;
+	// 		dist_prev = max(qdist, tdist);
+
+	// 		if (dist_cur <= dist_prev) {
+	// 			cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
+	// 			cluster->SetClusterBoundariesFromMatches(opts);
+	// 			// cluster->refinespace = 1;			
+	// 		}
+	// 		else {
+	// 			prevcluster->matches.insert(prevcluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
+	// 			prevcluster->SetClusterBoundariesFromMatches(opts);
+	// 			// prevcluster->refinespace = 1;			
+	// 		}
+	// 		return 0;
+	// 	}
+	// 	else {
+	// 		cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.begin() + end); 
+	// 		cluster->SetClusterBoundariesFromMatches(opts);
+	// 		// cluster->refinespace = 1;	
+	// 		prevcluster->matches.insert(prevcluster->matches.end(), EndPairs.begin() + end, EndPairs.end()); 
+	// 		prevcluster->SetClusterBoundariesFromMatches(opts);
+	// 		// prevcluster->refinespace = 1;				
+	// 	}
+	// }
+	// cerr << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+
+	if (twoblocks) return 0;
+	bool rst = (st == 1? 0 : 1);
+	GenomePos t = qs;
+	qs = read.length - qe;
+	qe = read.length - t;
+	GenomePairs revEndPairs;
+	RefineSpace(300, 1, revEndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, rst, lrts, lrlength);		
+	float reff = ((float) revEndPairs.size()) / min(qe - qs, te - ts);
+	
+	// cerr << "refineEffiency: " << eff << "  reff: " <<  reff << " original: " << cluster->refineEffiency << endl;
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		ofstream clust("RevBtwnCluster.tab", std::ofstream::app);
+		for (int t = 0; t < revEndPairs.size(); t++) {
+				if (rst == 0) {
+					clust << revEndPairs[t].first.pos << "\t"
+						  << revEndPairs[t].second.pos << "\t"
+						  << revEndPairs[t].first.pos + opts.globalK << "\t"
+						  << revEndPairs[t].second.pos + opts.globalK << "\t"
+						  << rst << endl;
+				}
+				else {
+					clust << revEndPairs[t].first.pos << "\t"
+						  << revEndPairs[t].second.pos + opts.globalK << "\t"
+						  << revEndPairs[t].first.pos + opts.globalK << "\t"
+						  << revEndPairs[t].second.pos<< "\t"
+						  << rst << endl;					
+				}
+		}
+		for (int t = 0; t < EndPairs.size(); t++) {
+				if (st == 0) {
+					clust << EndPairs[t].first.pos << "\t"
+						  << EndPairs[t].second.pos << "\t"
+						  << EndPairs[t].first.pos + opts.globalK << "\t"
+						  << EndPairs[t].second.pos + opts.globalK << "\t"
+						  << st << endl;
+				}
+				else {
+					clust << EndPairs[t].first.pos << "\t"
+						  << EndPairs[t].second.pos + opts.globalK << "\t"
+						  << EndPairs[t].first.pos + opts.globalK << "\t"
+						  << EndPairs[t].second.pos<< "\t"
+						  << st << endl;					
+				}
+		}
+		clust.close();
+	}	
+	if (eff >= reff) {
+		cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
+		cluster->SetClusterBoundariesFromMatches(opts);
+		cluster->refinespace = 1;
+		cluster->anchorfreq = 1.0f;
+		return 0;
+	}
+	else{
+		cerr << "rev happens, refineEffiency: " << eff << "  reff: " <<  reff << " original: " << cluster->refineEffiency << endl;
+		cerr << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+		RevBtwnCluster.push_back(Cluster(0, 0, rst));
+		RevBtwnCluster.back().matches.insert(RevBtwnCluster.back().matches.end(), revEndPairs.begin(), revEndPairs.end()); 
+		RevBtwnCluster.back().SetClusterBoundariesFromMatches(opts);
+		RevBtwnCluster.back().refinespace = 1;
+		RevBtwnCluster.back().anchorfreq = 1.0f;
+		return 1;
+	}
+}
+
+//
 // This function refines the Clusters in chain and store refined anchors in refinedClusters
 // NOTICE: Inside this function, we need to flip reversed Cluster into forward direction to find refined matches;
 // And flip them back after the refining step;
@@ -185,7 +332,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 	bool twoblocks = 0; // twoblocks = 1 when INV happens (need to refine the end of INV)
 	GenomePos SpaceLength;
 	while (c < splitchains.size()) {
-
+		cerr << c << endl;
 		int cur = c; 
 		int prev = c - 1;
 		//
@@ -249,7 +396,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 		SpaceLength = min(qe - qs, te1 - ts1); 
 		if (twoblocks) {cerr << "refinetwoblocks " << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;}
 		if (SpaceLength <= opts.refineSpaceDist and RefinedClusters[cur].chromIndex == RefinedClusters[prev].chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
-			if (RefineBtwnSpace(RevBtwnCluster, twoblocks, &RefinedClusters[cur], opts, genome, read, strands, qe, qs, te1, ts1, st1)) {
+			if (RefineBtwnSpace_AppendCloseCluster(RevBtwnCluster, twoblocks, &RefinedClusters[cur], &RefinedClusters[prev], opts, genome, read, strands, qe, qs, te1, ts1, st1)) {
 				tracerev.push_back(make_tuple(0, c, RevBtwnCluster.size() - 1)); // Insert a rev cluster
 			}
 		}		
@@ -333,5 +480,45 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 	}
 }
 
+//
+// Merge adjacent cluster when very close on q-coordinates or t-coordinates
+// This merge cluster either on a linear chain or INS or DEL
+//
+void MergeChain(vector<Cluster *> &clusters, vector<Merge_SplitChain> &mergeinfo, SplitChain &merge_sp, SplitChain &sp) {
+	vector<int> onec;
+	onec.push_back(0);
+	GenomePos qe, qs, te, ts;	
+	int t = 1, cur = 0, prev = 0;
+	int qdist = 0; int tdist = 0;
+	while (t < sp.size()) {
+		cur = sp[t]; prev = sp[t - 1];
+		qdist = 9999; tdist = 9999;
+		if (clusters[prev]->strand == clusters[cur]->strand) {
+			qdist = (clusters[prev]->qStart > clusters[cur]->qEnd) ? (clusters[prev]->qStart - clusters[cur]->qEnd) : 0;
+			if (clusters[prev]->strand == 0) {
+				tdist = (clusters[prev]->tStart >= clusters[cur]->tEnd)? clusters[prev]->tStart - clusters[cur]->tEnd : 9999;
+			}
+			else if (clusters[prev]->strand == 1) {
+				tdist = (clusters[prev]->tEnd <= clusters[cur]->tStart)? clusters[cur]->tStart - clusters[prev]->tEnd : 9999;
+			}
+		}
+		if (qdist <= 500 and tdist <= 500) {
+			onec.push_back(cur);
+		}
+		else {
+			mergeinfo.push_back(Merge_SplitChain(onec, &clusters));
+			onec.clear();
+			onec.push_back(cur);
+		}
+		t++;
+	}
+	if (!onec.empty()) {
+		mergeinfo.push_back(Merge_SplitChain(onec, &clusters));
+	}
+	merge_sp.sptc.resize(mergeinfo.size());
+	for (int t = 0; t < mergeinfo.size(); t++) {
+		merge_sp.sptc[t] = t;
+	}
+}
 
 #endif

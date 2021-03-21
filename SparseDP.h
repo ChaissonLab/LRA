@@ -2265,10 +2265,7 @@ int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options
 //
 int SparseDP (int ClusterIndex, vector<Cluster> &FragInput, UltimateChain &ultimatechain, Options &opts, const vector<float> &LookUpTable, Read &read) {
 	if (read.unaligned) return 0;
-	if (FragInput[ClusterIndex].matches.size() == 0) {
-		read.unaligned = 1;
-		return 0;
-	}
+	if (FragInput[ClusterIndex].matches.size() == 0) return 0;
 	//
 	// get points from FragInput and store them in H1;
 	//

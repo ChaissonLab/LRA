@@ -392,5 +392,26 @@ public:
 	}
 };
 
+class Merge_SplitChain {
+public:
+	vector<Cluster *> *clusters;
+	vector<int> merged_clusterIndex;
+	GenomePos qStart, qEnd, tStart, tEnd;
+	
+	Merge_SplitChain (vector<int> &m, vector<Cluster *> * c) : merged_clusterIndex(m), clusters(c) {}
+	void Update_boundary() {
+		qStart = (*clusters)[merged_clusterIndex[0]]->qStart;
+		tStart = (*clusters)[merged_clusterIndex[0]]->tStart;
+		qEnd = (*clusters)[merged_clusterIndex[0]]->qEnd;
+		tEnd = (*clusters)[merged_clusterIndex[0]]->tEnd;
+		for (int t = 0; t < merged_clusterIndex.size(); t++) {
+		qStart = min((*clusters)[merged_clusterIndex[0]]->qStart, qStart);
+		tStart = min((*clusters)[merged_clusterIndex[0]]->tStart, tStart);
+		qEnd = max((*clusters)[merged_clusterIndex[0]]->qEnd, qEnd);
+		tEnd = max((*clusters)[merged_clusterIndex[0]]->tEnd, tEnd);			
+		}
+	} 
+};
+
 
 #endif
