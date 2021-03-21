@@ -288,6 +288,35 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		//
 		vector<Cluster> refined_clusters(spchain.size());
 		Refine_splitchain(spchain, chains[p], refined_clusters, ext_clusters, genome, read, glIndex, localIndexes, smallOpts, opts);
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+			ofstream clust("RefinedClusters.tab", std::ofstream::app);
+			for (int t = 0; t < refined_clusters.size(); t++) {
+				for (int h = 0; h < refined_clusters[t].matches.size(); h++) {
+					if (refined_clusters[t].strand  == 0) {
+						clust << refined_clusters[t].matches[h].first.pos << "\t"
+							  << refined_clusters[t].matches[h].second.pos << "\t"
+							  << refined_clusters[t].matches[h].first.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK << "\t"
+							  << t << "\t"
+							  << p << "\t"
+							  << genome.header.names[refined_clusters[t].chromIndex] <<"\t"
+							  << refined_clusters[t].strand << endl;
+					}
+					else {
+						clust << refined_clusters[t].matches[h].first.pos << "\t"
+							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].first.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].second.pos<< "\t"
+							  << t << "\t"
+							  << p << "\t"
+							  << genome.header.names[refined_clusters[t].chromIndex] <<"\t"
+							  << refined_clusters[t].strand << endl;					
+					}
+				}
+			}
+			clust.close();
+		}	
+
 		//
 		// refine between splitchain -- uncomment the next block!
 		//
@@ -328,7 +357,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			return 0;
 		}	
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-			ofstream clust("RefinedClusters.tab", std::ofstream::app);
+			ofstream clust("WholeRefinedClusters.tab", std::ofstream::app);
 			for (int t = 0; t < Refined_Clusters.size(); t++) {
 				for (int h = 0; h < Refined_Clusters[t]->matches.size(); h++) {
 					if (Refined_Clusters[t]->strand == 0) {

@@ -21,6 +21,37 @@
 #include <thread>
 #include <climits>
 
+void append_to_closetcluster(GenomePairs &matches, int start, int end, Cluster *cluster, Cluster *prevcluster, Options &opts, bool st) {
+	int dist_cur = 0, dist_prev = 0;
+	GenomePos qStart = matches[start].first.pos,  qEnd = qStart + opts.globalK,
+			  tStart = matches[start].second.pos, tEnd = tStart + opts.globalK;
+	for (int i = start + 1; i < end; i++) {
+		tEnd = max(tEnd, matches[i].second.pos + opts.globalK);
+		tStart = min(tStart, matches[i].second.pos);
+		qEnd = max(qEnd, matches[i].first.pos + opts.globalK);
+		qStart = min(qStart, matches[i].first.pos);
+	}
+	int qdist = 0, tdist = 0;
+	qdist = (qStart >= cluster->qEnd) ? qStart - cluster->qEnd : 0;
+	if (st == 0) tdist = (tStart >= cluster->tEnd) ? tStart - cluster->tEnd : 0;
+	else tdist = (cluster->tStart >= tEnd) ? cluster->tStart - tEnd : 0;
+	dist_cur = max(qdist, tdist);
+
+	qdist = (prevcluster->qStart >= qEnd) ? prevcluster->qStart - qEnd : 0;
+	if (st == 0) tdist = (prevcluster->tStart >= tEnd) ? prevcluster->tStart - tEnd : 0;
+	else tdist = (tStart >= prevcluster->tEnd) ? tStart - prevcluster->tEnd : 0;
+	dist_prev = max(qdist, tdist);
+	if (dist_cur <= dist_prev) {
+		cluster->matches.insert(cluster->matches.end(), matches.begin() + start, matches.begin() + end); 
+		cluster->SetClusterBoundariesFromMatches(opts);
+		// cluster->refinespace = 1;			
+	}
+	else {
+		prevcluster->matches.insert(prevcluster->matches.end(), matches.begin() + start, matches.begin() + end); 
+		prevcluster->SetClusterBoundariesFromMatches(opts);
+		// prevcluster->refinespace = 1;			
+	}
+}
 //
 // This function find anchors btwn two adjacent Clusters;
 //
@@ -41,131 +72,107 @@ RefineBtwnSpace_AppendCloseCluster (vector<Cluster> &RevBtwnCluster, bool twoblo
 	RefineSpace(300, 1, EndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, st, lrts, lrlength);
 	float eff = ((float) EndPairs.size()) / min(qe - qs, te - ts);
 	// if (twoblocks) cerr << "refineEffiency: " << eff << " original: " << cluster->refineEffiency << endl;
-	if ((EndPairs.size() > 0 and twoblocks) or (EndPairs.size() > 0 and eff >= opts.anchorstoosparse * 2)) {
+	//
+	// If highest pairwise dist between anchors is too large, then divide EndPairs into parts and assign to close clusters; 
+	// Else assign the whole EndPairs to close cluster
+	//
+	if (EndPairs.size() == 0) return 0;
+	if (twoblocks and eff >= opts.anchorstoosparse * 2) { // two block happends, just insert if anchors are dense
 		cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
 		cluster->SetClusterBoundariesFromMatches(opts);
 		cluster->refinespace = 1;
 		return 0;
 	}
+	if (twoblocks) return 0;
+	CartesianSort(EndPairs);
+	GenomePos max_pairdist = 0;
+	for (int e = 1; e < EndPairs.size(); e++) { max_pairdist = max(max_pairdist, EndPairs[e].first.pos - (EndPairs[e - 1].first.pos + opts.globalK));}
+	if (max_pairdist <= 100 and eff >= opts.anchorstoosparse * 2) {
+		append_to_closetcluster(EndPairs, 0, EndPairs.size(), cluster, prevcluster, opts, st);
+		// cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
+		// cluster->SetClusterBoundariesFromMatches(opts);
+		// cluster->refinespace = 1;
+		return 0;		
+	}
+	else {
+		int start = 0, end = 1;
+		while (start < EndPairs.size()) {
+			end = start + 1;
+			while (end < EndPairs.size() and minGapDifference(EndPairs[end - 1], EndPairs[end]) <= 200) {
+				end++;
+			}
+			if (end - start >= 4) {
+				append_to_closetcluster(EndPairs, start, end, cluster, prevcluster, opts, st);
+			}
+			start = end;
+		}
+		return 0;
+	}
+	//
+	// Find inversion
+	//
+	// bool rst = (st == 1? 0 : 1);
+	// GenomePos t = qs;
+	// qs = read.length - qe;
+	// qe = read.length - t;
+	// GenomePairs revEndPairs;
+	// RefineSpace(300, 1, revEndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, rst, lrts, lrlength);		
+	// float reff = ((float) revEndPairs.size()) / min(qe - qs, te - ts);
 	
-	// if (EndPairs.size() > 0 and twoblocks) {
+	// // cerr << "refineEffiency: " << eff << "  reff: " <<  reff << " original: " << cluster->refineEffiency << endl;
+	// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+	// 	ofstream clust("RevBtwnCluster.tab", std::ofstream::app);
+	// 	for (int t = 0; t < revEndPairs.size(); t++) {
+	// 			if (rst == 0) {
+	// 				clust << revEndPairs[t].first.pos << "\t"
+	// 					  << revEndPairs[t].second.pos << "\t"
+	// 					  << revEndPairs[t].first.pos + opts.globalK << "\t"
+	// 					  << revEndPairs[t].second.pos + opts.globalK << "\t"
+	// 					  << rst << endl;
+	// 			}
+	// 			else {
+	// 				clust << revEndPairs[t].first.pos << "\t"
+	// 					  << revEndPairs[t].second.pos + opts.globalK << "\t"
+	// 					  << revEndPairs[t].first.pos + opts.globalK << "\t"
+	// 					  << revEndPairs[t].second.pos<< "\t"
+	// 					  << rst << endl;					
+	// 			}
+	// 	}
+	// 	for (int t = 0; t < EndPairs.size(); t++) {
+	// 			if (st == 0) {
+	// 				clust << EndPairs[t].first.pos << "\t"
+	// 					  << EndPairs[t].second.pos << "\t"
+	// 					  << EndPairs[t].first.pos + opts.globalK << "\t"
+	// 					  << EndPairs[t].second.pos + opts.globalK << "\t"
+	// 					  << st << endl;
+	// 			}
+	// 			else {
+	// 				clust << EndPairs[t].first.pos << "\t"
+	// 					  << EndPairs[t].second.pos + opts.globalK << "\t"
+	// 					  << EndPairs[t].first.pos + opts.globalK << "\t"
+	// 					  << EndPairs[t].second.pos<< "\t"
+	// 					  << st << endl;					
+	// 			}
+	// 	}
+	// 	clust.close();
+	// }	
+	// if (eff >= reff) {
 	// 	cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
 	// 	cluster->SetClusterBoundariesFromMatches(opts);
 	// 	cluster->refinespace = 1;
+	// 	cluster->anchorfreq = 1.0f;
 	// 	return 0;
 	// }
-	// else if (EndPairs.size() > 0 and eff >= opts.anchorstoosparse * 2 and cluster->strand == prevcluster->strand) { // check if the EndPairs is close to the current cluster, otherwise append to the previous
-	// 	CartesianSort(EndPairs);
-	// 	int start = 0, end = 1;
-	// 	while (end < EndPairs.size() and minGapDifference(EndPairs[start], EndPairs[end]) <= 1000) {
-	// 		end++;
-	// 	}
-	// 	if (end == EndPairs.size()) { // judge which cluster should EndPairs belong to
-	// 		GenomePos qStart = EndPairs[0].first.pos,  qEnd = qStart + opts.globalK,
-	// 				  tStart = EndPairs[0].second.pos, tEnd = tStart + opts.globalK;
-	// 		for (int i = 1; i < EndPairs.size(); i++) {
-	// 			tEnd = max(tEnd, EndPairs[i].second.pos + opts.globalK);
-	// 			tStart = min(tStart, EndPairs[i].second.pos);
-	// 			qEnd = max(qEnd, EndPairs[i].first.pos + opts.globalK);
-	// 			qStart = min(qStart, EndPairs[i].first.pos);
-	// 		}
-	// 		int qdist = 0, tdist = 0, dist_cur = 0, dist_prev;
-	// 		qdist = (qStart >= cluster->qEnd) ? qStart - cluster->qEnd : 0;
-	// 		if (st == 0) tdist = (tStart >= cluster->tEnd) ? tStart - cluster->tEnd : 0;
-	// 		else tdist = (cluster->tStart >= tEnd) ? cluster->tStart - tEnd : 0;
-	// 		dist_cur = max(qdist, tdist);
-
-	// 		qdist = (prevcluster->qStart >= qEnd) ? prevcluster->qStart - qEnd : 0;
-	// 		if (st == 0) tdist = (prevcluster->tStart >= tEnd) ? prevcluster->tStart - tEnd : 0;
-	// 		else tdist = (tStart >= prevcluster->tEnd) ? tStart - prevcluster->tEnd : 0;
-	// 		dist_prev = max(qdist, tdist);
-
-	// 		if (dist_cur <= dist_prev) {
-	// 			cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
-	// 			cluster->SetClusterBoundariesFromMatches(opts);
-	// 			// cluster->refinespace = 1;			
-	// 		}
-	// 		else {
-	// 			prevcluster->matches.insert(prevcluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
-	// 			prevcluster->SetClusterBoundariesFromMatches(opts);
-	// 			// prevcluster->refinespace = 1;			
-	// 		}
-	// 		return 0;
-	// 	}
-	// 	else {
-	// 		cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.begin() + end); 
-	// 		cluster->SetClusterBoundariesFromMatches(opts);
-	// 		// cluster->refinespace = 1;	
-	// 		prevcluster->matches.insert(prevcluster->matches.end(), EndPairs.begin() + end, EndPairs.end()); 
-	// 		prevcluster->SetClusterBoundariesFromMatches(opts);
-	// 		// prevcluster->refinespace = 1;				
-	// 	}
+	// else{
+	// 	cerr << "rev happens, refineEffiency: " << eff << "  reff: " <<  reff << " original: " << cluster->refineEffiency << endl;
+	// 	cerr << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+	// 	RevBtwnCluster.push_back(Cluster(0, 0, rst));
+	// 	RevBtwnCluster.back().matches.insert(RevBtwnCluster.back().matches.end(), revEndPairs.begin(), revEndPairs.end()); 
+	// 	RevBtwnCluster.back().SetClusterBoundariesFromMatches(opts);
+	// 	RevBtwnCluster.back().refinespace = 1;
+	// 	RevBtwnCluster.back().anchorfreq = 1.0f;
+	// 	return 1;
 	// }
-	// cerr << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
-
-	if (twoblocks) return 0;
-	bool rst = (st == 1? 0 : 1);
-	GenomePos t = qs;
-	qs = read.length - qe;
-	qe = read.length - t;
-	GenomePairs revEndPairs;
-	RefineSpace(300, 1, revEndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, rst, lrts, lrlength);		
-	float reff = ((float) revEndPairs.size()) / min(qe - qs, te - ts);
-	
-	// cerr << "refineEffiency: " << eff << "  reff: " <<  reff << " original: " << cluster->refineEffiency << endl;
-	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-		ofstream clust("RevBtwnCluster.tab", std::ofstream::app);
-		for (int t = 0; t < revEndPairs.size(); t++) {
-				if (rst == 0) {
-					clust << revEndPairs[t].first.pos << "\t"
-						  << revEndPairs[t].second.pos << "\t"
-						  << revEndPairs[t].first.pos + opts.globalK << "\t"
-						  << revEndPairs[t].second.pos + opts.globalK << "\t"
-						  << rst << endl;
-				}
-				else {
-					clust << revEndPairs[t].first.pos << "\t"
-						  << revEndPairs[t].second.pos + opts.globalK << "\t"
-						  << revEndPairs[t].first.pos + opts.globalK << "\t"
-						  << revEndPairs[t].second.pos<< "\t"
-						  << rst << endl;					
-				}
-		}
-		for (int t = 0; t < EndPairs.size(); t++) {
-				if (st == 0) {
-					clust << EndPairs[t].first.pos << "\t"
-						  << EndPairs[t].second.pos << "\t"
-						  << EndPairs[t].first.pos + opts.globalK << "\t"
-						  << EndPairs[t].second.pos + opts.globalK << "\t"
-						  << st << endl;
-				}
-				else {
-					clust << EndPairs[t].first.pos << "\t"
-						  << EndPairs[t].second.pos + opts.globalK << "\t"
-						  << EndPairs[t].first.pos + opts.globalK << "\t"
-						  << EndPairs[t].second.pos<< "\t"
-						  << st << endl;					
-				}
-		}
-		clust.close();
-	}	
-	if (eff >= reff) {
-		cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
-		cluster->SetClusterBoundariesFromMatches(opts);
-		cluster->refinespace = 1;
-		cluster->anchorfreq = 1.0f;
-		return 0;
-	}
-	else{
-		cerr << "rev happens, refineEffiency: " << eff << "  reff: " <<  reff << " original: " << cluster->refineEffiency << endl;
-		cerr << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
-		RevBtwnCluster.push_back(Cluster(0, 0, rst));
-		RevBtwnCluster.back().matches.insert(RevBtwnCluster.back().matches.end(), revEndPairs.begin(), revEndPairs.end()); 
-		RevBtwnCluster.back().SetClusterBoundariesFromMatches(opts);
-		RevBtwnCluster.back().refinespace = 1;
-		RevBtwnCluster.back().anchorfreq = 1.0f;
-		return 1;
-	}
 }
 
 //
