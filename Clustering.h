@@ -1702,13 +1702,21 @@ void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genom
 		// sort fragments in allMatches by forward diagonal, then by first.pos(read)
 		//
 		DiagonalSort<GenomeTuple>(Matches, 500);
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+			ofstream fclust("for-matches.dots");
+			for (int m = 0; m < Matches.size(); m++) {
+				fclust << Matches[m].first.pos << "\t" << Matches[m].second.pos << "\t" << opts.globalK + Matches[m].first.pos << "\t"
+						<< Matches[m].second.pos + opts.globalK << "\t" << m << endl;
+			}
+			fclust.close();
+		}
 		vector<float> Matches_freq(Matches.size(), 1);
 		CleanOffDiagonal(genome, Matches_freq, Matches, opts, read);
 		StoreDiagonalClusters(genome, Matches_freq, Matches, clusters, opts, 0, Matches.size(), 0); 
 		timing.Tick("CleanOffDiagonal");
 
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-			ofstream fclust("for-matches.dots");
+			ofstream fclust("for-matches_clean.dots");
 			for (int m = 0; m < Matches.size(); m++) {
 				fclust << Matches[m].first.pos << "\t" << Matches[m].second.pos << "\t" << opts.globalK + Matches[m].first.pos << "\t"
 						<< Matches[m].second.pos + opts.globalK << "\t" << m << endl;
@@ -1718,13 +1726,21 @@ void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genom
 	}
 	else {
 		AntiDiagonalSort<GenomeTuple>(Matches, 500);
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+			ofstream rclust("rev-matches.dots");
+			for (int m=0; m < Matches.size(); m++) {			
+				rclust << Matches[m].first.pos << "\t" << Matches[m].second.pos + opts.globalK << "\t" << opts.globalK + Matches[m].first.pos  << "\t"
+						 << Matches[m].second.pos << "\t" << m << endl;
+			}
+			rclust.close();
+		}
 		vector<float> revMatches_freq(Matches.size(), 1);
 		CleanOffDiagonal(genome, revMatches_freq, Matches, opts, read, 1);
 		StoreDiagonalClusters(genome, revMatches_freq, Matches, clusters, opts, 0, Matches.size(), 1); 
 		timing.Tick("CleanOffDiagonal");
 		// cerr << "revroughClusters.size(): " << revroughClusters.size() << " split_revroughClusters.dots: " << split_revroughClusters.size()<< endl;
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-			ofstream rclust("rev-matches.dots");
+			ofstream rclust("rev-matches_clean.dots");
 			for (int m=0; m < Matches.size(); m++) {			
 				rclust << Matches[m].first.pos << "\t" << Matches[m].second.pos + opts.globalK << "\t" << opts.globalK + Matches[m].first.pos  << "\t"
 						 << Matches[m].second.pos << "\t" << m << endl;
