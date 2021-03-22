@@ -325,6 +325,21 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.minDiagCluster=10;
       		opts.refineSpaceDist=10000;
     	
+
+    		opts.minDiagCluster = 10;
+    		opts.cleanMaxDiag = 30;
+    		opt.RemovePairedIndels = false;
+    		opts.RemoveSpuriousAnchors = false;
+    		opts.bypassClustering = true;
+    		opts.anchor_rate = 6;
+    		opts.SecondCleanMinDiagCluster = 5;
+    		opts.punish_anchorfreq = 5;
+    		opts.anchorPerlength = 5;
+    		opts.cleanClustersize = 100;
+    		opts.SecondCleanMaxDiag = 30;
+    		opts.maxGap = 1000;
+    		opts.minClusterSize = 2;
+    		opts.anchorstoosparse = 0.02;
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;		
 			// opts.NumAln=3;
@@ -746,7 +761,12 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalW = 10;
 			opts.globalMaxFreq = 200;
 			opts.globalWinsize = 9;
-			opts.NumOfminimizersPerWindow = 1;		
+			opts.NumOfminimizersPerWindow = 1;	
+
+			opts.globalK = 12;
+			opts.globalW = 10;
+			opts.globalWinsize = 7;
+
 		}
 		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.globalK = 15;
