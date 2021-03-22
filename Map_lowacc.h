@@ -37,9 +37,12 @@ using namespace std;
 void RemoveSpuriousSplitChain(vector<SplitChain> &chains, vector<bool> &spchain_link) {
 	vector<bool> remove(chains.size(), 0);
 	for (int i = 0; i < chains.size(); i++) {
-		if (chains[i].size() < 3) {
+		if (chains[i].size() < 2) { // generally require >= 2 anchors
 			remove[i] = 1;
 		}
+		if (i > 0 and spchain_link[i - 1] == 1 and chains[i].size() < 3) { // for DUP and INV, requires more anchors
+			remove[i] == 1;
+		} 
 	}
 	int c = 0;
 	for (int i = 0; i < remove.size(); i++) {
@@ -71,16 +74,16 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		output_unaligned(read, opts, *output);
 		return 0;
 	}
-	bool NolinearCluster = true;
-	for (int s = 0; s < clusters.size(); s++) {	
-		if (clusters[s].anchorfreq <= 1.5f and clusters[s].matches.size() >= 10) {NolinearCluster = false; break;}
-	}		
-	if (NolinearCluster) {
-		read.unaligned = 1;
-		output_unaligned(read, opts, *output);
-		return 0;
-	}
-	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+	// bool NolinearCluster = true;
+	// for (int s = 0; s < clusters.size(); s++) {	
+	// 	if (clusters[s].anchorfreq <= 3.0f and clusters[s].matches.size() >= 10) {NolinearCluster = false; break;}
+	// }		
+	// if (NolinearCluster) {
+	// 	read.unaligned = 1;
+	// 	output_unaligned(read, opts, *output);
+	// 	return 0;
+	// }
+	if (opts.dotPlot) {
 		ofstream cpclust("clusters-pre-remove.tab");
 		for (int m = 0; m < clusters.size(); m++) {
 			for (int n = 0; n < clusters[m].matches.size(); n++) {
@@ -137,7 +140,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	for (int s = 0; s < clusters.size(); s++) {o += clusters[s].matches.size();}
 	for (int s = 0; s < clusters.size(); s++) {a += ext_clusters[s].matches.size();}
 	//cerr << "Linear Extend efficiency: " << (float) a/o << endl;
-	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+	if (opts.dotPlot) {
 		ofstream clust("Initial_ExtendClusters.tab", ofstream::app);
 		for (int ep = 0; ep < ext_clusters.size(); ep++) {
 			for (int eh = 0; eh < ext_clusters[ep].matches.size(); eh++) {	
@@ -187,16 +190,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		output_unaligned(read, opts, *output);
 		return 0;
 	} 		
-	for (int s = 0; s < ext_clusters.size(); s++) {	
-		// Subtract chromOffSet from t coord.
-		GenomePos chromOffset = genome.header.pos[clusters[s].chromIndex];
-		for (int m = 0; m < ext_clusters[s].matches.size(); m++) {
-			ext_clusters[s].matches[m].second.pos -= chromOffset;
-		}
-		ext_clusters[s].tStart -= chromOffset;
-		ext_clusters[s].tEnd -= chromOffset;
-	}
-	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+	if (opts.dotPlot) {
 		ofstream clust("Initial_SparseDP.tab", ofstream::app);
 		for (int s = 0; s < chains.size(); s++) {
 			for (int ep = 0; ep < chains[s].chain.size(); ep++) {
@@ -251,6 +245,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	vector<SegAlignmentGroup> alignments;
 	AlignmentsOrder alignmentsOrder(&alignments);
 	AffineAlignBuffers buff;
+
 	for (int p = 0; p < chains.size(); p++) {
 		//
 		// parse chain to splitchain (INV, DUP, TRA, Missing TRA and INV)
@@ -258,11 +253,12 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		vector<SplitChain> spchain; vector<bool> spchain_link;
 		SPLITChain(genome, read, chains[p], spchain, spchain_link, opts);
 		RemoveSpuriousSplitChain(spchain, spchain_link); // remove spurious splitchain of <= 3 anchors
-		if (spchain.size() == 0) {
+		if (p == 0 and spchain.size() == 0) {
 			read.unaligned = 1; output_unaligned(read, opts, *output);
 			return 0;
 		} 	
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		else if (p > 0 and spchain.size() == 0) break;
+		if (opts.dotPlot) {
 			ofstream clust("Initial_splitchain.tab", ofstream::app);
 			for (int s= 0; s < spchain.size(); s++) {
 			 	for (int ep= 0; ep < spchain[s].size(); ep++) {
@@ -293,7 +289,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		//
 		vector<Cluster> refined_clusters(spchain.size());
 		Refine_splitchain(spchain, chains[p], refined_clusters, ext_clusters, genome, read, glIndex, localIndexes, smallOpts, opts);
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		if (opts.dotPlot) {
 			ofstream clust("RefinedClusters.tab", std::ofstream::app);
 			for (int t = 0; t < refined_clusters.size(); t++) {
 				for (int h = 0; h < refined_clusters[t].matches.size(); h++) {
@@ -356,12 +352,13 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		//vector<Cluster *> Refined_Clusters(a + RevBtwnCluster.size());
 		for (int t = 0; t < refined_clusters.size(); t++) {Refined_Clusters[t] = &refined_clusters[t];}
 		/*for (int t = 0; t < RevBtwnCluster.size(); t++) {Refined_Clusters[a + t] = &RevBtwnCluster[t];}*/
-		if (Refined_Clusters.size() == 0) {
+		if (p == 0 and Refined_Clusters.size() == 0) {
 			read.unaligned = 1;
 			output_unaligned(read, opts, *output);
 			return 0;
 		}	
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		else if (p > 0 and Refined_Clusters.size() == 0) break;
+		if (opts.dotPlot) {
 			ofstream clust("WholeRefinedClusters.tab", std::ofstream::app);
 			for (int t = 0; t < Refined_Clusters.size(); t++) {
 				for (int h = 0; h < Refined_Clusters[t]->matches.size(); h++) {
@@ -439,13 +436,14 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		for (int ep = 0; ep < extend_clusters.size(); ep++) {
 			SizeExtendClusters += extend_clusters[ep].matches.size();
 		}	
-		if (SizeRefinedClusters == 0) {
+		if (p == 0 and SizeRefinedClusters == 0) {
 			read.unaligned = 1;
 			output_unaligned(read, opts, *output);
 			return 0;
 		}	
+		else if (p > 0 and SizeRefinedClusters == 0) break;
 
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		if (opts.dotPlot) {
 			ofstream Eclust("ExtendClusters.tab", ofstream::app);
 			for (int ep = 0; ep < extend_clusters.size(); ep++) {
 				for (int eh = 0; eh < extend_clusters[ep].matches.size(); eh++) {	
@@ -487,7 +485,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			// ultimatechains[t].CleanSpurious();
 		}
 
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		if (opts.dotPlot) {
 			ofstream Rclust("Refined_SparseDP.tab", ofstream::app);
 			for (int t = 0; t < ultimatechains.size(); t++) {
 				for (int s = 0; s < ultimatechains[t].chain.size(); s++) {
@@ -520,7 +518,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		alignments.resize(alignments.size() + 1); 
 		int LSC = LargestUltimateChain(ultimatechains);
 		LocalRefineAlignment(ultimatechains, extend_clusters, alignments, smallOpts, LookUpTable, read, strands, p, genome, LSC, tinyOpts, buff, svsigstrm);
-		if (alignments.back().SegAlignment.size() == 0) {
+		if (p == 0 and alignments.back().SegAlignment.size() == 0) {
 			read.unaligned = 1;
 			break;
 		}
@@ -530,7 +528,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		}
 		alignments.back().SetFromSegAlignment(smallOpts);
 	}
-	if (alignments.size() == 0) {
+	if (read.unaligned or alignments.size() == 0) {
 		output_unaligned(read, opts, *output);
 		return 0;
 	} 	
@@ -546,9 +544,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			delete alignments[a].SegAlignment[s];
 		}
 	}
-	if (alignments.size() > 0) {
-		return 1;
-	}
+	if (alignments.size() > 0) return 1;
 	return 0;
 	// vector<SegAlignmentGroup> alignments;
 	// AlignmentsOrder alignmentsOrder(&alignments);

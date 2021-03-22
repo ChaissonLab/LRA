@@ -198,14 +198,15 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		GenomePos chromOffset = genome.header.pos[splitchains[ph].chromIndex];
 		for (int c = 0; c < splitchains[ph].ClusterIndex.size(); c++) {
 			int cI = splitchains[ph].ClusterIndex[c];
-			for (int m = 0; m < clusters[cI].matches.size(); m++) {
-				clusters[cI].matches[m].second.pos -= chromOffset;
-			}	
-
-			if (clusters[cI].flip == 0 and clusters[cI].strand == 1) {
-				SwapStrand(read, opts, clusters[cI]);
+			if (clusters[cI].flip == 0) {
+				for (int m = 0; m < clusters[cI].matches.size(); m++) {
+					clusters[cI].matches[m].second.pos -= chromOffset;
+				}	
+				if (clusters[cI].strand == 1) {
+					SwapStrand(read, opts, clusters[cI]);
+				}	
 				clusters[cI].flip = 1;
-			}					
+			}	
 		}
 
 		GenomePos GenomeClusterEnd = splitchains[ph].TEnd;
@@ -316,6 +317,18 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		refinedclusters[ph].refinespace = 0;
 		refinedclusters[ph].refineEffiency = ((float) refinedclusters[ph].matches.size()) / min(refinedclusters[ph].qEnd - 
 											refinedclusters[ph].qStart, refinedclusters[ph].tEnd - refinedclusters[ph].tStart);
+		for (int c = 0; c < splitchains[ph].ClusterIndex.size(); c++) {
+			int cI = splitchains[ph].ClusterIndex[c];
+			if (clusters[cI].flip == 1) {
+				for (int m = 0; m < clusters[cI].matches.size(); m++) {
+					clusters[cI].matches[m].second.pos += chromOffset;
+				}	
+				if (clusters[cI].strand == 1) {
+					SwapStrand(read, opts, clusters[cI]);
+				}	
+				clusters[cI].flip = 0;
+			}	
+		}
 	}
 	return 0;
 }
@@ -338,6 +351,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 		//
 		// Decide the boudaries of space and strand direction btwn RefinedClusters[cur] and RefinedClusters[prev]
 		//
+		if (RefinedClusters[cur].matches.size() == 0 or RefinedClusters[prev].matches.size() == 0) {c++; continue;}
 		qs = RefinedClusters[cur].qEnd; qe = RefinedClusters[prev].qStart;
 		if (qe <= qs) {c++; continue;}
 		if (RefinedClusters[cur].strand == RefinedClusters[prev].strand and spchain_link[c - 1] == 0) { // Missing TRA or INV
@@ -416,67 +430,72 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 	GenomePos te, ts;
 	bool st;
 	int rh = splitchains[0].clusterIndex;
-	st = RefinedClusters[rh].strand;
-	qs = RefinedClusters[rh].qEnd;
-	qe = read.length;
-	if (st == 0) {
-		ts = RefinedClusters[rh].tEnd;
-		te = ts + qe - qs;				
+	if (RefinedClusters[rh].matches.size() > 0) {
+		st = RefinedClusters[rh].strand;
+		qs = RefinedClusters[rh].qEnd;
+		qe = read.length;
+		if (st == 0) {
+			ts = RefinedClusters[rh].tEnd;
+			te = ts + qe - qs;				
+		}
+		else {
+			te = RefinedClusters[rh].tStart;
+			if (te > qe - qs) ts = te - (qe - qs);
+			else te = 0;
+		}
+		//cerr << "right  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+		if (qe > qs and te > ts) {
+			SpaceLength = min(qe - qs, te - ts); 
+			if (SpaceLength < opts.refineSpaceDist and te + 500 < genome.lengths[RefinedClusters[rh].chromIndex]) { // used (1000, 6000)
+				GenomePos lrts=0, lrlength=0;
+				if (st==0) {
+					lrts=0;
+					lrlength=500;				
+				}
+				else {
+					if (ts>500) lrts=500;
+					lrlength=lrts;						
+				}
+				//cerr << "right: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
+				RefineBtwnSpace(RevBtwnCluster, 1, &RefinedClusters[rh], opts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
+			}			
+		}		
 	}
-	else {
-		te = RefinedClusters[rh].tStart;
-		if (te > qe - qs) ts = te - (qe - qs);
-		else te = 0;
-	}
-	//cerr << "right  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
-	if (qe > qs and te > ts) {
-		SpaceLength = min(qe - qs, te - ts); 
-		if (SpaceLength < opts.refineSpaceDist and te + 500 < genome.lengths[RefinedClusters[rh].chromIndex]) { // used (1000, 6000)
-			GenomePos lrts=0, lrlength=0;
-			if (st==0) {
-				lrts=0;
-				lrlength=500;				
-			}
-			else {
-				if (ts>500) lrts=500;
-				lrlength=lrts;						
-			}
-			//cerr << "right: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
-			RefineBtwnSpace(RevBtwnCluster, 1, &RefinedClusters[rh], opts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
-		}			
-	}
+
 	//
 	// Find matches at the left end
 	//		
 	int lh = splitchains.back().clusterIndex;
-	qs = 0;
-	qe = RefinedClusters[lh].qStart;
-	st = RefinedClusters[lh].strand;
-	if (st == 0) {
-		te = RefinedClusters[lh].tStart;
-		if (te > qe - qs) ts = te - (qe - qs);
-		else ts = 0;
-	}
-	else {
-		ts = RefinedClusters[lh].tEnd;
-		te = ts + (qe - qs);
-	}
-	//cerr << "left  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
-	if (qe > qs and te > ts) {
-		SpaceLength = min(qe - qs, te - ts);
-		if (SpaceLength < opts.refineSpaceDist and te+500 < genome.lengths[RefinedClusters[lh].chromIndex]) { // used (1000, 6000)
-			GenomePos lrts=0, lrlength=0;
-			if (st==0) { 
-				if (ts>500) lrts=500;
-				lrlength=lrts;	
-			}
-			else {
-				lrts=0;
-				lrlength=500;						
-			}
-			//cerr << "left: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
-			RefineBtwnSpace(RevBtwnCluster, 1, &RefinedClusters[lh], opts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
-		}			
+	if (RefinedClusters[lh].matches.size() > 0) {
+		qs = 0;
+		qe = RefinedClusters[lh].qStart;
+		st = RefinedClusters[lh].strand;
+		if (st == 0) {
+			te = RefinedClusters[lh].tStart;
+			if (te > qe - qs) ts = te - (qe - qs);
+			else ts = 0;
+		}
+		else {
+			ts = RefinedClusters[lh].tEnd;
+			te = ts + (qe - qs);
+		}
+		//cerr << "left  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+		if (qe > qs and te > ts) {
+			SpaceLength = min(qe - qs, te - ts);
+			if (SpaceLength < opts.refineSpaceDist and te+500 < genome.lengths[RefinedClusters[lh].chromIndex]) { // used (1000, 6000)
+				GenomePos lrts=0, lrlength=0;
+				if (st==0) { 
+					if (ts>500) lrts=500;
+					lrlength=lrts;	
+				}
+				else {
+					lrts=0;
+					lrlength=500;						
+				}
+				//cerr << "left: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
+				RefineBtwnSpace(RevBtwnCluster, 1, &RefinedClusters[lh], opts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
+			}			
+		}		
 	}
 }
 

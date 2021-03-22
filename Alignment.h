@@ -806,6 +806,7 @@ public:
 	~SegAlignmentGroup () {};
 
 	void SetFromSegAlignment(Options &opts) {
+		if (SegAlignment.size() == 0) {return;}
 		ISsecondary = SegAlignment[0]->ISsecondary; // the SegAlignment[0] contains the info for the whole alignment
 		NumOfAnchors0 =  SegAlignment[0]->NumOfAnchors0;
 		FirstSDPValue = SegAlignment[0]->FirstSDPValue;

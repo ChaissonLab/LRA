@@ -608,7 +608,8 @@ void CleanOffDiagonal(Genome &genome, vector<float> &matches_freq, vector<pair<T
 				else {
 					float avgfreq;
 					AVGfreq(diagStart, i, matches, avgfreq);
-					if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
+
+					if (opts.dotPlot and strand == 0) {
 						ofstream fclust("for-matches_cleanoffdiagonal.dots", ofstream::app);
 						for (int j = diagStart; j < i; j++) {
 							fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
@@ -616,7 +617,7 @@ void CleanOffDiagonal(Genome &genome, vector<float> &matches_freq, vector<pair<T
 						}
 						fclust.close();
 					}
-					if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
+					if (opts.dotPlot and strand == 1){
 						ofstream rclust("rev-matches_cleanoffdiagonal.dots", ofstream::app);
 						for (int j = diagStart; j < i; j++) {			
 							rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
@@ -636,13 +637,13 @@ void CleanOffDiagonal(Genome &genome, vector<float> &matches_freq, vector<pair<T
 								floor((i - diagStart - opts.cleanClustersize)/opts.cleanClustersize) * opts.anchorPerlength;
 						SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);						
 					}
+					cerr << "avgfreq: " << avgfreq << " MinDiagCluster: " << MinDiagCluster << " size: " << i - diagStart << endl;
 
 					// else if (avgfreq > 1.0f) {
 					// 	MinDiagCluster = opts.SecondCleanMinDiagCluster - (5 - floor((avgfreq - 1.0f) / 0.1f)) * (opts.punish_anchorfreq/2) - 
 					// 			floor((opts.cleanClustersize - i + diagStart)/15) * (opts.anchorPerlength / 2);
 					// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
 					// }
-					// cerr << "avgfreq: " << avgfreq << " MinDiagCluster: " << MinDiagCluster << " size: " << i - diagStart << endl;
 					counter++;					
 				}
 			}
