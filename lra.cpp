@@ -328,7 +328,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 
     		opts.minDiagCluster = 10;
     		opts.cleanMaxDiag = 30;
-    		opt.RemovePairedIndels = false;
+    		opts.RemovePairedIndels = false;
     		opts.RemoveSpuriousAnchors = false;
     		opts.bypassClustering = true;
     		opts.anchor_rate = 6;
