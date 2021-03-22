@@ -566,7 +566,7 @@ void CleanOffDiagonal(Genome &genome, vector<float> &matches_freq, vector<pair<T
 	
 	for (int i = 1; i < matches.size(); i++) {
 		if (abs(DiagonalDifference(matches[i], matches[i-1], strand)) < opts.cleanMaxDiag 
-			and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift)) {	
+			and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i], strand) < diagDrift)) {	
 			onDiag[i] = true;
 			onDiag[i-1] = true;
 			nOnDiag++;
@@ -575,15 +575,27 @@ void CleanOffDiagonal(Genome &genome, vector<float> &matches_freq, vector<pair<T
 	bool prevOnDiag = false;
 	int  diagStart;
 	int  Largest_ClusterNum = 0;
+	int ct = 0;
 	for (int i = 0; i < matches.size(); i++) {
 		if (prevOnDiag == false and onDiag[i] == true) {
 			diagStart = i;
 		}
 		if (prevOnDiag == true and onDiag[i] == false) {
 			Largest_ClusterNum = max(Largest_ClusterNum, i - diagStart);
+					if (opts.dotPlot and strand == 1){
+						ofstream rclust("rev-matches_cleanoffdiagonal.dots", ofstream::app);
+						for (int j = diagStart; j < i; j++) {			
+							rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
+									 << matches[j].second.pos << "\t" << ct << "\t" << 0 << endl;
+						}
+						rclust.close();
+					}
 		}
 		prevOnDiag = onDiag[i];
+		ct++;
 	}
+	int sz = matches.size();
+	Largest_ClusterNum = max(Largest_ClusterNum, sz - diagStart);
 
 	int minDiagCluster = (int) floor(Largest_ClusterNum/10);
 	if (minDiagCluster >= opts.minDiagCluster) minDiagCluster = opts.minDiagCluster;
@@ -603,7 +615,7 @@ void CleanOffDiagonal(Genome &genome, vector<float> &matches_freq, vector<pair<T
 				if (i - diagStart < minDiagCluster) { // used to be minDiagCluster not opts.minDiagCluster
 					for (int j = diagStart; j < i; j++) {
 						onDiag[j] = false;
-					}
+					}					
 				}
 				else {
 					float avgfreq;
@@ -715,7 +727,8 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 		}
 		prevOnDiag = onDiag[i];
 	}
-
+	int sz = matches.size();
+	Largest_ClusterNum = max(Largest_ClusterNum, sz - diagStart);
 	int minDiagCluster = (int) floor(Largest_ClusterNum/10);
 	if (minDiagCluster >= opts.minDiagCluster) minDiagCluster = opts.minDiagCluster;
 	// cerr << "Largest_ClusterNum: " << Largest_ClusterNum << " minDiagCluster: " << minDiagCluster << endl;
@@ -1702,7 +1715,7 @@ void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genom
 		// sort fragments in allMatches by forward diagonal, then by first.pos(read)
 		//
 		DiagonalSort<GenomeTuple>(Matches, 500);
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		if (opts.dotPlot) {
 			ofstream fclust("for-matches.dots");
 			for (int m = 0; m < Matches.size(); m++) {
 				fclust << Matches[m].first.pos << "\t" << Matches[m].second.pos << "\t" << opts.globalK + Matches[m].first.pos << "\t"
@@ -1715,7 +1728,7 @@ void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genom
 		StoreDiagonalClusters(genome, Matches_freq, Matches, clusters, opts, 0, Matches.size(), 0); 
 		timing.Tick("CleanOffDiagonal");
 
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		if (opts.dotPlot) {
 			ofstream fclust("for-matches_clean.dots");
 			for (int m = 0; m < Matches.size(); m++) {
 				fclust << Matches[m].first.pos << "\t" << Matches[m].second.pos << "\t" << opts.globalK + Matches[m].first.pos << "\t"
@@ -1726,7 +1739,7 @@ void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genom
 	}
 	else {
 		AntiDiagonalSort<GenomeTuple>(Matches, 500);
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		if (opts.dotPlot) {
 			ofstream rclust("rev-matches.dots");
 			for (int m=0; m < Matches.size(); m++) {			
 				rclust << Matches[m].first.pos << "\t" << Matches[m].second.pos + opts.globalK << "\t" << opts.globalK + Matches[m].first.pos  << "\t"
@@ -1739,7 +1752,7 @@ void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genom
 		StoreDiagonalClusters(genome, revMatches_freq, Matches, clusters, opts, 0, Matches.size(), 1); 
 		timing.Tick("CleanOffDiagonal");
 		// cerr << "revroughClusters.size(): " << revroughClusters.size() << " split_revroughClusters.dots: " << split_revroughClusters.size()<< endl;
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		if (opts.dotPlot) {
 			ofstream rclust("rev-matches_clean.dots");
 			for (int m=0; m < Matches.size(); m++) {			
 				rclust << Matches[m].first.pos << "\t" << Matches[m].second.pos + opts.globalK << "\t" << opts.globalK + Matches[m].first.pos  << "\t"

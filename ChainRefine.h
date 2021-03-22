@@ -226,8 +226,10 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		//
 		// sorted by second.pos and then first.pos
 		GenomePos genomeClusterSegStart, genomeClusterSegEnd;
-		genomeClusterSegStart = splitchains[ph].TStart - chromOffset;
-		genomeClusterSegEnd = splitchains[ph].TEnd - chromOffset;
+		// genomeClusterSegStart = splitchains[ph].TStart - chromOffset;
+		// genomeClusterSegEnd = splitchains[ph].TEnd - chromOffset;
+		genomeClusterSegStart = splitchains[ph].TStart;
+		genomeClusterSegEnd = splitchains[ph].TEnd;
 		//
 		// Search region starts in window, or beginning of chromosome
 		//

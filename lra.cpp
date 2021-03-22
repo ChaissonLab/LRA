@@ -340,6 +340,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.maxGap = 1000;
     		opts.minClusterSize = 2;
     		opts.anchorstoosparse = 0.02;
+
+    		opts.anchor_rate = 18.0f;
+    		opts.minDiagCluster = 5;
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;		
 			// opts.NumAln=3;
