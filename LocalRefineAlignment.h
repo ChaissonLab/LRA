@@ -98,8 +98,6 @@ SetMatchAndGaps(GenomePos qs, GenomePos qe, GenomePos ts, GenomePos te, int &m, 
 	tg=te-ts+1-m;
 }
 
-
-
 int 
 AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, GenomePos &tStart, GenomePos &tEnd,
 						vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &options, 
