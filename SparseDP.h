@@ -1715,7 +1715,7 @@ DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, Sta
 			// If this chain overlap with read greater than 0.5%, insert it to chains
 			//
 			// assert(qEnd - qStart > 10);
-			if (chains.back().QEnd > chains.back().QStart 
+			if (chains.back().size() >= 5 and chains.back().QEnd > chains.back().QStart 
 				and ((float)(chains.back().QEnd - chains.back().QStart)/read.length) > 0.005 
 				and chains.back().QEnd - chains.back().QStart >= 1000) {
 				if (chains.size() > 1 and chains.back().OverlapsOnT(chains[0].TStart, chains[0].TEnd, 0.1f)) {
@@ -2136,12 +2136,12 @@ int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options
 		for (unsigned int i = 0; i < FragInput[cm].matches.size(); i++) {
 			if (FragInput[cm].strand == 0) { 				
 				insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 0, 1);
-				// insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 1, 1);
+				if (i == 0 or i == FragInput[cm].matches.size() - 1) insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 1, 1);
 			}
 			else { 
 				// insert start point s2 into H1
 				insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 1, 0);
-				// insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 0, 0);	
+				if (i == 0 or i == FragInput[cm].matches.size() - 1) insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 0, 0);	
 			}
 		}
 		totalMatch += FragInput[cm].matches.size();
