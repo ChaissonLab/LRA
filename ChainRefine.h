@@ -200,7 +200,7 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 			int cI = splitchains[ph].ClusterIndex[c];
 			if (clusters[cI].flip == 0) {
 				for (int m = 0; m < clusters[cI].matches.size(); m++) {
-					clusters[cI].matches[m].second.pos -= chromOffset;
+					clusters[cI].matches[m].second.pos -= chromOffset; // comment!
 				}	
 				if (clusters[cI].strand == 1) {
 					SwapStrand(read, opts, clusters[cI]);
@@ -323,7 +323,7 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 			int cI = splitchains[ph].ClusterIndex[c];
 			if (clusters[cI].flip == 1) {
 				for (int m = 0; m < clusters[cI].matches.size(); m++) {
-					clusters[cI].matches[m].second.pos += chromOffset;
+					clusters[cI].matches[m].second.pos += chromOffset; // comment!
 				}	
 				if (clusters[cI].strand == 1) {
 					SwapStrand(read, opts, clusters[cI]);
@@ -370,7 +370,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 			else {c++; continue;}// No need to refine the space! (DUP)
 			ts2 = 0; te2 = 0;
 		}
-		else if (RefinedClusters[cur].strand != RefinedClusters[prev].strand and spchain_link[c - 1] == 1) {
+		else if (RefinedClusters[cur].strand != RefinedClusters[prev].strand and spchain_link[c - 1] == 1) { // INV
 			st1 = RefinedClusters[cur].strand; 
 			st2 = RefinedClusters[prev].strand; 
 			twoblocks = 1;
@@ -395,6 +395,20 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 				}
 			}
 			else {c++; continue;}// No need to refine the space!
+		}
+		else if (RefinedClusters[cur].strand == RefinedClusters[prev].strand and spchain_link[c - 1] == 1) { // DUP
+			st1 = RefinedClusters[cur].strand; 
+			st2 = st1; 
+			twoblocks = 1;
+			if (st1 == 0 and RefinedClusters[cur].tEnd > RefinedClusters[prev].tStart) {
+				ts1 = RefinedClusters[cur].tEnd; te1 = ts1 + qe - qs;
+				te2 = RefinedClusters[prev].tStart; ts2 = (te2 > (qe - qs) ? te2 - (qe - qs) : 0);
+			}
+			else if (st1 == 1 and RefinedClusters[cur].tStart < RefinedClusters[prev].tEnd) {
+				te1 = RefinedClusters[cur].tStart; ts1 = (te1 > (qe - qs) ? te1 - (qe - qs) : 0);
+				ts2 = RefinedClusters[prev].tEnd; te2 = ts2 + (qe - qs);
+			}
+			else {c++; continue;}// No need to refine the space!			
 		}
 
 		// //cerr << "btwn  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;

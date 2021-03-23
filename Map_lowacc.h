@@ -35,12 +35,18 @@
 using namespace std;
 
 void RemoveSpuriousSplitChain(vector<SplitChain> &chains, vector<bool> &spchain_link) {
+	int total = 0;
+	for (int i = 0; i < chains.size(); i++) {total += chains[i].size();}
+	int filter = (int) floor(0.02f * (float) total);
+	int filter_suspiciousDUPINV = (int)floor(0.03f * (float) total);
+	cerr << min(filter_suspiciousDUPINV, 4) << " " << min(filter, 2) << endl;
+
 	vector<bool> remove(chains.size(), 0);
 	for (int i = 0; i < chains.size(); i++) {
-		if (chains[i].size() < 2) { // generally require >= 2 anchors
+		if (chains[i].size() < min(filter, 2)) { // generally require >= 2 anchors
 			remove[i] = 1;
 		}
-		if (i > 0 and spchain_link[i - 1] == 1 and chains[i].size() < 3) { // for DUP and INV, requires more anchors
+		if (i > 0 and spchain_link[i - 1] == 1 and chains[i].size() < min(filter_suspiciousDUPINV, 4)) { // for DUP and INV, requires more anchors
 			remove[i] == 1;
 		} 
 	}
@@ -74,15 +80,10 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		output_unaligned(read, opts, *output);
 		return 0;
 	}
-	// bool NolinearCluster = true;
-	// for (int s = 0; s < clusters.size(); s++) {	
-	// 	if (clusters[s].anchorfreq <= 3.0f and clusters[s].matches.size() >= 10) {NolinearCluster = false; break;}
-	// }		
-	// if (NolinearCluster) {
-	// 	read.unaligned = 1;
-	// 	output_unaligned(read, opts, *output);
-	// 	return 0;
-	// }
+	bool repetitivecluster = false;
+	for (int s = 0; s < clusters.size(); s++) {	
+		if (clusters[s].anchorfreq > 1.0f and clusters[s].anchorfreq <= 2.0f and clusters[s].matches.size() >= 500) {repetitivecluster = true;}
+	}		
 	if (opts.dotPlot) {
 		ofstream cpclust("clusters-pre-remove.tab");
 		for (int m = 0; m < clusters.size(); m++) {
@@ -179,7 +180,9 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	//
 	// SDP on matches
 	//
-	SparseDP(ext_clusters, chains, opts, LookUpTable, read);
+	float match_rate = opts.anchor_rate;
+	if (repetitivecluster) {match_rate = 3;}
+	SparseDP(ext_clusters, chains, opts, LookUpTable, read, match_rate);
 	// for (int p = 0; p < chains.size(); p++) { 
 	// 	RemovePairedIndels<UltimateChain>(chains[p]); 
 	// 	chains[p].CleanSpurious();
@@ -482,6 +485,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			ultimatechains[t].clusters = &extend_clusters;
 			SparseDP(merge_spcluster[t], extend_clusters, ultimatechains[t], opts, LookUpTable, read);
 			RemovePairedIndels<UltimateChain>(ultimatechains[t]); 
+			RemoveSpuriousAnchors(ultimatechains[t], opts);
 			// ultimatechains[t].CleanSpurious();
 		}
 

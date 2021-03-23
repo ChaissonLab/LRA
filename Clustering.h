@@ -582,14 +582,14 @@ void CleanOffDiagonal(Genome &genome, vector<float> &matches_freq, vector<pair<T
 		}
 		if (prevOnDiag == true and onDiag[i] == false) {
 			Largest_ClusterNum = max(Largest_ClusterNum, i - diagStart);
-					if (opts.dotPlot and strand == 1){
-						ofstream rclust("rev-matches_cleanoffdiagonal.dots", ofstream::app);
-						for (int j = diagStart; j < i; j++) {			
-							rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
-									 << matches[j].second.pos << "\t" << ct << "\t" << 0 << endl;
-						}
-						rclust.close();
-					}
+			// if (opts.dotPlot and strand == 1){
+			// 	ofstream rclust("rev-matches_cleanoffdiagonal.dots", ofstream::app);
+			// 	for (int j = diagStart; j < i; j++) {			
+			// 		rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
+			// 				 << matches[j].second.pos << "\t" << ct << "\t" << 0 << endl;
+			// 	}
+			// 	rclust.close();
+			// }
 		}
 		prevOnDiag = onDiag[i];
 		ct++;
@@ -639,7 +639,7 @@ void CleanOffDiagonal(Genome &genome, vector<float> &matches_freq, vector<pair<T
 					}
 					for (int j = diagStart; j < i; j++) {matches_freq[j] = avgfreq;}
 					int MinDiagCluster = 0;	
-					if (avgfreq >= 4.0f and i - diagStart >= opts.cleanClustersize) {
+					if (avgfreq >= 2.0f and i - diagStart >= opts.cleanClustersize) {
 						MinDiagCluster = opts.SecondCleanMinDiagCluster + floor((avgfreq - 1.5f)/ 1.0f) * opts.punish_anchorfreq + 
 								floor((i - diagStart - opts.cleanClustersize)/opts.cleanClustersize) * opts.anchorPerlength;
 						SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);						

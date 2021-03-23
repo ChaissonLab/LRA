@@ -2115,7 +2115,7 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 //
 // The input to this SparseDP is pure matches -- insert 4 points for each anchor
 //
-int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options &opts, const vector<float> &LookUpTable, Read &read) {
+int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options &opts, const vector<float> &LookUpTable, Read &read, float rate) {
 	if (read.unaligned) return 0;
 	//
 	// Compute the matches start in each Cluster;
@@ -2136,12 +2136,12 @@ int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options
 		for (unsigned int i = 0; i < FragInput[cm].matches.size(); i++) {
 			if (FragInput[cm].strand == 0) { 				
 				insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 0, 1);
-				insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 1, 1);
+				// insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 1, 1);
 			}
 			else { 
 				// insert start point s2 into H1
 				insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 1, 0);
-				insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 0, 0);	
+				// insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 0, 0);	
 			}
 		}
 		totalMatch += FragInput[cm].matches.size();
@@ -2189,7 +2189,7 @@ int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options
 			if (H1[tt].ind == 1 and H1[tt].inv == 1) { //H1[tt] is a start point (s1)
 				Value[ii].SS_B_R1 = Row[t].SS_B1;
 				Value[ii].counter_B_R1 = Row[t].SS_B1.size();
-				Value[ii].val = FragInput[fi].matchesLengths[ii - MatchStart[fi]] * opts.second_anchor_rate;
+				Value[ii].val = FragInput[fi].matchesLengths[ii - MatchStart[fi]] * rate;
 				Value[ii].clusterNum = fi;
 				Value[ii].orient = H1[tt].orient;
 			}
@@ -2200,7 +2200,7 @@ int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options
 			else if (H1[tt].ind == 1 and H1[tt].inv == 0) { //H1[tt] is a start point (s2)
 				Value[ii].SS_B_R2 = Row[t].SS_B2;
 				Value[ii].counter_B_R2 = Row[t].SS_B2.size();
-				Value[ii].val = FragInput[fi].matchesLengths[ii - MatchStart[fi]] * opts.second_anchor_rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].val = FragInput[fi].matchesLengths[ii - MatchStart[fi]] * rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
 				Value[ii].orient = H1[tt].orient;
 			}
@@ -2222,7 +2222,7 @@ int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options
 			if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 1) { //H1[H2[tt]] a start point (s1)
 				Value[ii].SS_B_C1 = Col[t].SS_B1;
 				Value[ii].counter_B_C1 = Col[t].SS_B1.size();
-				Value[ii].val = FragInput[fi].matchesLengths[ii - MatchStart[fi]] * opts.second_anchor_rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].val = FragInput[fi].matchesLengths[ii - MatchStart[fi]] * rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
 				Value[ii].orient = H1[H2[tt]].orient;
 			}
@@ -2233,7 +2233,7 @@ int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options
 			else if (H1[H2[tt]].ind == 1 and H1[H2[tt]].inv == 0) { //H1[H2[tt]] a start point (s2)
 				Value[ii].SS_B_C2 = Col[t].SS_B2;
 				Value[ii].counter_B_C2 = Col[t].SS_B2.size();
-				Value[ii].val = FragInput[fi].matchesLengths[ii - MatchStart[fi]] * opts.second_anchor_rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
+				Value[ii].val = FragInput[fi].matchesLengths[ii - MatchStart[fi]] * rate;//FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]]*rate;
 				Value[ii].clusterNum = fi;
 				Value[ii].orient = H1[H2[tt]].orient;				
 			}
@@ -2245,7 +2245,7 @@ int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options
 		}
 	}
 
-	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, MatchStart, opts.anchor_rate); 
+	ProcessPoint<Cluster>(H1, Row, SubR1, SubC1, SubR2, SubC2, Value, opts, LookUpTable, FragInput, MatchStart, rate); 
 	DecidePrimaryChains(FragInput, SubR1, SubC1, SubR2, SubC2, Value, chains, read, opts, MatchStart);
 	for (int c = 0; c < chains.size(); c++) {
 		chains[c].ClusterIndex.resize(chains[c].chain.size());

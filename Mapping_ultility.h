@@ -303,8 +303,9 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 		}
 		else if ((chain.link[im] == 1 and chain.strand(cur) == 0 and chain.strand(prev) == 0) or (chain.link[im] == 0 and chain.strand(cur)== 1 and chain.strand(prev) == 1)) { // DUP
 			if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
-				if (chain.strand(cur) == 0) splitchains_link.push_back(0);
-				else splitchains_link.push_back(1);
+				splitchains_link.push_back(1);
+				// if (chain.strand(cur) == 0) splitchains_link.push_back(0);
+				// else splitchains_link.push_back(1);
 			}			
 		}
 		else if ((chain.strand(cur) == 0 and chain.strand(prev) == 1) or (chain.strand(cur) == 1 and chain.strand(prev) == 0)) { // INV
@@ -320,10 +321,6 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 	}
 	if (!onec.empty()) {
 		push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur);
-		// splitchains.push_back(SplitChain(onec, lk, &chain, chain.strand(onec[0])));
-		// if (chain.tStart(onec[0]) == 0) {splitchains.back().tStart = chain.tStart(onec.back()); splitchains.back().tEnd = chain.tEnd(onec[0]);}
-		// else {splitchains.back().tStart = chain.tStart(onec[0]); splitchains.back().tEnd = chain.tEnd(onec.back());}
-		// if (splitchains.back().CHROMIndex(genome);) {splitclusters.pop_back();}
 	}
 
 	for (int im = 0; im < splitchains.size(); im++) { // reverse the order for forward chain for refining chain
