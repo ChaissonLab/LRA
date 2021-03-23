@@ -341,8 +341,8 @@ RefineBtwnSpace(vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluste
 		return 0;
 	}
 	else{
-		cerr << "rev happens, refineEffiency: " << eff << "  reff: " <<  reff << " original: " << cluster->refineEffiency << endl;
-		cerr << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+		//		cerr << "rev happens, refineEffiency: " << eff << "  reff: " <<  reff << " original: " << cluster->refineEffiency << endl;
+		//		cerr << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 		RevBtwnCluster.push_back(Cluster(0, 0, rst));
 		RevBtwnCluster.back().matches.insert(RevBtwnCluster.back().matches.end(), revEndPairs.begin(), revEndPairs.end()); 
 		RevBtwnCluster.back().SetClusterBoundariesFromMatches(opts);
@@ -428,7 +428,7 @@ RefineBtwnClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*>
 		// }
 		if (te1 <= ts1) {c++; continue;}
 		SpaceLength = min(qe - qs, te1 - ts1); 
-		if (twoblocks) cerr << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;
+		//		if (twoblocks) cerr << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;
 		if (SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
 			// btwnClusters have GenomePos, st, matches, coarse
 			// This function also set the "coarse" flag for RefinedClusters[cur]
@@ -441,7 +441,7 @@ RefineBtwnClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*>
 		}		
 		if (te2 <= ts2) {c++; continue;}
 		SpaceLength = min(qe - qs, te2 - ts2); 
-		if (twoblocks) cerr << read.name << " qs: " << qs << " qe: " << qe << " ts2: " << ts2 << " te2: " << te2 << endl;
+		//		if (twoblocks) cerr << read.name << " qs: " << qs << " qe: " << qe << " ts2: " << ts2 << " te2: " << te2 << endl;
 		if (SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
 			// btwnClusters have GenomePos, st, matches, coarse
 			// This function also set the "coarse" flag for RefinedClusters[cur]

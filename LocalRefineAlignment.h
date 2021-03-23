@@ -274,8 +274,20 @@ void RemovePairedIndels (Tup &chain) {
 	//
 	// Store SVs in vector SV; Store the anchor just after the SV[c] in SVpos[c];
 	//
+	long totalDiff=0;
+	int maxDiff=0;
+	long totalDiffSq=0;
+	int maxDiffIndex=0;
 	for (int c = 1; c < chain.size(); c++) {
 		if (chain.strand(c) == chain.strand(c-1)) {
+			long diff = abs(min((long)chain.tStart(c) - (long)chain.tStart(c-1), (long)chain.qStart(c) - (long)chain.qStart(c-1)));
+			totalDiffSq+= diff*diff;
+			if (diff > maxDiff) { 
+				maxDiff = diff;
+				maxDiffIndex = c;
+			}
+			totalDiff+=diff;
+			//			cout << chain.qStart(c) << "\t" << chain.tStart(c) << "\t" << chain.length(c) << "\t" << diff << endl;
 			if (chain.strand(c) == 0) {
 				int Gap = (int)(((long)chain.tStart(c) - (long)chain.qStart(c)) - ((long)chain.tStart(c - 1) - (long)chain.qStart(c - 1)));
 
@@ -300,7 +312,31 @@ void RemovePairedIndels (Tup &chain) {
 			SV.push_back(0);
 		}
 	}
+	int n=chain.size()-1;
+	float diffSD=0;
+	float avgDiff=(totalDiff/(float)n);
+	if (n > 0) {
+		diffSD=sqrt(totalDiffSq/n - avgDiff*avgDiff);
+	}
 
+
+	if (diffSD*4+ avgDiff < maxDiff) {
+		int END=3;
+		if (maxDiffIndex <=END || maxDiffIndex >= chain.size()-END) {
+			if (maxDiffIndex <= END) {
+				for (int i=0; i < maxDiffIndex; i++) {
+					remove[i] = true;
+				}
+			}
+			else {
+				for (int i=maxDiffIndex; i < chain.size(); i++) {
+					remove[i] = true;
+				}
+			}
+		}
+	}
+
+	
 	for (int c = 1; c < SV.size(); c++) {
 		//
 		// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.

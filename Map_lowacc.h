@@ -480,8 +480,10 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		vector<UltimateChain> ultimatechains(merge_spcluster.size());
 		for (int t = 0; t < merge_spcluster.size(); t++) {
 			ultimatechains[t].clusters = &extend_clusters;
-			SparseDP(merge_spcluster[t], extend_clusters, ultimatechains[t], opts, LookUpTable, read);
-			RemovePairedIndels<UltimateChain>(ultimatechains[t]); 
+			if (extend_clusters.size() > 0 and extend_clusters[0].matches.size() < 3*read.length) {
+				SparseDP(merge_spcluster[t], extend_clusters, ultimatechains[t], opts, LookUpTable, read);
+				RemovePairedIndels<UltimateChain>(ultimatechains[t]); 
+			}
 			// ultimatechains[t].CleanSpurious();
 		}
 
