@@ -457,6 +457,9 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	}
 	timing.Tick("Refine_clusters");
 
+	int K, W;
+	if (opts.HighlyAccurate or sparse == 0) {K = opts.globalK; W = opts.globalW;}
+	else {K = opts.localK; W = opts.localW;}
 	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream clust("RefinedClusters.tab", std::ofstream::app);
 		for (int p = 0; p < RefinedClusters.size(); p++) {
@@ -464,16 +467,16 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 				if (RefinedClusters[p]->strand == 0) {
 					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
 						  << RefinedClusters[p]->matches[h].second.pos << "\t"
-						  << RefinedClusters[p]->matches[h].first.pos + smallOpts.globalK << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos + smallOpts.globalK << "\t"
+						  << RefinedClusters[p]->matches[h].first.pos + K << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos + K << "\t"
 						  << p << "\t"
 						  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
 						  << RefinedClusters[p]->strand << endl;
 				}
 				else {
 					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos + smallOpts.globalK << "\t"
-						  << RefinedClusters[p]->matches[h].first.pos + smallOpts.globalK << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos + K << "\t"
+						  << RefinedClusters[p]->matches[h].first.pos + K << "\t"
 						  << RefinedClusters[p]->matches[h].second.pos<< "\t"
 						  << p << "\t"
 						  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
@@ -520,7 +523,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	for (int p = 0; p < Primary_chains.size(); p++) {
 		for (int h = 0; h < Primary_chains[p].chains.size(); h++) {
 			if (Primary_chains[p].chains[h].ch.size() == 0) continue;
-				RefineBtwnClusters_chain(Primary_chains, RefinedClusters, RevBtwnCluster, tracerev, genome, read, smallOpts, p, h, strands);
+				RefineBtwnClusters_chain(K, W, Primary_chains, RefinedClusters, RevBtwnCluster, tracerev, genome, read, smallOpts, p, h, strands);
 		}
 	}	
 	//
@@ -548,7 +551,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 			if (Primary_chains[p].chains[h].ch.size() == 0) continue;
 				int cur_s = extend_clusters.size();
 				extend_clusters.resize(cur_s + Primary_chains[p].chains[h].ch.size());
-				LinearExtend_chain(Primary_chains[p].chains[h].ch, extend_clusters, RefinedClusters, smallOpts, genome, read, cur_s, overlap, 1);
+				LinearExtend_chain(Primary_chains[p].chains[h].ch, extend_clusters, RefinedClusters, smallOpts, genome, read, cur_s, overlap, 1, K);
 		}
 	}	
 	timing.Tick("LinearExtend");

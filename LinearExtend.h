@@ -48,19 +48,19 @@ public:
 
 
 void Checkbp(GenomePair &cur, GenomePair &next, Genome &genome, Read &read, int &ChromIndex, GenomePos& qe, GenomePos& te, 
-				bool strand, Options &opts, int &mat) {
+				bool strand, Options &opts, int &mat, int K) {
 	GenomePos curQ, curT, nextQ, nextT;
 	if (strand == 0) {
-		curQ = cur.first.pos + opts.globalK;
-		curT = cur.second.pos + opts.globalK;
+		curQ = cur.first.pos + K;
+		curT = cur.second.pos + K;
 		nextQ = next.first.pos;
 		nextT = next.second.pos;		
 	}
 	else {
-		curQ = cur.first.pos + opts.globalK;
+		curQ = cur.first.pos + K;
 		curT = cur.second.pos - 1;
 		nextQ = next.first.pos;
-		nextT = next.second.pos + opts.globalK - 1;		
+		nextT = next.second.pos + K - 1;		
 	}
 
 	if (strand == 0) { //curT - genome.header.pos[ChromIndex]
@@ -82,14 +82,14 @@ void Checkbp(GenomePair &cur, GenomePair &next, Genome &genome, Read &read, int 
 
 
 int
-CheckOverlap(GenomePair & match, Options & opts, vector<pair<GenomePos, bool>> & Set, bool & Ovp) {
+CheckOverlap(GenomePair & match, Options & opts, vector<pair<GenomePos, bool>> & Set, bool & Ovp, int K) {
 
 	for (int t = 0; t < Set.size(); t++) {
-		if (Set[t].second == 0 and Set[t].first >= match.first.pos and Set[t].first < match.first.pos + opts.globalK) {
+		if (Set[t].second == 0 and Set[t].first >= match.first.pos and Set[t].first < match.first.pos + K) {
 			Ovp = 1;
 			return 0;
 		} 
-		if (Set[t].second == 1 and Set[t].first >= match.second.pos and Set[t].first < match.second.pos + opts.globalK) {
+		if (Set[t].second == 1 and Set[t].first >= match.second.pos and Set[t].first < match.second.pos + K) {
 			Ovp = 1;
 			return 0;
 		}
@@ -131,7 +131,7 @@ DecideCoordinates (Cluster & cluster, bool strand, int chromIndex, float anchorf
 template<typename Tup>
 void
 LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup> & chain, Options & opts, Genome & genome, Read & read, 
-			int start, int &overlap, bool skiprepetitive) {
+			int start, int &overlap, bool skiprepetitive, int K) {
 
 	vector<pair<GenomePos, bool>> Set;
 	int next, prev;
@@ -217,11 +217,11 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 			//
 			bool Ovp = 0;
 			if (chm == 1) {
-				CheckOverlap(clusters[cm]->matches[m], opts, Set, Ovp);
+				CheckOverlap(clusters[cm]->matches[m], opts, Set, Ovp, K);
 
 				if (Ovp == 1) {
 					extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[m].second.pos)));
-					extCluster[c + start].matchesLengths.push_back(opts.globalK);	
+					extCluster[c + start].matchesLengths.push_back(K);	
 					extCluster[c + start].overlap.push_back(1);
 					overlap++;
 					// cerr << "1: " << extCluster[c + start].matches.size() - 1 << " " << clusters[cm]->matches[m].first.pos << " " << clusters[cm]->matches[m].second.pos << endl;
@@ -237,7 +237,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 			// Check whether clusters[cm]->matches[n] overlaps with "Set";
 			//
 			Ovp = 0;
-			CheckOverlap(clusters[cm]->matches[n], opts, Set, Ovp);
+			CheckOverlap(clusters[cm]->matches[n], opts, Set, Ovp, K);
 			
 			if (Ovp == 1) { // clusters[cm]->matches[n] overlaps with "Set";
 				if (clusters[cm]->strand == 0) {
@@ -247,10 +247,10 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 					extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[n-1].second.pos)));	
 					// cerr << "2: " << extCluster[c + start].matches.size() - 1 << " " << clusters[cm]->matches[m].first.pos << " " << clusters[cm]->matches[n-1].second.pos << endl;
 				}
-				extCluster[c + start].matchesLengths.push_back(clusters[cm]->matches[n-1].first.pos + opts.globalK - clusters[cm]->matches[m].first.pos);
+				extCluster[c + start].matchesLengths.push_back(clusters[cm]->matches[n-1].first.pos + K - clusters[cm]->matches[m].first.pos);
 				extCluster[c + start].overlap.push_back(0);
 				extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[n].first.pos), GenomeTuple(0, clusters[cm]->matches[n].second.pos)));
-				extCluster[c + start].matchesLengths.push_back(opts.globalK);
+				extCluster[c + start].matchesLengths.push_back(K);
 				extCluster[c + start].overlap.push_back(1);
 				overlap++;
 				// cerr << "3: " << extCluster[c + start].matches.size() - 1 << " " << clusters[cm]->matches[n].first.pos << " " << clusters[cm]->matches[n].second.pos << endl;
@@ -275,16 +275,16 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 
 			if (curDiag == nextDiag) { // those two anchors are on the same diagonal
 
-				if (clusters[cm]->matches[n].first.pos < clusters[cm]->matches[n-1].first.pos + opts.globalK) { // anchor n-1 and anchor n are overlapped
+				if (clusters[cm]->matches[n].first.pos < clusters[cm]->matches[n-1].first.pos + K) { // anchor n-1 and anchor n are overlapped
 					n++;
 				}
 				else { //  anchor n-1 and anchor n are not overlapped; Need to extend after anchor n-1
 					GenomePos qe, te;
-					Checkbp(clusters[cm]->matches[n-1], clusters[cm]->matches[n], genome, read, clusters[cm]->chromIndex, qe, te, clusters[cm]->strand, opts, mat);
+					Checkbp(clusters[cm]->matches[n-1], clusters[cm]->matches[n], genome, read, clusters[cm]->chromIndex, qe, te, clusters[cm]->strand, opts, mat, K);
 					if (clusters[cm]->strand == 0 and qe == clusters[cm]->matches[n].first.pos and te == clusters[cm]->matches[n].second.pos) {
 						n++;
 					}
-					else if (clusters[cm]->strand == 1 and qe == clusters[cm]->matches[n].first.pos and te == clusters[cm]->matches[n].second.pos + opts.globalK - 1) {
+					else if (clusters[cm]->strand == 1 and qe == clusters[cm]->matches[n].first.pos and te == clusters[cm]->matches[n].second.pos + K - 1) {
 						n++;
 					}
 					else {
@@ -311,7 +311,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 					extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[n-1].second.pos)));
 					// cerr << "5: " << extCluster[c + start].matches.size() - 1 << " " << clusters[cm]->matches[m].first.pos << " " << clusters[cm]->matches[n-1].second.pos << endl;
 				}
-				extCluster[c + start].matchesLengths.push_back(clusters[cm]->matches[n-1].first.pos + opts.globalK - clusters[cm]->matches[m].first.pos);
+				extCluster[c + start].matchesLengths.push_back(clusters[cm]->matches[n-1].first.pos + K - clusters[cm]->matches[m].first.pos);
 				extCluster[c + start].overlap.push_back(0);
 				m = n;
 				n++;
@@ -327,7 +327,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 				extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[n-1].second.pos)));
 				// cerr << "6: " << extCluster[c + start].matches.size() - 1 << " " << clusters[cm]->matches[m].first.pos << " " << clusters[cm]->matches[n-1].second.pos << endl;
 			}
-			extCluster[c + start].matchesLengths.push_back(clusters[cm]->matches[n-1].first.pos + opts.globalK - clusters[cm]->matches[m].first.pos);
+			extCluster[c + start].matchesLengths.push_back(clusters[cm]->matches[n-1].first.pos + K - clusters[cm]->matches[m].first.pos);
 			extCluster[c + start].overlap.push_back(0);
 		}
 
@@ -646,7 +646,7 @@ TrimOverlappedAnchors(vector<Cluster> & extCluster, int start) {
 // NOTE: Only forward strand;
 //
 void LinearExtend(GenomePairs * pairs, GenomePairs &Extendpairs, vector<int> &ExtendpairsMatchesLength, Options &opts, 
-				Genome &genome, Read &read, int chromIndex, bool strand, bool skipsorting) {
+				Genome &genome, Read &read, int chromIndex, bool strand, bool skipsorting, int K) {
 	//
 	// Sort each Cluster
 	//
@@ -673,14 +673,14 @@ void LinearExtend(GenomePairs * pairs, GenomePairs &Extendpairs, vector<int> &Ex
 
 
 		if (curDiag == nextDiag) { // those two anchors are on the same diagonal
-			if ((*pairs)[n].first.pos < (*pairs)[n-1].first.pos + opts.globalK) { // anchor n-1 and anchor n are overlapped
+			if ((*pairs)[n].first.pos < (*pairs)[n-1].first.pos + K) { // anchor n-1 and anchor n are overlapped
 				n++;
 			}
 			else { //  anchor n-1 and anchor n are not overlapped; Need to extend after anchor n-1
 				GenomePos qe, te;
-				Checkbp((*pairs)[n-1], (*pairs)[n], genome, read, chromIndex, qe, te, strand, opts, mat);
+				Checkbp((*pairs)[n-1], (*pairs)[n], genome, read, chromIndex, qe, te, strand, opts, mat, K);
 				if (strand == 0 and qe == (*pairs)[n].first.pos and te == (*pairs)[n].second.pos) {n++;}
-				else if (strand == 1 and qe == (*pairs)[n].first.pos and te == (*pairs)[n].second.pos + opts.globalK - 1) {n++;}
+				else if (strand == 1 and qe == (*pairs)[n].first.pos and te == (*pairs)[n].second.pos + K - 1) {n++;}
 				else {
 					if (strand == 0) {Extendpairs.push_back(GenomePair(GenomeTuple(0, (*pairs)[m].first.pos), GenomeTuple(0, (*pairs)[m].second.pos)));}
 					else {Extendpairs.push_back(GenomePair(GenomeTuple(0, (*pairs)[m].first.pos), GenomeTuple(0, te + 1)));}
@@ -693,7 +693,7 @@ void LinearExtend(GenomePairs * pairs, GenomePairs &Extendpairs, vector<int> &Ex
 		else {
 			if (strand == 0) {Extendpairs.push_back(GenomePair(GenomeTuple(0, (*pairs)[m].first.pos), GenomeTuple(0, (*pairs)[m].second.pos)));}
 			else {Extendpairs.push_back(GenomePair(GenomeTuple(0, (*pairs)[m].first.pos), GenomeTuple(0, (*pairs)[n - 1].second.pos)));}
-			ExtendpairsMatchesLength.push_back((*pairs)[n-1].first.pos + opts.globalK - (*pairs)[m].first.pos);
+			ExtendpairsMatchesLength.push_back((*pairs)[n-1].first.pos + K - (*pairs)[m].first.pos);
 			m = n;
 			n++;
 		}
@@ -701,7 +701,7 @@ void LinearExtend(GenomePairs * pairs, GenomePairs &Extendpairs, vector<int> &Ex
 	if (n == (*pairs).size()) { // and m != n-1
 		if (strand == 0) {Extendpairs.push_back(GenomePair(GenomeTuple(0, (*pairs)[m].first.pos), GenomeTuple(0, (*pairs)[m].second.pos)));}
 		else {Extendpairs.push_back(GenomePair(GenomeTuple(0, (*pairs)[m].first.pos), GenomeTuple(0, (*pairs)[n-1].second.pos)));}
-		ExtendpairsMatchesLength.push_back((*pairs)[n-1].first.pos + opts.globalK - (*pairs)[m].first.pos);		
+		ExtendpairsMatchesLength.push_back((*pairs)[n-1].first.pos + K - (*pairs)[m].first.pos);		
 	}
 }
 
@@ -772,13 +772,13 @@ TrimOverlappedAnchors(GenomePairs &ExtendPairs, vector<int> &ExtendPairsMatchesL
 template<typename Tup>
 void
 LinearExtend_chain (vector<Tup> &chain, vector<Cluster> &ExtendClusters, vector<Cluster*> &RefinedClusters, 
-			Options &smallOpts, Genome &genome, Read &read, int start, int &overlap, bool skiprepetitive) {
+			Options &smallOpts, Genome &genome, Read &read, int start, int &overlap, bool skiprepetitive, int K) {
 	//
 	// Do linear extension for each anchors and avoid overlapping locations;
 	// INPUT: RefinedClusters; OUTPUT: ExtendClusters;
 	// NOTICE: ExtendClusters have members: strand, matches, matchesLengths, GenomePos, chromIndex;
 	//
-	LinearExtend(RefinedClusters, ExtendClusters, chain, smallOpts, genome, read, start, overlap, skiprepetitive);
+	LinearExtend(RefinedClusters, ExtendClusters, chain, smallOpts, genome, read, start, overlap, skiprepetitive, K);
 	TrimOverlappedAnchors(ExtendClusters, start);
 }
 

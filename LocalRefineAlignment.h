@@ -243,13 +243,13 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			// cerr << "abs(read_dist-genome_dist): "  << abs(read_dist-genome_dist)<< endl;
 			// cerr << "min(read_dist, genome_dist): " << min(read_dist, genome_dist) << endl;
 			// cerr << "curReadEnd: " << curReadEnd << "  curGenomeEnd: " << curGenomeEnd << "  nextReadStart: " << nextReadStart << "  nextGenomeStart: " << nextGenomeStart << endl;
-			int refineSpaceDiag = (abs(read_dist - genome_dist) < 50) ? 30 : 60;
+			int refineSpaceDiag = (abs(read_dist - genome_dist) < 50) ? 80 : 100;
 			Options nanoOpts = tinyOpts;
 			if (min(read_dist, genome_dist) >= 3000 and abs(read_dist - genome_dist) >= 3000) { // big tandem repeat
-				nanoOpts.globalK += 3;
-				refineSpaceDiag = 80;
+				nanoOpts.localK += 3;
+				refineSpaceDiag = 120;
 			}
-			RefineSpace(refineSpaceDiag, 0, for_BtwnPairs, nanoOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
+			RefineSpace(nanoOpts.localK, nanoOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, nanoOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, str);
 			//
 			// check larger refineSpaceDiag;
@@ -257,7 +257,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			if (min(read_dist, genome_dist) > 30000 and (for_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse) { // this case likely means there is a large SV events. 
 				for_BtwnPairs.clear();
 				refineSpaceDiag = 500;
-				RefineSpace(refineSpaceDiag, 0, for_BtwnPairs, nanoOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
+				RefineSpace(nanoOpts.localK, nanoOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, nanoOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, str);		
 			} 
 			//
@@ -269,8 +269,8 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				GenomePos temp = curReadEnd;
 				curReadEnd = read.length - nextReadStart;
 				nextReadStart = read.length - temp;
-				refineSpaceDiag = 80; 
-				RefineSpace(refineSpaceDiag, 0, rev_BtwnPairs, nanoOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
+				refineSpaceDiag = 100; 
+				RefineSpace(nanoOpts.localK, nanoOpts.localW, refineSpaceDiag, 0, rev_BtwnPairs, nanoOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, inv_str);	
 				// inversion = 1;	
 				if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) > 1000) {
@@ -303,7 +303,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				GenomePairs ExtendBtwnPairs;
 				vector<int> ExtendBtwnPairsMatchesLength;
 				vector<unsigned int> BtwnChain;
-				LinearExtend(BtwnPairs, ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, nanoOpts, genome, read, chromIndex, 0, 0);
+				LinearExtend(BtwnPairs, ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, nanoOpts, genome, read, chromIndex, 0, 0, nanoOpts.localK);
 
 				if (inversion == 0) {
 					//
@@ -520,7 +520,7 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 
 		//cerr << "2nd SDP done!" << endl;
 		if (ultimatechain.size() == 0) continue; // cannot be mapped to the genome!
-		if (smallOpts.dotPlot and !smallOpts.readname.empty() and read.name == smallOpts.readname) {
+		if (smallOpts.dotPlot) {
 			ofstream clust("SparseDP.tab", ofstream::app);
 			for (int ep = 0; ep < ultimatechain.size(); ep++) {
 				if (ultimatechain.strand(ep) == 0) {
@@ -716,10 +716,10 @@ void RefindEnds(GenomePos &qPos, int cur, UltimateChain &chain, bool str, Alignm
 	assert(curReadEnd <= nextReadStart);
 	if (curGenomeEnd >= nextGenomeStart + 100 or curReadEnd >= nextReadStart + 100) return;
 	GenomePairs EndPairs;
-	RefineSpace(20, 0, EndPairs, opts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);	
+	RefineSpace(opts.localK, opts.localW, 20, 0, EndPairs, opts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);	
 	if (EndPairs.size() > 0 and (EndPairs.size() / (float) (nextReadStart - curReadEnd)) >= opts.anchorstoosparse ) {
 		GenomePairs ExtendEndPairs; vector<int> ExtendEndPairsMatchesLength; vector<unsigned int> EndChain;
-		LinearExtend(&EndPairs, ExtendEndPairs, ExtendEndPairsMatchesLength, opts, genome, read, chromIndex, 0, 0);	
+		LinearExtend(&EndPairs, ExtendEndPairs, ExtendEndPairsMatchesLength, opts, genome, read, chromIndex, 0, 0, opts.localK);	
 		TrimOverlappedAnchors(ExtendEndPairs, ExtendEndPairsMatchesLength);
 		float value = 0; int NumofAnchors = 0;
 		SparseDP_ForwardOnly(ExtendEndPairs, ExtendEndPairsMatchesLength, EndChain, opts, LookUpTable, value, NumofAnchors, 1/2); //1
@@ -743,7 +743,7 @@ void RefindEnds(GenomePos &qPos, int cur, UltimateChain &chain, bool str, Alignm
 				}							
 			}
 			eSclust.close();
-			if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+			if (opts.dotPlot) {
 				ofstream Sclust("SparseDP_Forward.tab", std::ofstream::app);
 					for (int btc = EndChain.size()-1; btc >= 0; btc--) {
 						if (str == 0) {

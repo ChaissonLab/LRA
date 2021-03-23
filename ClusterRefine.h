@@ -20,24 +20,24 @@
 #include <thread>
 #include <climits>
 
-void SwapStrand (Read & read, Options & opts, Cluster & cluster) {
+void SwapStrand (Read & read, Options & opts, Cluster & cluster, int K) {
 	for (int m = 0; m < cluster.matches.size(); m++) {
-		cluster.matches[m].first.pos = read.length - (cluster.matches[m].first.pos + opts.globalK);
+		cluster.matches[m].first.pos = read.length - (cluster.matches[m].first.pos + K);
 	}
 	GenomePos r = cluster.qStart;
 	cluster.qStart = read.length - cluster.qEnd;
 	cluster.qEnd = read.length - r;
 }
 
-void SwapStrand(Read &read, Options &opts, GenomePairs &matches) {
+void SwapStrand(Read &read, Options &opts, GenomePairs &matches, int K) {
 	for (int m=0; m < matches.size(); m++) {
-		matches[m].first.pos = read.length - (matches[m].first.pos + opts.globalK);
+		matches[m].first.pos = read.length - (matches[m].first.pos + K);
 	}
 }
 
-void SwapStrand(Read &read, Options &opts, GenomePairs &matches, int start, int end) {
+void SwapStrand(Read &read, Options &opts, GenomePairs &matches, int start, int end, int K) {
 	for (int m=start; m<end; m++) {
-		matches[m].first.pos = read.length - (matches[m].first.pos + opts.globalK);
+		matches[m].first.pos = read.length - (matches[m].first.pos + K);
 	}
 }
 
@@ -79,7 +79,7 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 		// This is for finding refined anchors;
 		// NOTICE: Need to flip such Cluster back into reversed strand;
 		//
-		if (clusters[ph].strand == 1) SwapStrand(read, opts, clusters[ph]);
+		if (clusters[ph].strand == 1) SwapStrand(read, opts, clusters[ph], opts.globalK);
 		// 
 		// Decide the diagonal band for each clusters[ph]
 		// Find the digonal band that each clusters[ph] is in; 
@@ -217,7 +217,7 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 			}
 		}
 		if (refinedclusters[ph].matches.size() == 0) continue;
-		if (clusters[ph].strand == 1) SwapStrand(read, smallOpts, refinedclusters[ph]);
+		if (clusters[ph].strand == 1) SwapStrand(read, smallOpts, refinedclusters[ph], opts.localK);
 		refinedclusters[ph].SetClusterBoundariesFromMatches(smallOpts);
 		refinedclusters[ph].strand = clusters[ph].strand;
 		refinedclusters[ph].coarse = -1;
@@ -228,7 +228,7 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 	return 0;
 }
 
-int RefineSpace(int refineSpaceDiag, bool consider_str, GenomePairs &EndPairs, Options & opts, Genome & genome, Read & read, char *strands[2], int &ChromIndex, GenomePos qe, 
+int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePairs &EndPairs, Options & opts, Genome & genome, Read & read, char *strands[2], int &ChromIndex, GenomePos qe, 
 				GenomePos qs, GenomePos te, GenomePos ts, bool st, GenomePos lrts=0, GenomePos lrlength=0) {
 	//
 	// Decide the diagonal band for this space
@@ -241,19 +241,18 @@ int RefineSpace(int refineSpaceDiag, bool consider_str, GenomePairs &EndPairs, O
 	maxDiagNum = max(diag1, diag2) + refineSpaceDiag; 
 
 	vector<GenomeTuple> EndReadTup, EndGenomeTup;
-	StoreMinimizers_noncanonical<GenomeTuple, Tuple>(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength, opts.globalK, opts.globalW, EndGenomeTup, false); // local minimizer
+	StoreMinimizers_noncanonical<GenomeTuple, Tuple>(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength, opts.localK, opts.localW, EndGenomeTup, false); // local minimizer
 	sort(EndGenomeTup.begin(), EndGenomeTup.end());
-	StoreMinimizers_noncanonical<GenomeTuple, Tuple>(strands[st] + qs, qe - qs, opts.globalK, opts.globalW, EndReadTup, false);
+	StoreMinimizers_noncanonical<GenomeTuple, Tuple>(strands[st] + qs, qe - qs, K, W, EndReadTup, false);
 	sort(EndReadTup.begin(), EndReadTup.end());
-	CompareLists<GenomeTuple, Tuple>(EndReadTup.begin(), EndReadTup.end(), EndGenomeTup.begin(), EndGenomeTup.end(), EndPairs, 
-										opts, true, maxDiagNum, minDiagNum, false); // By passing maxDiagNum and minDiagNum, this function
+	CompareLists<GenomeTuple, Tuple>(EndReadTup.begin(), EndReadTup.end(), EndGenomeTup.begin(), EndGenomeTup.end(), EndPairs, opts, true, maxDiagNum, minDiagNum, false); // By passing maxDiagNum and minDiagNum, this function
 										// filters out anchors that are outside the diagonal band;
 
 	for (int rm = 0; rm < EndPairs.size(); rm++) {
 		EndPairs[rm].first.pos += qs;
 		EndPairs[rm].second.pos += ts-lrts;
 		assert(EndPairs[rm].first.pos < read.length);
-		if (consider_str == true and st == 1) EndPairs[rm].first.pos = read.length - EndPairs[rm].first.pos - opts.globalK;
+		if (consider_str == true and st == 1) EndPairs[rm].first.pos = read.length - EndPairs[rm].first.pos - opts.localK;
 		
 	}	
 	return 0;
@@ -263,7 +262,7 @@ int RefineSpace(int refineSpaceDiag, bool consider_str, GenomePairs &EndPairs, O
 // This function find anchors btwn two adjacent Clusters;
 //
 int 			
-RefineBtwnSpace(vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluster, Options &opts, Genome &genome, Read &read, char *strands[2], GenomePos qe, GenomePos qs, 
+RefineBtwnSpace(int K, int W, vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluster, Options &opts, Genome &genome, Read &read, char *strands[2], GenomePos qe, GenomePos qs, 
 				GenomePos te, GenomePos ts, bool st, GenomePos lrts=0, GenomePos lrlength=0) {
 
 	int ChromIndex = cluster->chromIndex;
@@ -276,7 +275,7 @@ RefineBtwnSpace(vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluste
 	// Find matches in read and reference 
 	//
 	GenomePairs EndPairs;
-	RefineSpace(300, 1, EndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, st, lrts, lrlength);
+	RefineSpace(K, W, 100, 1, EndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, st, lrts, lrlength);
 	float eff = ((float) EndPairs.size()) / min(qe - qs, te - ts);
 	// if (twoblocks) cerr << "refineEffiency: " << eff << " original: " << cluster->refineEffiency << endl;
 	if ((EndPairs.size() > 0 and twoblocks) or (EndPairs.size() > 0 and eff >= opts.anchorstoosparse * 2)) {
@@ -293,7 +292,7 @@ RefineBtwnSpace(vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluste
 	qs = read.length - qe;
 	qe = read.length - t;
 	GenomePairs revEndPairs;
-	RefineSpace(300, 1, revEndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, rst, lrts, lrlength);		
+	RefineSpace(K, W, 100, 1, revEndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, rst, lrts, lrlength);		
 	float reff = ((float) revEndPairs.size()) / min(qe - qs, te - ts);
 	
 	// cerr << "refineEffiency: " << eff << "  reff: " <<  reff << " original: " << cluster->refineEffiency << endl;
@@ -303,14 +302,14 @@ RefineBtwnSpace(vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluste
 				if (rst == 0) {
 					clust << revEndPairs[t].first.pos << "\t"
 						  << revEndPairs[t].second.pos << "\t"
-						  << revEndPairs[t].first.pos + opts.globalK << "\t"
-						  << revEndPairs[t].second.pos + opts.globalK << "\t"
+						  << revEndPairs[t].first.pos + K << "\t"
+						  << revEndPairs[t].second.pos + K << "\t"
 						  << rst << endl;
 				}
 				else {
 					clust << revEndPairs[t].first.pos << "\t"
-						  << revEndPairs[t].second.pos + opts.globalK << "\t"
-						  << revEndPairs[t].first.pos + opts.globalK << "\t"
+						  << revEndPairs[t].second.pos + K << "\t"
+						  << revEndPairs[t].first.pos + K << "\t"
 						  << revEndPairs[t].second.pos<< "\t"
 						  << rst << endl;					
 				}
@@ -319,14 +318,14 @@ RefineBtwnSpace(vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluste
 				if (st == 0) {
 					clust << EndPairs[t].first.pos << "\t"
 						  << EndPairs[t].second.pos << "\t"
-						  << EndPairs[t].first.pos + opts.globalK << "\t"
-						  << EndPairs[t].second.pos + opts.globalK << "\t"
+						  << EndPairs[t].first.pos + K << "\t"
+						  << EndPairs[t].second.pos + K << "\t"
 						  << st << endl;
 				}
 				else {
 					clust << EndPairs[t].first.pos << "\t"
-						  << EndPairs[t].second.pos + opts.globalK << "\t"
-						  << EndPairs[t].first.pos + opts.globalK << "\t"
+						  << EndPairs[t].second.pos + K << "\t"
+						  << EndPairs[t].first.pos + K << "\t"
 						  << EndPairs[t].second.pos<< "\t"
 						  << st << endl;					
 				}
@@ -353,7 +352,7 @@ RefineBtwnSpace(vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluste
 }
 
 void
-RefineBtwnClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*> &RefinedClusters, vector<Cluster> &RevBtwnCluster, 
+RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, vector<Cluster*> &RefinedClusters, vector<Cluster> &RevBtwnCluster, 
 						vector<tuple<int, int, int> > &tracerev, Genome &genome, Read &read, Options &smallOpts, int &p, int &h, char *strands[2]) {
 	//
 	// Find matches btwn every two adjacent Clusters;
@@ -432,7 +431,7 @@ RefineBtwnClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*>
 		if (SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
 			// btwnClusters have GenomePos, st, matches, coarse
 			// This function also set the "coarse" flag for RefinedClusters[cur]
-			if (RefineBtwnSpace(RevBtwnCluster, twoblocks, RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te1, ts1, st1)) {
+			if (RefineBtwnSpace(K, W, RevBtwnCluster, twoblocks, RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te1, ts1, st1)) {
 				// 
 				// Insert a rev cluster
 				//
@@ -445,7 +444,7 @@ RefineBtwnClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*>
 		if (SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
 			// btwnClusters have GenomePos, st, matches, coarse
 			// This function also set the "coarse" flag for RefinedClusters[cur]
-			RefineBtwnSpace(RevBtwnCluster, twoblocks, RefinedClusters[prev], smallOpts, genome, read, strands, qe, qs, te2, ts2, st2);
+			RefineBtwnSpace(K, W, RevBtwnCluster, twoblocks, RefinedClusters[prev], smallOpts, genome, read, strands, qe, qs, te2, ts2, st2);
 		}			
 		c++;
 	}
@@ -481,7 +480,7 @@ RefineBtwnClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*>
 				lrlength=lrts;						
 			}
 			//cerr << "right: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
-			RefineBtwnSpace(RevBtwnCluster, 1, RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
+			RefineBtwnSpace(K, W, RevBtwnCluster, 1, RefinedClusters[rh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
 		}			
 	}
 	//
@@ -514,7 +513,7 @@ RefineBtwnClusters_chain(vector<Primary_chain> &Primary_chains, vector<Cluster*>
 				lrlength=500;						
 			}
 			//cerr << "left: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
-			RefineBtwnSpace(RevBtwnCluster, 1, RefinedClusters[lh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
+			RefineBtwnSpace(K, W, RevBtwnCluster, 1, RefinedClusters[lh], smallOpts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
 		}			
 	}
 	// timing.Tick("refine_btwnclusters");

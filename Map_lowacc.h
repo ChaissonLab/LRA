@@ -129,7 +129,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	// Linear Extend on pure matches
 	//
 	for (int d = 0; d < clusters.size(); d++) {
-		LinearExtend(&clusters[d].matches, ext_clusters[d].matches, ext_clusters[d].matchesLengths, opts, genome, read, clusters[d].chromIndex, clusters[d].strand, 1);
+		LinearExtend(&clusters[d].matches, ext_clusters[d].matches, ext_clusters[d].matchesLengths, opts, genome, read, clusters[d].chromIndex, clusters[d].strand, 1, opts.globalK);
 		// ext_clusters[d].strand = clusters[d].strand;
 		// ext_clusters[d].chromIndex = clusters[d].chromIndex;
 		DecideCoordinates(ext_clusters[d], clusters[d].strand, clusters[d].chromIndex, clusters[d].anchorfreq);
@@ -299,8 +299,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					if (refined_clusters[t].strand  == 0) {
 						clust << refined_clusters[t].matches[h].first.pos << "\t"
 							  << refined_clusters[t].matches[h].second.pos << "\t"
-							  << refined_clusters[t].matches[h].first.pos + smallOpts.globalK << "\t"
-							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].first.pos + smallOpts.localK << "\t"
+							  << refined_clusters[t].matches[h].second.pos + smallOpts.localK << "\t"
 							  << t << "\t"
 							  << p << "\t"
 							  << genome.header.names[refined_clusters[t].chromIndex] <<"\t"
@@ -308,8 +308,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					}
 					else {
 						clust << refined_clusters[t].matches[h].first.pos << "\t"
-							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK << "\t"
-							  << refined_clusters[t].matches[h].first.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].second.pos + smallOpts.localK << "\t"
+							  << refined_clusters[t].matches[h].first.pos + smallOpts.localK << "\t"
 							  << refined_clusters[t].matches[h].second.pos<< "\t"
 							  << t << "\t"
 							  << p << "\t"
@@ -368,8 +368,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					if (Refined_Clusters[t]->strand == 0) {
 						clust << Refined_Clusters[t]->matches[h].first.pos << "\t"
 							  << Refined_Clusters[t]->matches[h].second.pos << "\t"
-							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.globalK << "\t"
-							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.globalK << "\t"
+							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.localK << "\t"
+							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.localK << "\t"
 							  << t << "\t"
 							  << p << "\t"
 							  << genome.header.names[Refined_Clusters[t]->chromIndex] <<"\t"
@@ -377,8 +377,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					}
 					else {
 						clust << Refined_Clusters[t]->matches[h].first.pos << "\t"
-							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.globalK << "\t"
-							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.globalK << "\t"
+							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.localK << "\t"
+							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.localK << "\t"
 							  << Refined_Clusters[t]->matches[h].second.pos<< "\t"
 							  << t << "\t"
 							  << p << "\t"
@@ -422,7 +422,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 				chromIndex = Refined_Clusters[cI]->chromIndex;
 				anchorfreq = Refined_Clusters[cI]->anchorfreq;
 				LinearExtend(&(Refined_Clusters[cI]->matches), extend_clusters[r].matches, extend_clusters[r].matchesLengths, 
-					smallOpts, genome, read, chromIndex, st, 0);
+					smallOpts, genome, read, chromIndex, st, 0, smallOpts.localK);
 			}
 			DecideCoordinates(extend_clusters[r], st, chromIndex, anchorfreq);
 			// if (st == 1) {

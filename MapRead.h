@@ -88,23 +88,22 @@ void SwapReadCoordinates(vector<T> &matches, GenomePos readLength, GenomePos kme
 	}
 }
 
-void ReverseClusterStrand(Read &read, Genome &genome, Options &opts, 
-											vector<Cluster> &clusters) {
-	for (int c = 0; c < clusters.size(); c++) {
-			SwapStrand(read, opts, clusters[c].matches);
-			clusters[c].strand = 1;
-	}
-}
+// void ReverseClusterStrand(Read &read, Genome &genome, Options &opts, vector<Cluster> &clusters) {
+// 	for (int c = 0; c < clusters.size(); c++) {
+// 			SwapStrand(read, opts, clusters[c].matches);
+// 			clusters[c].strand = 1;
+// 	}
+// }
 
-void SetClusterStrand(Read &read, Genome &genome, Options &opts, 
-											vector<Cluster> &clusters) {
-	for (int c = 0; c < clusters.size(); c++) {
-		clusters[c].strand = SetStrand(read, genome, opts, clusters[c].matches);
-		if (clusters[c].strand == 1) {
-			SwapStrand(read, opts, clusters[c].matches);
-		}
-	}
-}
+// void SetClusterStrand(Read &read, Genome &genome, Options &opts, 
+// 											vector<Cluster> &clusters) {
+// 	for (int c = 0; c < clusters.size(); c++) {
+// 		clusters[c].strand = SetStrand(read, genome, opts, clusters[c].matches);
+// 		if (clusters[c].strand == 1) {
+// 			SwapStrand(read, opts, clusters[c].matches);
+// 		}
+// 	}
+// }
 
 
 void 
