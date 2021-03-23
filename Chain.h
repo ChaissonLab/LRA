@@ -566,7 +566,7 @@ void RemovePairedIndels (Tup &chain) {
 		// The last condition is to ensure both SV[c] and SV[c-1] are not zeros.
 		//
 		int blink = max(abs(SV[c]), abs(SV[c-1]));
-		if (sign(SV[c]) != sign(SV[c-1]) and SV[c] != 0 and SV[c-1] != 0 and abs(SV[c] + SV[c-1]) < 50 and SVpos[c] - SVpos[c-1] < 3) { 
+		if (sign(SV[c]) != sign(SV[c-1]) and SV[c] != 0 and SV[c-1] != 0 and abs(SV[c] + SV[c-1]) < 100 and SVpos[c] - SVpos[c-1] < 3) { 
 			// remove anchors from SVpos[c-1] to SV[c];
 			for (int i = SVpos[c-1]; i < SVpos[c]; i++) { if (chain.length(i) < 100) remove[i] = true;}
 		} 
