@@ -1016,7 +1016,7 @@ template<typename Tup>
 void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
 				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, Options & opts, 
 				 const vector<float> & LookUpTable, const vector<Tup> &FragInput, const vector<int> & MatchStart, float & rate) { 
-	bool step_sdp = 1;
+	bool step_sdp = 0;
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
 		long int ForwardDiag = (long int)(H1[i].se.second) - (long int)(H1[i].se.first);
