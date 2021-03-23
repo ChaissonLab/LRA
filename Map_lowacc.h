@@ -39,7 +39,7 @@ void RemoveSpuriousSplitChain(vector<SplitChain> &chains, vector<bool> &spchain_
 	for (int i = 0; i < chains.size(); i++) {total += chains[i].size();}
 	int filter = (int) floor(0.02f * (float) total);
 	int filter_suspiciousDUPINV = (int)floor(0.03f * (float) total);
-	cerr << min(filter_suspiciousDUPINV, 4) << " " << min(filter, 2) << endl;
+	// cerr << min(filter_suspiciousDUPINV, 4) << " " << min(filter, 2) << endl;
 
 	vector<bool> remove(chains.size(), 0);
 	for (int i = 0; i < chains.size(); i++) {
