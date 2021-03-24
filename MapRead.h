@@ -39,7 +39,7 @@ using namespace std;
 
 class SortClusterBySize {
 public:
-	bool operator()(Cluster &a, Cluster &b) {
+	bool operator()(const Cluster &a, const Cluster &b) {
 		return a.matches.size() > b.matches.size();
 	}
 };
