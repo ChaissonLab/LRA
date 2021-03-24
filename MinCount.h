@@ -152,9 +152,6 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 				minimizers.push_back(activeMinimizer);			
 				nMinimizers+=1;
 			}
-			else {
-				cout << "skipping at " << p << endl;
-			}
 		}
 		else {
 			if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) { //TODO(Jingwen)
@@ -162,9 +159,6 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 				if (nextValidWindowEnd == p+k) {
 					minimizers.push_back(activeMinimizer);
 					nMinimizers++;
-				}
-				else {
-					cout << "dotopart skipping at " << p << endl;
 				}
 			}		
 		}		
