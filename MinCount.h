@@ -70,6 +70,7 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 	// Find the active minimizer in this window
 	//
 	int nMinimizers=1;
+	int nSkipped=0;
 
 	for (p = 1; p < w && p < seqLen-k+1 ; p++) {
 
@@ -118,12 +119,12 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 							valid=false;
 						}
 					}			
-					// all n
-					if (valid == false) {
-						return;
-					}
-					nextValidWindowEnd = nextValidWindowStart + windowSpan;
 				}
+				// all n
+				if (valid == false) {
+					return;						
+				}
+				nextValidWindowEnd = nextValidWindowStart + windowSpan;
 			}
 		}		
 
@@ -152,6 +153,9 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 				minimizers.push_back(activeMinimizer);			
 				nMinimizers+=1;
 			}
+			else {
+				nSkipped++;
+			}
 		}
 		else {
 			if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) { //TODO(Jingwen)
@@ -160,12 +164,17 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 					minimizers.push_back(activeMinimizer);
 					nMinimizers++;
 				}
+				else {
+					nSkipped++;
+				}
 			}		
 		}		
 		if (p + 1 % 10000 == 0) {
-			cerr << p +1 << endl;
+			cerr << p +1 << "\t" << nMinimizers << "\t" << nSkipped << endl;
 		}
 	}
+	assert(0);
+	cerr << nMinimizers << " skipped " << nSkipped << endl;
 }
 
 template <typename TupPos, typename Tup> 
