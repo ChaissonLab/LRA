@@ -592,7 +592,7 @@ void RemovePairedIndels (Tup &chain) {
 			for (int i = SVpos[c-1]; i < SVpos[c]; i++) { if (chain.length(i) < 100) remove[i] = true;}
 		} 
 	}
-
+	
 	if (lastValidDist == -1 or firstValidDist == -1) {
 		// all invalid
 		for (int i=0; i < chain.size(); i++) { remove[i] = true;}
@@ -614,7 +614,9 @@ void RemovePairedIndels (Tup &chain) {
 	}
 	chain.chain.resize(m);
 	chain.ClusterIndex.resize(m);
-	if (!chain.link.empty()) chain.link.resize(m-1);
+	if (chain.chain.size() > 0) {
+		if (!chain.link.empty()) chain.link.resize(m-1);
+	}
 }
 
 
@@ -697,7 +699,7 @@ RemovePairedIndels (GenomePairs &matches, vector<unsigned int> &chain, vector<in
 // This function removes spurious anchors after SDP;
 //
 template<typename Tup>
-void RemoveSpuriousAnchors(Tup &chain, Options &opts) {
+void RemoveSpuriousAnchors(Tup &chain) {
 
  	if (chain.size() < 2) return;
 	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]

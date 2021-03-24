@@ -69,7 +69,7 @@ RefineBtwnSpace_AppendCloseCluster (vector<Cluster> &RevBtwnCluster, bool twoblo
 	// Find matches in read and reference 
 	//
 	GenomePairs EndPairs;
-	RefineSpace(opts.localK, opts.localW, 100, 1, EndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, st, lrts, lrlength);
+	RefineSpace(opts.globalK, opts.globalW, 100, 1, EndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, st, lrts, lrlength);
 	float eff = ((float) EndPairs.size()) / min(qe - qs, te - ts);
 	// if (twoblocks) cerr << "refineEffiency: " << eff << " original: " << cluster->refineEffiency << endl;
 	//
@@ -86,9 +86,9 @@ RefineBtwnSpace_AppendCloseCluster (vector<Cluster> &RevBtwnCluster, bool twoblo
 	if (twoblocks) return 0;
 	CartesianSort(EndPairs);
 	GenomePos max_pairdist = 0;
-	for (int e = 1; e < EndPairs.size(); e++) { max_pairdist = max(max_pairdist, EndPairs[e].first.pos - (EndPairs[e - 1].first.pos + opts.localK));}
+	for (int e = 1; e < EndPairs.size(); e++) { max_pairdist = max(max_pairdist, EndPairs[e].first.pos - (EndPairs[e - 1].first.pos + opts.globalK));}
 	if (max_pairdist <= 100 and eff >= opts.anchorstoosparse * 2) {
-		append_to_closetcluster(EndPairs, 0, EndPairs.size(), cluster, prevcluster, opts, st, opts.localK);
+		append_to_closetcluster(EndPairs, 0, EndPairs.size(), cluster, prevcluster, opts, st, opts.globalK);
 		// cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
 		// cluster->SetClusterBoundariesFromMatches(opts);
 		// cluster->refinespace = 1;
@@ -102,7 +102,7 @@ RefineBtwnSpace_AppendCloseCluster (vector<Cluster> &RevBtwnCluster, bool twoblo
 				end++;
 			}
 			if (end - start >= 4) {
-				append_to_closetcluster(EndPairs, start, end, cluster, prevcluster, opts, st, opts.localK);
+				append_to_closetcluster(EndPairs, start, end, cluster, prevcluster, opts, st, opts.globalK);
 			}
 			start = end;
 		}
@@ -326,7 +326,7 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		}
 		splitchains[ph].clusterIndex = ph;
 		if (refinedclusters[ph].matches.size() == 0) continue;
-		if (splitchains[ph].Strand == 1) SwapStrand(read, smallOpts, refinedclusters[ph], opts.localK);
+		if (splitchains[ph].Strand == 1) SwapStrand(read, smallOpts, refinedclusters[ph], smallOpts.globalK);
 		refinedclusters[ph].SetClusterBoundariesFromMatches(smallOpts);
 		refinedclusters[ph].strand = splitchains[ph].Strand;
 		refinedclusters[ph].coarse = ph;
@@ -449,7 +449,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 			SpaceLength = min(qe - qs, te2 - ts2); 
 			// if (twoblocks) {cerr << "refinetwoblocks " << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;}
 			if (SpaceLength <= opts.refineSpaceDist and RefinedClusters[cur].chromIndex == RefinedClusters[prev].chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
-				RefineBtwnSpace(opts.localK, opts.localW, RevBtwnCluster, twoblocks, &RefinedClusters[prev], opts, genome, read, strands, qe, qs, te2, ts2, st2);
+				RefineBtwnSpace(opts.globalK, opts.globalW, RevBtwnCluster, twoblocks, &RefinedClusters[prev], opts, genome, read, strands, qe, qs, te2, ts2, st2);
 			}				
 		}
 		c++;
@@ -487,7 +487,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 					lrlength=lrts;						
 				}
 				//				cerr << "right: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
-				RefineBtwnSpace(opts.localK, opts.localW, RevBtwnCluster, 1, &RefinedClusters[rh], opts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
+				RefineBtwnSpace(opts.globalK, opts.globalW, RevBtwnCluster, 1, &RefinedClusters[rh], opts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
 			}			
 		}		
 	}
@@ -523,7 +523,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 					lrlength=500;						
 				}
 				//cerr << "left: " << ts-lrts << " length: " << te-ts+lrlength<< endl;
-				RefineBtwnSpace(opts.localK, opts.localW, RevBtwnCluster, 1, &RefinedClusters[lh], opts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
+				RefineBtwnSpace(opts.globalK, opts.globalW, RevBtwnCluster, 1, &RefinedClusters[lh], opts, genome, read, strands, qe, qs, te, ts, st, lrts, lrlength);
 			}			
 		}		
 	}

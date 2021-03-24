@@ -298,8 +298,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					if (refined_clusters[t].strand  == 0) {
 						clust << refined_clusters[t].matches[h].first.pos << "\t"
 							  << refined_clusters[t].matches[h].second.pos << "\t"
-							  << refined_clusters[t].matches[h].first.pos + smallOpts.localK << "\t"
-							  << refined_clusters[t].matches[h].second.pos + smallOpts.localK << "\t"
+							  << refined_clusters[t].matches[h].first.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK << "\t"
 							  << t << "\t"
 							  << p << "\t"
 							  << genome.header.names[refined_clusters[t].chromIndex] <<"\t"
@@ -307,8 +307,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					}
 					else {
 						clust << refined_clusters[t].matches[h].first.pos << "\t"
-							  << refined_clusters[t].matches[h].second.pos + smallOpts.localK << "\t"
-							  << refined_clusters[t].matches[h].first.pos + smallOpts.localK << "\t"
+							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].first.pos + smallOpts.globalK << "\t"
 							  << refined_clusters[t].matches[h].second.pos<< "\t"
 							  << t << "\t"
 							  << p << "\t"
@@ -367,8 +367,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					if (Refined_Clusters[t]->strand == 0) {
 						clust << Refined_Clusters[t]->matches[h].first.pos << "\t"
 							  << Refined_Clusters[t]->matches[h].second.pos << "\t"
-							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.localK << "\t"
-							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.localK << "\t"
+							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.globalK << "\t"
+							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.globalK << "\t"
 							  << t << "\t"
 							  << p << "\t"
 							  << genome.header.names[Refined_Clusters[t]->chromIndex] <<"\t"
@@ -376,8 +376,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					}
 					else {
 						clust << Refined_Clusters[t]->matches[h].first.pos << "\t"
-							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.localK << "\t"
-							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.localK << "\t"
+							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.globalK << "\t"
+							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.globalK << "\t"
 							  << Refined_Clusters[t]->matches[h].second.pos<< "\t"
 							  << t << "\t"
 							  << p << "\t"
@@ -421,7 +421,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 				chromIndex = Refined_Clusters[cI]->chromIndex;
 				anchorfreq = Refined_Clusters[cI]->anchorfreq;
 				LinearExtend(&(Refined_Clusters[cI]->matches), extend_clusters[r].matches, extend_clusters[r].matchesLengths, 
-					smallOpts, genome, read, chromIndex, st, 0, smallOpts.localK);
+					smallOpts, genome, read, chromIndex, st, 0, smallOpts.globalK);
 			}
 			DecideCoordinates(extend_clusters[r], st, chromIndex, anchorfreq);
 			// if (st == 1) {
@@ -483,9 +483,9 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		for (int t = 0; t < merge_spcluster.size(); t++) {
 			ultimatechains[t].clusters = &extend_clusters;
 			if (extend_clusters.size() > 0 and extend_clusters[0].matches.size() < 3*read.length) {
-				SparseDP(merge_spcluster[t], extend_clusters, ultimatechains[t], opts, LookUpTable, read);
+				SparseDP(merge_spcluster[t], extend_clusters, ultimatechains[t], smallOpts, LookUpTable, read);
 				RemovePairedIndels<UltimateChain>(ultimatechains[t]); 
-				RemoveSpuriousAnchors(ultimatechains[t], opts);
+				RemoveSpuriousAnchors(ultimatechains[t]);
 			}
 			// ultimatechains[t].CleanSpurious();
 		}
@@ -528,7 +528,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			break;
 		}
 		for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
-			if (opts.skipBandedRefine == false) { IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts, indelRefineBuffers); }
+			if (opts.skipBandedRefine == false) { IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], smallOpts, indelRefineBuffers); }
 			alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
 		}
 		alignments.back().SetFromSegAlignment(smallOpts);
@@ -551,47 +551,6 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	}
 	if (alignments.size() > 0) return 1;
 	return 0;
-	// vector<SegAlignmentGroup> alignments;
-	// AlignmentsOrder alignmentsOrder(&alignments);
-	// AffineAlignBuffers buff;
-	// for (int p = 0; p < chains.size(); p++) {
-	// 	assert(chains[p].chain.size() > 0);
-	// 	alignments.resize(alignments.size() + 1);	
-	// 	vector<SplitChain> spchain; vector<bool> spchain_link; vector<pair<GenomePos, GenomePos>> spchain_qpos;
-	// 	SPLITChain(read, chains[p], spchain, spchain_link, spchain_qpos, chains[p].link, opts);
-	// 	int LSC = LargestSplitChain(spchain);
-	// 	SparseDP_and_RefineAlignment_btwn_anchors(chains[p], spchain, spchain_link, spchain_qpos, ext_clusters, alignments, smallOpts, 
-	// 							LookUpTable, read, strands, p, genome, LSC, tinyOpts, buff, svsigstrm);
-	// 	if (alignments.back().SegAlignment.size() == 0) {
-	// 		read.unaligned = 1;
-	// 		break;
-	// 	}
-	// 	for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
-	// 		if (opts.skipBandedRefine == false) { IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts, indelRefineBuffers); }
-	// 		alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
-	// 	}
-	// 	alignments.back().SetFromSegAlignment(smallOpts);
-	// }
-	// if (read.unaligned) {
-	// 	output_unaligned(read, opts, *output);
-	// 	return 0;
-	// } 	
-	// alignmentsOrder.Update(&alignments);
-	// alignmentsOrder.SimpleMapQV(read, smallOpts);	
-	// OUTPUT(alignmentsOrder, read, opts, genome, output);
-	// //
-	// // Done with one read. Clean memory.
-	// //
-	// delete[] readRC;
-	// for (int a = 0; a < alignments.size(); a++) {
-	// 	for (int s = 0; s < alignments[a].SegAlignment.size(); s++) {
-	// 		delete alignments[a].SegAlignment[s];
-	// 	}
-	// }
-	// if (alignments.size() > 0) {
-	// 	return 1;
-	// }
-	// return 0;
 }
 
 #endif

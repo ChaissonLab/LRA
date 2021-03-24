@@ -221,7 +221,7 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 			}
 		}
 		if (refinedclusters[ph].matches.size() == 0) continue;
-		if (clusters[ph].strand == 1) SwapStrand(read, smallOpts, refinedclusters[ph], opts.localK);
+		if (clusters[ph].strand == 1) SwapStrand(read, smallOpts, refinedclusters[ph], smallOpts.globalK);
 		refinedclusters[ph].SetClusterBoundariesFromMatches(smallOpts);
 		refinedclusters[ph].strand = clusters[ph].strand;
 		refinedclusters[ph].coarse = -1;
@@ -245,7 +245,7 @@ int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePair
 	maxDiagNum = max(diag1, diag2) + refineSpaceDiag; 
 
 	vector<GenomeTuple> EndReadTup, EndGenomeTup;
-	StoreMinimizers_noncanonical<GenomeTuple, Tuple>(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength, opts.localK, opts.localW, EndGenomeTup, false); // local minimizer
+	StoreMinimizers_noncanonical<GenomeTuple, Tuple>(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength, K, W, EndGenomeTup, false); // local minimizer
 	sort(EndGenomeTup.begin(), EndGenomeTup.end());
 	StoreMinimizers_noncanonical<GenomeTuple, Tuple>(strands[st] + qs, qe - qs, K, W, EndReadTup, false);
 	sort(EndReadTup.begin(), EndReadTup.end());
@@ -256,7 +256,9 @@ int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePair
 		EndPairs[rm].first.pos += qs;
 		EndPairs[rm].second.pos += ts-lrts;
 		assert(EndPairs[rm].first.pos < read.length);
-		if (consider_str == true and st == 1) EndPairs[rm].first.pos = read.length - EndPairs[rm].first.pos - opts.localK;
+		if (consider_str == true and st == 1) EndPairs[rm].first.pos = read.length - EndPairs[rm].first.pos - K;
+		assert(EndPairs[rm].first.pos + K <= read.length);
+
 		
 	}	
 	return 0;
