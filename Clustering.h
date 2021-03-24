@@ -1763,14 +1763,15 @@ void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genom
 	
 	}
 }
+
 void CheckTrueIntervalInFineCluster(vector<Cluster> &clusters, string &rname, Genome &genome, Read &read) {
 	if (read.unaligned) return;
 	string chrom;
 	GenomePos i_s, i_e;
 	string bname = rname;
 	regex re("[!]");
-	sregex_token_iterator first{bname.begin(), bname.end(), re, -1}, last;//the '-1' is what makes the regex split (-1 := what was not matched)
-	vector<string> tokens{first, last};
+	/*	sregex_token_iterator first{bname.begin(), bname.end(), re, -1}, last;//the '-1' is what makes the regex split (-1 := what was not matched)
+		vector<string> tokens{first, last};
 	chrom = tokens[1];
 	string::size_type sz;
 	i_s = stoi(tokens[2], &sz);
@@ -1793,5 +1794,6 @@ void CheckTrueIntervalInFineCluster(vector<Cluster> &clusters, string &rname, Ge
 		cclust << rname << endl;
 	}
 	cclust.close();
+	*/
 }
 #endif

@@ -240,28 +240,26 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			GenomePairs *BtwnPairs;
 			GenomePairs for_BtwnPairs;
 			GenomePairs rev_BtwnPairs;
-
-			int refineSpaceDiag = (int) (0.15f * read_dist);			
-			RefineSpace(tinyOpts.localK, tinyOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
+			// cerr << "abs(read_dist-genome_dist): "  << abs(read_dist-genome_dist)<< endl;
+			// cerr << "min(read_dist, genome_dist): " << min(read_dist, genome_dist) << endl;
+			// cerr << "curReadEnd: " << curReadEnd << "  curGenomeEnd: " << curGenomeEnd << "  nextReadStart: " << nextReadStart << "  nextGenomeStart: " << nextGenomeStart << endl;
+			int refineSpaceDiag = (abs(read_dist - genome_dist) < 50) ? 80 : 100;
+			Options nanoOpts = tinyOpts;
+			if (min(read_dist, genome_dist) >= 3000 and abs(read_dist - genome_dist) >= 3000) { // big tandem repeat
+				nanoOpts.localK += 3;
+				refineSpaceDiag = 120;
+			}
+			RefineSpace(nanoOpts.localK, nanoOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, nanoOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, str);
-
-			// int refineSpaceDiag = (abs(read_dist - genome_dist) < 50) ? 80 : 100;
-			// Options nanoOpts = tinyOpts;
-			// if (min(read_dist, genome_dist) >= 3000 and abs(read_dist - genome_dist) >= 3000) { // big tandem repeat
-			// 	nanoOpts.localK += 3;
-			// 	refineSpaceDiag = 120;
-			// }
-			// RefineSpace(nanoOpts.localK, nanoOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, nanoOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
-			// 				curGenomeEnd, str);
-			// //
-			// // check larger refineSpaceDiag;
-			// //
-			// if (min(read_dist, genome_dist) > 30000 and (for_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse) { // this case likely means there is a large SV events. 
-			// 	for_BtwnPairs.clear();
-			// 	refineSpaceDiag = 500;
-			// 	RefineSpace(nanoOpts.localK, nanoOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, nanoOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
-			// 				curGenomeEnd, str);		
-			// } 
+			//
+			// check larger refineSpaceDiag;
+			//
+			if (min(read_dist, genome_dist) > 30000 and (for_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse) { // this case likely means there is a large SV events. 
+				for_BtwnPairs.clear();
+				refineSpaceDiag = 500;
+				RefineSpace(nanoOpts.localK, nanoOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, nanoOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
+							curGenomeEnd, str);		
+			} 
 			//
 			// If anchor is still too sparse, try finding seeds in the inversed direction
 			//
@@ -272,7 +270,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				curReadEnd = read.length - nextReadStart;
 				nextReadStart = read.length - temp;
 				refineSpaceDiag = 100; 
-				RefineSpace(tinyOpts.localK, tinyOpts.localW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
+				RefineSpace(nanoOpts.localK, nanoOpts.localW, refineSpaceDiag, 0, rev_BtwnPairs, nanoOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, inv_str);	
 				// inversion = 1;	
 				if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) > 1000) {
@@ -305,7 +303,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				GenomePairs ExtendBtwnPairs;
 				vector<int> ExtendBtwnPairsMatchesLength;
 				vector<unsigned int> BtwnChain;
-				LinearExtend(BtwnPairs, ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, tinyOpts, genome, read, chromIndex, 0, 0, tinyOpts.localK);
+				LinearExtend(BtwnPairs, ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, nanoOpts, genome, read, chromIndex, 0, 0, nanoOpts.localK);
 
 				if (inversion == 0) {
 					//
@@ -324,23 +322,23 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				// nanoOpts.coefficient=12;//9 this is calibrately set to 12
 
 				float inv_value = 0; int inv_NumofAnchors = 0;
-				SparseDP_ForwardOnly(ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, BtwnChain, tinyOpts, LookUpTable, inv_value, inv_NumofAnchors, 2); //1
+				SparseDP_ForwardOnly(ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, BtwnChain, nanoOpts, LookUpTable, inv_value, inv_NumofAnchors, 2); //1
 				RemovePairedIndels(ExtendBtwnPairs, BtwnChain, ExtendBtwnPairsMatchesLength);
 
-				if (tinyOpts.dotPlot and tinyOpts.readname == read.name) {
+				if (nanoOpts.dotPlot) {
 					ofstream pSclust("BtwnPairs.tab", std::ofstream::app);
 					for (int bp = BtwnPairs->size()-1; bp >= 0; bp--) {
 						if (inversion == 0) {
 							if (str == 0) {
 								pSclust << (*BtwnPairs)[bp].first.pos << "\t"
 									  << (*BtwnPairs)[bp].second.pos << "\t"
-									  << (*BtwnPairs)[bp].first.pos + tinyOpts.localK << "\t"
-									  << (*BtwnPairs)[bp].second.pos + tinyOpts.localK << "\t"
+									  << (*BtwnPairs)[bp].first.pos + nanoOpts.globalK << "\t"
+									  << (*BtwnPairs)[bp].second.pos + nanoOpts.globalK << "\t"
 									  << 0 << endl;
 							}
 							else if (str == 1) {
-								pSclust << read.length - (*BtwnPairs)[bp].first.pos - tinyOpts.localK << "\t"
-									  << (*BtwnPairs)[bp].second.pos + tinyOpts.localK << "\t"
+								pSclust << read.length - (*BtwnPairs)[bp].first.pos - nanoOpts.globalK << "\t"
+									  << (*BtwnPairs)[bp].second.pos + nanoOpts.globalK << "\t"
 									  << read.length - (*BtwnPairs)[bp].first.pos << "\t"
 									  << (*BtwnPairs)[bp].second.pos << "\t"
 									  << 1 << endl;					
@@ -350,13 +348,13 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 							if (inv_str == 0) {
 								pSclust << (*BtwnPairs)[bp].first.pos << "\t"
 									  << (*BtwnPairs)[bp].second.pos << "\t"
-									  << (*BtwnPairs)[bp].first.pos + tinyOpts.localK << "\t"
-									  << (*BtwnPairs)[bp].second.pos + tinyOpts.localK << "\t"
+									  << (*BtwnPairs)[bp].first.pos + nanoOpts.globalK << "\t"
+									  << (*BtwnPairs)[bp].second.pos + nanoOpts.globalK << "\t"
 									  << 0 << endl;
 							}
 							else if (inv_str == 1) {
-								pSclust << read.length - (*BtwnPairs)[bp].first.pos - tinyOpts.localK << "\t"
-									  << (*BtwnPairs)[bp].second.pos + tinyOpts.localK << "\t"
+								pSclust << read.length - (*BtwnPairs)[bp].first.pos - nanoOpts.globalK << "\t"
+									  << (*BtwnPairs)[bp].second.pos + nanoOpts.globalK << "\t"
 									  << read.length - (*BtwnPairs)[bp].first.pos << "\t"
 									  << (*BtwnPairs)[bp].second.pos << "\t"
 									  << 1 << endl;					
@@ -403,7 +401,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 					eSclust.close();
 				}	
 
-				if (tinyOpts.dotPlot and tinyOpts.readname == read.name) {
+				if (nanoOpts.dotPlot) {
 					ofstream Sclust("SparseDP_Forward.tab", std::ofstream::app);
 						for (int btc = BtwnChain.size()-1; btc >= 0; btc--) {
 							if (inversion == 0) {
@@ -466,7 +464,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 					btc_nextGenomeStart = ExtendBtwnPairs[BtwnChain[btc]].second.pos;
 					btc_nextReadStart = ExtendBtwnPairs[BtwnChain[btc]].first.pos;
 					RefineByLinearAlignment(btc_curReadEnd, btc_curGenomeEnd, btc_nextReadStart, btc_nextGenomeStart, str, chromIndex, 
-											alignments.back().SegAlignment.back(), read, genome, strands, scoreMat, pathMat, tinyOpts, buff);				
+											alignments.back().SegAlignment.back(), read, genome, strands, scoreMat, pathMat, nanoOpts, buff);				
 
 					alignments.back().SegAlignment.back()->blocks.push_back(Block(ExtendBtwnPairs[BtwnChain[btc]].first.pos, ExtendBtwnPairs[BtwnChain[btc]].second.pos, 
 														ExtendBtwnPairsMatchesLength[BtwnChain[btc]]));
@@ -481,7 +479,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				btc_nextReadStart = nextReadStart;			
 				if (btc_nextGenomeStart > btc_curGenomeEnd and btc_nextReadStart > btc_curReadEnd) {
 					RefineByLinearAlignment(btc_curReadEnd, btc_curGenomeEnd, btc_nextReadStart, btc_nextGenomeStart, str, chromIndex, 
-											alignments.back().SegAlignment.back(), read, genome, strands, scoreMat, pathMat, tinyOpts, buff);					
+											alignments.back().SegAlignment.back(), read, genome, strands, scoreMat, pathMat, nanoOpts, buff);					
 				}				
 			}
 			else {
@@ -832,7 +830,6 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
 		if (st != LSC) alignment->Supplymentary = 1;
 		GenomePos qPos = 0;
 		bool inv_str = 0, inversion = 0, breakalignment = 0, prev_inv = 0;
-		int last = 0;
 		if (str == 0) {
 			int fl = end; inv_str = 1; prev_inv = end;
 			while (fl > start) {
@@ -848,18 +845,12 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
 				if (inversion == 1 or breakalignment == 1) { // an inversion found in between two anchors
 					if (inversion == 1) alignments.back().SegAlignment.back()->UpdateParameters(inv_str, smallOpts, LookUpTable, svsigstrm, strands);
 					else alignments.back().SegAlignment.back()->UpdateParameters(str, smallOpts, LookUpTable, svsigstrm, strands);
-					// alignments.back().NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
-					alignments.back().NumOfAnchors0 = last - fl;
-					alignments.back().NumOfAnchors1 = last - fl;
-
+					alignments.back().NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
 					Alignment *next_alignment = new Alignment(ultimatechains[st].FirstSDPValue, strands[str], read.seq, read.length, 
 											 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
 											 genome.header.names[chromIndex], chromIndex); 
-					// next_alignment->NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
-					// next_alignment->NumOfAnchors1 = ultimatechains[st].NumOfAnchors0;
-					// next_alignment->NumOfAnchors0 = fl - start;
-					// next_alignment->NumOfAnchors1 = fl - start;
-					last = fl;
+					next_alignment->NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
+					next_alignment->NumOfAnchors1 = ultimatechains[st].NumOfAnchors0;
 					next_alignment->Supplymentary = 1;
 					alignments.back().SegAlignment.push_back(next_alignment);
 					prev_inv = fl;
@@ -882,16 +873,12 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
 				if (inversion == 1 or breakalignment == 1) {
 					if (inversion == 1) alignments.back().SegAlignment.back()->UpdateParameters(inv_str, smallOpts, LookUpTable, svsigstrm, strands);
 					else alignments.back().SegAlignment.back()->UpdateParameters(str, smallOpts, LookUpTable, svsigstrm, strands);
-					// alignments.back().NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
-					alignments.back().NumOfAnchors0 = fl - last;
-					alignments.back().NumOfAnchors1 = fl - last;
-
+					alignments.back().NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
 					Alignment *next_alignment = new Alignment(ultimatechains[st].FirstSDPValue, strands[str], read.seq, read.length, 
 											 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
 											 genome.header.names[chromIndex], chromIndex); 
-					// next_alignment->NumOfAnchors0 = fl - start;
-					// next_alignment->NumOfAnchors1 = fl - start;
-					last = fl;
+					next_alignment->NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
+					next_alignment->NumOfAnchors1 = ultimatechains[st].NumOfAnchors0;
 					next_alignment->Supplymentary = 1;
 					alignments.back().SegAlignment.push_back(next_alignment);
 					prev_inv = fl;

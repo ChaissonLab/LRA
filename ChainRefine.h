@@ -221,6 +221,7 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		}						
 		refinedclusters[ph].maxDiagNum = maxDN + 50; //20
 		refinedclusters[ph].minDiagNum = minDN - 50;//20
+
 		//
 		// Get shorthand access to alignment boundaries.
 		//
