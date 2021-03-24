@@ -512,7 +512,7 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 		// timing.Tick("2nd SDP");
 		
 		if (tinyOpts.RemovePairedIndels) RemovePairedIndels<FinalChain>(finalchain); //(This is deleting lots of good anchors)
-		if (tinyOpts.RemoveSpuriousAnchors) RemoveSpuriousAnchors(finalchain, smallOpts);
+		if (tinyOpts.RemoveSpuriousAnchors) RemoveSpuriousAnchors(finalchain);
 		//
 		// switch back to the original anchors;
 		//
@@ -573,9 +573,9 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 		//
 		if (h > 0) alignment->ISsecondary = 1;
 		if (st != LSC) alignment->Supplymentary = 1;
-
 		bool inv_str = 0, inversion = 0, breakalignment = 0, prev_inv = 0;
 		if (str == 0) {
+			int last = end - 1;
 			int fl = end - 1;
 			inv_str = 1; prev_inv = end - 1;
 			while (fl > start) {
@@ -592,24 +592,29 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 					// alignments.back().SegAlignment.back()->UpdateParameters(inv_str, smallOpts, LookUpTable, svsigstrm, strands);
 					if (inversion == 1) alignments.back().SegAlignment.back()->UpdateParameters(inv_str, smallOpts, LookUpTable, svsigstrm, strands);
 					else alignments.back().SegAlignment.back()->UpdateParameters(str, smallOpts, LookUpTable, svsigstrm, strands);
-					alignments.back().NumOfAnchors0 = Primary_chains[p].chains[h].NumOfAnchors0;
+					alignments.back().SegAlignment.back()->NumOfAnchors0 = Primary_chains[p].chains[h].NumOfAnchors0;
+					alignments.back().SegAlignment.back()->NumOfAnchors1 = last - fl;
 					Alignment *next_alignment = new Alignment(Primary_chains[p].chains[h].value, strands[str], read.seq, read.length, 
 											 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
 											 genome.header.names[chromIndex], chromIndex); 
-					next_alignment->NumOfAnchors0 = Primary_chains[p].chains[h].NumOfAnchors0;
-					next_alignment->NumOfAnchors1 = fl - start;
+					// next_alignment->NumOfAnchors0 = Primary_chains[p].chains[h].NumOfAnchors0;
+					// next_alignment->NumOfAnchors1 = fl - start;
 					next_alignment->Supplymentary = 1;
 					alignments.back().SegAlignment.push_back(next_alignment);
+					last = fl;
 					prev_inv = fl;
 					inversion = 0;
 					breakalignment = 0;
 				} 
 				fl--;
 			}
+			// alignments.back().SegAlignment.back()->NumOfAnchors0 = last - fl;
+			alignments.back().SegAlignment.back()->NumOfAnchors1 = last - fl;
 			alignments.back().SegAlignment.back()->blocks.push_back(Block(ultimatechain[start].first.pos, ultimatechain[start].second.pos, 
 												ultimatechain.length(start)));
 		}
 		else {
+			int last = start;
 			int fl = start; 
 			inv_str = 0; prev_inv = start;
 			while (fl < end - 1) {
@@ -622,20 +627,24 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 					if (inversion == 1) alignments.back().SegAlignment.back()->UpdateParameters(inv_str, smallOpts, LookUpTable, svsigstrm, strands);
 					else alignments.back().SegAlignment.back()->UpdateParameters(str, smallOpts, LookUpTable, svsigstrm, strands);
 					// alignments.back().SegAlignment.back()->UpdateParameters(inv_str, smallOpts, LookUpTable, svsigstrm, strands);
-					alignments.back().NumOfAnchors0 = Primary_chains[p].chains[h].NumOfAnchors0;
+					alignments.back().SegAlignment.back()->NumOfAnchors1 = fl - last;
+					alignments.back().SegAlignment.back()->NumOfAnchors0 = Primary_chains[p].chains[h].NumOfAnchors0;
 					Alignment *next_alignment = new Alignment(Primary_chains[p].chains[h].value, strands[str], read.seq, read.length, 
 											 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
 											 genome.header.names[chromIndex], chromIndex); 
-					next_alignment->NumOfAnchors0 = Primary_chains[p].chains[h].NumOfAnchors0;
-					next_alignment->NumOfAnchors1 = end-fl;
+					// next_alignment->NumOfAnchors0 = Primary_chains[p].chains[h].NumOfAnchors0;
+					// next_alignment->NumOfAnchors1 = end-fl;
 					next_alignment->Supplymentary = 1;
 					alignments.back().SegAlignment.push_back(next_alignment);
+					last = fl;
 					prev_inv = fl;
 					inversion = 0;
 					breakalignment = 0;
 				} 
 				fl++;
 			}	
+			alignments.back().SegAlignment.back()->NumOfAnchors0 = Primary_chains[p].chains[h].NumOfAnchors0;
+			alignments.back().SegAlignment.back()->NumOfAnchors1 = fl - last;
 			alignments.back().SegAlignment.back()->blocks.push_back(Block(read.length - ultimatechain[end - 1].first.pos - ultimatechain.length(end - 1), 
 												ultimatechain[end - 1].second.pos, ultimatechain.length(end - 1)));
 		}
@@ -832,8 +841,8 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
 		if (st != LSC) alignment->Supplymentary = 1;
 		GenomePos qPos = 0;
 		bool inv_str = 0, inversion = 0, breakalignment = 0, prev_inv = 0;
-		int last = 0;
 		if (str == 0) {
+			int last = end;
 			int fl = end; inv_str = 1; prev_inv = end;
 			while (fl > start) {
 				int cur = fl;
@@ -849,8 +858,8 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
 					if (inversion == 1) alignments.back().SegAlignment.back()->UpdateParameters(inv_str, smallOpts, LookUpTable, svsigstrm, strands);
 					else alignments.back().SegAlignment.back()->UpdateParameters(str, smallOpts, LookUpTable, svsigstrm, strands);
 					// alignments.back().NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
-					alignments.back().NumOfAnchors0 = last - fl;
-					alignments.back().NumOfAnchors1 = last - fl;
+					alignments.back().SegAlignment.back()->NumOfAnchors0 = last - fl;
+					alignments.back().SegAlignment.back()->NumOfAnchors1 = last - fl;
 
 					Alignment *next_alignment = new Alignment(ultimatechains[st].FirstSDPValue, strands[str], read.seq, read.length, 
 											 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
@@ -868,9 +877,12 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
 				} 
 				fl--;
 			}
+			alignments.back().SegAlignment.back()->NumOfAnchors0 = last - fl;
+			alignments.back().SegAlignment.back()->NumOfAnchors1 = last - fl;
 			alignments.back().SegAlignment.back()->blocks.push_back(Block(ultimatechains[st][start].first.pos, ultimatechains[st][start].second.pos, ultimatechains[st].length(start)));
 		}
 		else {
+			int last = start;
 			int fl = start; 
 			inv_str = 0; prev_inv = start;
 			while (fl < end) {
@@ -883,8 +895,8 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
 					if (inversion == 1) alignments.back().SegAlignment.back()->UpdateParameters(inv_str, smallOpts, LookUpTable, svsigstrm, strands);
 					else alignments.back().SegAlignment.back()->UpdateParameters(str, smallOpts, LookUpTable, svsigstrm, strands);
 					// alignments.back().NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
-					alignments.back().NumOfAnchors0 = fl - last;
-					alignments.back().NumOfAnchors1 = fl - last;
+					alignments.back().SegAlignment.back()->NumOfAnchors0 = fl - last;
+					alignments.back().SegAlignment.back()->NumOfAnchors1 = fl - last;
 
 					Alignment *next_alignment = new Alignment(ultimatechains[st].FirstSDPValue, strands[str], read.seq, read.length, 
 											 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
@@ -900,6 +912,8 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
 				} 
 				fl++;
 			}	
+			alignments.back().SegAlignment.back()->NumOfAnchors0 = fl - last;
+			alignments.back().SegAlignment.back()->NumOfAnchors1 = fl - last;
 			alignments.back().SegAlignment.back()->blocks.push_back(Block(read.length - ultimatechains[st][end].first.pos - ultimatechains[st].length(end), 
 												ultimatechains[st][end].second.pos, ultimatechains[st].length(end)));			
 		}

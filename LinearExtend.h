@@ -220,6 +220,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 				CheckOverlap(clusters[cm]->matches[m], opts, Set, Ovp, K);
 
 				if (Ovp == 1) {
+					assert(clusters[cm]->matches[m].first.pos + K <= read.length);
 					extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[m].second.pos)));
 					extCluster[c + start].matchesLengths.push_back(K);	
 					extCluster[c + start].overlap.push_back(1);
@@ -240,6 +241,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 			CheckOverlap(clusters[cm]->matches[n], opts, Set, Ovp, K);
 			
 			if (Ovp == 1) { // clusters[cm]->matches[n] overlaps with "Set";
+				assert(clusters[cm]->matches[m].first.pos + clusters[cm]->matches[n-1].first.pos + K - clusters[cm]->matches[m].first.pos <= read.length);
 				if (clusters[cm]->strand == 0) {
 					extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[m].second.pos)));					
 				}
@@ -249,6 +251,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 				}
 				extCluster[c + start].matchesLengths.push_back(clusters[cm]->matches[n-1].first.pos + K - clusters[cm]->matches[m].first.pos);
 				extCluster[c + start].overlap.push_back(0);
+				assert(clusters[cm]->matches[n].first.pos + K <= read.length);
 				extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[n].first.pos), GenomeTuple(0, clusters[cm]->matches[n].second.pos)));
 				extCluster[c + start].matchesLengths.push_back(K);
 				extCluster[c + start].overlap.push_back(1);
@@ -288,6 +291,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 						n++;
 					}
 					else {
+						assert(clusters[cm]->matches[m].first.pos + qe - clusters[cm]->matches[m].first.pos <= read.length);
 						if (clusters[cm]->strand == 0) {
 							extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[m].second.pos)));
 						}
@@ -304,6 +308,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 				}
 			}
 			else {
+				assert(clusters[cm]->matches[m].first.pos + clusters[cm]->matches[n-1].first.pos + K - clusters[cm]->matches[m].first.pos <= read.length);
 				if (clusters[cm]->strand == 0) {
 					extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[m].second.pos)));					
 				}
@@ -320,6 +325,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 		}
 
 		if (n == clusters[cm]->matches.size()) { // and m != n-1
+			assert(clusters[cm]->matches[m].first.pos + clusters[cm]->matches[n-1].first.pos + K - clusters[cm]->matches[m].first.pos <= read.length);
 			if (clusters[cm]->strand == 0) {
 				extCluster[c + start].matches.push_back(GenomePair(GenomeTuple(0, clusters[cm]->matches[m].first.pos), GenomeTuple(0, clusters[cm]->matches[m].second.pos)));
 			}

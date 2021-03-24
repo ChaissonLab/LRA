@@ -666,7 +666,7 @@ RemovePairedIndels (GenomePairs &matches, vector<unsigned int> &chain, vector<in
 // This function removes spurious anchors after SDP;
 //
 template<typename Tup>
-void RemoveSpuriousAnchors(Tup &chain, Options &opts) {
+void RemoveSpuriousAnchors(Tup &chain) {
 
  	if (chain.size() < 2) return;
 	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]

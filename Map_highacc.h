@@ -402,7 +402,6 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	// Set the parameters for merging anchors and 1st SDP
 	//
 	Options smallOpts=opts;
-	//smallOpts.secondcoefficient=opts.predefined_coefficient; // used to be 12
 	Options tinyOpts=smallOpts;
 	tinyOpts.globalMaxFreq=3;
 	tinyOpts.maxDiag=5;
@@ -421,6 +420,9 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	//
 	vector<Cluster> refinedclusters(clusters.size());
  	vector<Cluster*> RefinedClusters(clusters.size());
+ 	//
+ 	// 1) read is not highly accurate; 2) read is highly accrate but not this read
+ 	//
 	if (!opts.SkipLocalMinimizer and (opts.HighlyAccurate == false or (opts.HighlyAccurate == true and sparse == 1))) {
 			
 		smallOpts.globalK=glIndex.k;
@@ -433,7 +435,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 		smallOpts.minDiagCluster=3; // used to be 3
 		tinyOpts.globalK=smallOpts.globalK-3;
 
-		REFINEclusters(clusters, refinedclusters, genome, read,  glIndex, localIndexes, smallOpts, opts);
+		REFINEclusters(clusters, refinedclusters, genome, read, glIndex, localIndexes, smallOpts, opts);
 		// cerr << "refine cluster done!" << endl;
 		// refinedclusters have GenomePos, chromIndex, coarse, matches, strand, refinespace;
 		for (int s = 0; s < clusters.size(); s++) {
@@ -458,34 +460,8 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	timing.Tick("Refine_clusters");
 
 	int K, W;
-	if (opts.HighlyAccurate or sparse == 0) {K = opts.globalK; W = opts.globalW;}
-	else {K = opts.localK; W = opts.localW;}
-	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-		ofstream clust("RefinedClusters.tab", std::ofstream::app);
-		for (int p = 0; p < RefinedClusters.size(); p++) {
-			for (int h = 0; h < RefinedClusters[p]->matches.size(); h++) {
-				if (RefinedClusters[p]->strand == 0) {
-					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos << "\t"
-						  << RefinedClusters[p]->matches[h].first.pos + K << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos + K << "\t"
-						  << p << "\t"
-						  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
-						  << RefinedClusters[p]->strand << endl;
-				}
-				else {
-					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos + K << "\t"
-						  << RefinedClusters[p]->matches[h].first.pos + K << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos<< "\t"
-						  << p << "\t"
-						  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
-						  << RefinedClusters[p]->strand << endl;					
-				}
-			}
-		}
-		clust.close();
-	}	
+	if (opts.HighlyAccurate and sparse == 1) {K = opts.globalK; W = opts.globalW;}
+	else {K = smallOpts.globalK; W = smallOpts.globalW;}
 
 	if (RefinedClusters.size() == 0) {
 		read.unaligned = 1;
@@ -525,6 +501,34 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 			if (Primary_chains[p].chains[h].ch.size() == 0) continue;
 				RefineBtwnClusters_chain(K, W, Primary_chains, RefinedClusters, RevBtwnCluster, tracerev, genome, read, smallOpts, p, h, strands);
 		}
+	}	
+
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		ofstream clust("RefinedClusters.tab", std::ofstream::app);
+		for (int p = 0; p < RefinedClusters.size(); p++) {
+			for (int h = 0; h < RefinedClusters[p]->matches.size(); h++) {
+				assert(RefinedClusters[p]->matches[h].first.pos + K <= read.length);
+				if (RefinedClusters[p]->strand == 0) {
+					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos << "\t"
+						  << RefinedClusters[p]->matches[h].first.pos + K << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos + K << "\t"
+						  << p << "\t"
+						  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
+						  << RefinedClusters[p]->strand << endl;
+				}
+				else {
+					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos + K << "\t"
+						  << RefinedClusters[p]->matches[h].first.pos + K << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos<< "\t"
+						  << p << "\t"
+						  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
+						  << RefinedClusters[p]->strand << endl;					
+				}
+			}
+		}
+		clust.close();
 	}	
 	//
 	// Add back RevBtwnCluster; Edit Primary_chains based on tracerev;
@@ -576,7 +580,8 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream clust("ExtendClusters.tab", ofstream::app);
 		for (int ep = 0; ep < extend_clusters.size(); ep++) {
-			for (int eh = 0; eh < extend_clusters[ep].matches.size(); eh++) {	
+			for (int eh = 0; eh < extend_clusters[ep].matches.size(); eh++) {
+				assert(extend_clusters[ep].matches[eh].first.pos + extend_clusters[ep].matchesLengths[eh] <= read.length);
 				if (extend_clusters[ep].strand == 0) {
 					clust << extend_clusters[ep].matches[eh].first.pos << "\t"
 						  << extend_clusters[ep].matches[eh].second.pos << "\t"
