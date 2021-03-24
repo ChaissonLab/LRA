@@ -191,6 +191,26 @@ void StoreMinimizers_noncanonical(char *seq, GenomePos seqLen, int k, int w, vec
 	GenomePos p = 0;
 	TupPos m;
 	InitMask(m, k);
+	int nextValidWindowEnd=0;
+	int nextValidWindowStart=0;
+	int windowSpan=w+k-1;
+	bool valid=false;
+	while (nextValidWindowStart < seqLen - windowSpan and !valid) {
+		valid=true;
+		for (int n=nextValidWindowStart; valid and n < nextValidWindowStart+windowSpan; n++ ) {
+			if (seqMapN[seq[n]] > 3) {
+				nextValidWindowStart = n+1;
+				valid=false;
+			}
+		}
+	}
+	// all n
+	if (valid == false) {
+		return;
+	}
+	nextValidWindowEnd = nextValidWindowStart + windowSpan;
+
+
 	StoreTuple(seq, p, k, cur);
 	// TupleRC(cur, curRC, k);
 	//
@@ -213,6 +233,8 @@ void StoreMinimizers_noncanonical(char *seq, GenomePos seqLen, int k, int w, vec
 	can.t = cur.t;
 	minPos = 0;
 	TupPos activeMinimizer, curMinimizer;
+
+
 	activeMinimizer.t = can.t;
 	activeMinimizer.pos = 0;
 	vector<TupPos> curTuples(w);
@@ -243,7 +265,9 @@ void StoreMinimizers_noncanonical(char *seq, GenomePos seqLen, int k, int w, vec
 		}	
 		curTuples[p%w] = curMinimizer;
 	}
-	minimizers.push_back(activeMinimizer);
+	if (nextValidWindowEnd == windowSpan ) {
+		minimizers.push_back(activeMinimizer);
+	}
 	// Now scan the chromosome
 	minTuple.t=m.t;
 	for (p = w; p < seqLen-k+1; p++) {
@@ -254,6 +278,31 @@ void StoreMinimizers_noncanonical(char *seq, GenomePos seqLen, int k, int w, vec
 		curMinimizer.t = (cur.t & for_mask);
 		// if ((cur.t & for_mask) < (curRC.t & for_mask)) curMinimizer.t = (cur.t & for_mask);
 		// else curMinimizer.t = (curRC.t | rev_mask); 
+
+		if ( nextValidWindowEnd == p+k-1)  {
+			if ( seqMapN[seq[p+k-1]] <= 3 ) {
+				nextValidWindowEnd++;
+			}
+			else {
+				nextValidWindowStart = p+k;
+				valid=false;			
+				while (nextValidWindowStart < seqLen - windowSpan and not valid) {
+					valid=true;
+					for (int n=nextValidWindowStart; valid and n < nextValidWindowStart+windowSpan; n++ ) {
+						if (seqMapN[seq[n]] > 3) {
+							nextValidWindowStart = n+1;
+							valid=false;
+						}
+					}			
+				}
+				// all n
+				if (valid == false) {
+					return;						
+				}
+				nextValidWindowEnd = nextValidWindowStart + windowSpan;
+			}
+		}		
+
 		curMinimizer.pos = p;
 		curTuples[p%w] = curMinimizer;
 		if (p - w >= activeMinimizer.pos) {
@@ -263,14 +312,18 @@ void StoreMinimizers_noncanonical(char *seq, GenomePos seqLen, int k, int w, vec
 					activeMinimizer = curTuples[j];
 				}		
 			}
-			minimizers.push_back(activeMinimizer);
-			nMinimizers+=1;
+			if (nextValidWindowEnd == p+k) {			
+				minimizers.push_back(activeMinimizer);
+				nMinimizers+=1;
+			}
 		}
 		else {
 			if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) { //TODO(Jingwen)
 				activeMinimizer = curMinimizer;
-				minimizers.push_back(activeMinimizer);
-				nMinimizers++;		
+				if (nextValidWindowEnd == p+k) {
+					minimizers.push_back(activeMinimizer);
+					nMinimizers++;		
+				}
 			}		
 		}		
 		if (p + 1 % 10000 == 0) {
