@@ -172,11 +172,14 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 	if (opts.storeAll) {
 		Options allOpts = opts;
 		allOpts.globalW=1;
-		StoreMinimizers_noncanonical<GenomeTuple, Tuple>(read.seq, read.length, allOpts.globalK, allOpts.globalW, readmm, true);			
+		StoreMinimizers<GenomeTuple, Tuple>(read.seq, read.length, allOpts.globalK, allOpts.globalW, readmm, true);	
+		// StoreMinimizers_noncanonical<GenomeTuple, Tuple>(read.seq, read.length, allOpts.globalK, allOpts.globalW, readmm, true);			
 	}
 	else {
-		StoreMinimizers_noncanonical<GenomeTuple, Tuple>(read.seq, read.length, opts.globalK, opts.globalW, readmm, true);
+		StoreMinimizers<GenomeTuple, Tuple>(read.seq, read.length, opts.globalK, opts.globalW, readmm, true);
+		// StoreMinimizers_noncanonical<GenomeTuple, Tuple>(read.seq, read.length, opts.globalK, opts.globalW, readmm, true);
 	}
+	cerr << "done" <<  endl;
 	timing.Tick("Store minimizers");
 	sort(readmm.begin(), readmm.end()); //sort kmers in readmm(minimizers)
 	timing.Tick("Sort minimizers");
