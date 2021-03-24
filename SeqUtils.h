@@ -1,8 +1,6 @@
 #ifndef SEQ_UTILS_H_
 #define SEQ_UTILS_H_
 
-
-
 //
 // Map from ascii to 2 bit representation.
 //
