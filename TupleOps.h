@@ -103,21 +103,24 @@ int InitMask(Tup &m, int k) {
 
 template<typename tup> void StoreTuple(char *seq, int pos, int k, tup &t) {
 	t.t=0;
-	for (int p=pos; p <= pos+k-1; p++) {
+	unsigned int n;
+	for (int p=pos; p <= pos+k-1 ; p++) {
 		t.t <<=2;
-		t.t+=seqMap[seq[p]];
+		n = seqMap[seq[p]];
+		t.t+=n;
 	}
-
 }
 
 template<typename tup> void ShiftOne(char *seq, int pos, tup mask, tup &t) {
 	t.t= (t.t << 2) & (Tuple) mask.t;
 	t.t += (Tuple)seqMap[seq[pos]];	
+
 }
 
 template<typename tup> void ShiftOneRC(char *seq, int pos, int k, tup &t) {
 	t.t >>= 2;
-	t.t += (~(seqMap[seq[pos]]) & (Tuple)3) << (2*((Tuple)k-1));
+	unsigned int n=seqMap[seq[pos]];
+	t.t += (~(n) & (Tuple)3) << (2*((Tuple)k-1));
 }
 
 template <typename tup> void TupleRC(tup a, tup &b, int k) {

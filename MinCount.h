@@ -14,11 +14,31 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 	}
 	TupPos cur, curRC, minTuple, can;
 	GenomePos minPos;
-
+	int windowSpan=w+k-1;
 	GenomePos p = 0;
 	TupPos m;
+	//
+	// Skip N's as a start
 	InitMask(m, k);
-	StoreTuple(seq, p, k, cur);
+	int nextValidWindowEnd=0;
+	int nextValidWindowStart=0;
+	bool valid=false;
+	while (nextValidWindowStart < seqLen - windowSpan and !valid) {
+		valid=true;
+		for (int n=nextValidWindowStart; valid and n < nextValidWindowStart+windowSpan; n++ ) {
+			if (seqMapN[seq[n]] > 3) {
+				nextValidWindowStart = n+1;
+				valid=false;
+			}
+		}
+	}
+	// all n
+	if (valid == false) {
+		return;
+	}
+	nextValidWindowEnd = nextValidWindowStart + windowSpan;
+
+	StoreTuple(seq,p,k,cur);
 	TupleRC(cur, curRC, k);
 	//
 	// Initialize the first minimzer.
@@ -33,9 +53,6 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 		rev_mask = (rev_mask & mask); // 0000...00 64 bits
 		for_mask = ~rev_mask; // 111...11 64 bits
 	}
-	// cerr << "Global: " << Global << endl;
-	// cerr << "for_mask: " << for_mask << endl;
-	// cerr << "rev_mask: " << rev_mask << endl;
 
 	if (canonical) { 
 		if ((cur.t & for_mask) < (curRC.t & for_mask)) can.t = (cur.t & for_mask); //can.t = min(cur.t, curRC.t);
@@ -55,6 +72,7 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 	int nMinimizers=1;
 
 	for (p = 1; p < w && p < seqLen-k+1 ; p++) {
+
 		ShiftOne(seq, p+k-1, m, cur);
 		ShiftOneRC(seq, p+k-1, k, curRC);
 		/*
@@ -73,11 +91,42 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 		}	
 		curTuples[p%w] = curMinimizer;
 	}
-	minimizers.push_back(activeMinimizer);
+	//
+	// Only store the first minimizer if the first window starts at the beginning of the sequence.
+	//
+	if (nextValidWindowEnd == windowSpan ) {
+		minimizers.push_back(activeMinimizer);
+	}
 	// Now scan the chromosome
 	minTuple.t=m.t;
 	for (p = w; p < seqLen-k+1; p++) {
-		// Check if past current active minimzier
+		// If the next valid window ends at the next nucleotide, check to see if 
+		// it is a valid window (no N's). If so, bump by one.
+		// Otherwise, search for the next valid window end.
+		if ( nextValidWindowEnd == p+k-1)  {
+			if ( seqMapN[seq[p+k-1]] <= 3 ) {
+				nextValidWindowEnd++;
+			}
+			else {
+				nextValidWindowStart = p+k;
+				valid=false;			
+				while (nextValidWindowStart < seqLen - windowSpan and not valid) {
+					valid=true;
+					for (int n=nextValidWindowStart; valid and n < nextValidWindowStart+windowSpan; n++ ) {
+						if (seqMapN[seq[n]] > 3) {
+							nextValidWindowStart = n+1;
+							valid=false;
+						}
+					}			
+					// all n
+					if (valid == false) {
+						return;
+					}
+					nextValidWindowEnd = nextValidWindowStart + windowSpan;
+				}
+			}
+		}		
+
 		ShiftOne(seq, p+k-1, m, cur);
 		ShiftOneRC(seq, p+k-1, k, curRC);
 #ifdef _TESTING_
@@ -99,14 +148,18 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 					activeMinimizer = curTuples[j];
 				}		
 			}
-			minimizers.push_back(activeMinimizer);
-			nMinimizers+=1;
+			if (nextValidWindowEnd == p+k) {
+				minimizers.push_back(activeMinimizer);			
+				nMinimizers+=1;
+			}
 		}
 		else {
 			if ((curMinimizer.t & for_mask) < (activeMinimizer.t & for_mask)) { //TODO(Jingwen)
 				activeMinimizer = curMinimizer;
-				minimizers.push_back(activeMinimizer);
-				nMinimizers++;		
+				if (nextValidWindowEnd == p+k) {
+					minimizers.push_back(activeMinimizer);
+					nMinimizers++;
+				}
 			}		
 		}		
 		if (p + 1 % 10000 == 0) {
