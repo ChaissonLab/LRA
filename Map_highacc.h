@@ -70,7 +70,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	// Continue work on Clusters
 	//
 	if (opts.CheckTrueIntervalInFineCluster) {
-		CheckTrueIntervalInFineCluster(clusters, read.name, genome, read);
+		// CheckTrueIntervalInFineCluster(clusters, read.name, genome, read);
 	}
 	if (clusters.size() == 0) {
 		read.unaligned = 1;

@@ -152,10 +152,10 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 			GenomePos prev_readStart = read.length;
 			GenomePos readStart = clusters[ph].matches[matchStart].first.pos;
 			GenomePos readEnd=clusters[ph].matches[matchEnd].first.pos;
-			long startDiag=clusters[ph].matches[matchStart].second.pos - clusters[ph].matches[matchStart].first.pos;
-			long endDiag=clusters[ph].matches[matchEnd].second.pos - clusters[ph].matches[matchEnd].first.pos;
-			long minDiag=min(startDiag, endDiag);
-			long maxDiag=max(startDiag, endDiag);
+			// long startDiag=clusters[ph].matches[matchStart].second.pos - clusters[ph].matches[matchStart].first.pos;
+			// long endDiag=clusters[ph].matches[matchEnd].second.pos - clusters[ph].matches[matchEnd].first.pos;
+			// long minDiag=min(startDiag, endDiag);
+			// long maxDiag=max(startDiag, endDiag);
 			if (readStart == readEnd) { // there is a gap
 				if (lsi > ls and readStart > prev_readEnd) {
 					readStart = prev_readEnd;

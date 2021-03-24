@@ -368,7 +368,24 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.SecondCleanMinDiagCluster=30;
      		opts.minDiagCluster=10;
       		opts.refineSpaceDist=10000;
-    		
+ 
+     		opts.minDiagCluster = 10;
+    		opts.cleanMaxDiag = 30;
+    		opts.RemovePairedIndels = false;
+    		opts.RemoveSpuriousAnchors = false;
+    		opts.bypassClustering = true;
+    		opts.anchor_rate = 6;
+    		opts.SecondCleanMinDiagCluster = 5;
+    		opts.punish_anchorfreq = 5;
+    		opts.anchorPerlength = 5;
+    		opts.cleanClustersize = 100;
+    		opts.SecondCleanMaxDiag = 30;
+    		opts.maxGap = 1000;
+    		opts.minClusterSize = 2;
+    		opts.anchorstoosparse = 0.02;
+
+    		opts.anchor_rate = 18.0f;
+    		opts.minDiagCluster = 5;   		
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
 			// opts.HighlyAccurate = false;
@@ -758,8 +775,8 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalMaxFreq = 200;
 			opts.globalWinsize = 9;
 			opts.NumOfminimizersPerWindow = 1;		
-			opts.localK = opts.globalK - 3;
-			opts.localW	= opts.globalW - 3;
+			// opts.localK = ;
+			// opts.localW	= opts.globalW - 3;
 			opts.localMaxFreq = opts.globalMaxFreq * 3;
 		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
@@ -772,9 +789,9 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalK = 12;
 			opts.globalW = 10;
 			opts.globalWinsize = 7;
-			opts.localK = opts.globalK - 4;
-			opts.localW	= opts.globalW - 4;
-			opts.localMaxFreq = opts.globalMaxFreq * 4;
+			opts.localK = opts.globalK - 3;
+			opts.localW	= opts.globalW - 3;
+			opts.localMaxFreq = opts.globalMaxFreq * 3;
 
 		}
 		else if (ArgIs(argv[argi], "-ONT")) {
@@ -783,9 +800,13 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalMaxFreq = 200;
 			opts.globalWinsize = 9;
 			opts.NumOfminimizersPerWindow = 1;	
-			opts.localK = opts.globalK - 4;
-			opts.localW	= opts.globalW - 4;
-			opts.localMaxFreq = opts.globalMaxFreq * 4;
+
+			opts.globalK = 12;
+			opts.globalW = 10;
+			opts.globalWinsize = 7;
+			opts.localK = opts.globalK - 3;
+			opts.localW	= opts.globalW - 3;
+			opts.localMaxFreq = opts.globalMaxFreq * 3;
 		}
 		else if (ArgIs(argv[argi], "-F")) {
 			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));

@@ -1764,36 +1764,35 @@ void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genom
 	}
 }
 
-void CheckTrueIntervalInFineCluster(vector<Cluster> &clusters, string &rname, Genome &genome, Read &read) {
-	if (read.unaligned) return;
-	string chrom;
-	GenomePos i_s, i_e;
-	string bname = rname;
-	regex re("[!]");
-	/*	sregex_token_iterator first{bname.begin(), bname.end(), re, -1}, last;//the '-1' is what makes the regex split (-1 := what was not matched)
-		vector<string> tokens{first, last};
-	chrom = tokens[1];
-	string::size_type sz;
-	i_s = stoi(tokens[2], &sz);
-	i_e = stoi(tokens[3], &sz);
+// void CheckTrueIntervalInFineCluster(vector<Cluster> &clusters, string &rname, Genome &genome, Read &read) {
+// 	if (read.unaligned) return;
+// 	string chrom;
+// 	GenomePos i_s, i_e;
+// 	string bname = rname;
+// 	regex re("[!]");
+// 	sregex_token_iterator first{bname.begin(), bname.end(), re, -1}, last;//the '-1' is what makes the regex split (-1 := what was not matched)
+// 		vector<string> tokens{first, last};
+// 	chrom = tokens[1];
+// 	string::size_type sz;
+// 	i_s = stoi(tokens[2], &sz);
+// 	i_e = stoi(tokens[3], &sz);
 
-	ofstream cclust("readsCheckTrueIntervalInFineCluster.txt", ofstream::app);
-	bool check = false;
-	for (int i = 0; i < clusters.size(); i++) {
-		if (chrom == genome.header.names[clusters[i].chromIndex]) {
-			GenomePos offset = genome.header.pos[clusters[i].chromIndex];
-			if ((i_e + offset >= clusters[i].tStart and i_s + offset <= clusters[i].tEnd)) {
-				int o = min(i_e + offset, clusters[i].tEnd) - max(i_s + offset, clusters[i].tStart);
-				if ((float) o / (i_e - i_s) >= 0.2) {
-					check = true;
-				}
-			}
-		}		
-	}
-	if (check) {
-		cclust << rname << endl;
-	}
-	cclust.close();
-	*/
-}
+// 	ofstream cclust("readsCheckTrueIntervalInFineCluster.txt", ofstream::app);
+// 	bool check = false;
+// 	for (int i = 0; i < clusters.size(); i++) {
+// 		if (chrom == genome.header.names[clusters[i].chromIndex]) {
+// 			GenomePos offset = genome.header.pos[clusters[i].chromIndex];
+// 			if ((i_e + offset >= clusters[i].tStart and i_s + offset <= clusters[i].tEnd)) {
+// 				int o = min(i_e + offset, clusters[i].tEnd) - max(i_s + offset, clusters[i].tStart);
+// 				if ((float) o / (i_e - i_s) >= 0.2) {
+// 					check = true;
+// 				}
+// 			}
+// 		}		
+// 	}
+// 	if (check) {
+// 		cclust << rname << endl;
+// 	}
+// 	cclust.close();
+// }
 #endif

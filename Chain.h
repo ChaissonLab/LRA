@@ -533,12 +533,12 @@ void RemovePairedIndels (Tup &chain) {
 	//
 	// Store SVs in vector SV; Store the anchor just after the SV[c] in SVpos[c];
 	//
-	long totalDist=0;
-	long totDistSq=0;
+	// long totalDist=0;
+	// long totDistSq=0;
 	for (int c = 1; c < chain.size(); c++) {
-		int dist=min(abs((long)(chain.tStart(c) - chain.tEnd(c-1))), abs((long)(chain.qStart(c) - chain.qEnd(c-1))));
-		totDistSq+=dist*dist;
-		totalDist+=dist;
+		// int dist=min(abs((long)(chain.tStart(c) - chain.tEnd(c-1))), abs((long)(chain.qStart(c) - chain.qEnd(c-1))));
+		// totDistSq+=dist*dist;
+		// totalDist+=dist;
 		if (chain.strand(c) == chain.strand(c-1)) {
 			if (chain.strand(c) == 0) {
 				int Gap = (int)(((long)chain.tStart(c) - (long)chain.qStart(c)) - ((long)chain.tStart(c - 1) - (long)chain.qStart(c - 1)));
@@ -564,24 +564,23 @@ void RemovePairedIndels (Tup &chain) {
 			SV.push_back(0);
 		}
 	}
-	float nDist=chain.size()-1;
-	float meanDist=totalDist/nDist;
-	float varDist = totDistSq/float(nDist) - meanDist*meanDist;
-	float sdDist=sqrt(varDist);
-	int firstValidDist=-1;
-	int lastValidDist=-1;
-	for (int c=1; c < chain.size(); c++) {
-		int dist=min(abs((long)(chain.tStart(c) - chain.tEnd(c-1))), abs((long)(chain.qStart(c) - chain.qEnd(c-1))));
+	// float nDist=chain.size()-1;
+	// float meanDist=totalDist/nDist;
+	// float varDist = totDistSq/float(nDist) - meanDist*meanDist;
+	// float sdDist=sqrt(varDist);
+	// int firstValidDist=-1;
+	// int lastValidDist=-1;
+	// for (int c=1; c < chain.size(); c++) {
+	// 	int dist=min(abs((long)(chain.tStart(c) - chain.tEnd(c-1))), abs((long)(chain.qStart(c) - chain.qEnd(c-1))));
 
-		if (dist < meanDist + 4*sdDist) {
-			if (firstValidDist == -1 ){
-				firstValidDist = c;
-			}
-			lastValidDist=c;
-		}
-	}
+	// 	if (dist < meanDist + 4*sdDist) {
+	// 		if (firstValidDist == -1 ){
+	// 			firstValidDist = c;
+	// 		}
+	// 		lastValidDist=c;
+	// 	}
+	// }
 	for (int c = 1; c < SV.size(); c++) {
-			
 		//
 		// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
 		// The last condition is to ensure both SV[c] and SV[c-1] are not zeros.
@@ -596,15 +595,15 @@ void RemovePairedIndels (Tup &chain) {
 		} 
 	}
 	
-	if (lastValidDist == -1 or firstValidDist == -1) {
-		// all invalid
-		for (int i=0; i < chain.size(); i++) { remove[i] = true;}
-	}
+	// if (lastValidDist == -1 or firstValidDist == -1) {
+	// 	// all invalid
+	// 	for (int i=0; i < chain.size(); i++) { remove[i] = true;}
+	// }
 
-	if (firstValidDist < 3)
-		for (int i=0; i < firstValidDist; i++) { remove[i] = true;}
-	if (chain.size() - lastValidDist < 3)
-		for (int i=lastValidDist; i < chain.size(); i++) { remove[i] = true;}
+	// if (firstValidDist < 3)
+	// 	for (int i=0; i < firstValidDist; i++) { remove[i] = true;}
+	// if (chain.size() - lastValidDist < 3)
+	// 	for (int i=lastValidDist; i < chain.size(); i++) { remove[i] = true;}
 	
 	int m = 0;
 	for (int i = 0; i < chain.size(); i++) {
@@ -617,9 +616,10 @@ void RemovePairedIndels (Tup &chain) {
 	}
 	chain.chain.resize(m);
 	chain.ClusterIndex.resize(m);
-	if (chain.chain.size() > 0) {
-		if (!chain.link.empty()) chain.link.resize(m-1);
-	}
+	if (!chain.link.empty()) chain.link.resize(m-1);
+	// if (chain.chain.size() > 0) {
+	// 	if (!chain.link.empty()) chain.link.resize(m-1);
+	// }
 }
 
 
