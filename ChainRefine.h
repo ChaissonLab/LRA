@@ -472,7 +472,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 			if (te > qe - qs) ts = te - (qe - qs);
 			else te = 0;
 		}
-		//		cerr << "rigt rh: " << rh << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+		// cerr << "rigt: " << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 		if (qe > qs and te > ts) {
 			SpaceLength = min(qe - qs, te - ts); 
 			if (SpaceLength < opts.refineSpaceDist and te + 500 < genome.lengths[RefinedClusters[rh].chromIndex]) { // used (1000, 6000)
@@ -508,7 +508,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 			ts = RefinedClusters[lh].tEnd;
 			te = ts + (qe - qs);
 		}
-		//cerr << "left  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+		// cerr << "left qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 		if (qe > qs and te > ts) {
 			SpaceLength = min(qe - qs, te - ts);
 			if (SpaceLength < opts.refineSpaceDist and te+500 < genome.lengths[RefinedClusters[lh].chromIndex]) { // used (1000, 6000)

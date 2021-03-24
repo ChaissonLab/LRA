@@ -332,4 +332,3 @@ void StoreMinimizers_noncanonical(char *seq, GenomePos seqLen, int k, int w, vec
 	}
 }
 #endif
-

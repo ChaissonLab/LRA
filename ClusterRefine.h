@@ -275,11 +275,13 @@ RefineBtwnSpace(int K, int W, vector<Cluster> &RevBtwnCluster, bool twoblocks, C
 		qs = read.length - qe;
 		qe = read.length - t;
 	}
+	int refineSpaceDiag = (int) floor(0.15f * (qe - qs));
+	// cerr << refineSpaceDiag << endl;
 	//
 	// Find matches in read and reference 
 	//
 	GenomePairs EndPairs;
-	RefineSpace(K, W, 100, 1, EndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, st, lrts, lrlength);
+	RefineSpace(K, W, refineSpaceDiag, 1, EndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, st, lrts, lrlength);
 	float eff = ((float) EndPairs.size()) / min(qe - qs, te - ts);
 	// if (twoblocks) cerr << "refineEffiency: " << eff << " original: " << cluster->refineEffiency << endl;
 	if ((EndPairs.size() > 0 and twoblocks) or (EndPairs.size() > 0 and eff >= opts.anchorstoosparse * 2)) {
@@ -296,7 +298,7 @@ RefineBtwnSpace(int K, int W, vector<Cluster> &RevBtwnCluster, bool twoblocks, C
 	qs = read.length - qe;
 	qe = read.length - t;
 	GenomePairs revEndPairs;
-	RefineSpace(K, W, 100, 1, revEndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, rst, lrts, lrlength);		
+	RefineSpace(K, W, refineSpaceDiag, 1, revEndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, rst, lrts, lrlength);		
 	float reff = ((float) revEndPairs.size()) / min(qe - qs, te - ts);
 	
 	// cerr << "refineEffiency: " << eff << "  reff: " <<  reff << " original: " << cluster->refineEffiency << endl;
