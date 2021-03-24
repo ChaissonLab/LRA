@@ -17,7 +17,7 @@ void TupleToString(Tup t, int k, string &s) {
 	}
 }
 
-#define LOCAL_POS_BITS 12
+#define LOCAL_POS_BITS 8
 class LocalTuple {
  public:
   uint32_t t: 32-LOCAL_POS_BITS;
