@@ -311,7 +311,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				SparseDP_ForwardOnly(ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, BtwnChain, tinyOpts, LookUpTable, inv_value, inv_NumofAnchors, 2); //1
 				RemovePairedIndels(ExtendBtwnPairs, BtwnChain, ExtendBtwnPairsMatchesLength);
 
-				if (tinyOpts.dotPlot) {
+				if (tinyOpts.dotPlot and read.name == tinyOpts.readname) {
 					ofstream pSclust("BtwnPairs.tab", std::ofstream::app);
 					for (int bp = BtwnPairs->size()-1; bp >= 0; bp--) {
 						if (inversion == 0) {
@@ -387,7 +387,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 					eSclust.close();
 				}	
 
-				if (tinyOpts.dotPlot) {
+				if (tinyOpts.dotPlot and tinyOpts.readname == read.name) {
 					ofstream Sclust("SparseDP_Forward.tab", std::ofstream::app);
 						for (int btc = BtwnChain.size()-1; btc >= 0; btc--) {
 							if (inversion == 0) {
@@ -509,7 +509,7 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 
 		//cerr << "2nd SDP done!" << endl;
 		if (ultimatechain.size() == 0) continue; // cannot be mapped to the genome!
-		if (smallOpts.dotPlot) {
+		if (smallOpts.dotPlot and read.name == smallOpts.readname ) {
 			ofstream clust("SparseDP.tab", ofstream::app);
 			for (int ep = 0; ep < ultimatechain.size(); ep++) {
 				if (ultimatechain.strand(ep) == 0) {
@@ -741,7 +741,7 @@ void RefindEnds(GenomePos &qPos, int cur, UltimateChain &chain, bool str, Alignm
 				}							
 			}
 			eSclust.close();
-			if (opts.dotPlot) {
+			if (opts.dotPlot and read.name == opts.readname) {
 				ofstream Sclust("SparseDP_Forward.tab", std::ofstream::app);
 					for (int btc = EndChain.size()-1; btc >= 0; btc--) {
 						if (str == 0) {

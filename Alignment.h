@@ -826,6 +826,11 @@ public:
 			// SegAlignment[s]->SecondValue = SecondValue;
 		}
 		// SecondValue = opts.rate_FirstSDPValue*FirstSDPValue + opts.rate_value*value;
+		int pry = 0;
+		for (int s = 0; s < SegAlignment.size(); s++) {	
+			if (SegAlignment[s]->Supplymentary == 0) pry++; 
+		}	
+		if (pry == 0) SegAlignment[0]->Supplymentary = 0;
 		for (int s = 0; s < SegAlignment.size(); s++) {
 			// SegAlignment[s]->SecondValue = SecondValue;
 			if (s >= 1) {
