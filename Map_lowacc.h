@@ -522,7 +522,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 
 
 		alignments.resize(alignments.size() + 1); 
-		int LSC = LargestUltimateChain(ultimatechains);
+		int LSC = LargestSplitChain(ultimatechains);
 		LocalRefineAlignment(ultimatechains, extend_clusters, alignments, smallOpts, LookUpTable, read, strands, p, genome, LSC, tinyOpts, buff, svsigstrm);
 		if (p == 0 and alignments.back().SegAlignment.size() == 0) {
 			read.unaligned = 1;

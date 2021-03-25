@@ -901,4 +901,29 @@ void RemoveSpuriousJump (Tup &chain) {
 	chain.ClusterIndex.resize(m);
 	if (!chain.link.empty()) chain.link.resize(m-1);
 }
+
+template<typename Tup>
+int LargestSplitChain(vector<Tup> &splitchains) {
+	int maxi = 0;
+	for (int mi = 1; mi < splitchains.size(); mi++) {
+		if (splitchains[mi].size() > splitchains[maxi].size()) {
+			maxi = mi;
+		}
+	}
+	return maxi;
+}
+
+template<typename Tup>
+int LargestSplitChain_dist(vector<Tup> &splitchains) {
+	if (splitchains.size() == 0) return 0;
+	int maxi = 0; int maxi_d = (splitchains[maxi].QEnd > splitchains[maxi].QStart) ? splitchains[maxi].QEnd - splitchains[maxi].QStart : 0;
+	for (int mi = 1; mi < splitchains.size(); mi++) {
+		int d = (splitchains[mi].QEnd > splitchains[mi].QStart) ? splitchains[mi].QEnd - splitchains[mi].QStart : 0;
+		if (d > maxi_d) {
+			maxi = mi;
+			maxi_d = d;
+		}
+	}
+	return maxi;
+}
 #endif

@@ -203,6 +203,15 @@ SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitC
 		im++;
 	}
 	if (!onec.empty()) splitchains.push_back(SplitChain(onec, lk));
+
+	for (int m = 0; m < splitchains.size(); m++) {
+		splitchains[m].QStart = ExtendClusters[splitchains[m][0]]->qStart;
+		splitchains[m].QEnd = ExtendClusters[splitchains[m][0]]->qEnd;
+		for (int n = 1; n < splitchains[m].size(); n++) {
+			splitchains[m].QStart = min(splitchains[m].QStart, ExtendClusters[splitchains[m][n]]->qStart);
+			splitchains[m].QEnd = max(splitchains[m].QEnd, ExtendClusters[splitchains[m][n]]->qEnd);
+		}
+	}
 }
 
 //
@@ -331,27 +340,16 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 	}
 }
 
-int 
-LargestSplitChain(vector<SplitChain> &splitchains) {
-	int maxi = 0;
-	for (int mi = 1; mi < splitchains.size(); mi++) {
-		if (splitchains[mi].sptc.size() > splitchains[maxi].sptc.size()) {
-			maxi = mi;
-		}
-	}
-	return maxi;
-}
-
-int 
-LargestUltimateChain(vector<UltimateChain> &ultimatechains) {
-	int maxi = 0;
-	for (int mi = 1; mi < ultimatechains.size(); mi++) {
-		if (ultimatechains[mi].size() > ultimatechains[maxi].size()) {
-			maxi = mi;
-		}
-	}
-	return maxi;
-}
+// int 
+// LargestUltimateChain(vector<UltimateChain> &ultimatechains) {
+// 	int maxi = 0;
+// 	for (int mi = 1; mi < ultimatechains.size(); mi++) {
+// 		if (ultimatechains[mi].size() > ultimatechains[maxi].size()) {
+// 			maxi = mi;
+// 		}
+// 	}
+// 	return maxi;
+// }
 
 void 
 output_unaligned(Read &read, Options &opts, ostream &output) {
