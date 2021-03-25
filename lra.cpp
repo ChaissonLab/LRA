@@ -316,7 +316,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.HighlyAccurate = false;
 			opts.anchor_rate=8.0;
-			opts.NumAln=3;
+			opts.NumAln=2;
    			opts.PrintNumAln = 1;
      		opts.merge_dist = 100;
      		opts.RoughClustermaxGap = 500; 
@@ -360,7 +360,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.HighlyAccurate = false;
 			opts.anchor_rate=8.0;
-			opts.NumAln=3;
+			opts.NumAln=2;
    			opts.PrintNumAln = 1;
    			opts.merge_dist = 30;
    			opts.RoughClustermaxGap=5000; 

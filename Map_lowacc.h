@@ -533,6 +533,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
 		}
 		alignments.back().SetFromSegAlignment(smallOpts);
+		extend_clusters.clear();
+		ultimatechains.clear();
 	}
 	if (read.unaligned or alignments.size() == 0) {
 		output_unaligned(read, opts, *output);

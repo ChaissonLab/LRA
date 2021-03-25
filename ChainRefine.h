@@ -313,15 +313,6 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
  							qEnd, splitchains[ph].TStart - chromOffset, splitchains[ph].TEnd - chromOffset, prev_readStart, prev_readEnd);					
 			}
 		}
-		splitchains[ph].clusterIndex = ph;
-		if (refinedclusters[ph].matches.size() == 0) continue;
-		if (splitchains[ph].Strand == 1) SwapStrand(read, smallOpts, refinedclusters[ph], smallOpts.globalK);
-		refinedclusters[ph].SetClusterBoundariesFromMatches(smallOpts);
-		refinedclusters[ph].strand = splitchains[ph].Strand;
-		refinedclusters[ph].coarse = ph;
-		refinedclusters[ph].refinespace = 0;
-		refinedclusters[ph].refineEffiency = ((float) refinedclusters[ph].matches.size()) / min(refinedclusters[ph].qEnd - 
-											refinedclusters[ph].qStart, refinedclusters[ph].tEnd - refinedclusters[ph].tStart);
 		for (int c = 0; c < splitchains[ph].ClusterIndex.size(); c++) {
 			int cI = splitchains[ph].ClusterIndex[c];
 			if (clusters[cI].flip == 1) {
@@ -334,6 +325,15 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 				clusters[cI].flip = 0;
 			}	
 		}
+		splitchains[ph].clusterIndex = ph;
+		if (refinedclusters[ph].matches.size() == 0) continue;
+		if (splitchains[ph].Strand == 1) SwapStrand(read, smallOpts, refinedclusters[ph], smallOpts.globalK);
+		refinedclusters[ph].SetClusterBoundariesFromMatches(smallOpts);
+		refinedclusters[ph].strand = splitchains[ph].Strand;
+		refinedclusters[ph].coarse = ph;
+		refinedclusters[ph].refinespace = 0;
+		refinedclusters[ph].refineEffiency = ((float) refinedclusters[ph].matches.size()) / min(refinedclusters[ph].qEnd - 
+											refinedclusters[ph].qStart, refinedclusters[ph].tEnd - refinedclusters[ph].tStart);
 	}
 	return 0;
 }
