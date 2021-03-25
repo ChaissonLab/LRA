@@ -301,7 +301,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.anchorPerlength=10;
      		opts.refineSpaceDist=10000;
 
-
+     		opts.anchor_rate=9.0f;
      		opts.minClusterSize=5;
 
 			// opts.rate_FirstSDPValue=0;
