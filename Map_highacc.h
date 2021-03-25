@@ -406,6 +406,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	tinyOpts.globalMaxFreq=3;
 	tinyOpts.maxDiag=5;
 	tinyOpts.minDiagCluster=2;
+
 	//
 	// Decide whether the number of anchors in each Cluster is enough to skip refining step;
 	//
@@ -433,7 +434,6 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 		smallOpts.maxDiag=50;
 		smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large
 		smallOpts.minDiagCluster=3; // used to be 3
-		tinyOpts.globalK=smallOpts.globalK-3;
 
 		REFINEclusters(clusters, refinedclusters, genome, read, glIndex, localIndexes, smallOpts, opts);
 		// cerr << "refine cluster done!" << endl;
@@ -458,7 +458,9 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 		}
 	}
 	timing.Tick("Refine_clusters");
-
+	
+	tinyOpts.globalK=smallOpts.globalK-3;
+	tinyOpts.globalW=tinyOpts.localW;
 	int K, W;
 	if (opts.HighlyAccurate and sparse == 1) {K = opts.globalK; W = opts.globalW;}
 	else {K = smallOpts.globalK; W = smallOpts.globalW;}

@@ -235,6 +235,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large
 	smallOpts.minDiagCluster=3; // used to be 3
 	tinyOpts.globalK=smallOpts.globalK-3;
+	tinyOpts.globalW=tinyOpts.localW;
 	//
 	// Build local index for refining alignments.
 	//
