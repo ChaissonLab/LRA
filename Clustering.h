@@ -1484,9 +1484,15 @@ SplitRoughClustersWithGaps(vector<pair<GenomeTuple, GenomeTuple> > &matches, Clu
 			// cerr << "GAP: " << gap << "\t" << m << "\t" << clusters[c].matches.size() << "\t" << clusters[c].matches[m].second.pos - clusters[c].matches[m-1].second.pos << "\t" << clusters[c].matches[m].first.pos - clusters[c].matches[m-1].first.pos << endl;
 			if ((m - split_cs) > opts.minClusterSize) {
 				if (split.size() > cur_s and CloseToPreviousCluster(split.back(), split_qStart, split_tStart, split_tEnd, opts)) {
+					if (opts.dotPlot and opts.readname == read.name) {
+						cerr << "catch you! merge";
+					}
 					MergeTwoClusters(split.back(), split_qStart, split_qEnd, split_tStart, split_tEnd, split_cs, m);
 				}
 				else {
+					if (opts.dotPlot and opts.readname == read.name) {
+						cerr << gap << endl;
+					}
 					split.push_back(Cluster(split_cs, m, split_qStart, split_qEnd, split_tStart, split_tEnd, OriginalClusters.strand, outIter));
 					for (int q = split_cs; q < m; q++) { split.back().splitmatchindex.push_back(q);}
 				}

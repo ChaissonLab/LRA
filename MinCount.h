@@ -173,8 +173,6 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 			cerr << p +1 << "\t" << nMinimizers << "\t" << nSkipped << endl;
 		}
 	}
-
-	// cerr << nMinimizers << " skipped " << nSkipped << endl;
 }
 
 template <typename TupPos, typename Tup> 

@@ -235,6 +235,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large
 	smallOpts.minDiagCluster=3; // used to be 3
 	tinyOpts.globalK=smallOpts.globalK-3;
+	tinyOpts.globalW=tinyOpts.localW;
 	//
 	// Build local index for refining alignments.
 	//
@@ -532,6 +533,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
 		}
 		alignments.back().SetFromSegAlignment(smallOpts);
+		extend_clusters.clear();
+		ultimatechains.clear();
 	}
 	if (read.unaligned or alignments.size() == 0) {
 		output_unaligned(read, opts, *output);

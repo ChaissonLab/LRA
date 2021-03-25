@@ -287,7 +287,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.readType=Options::ccs;
-			opts.HighlyAccurate = false;
+			opts.HighlyAccurate = true;
 			opts.anchor_rate=18.0;
 			opts.NumAln=3;
    			opts.PrintNumAln = 1;
@@ -316,7 +316,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.HighlyAccurate = false;
 			opts.anchor_rate=8.0;
-			opts.NumAln=3;
+			opts.NumAln=2;
    			opts.PrintNumAln = 1;
      		opts.merge_dist = 100;
      		opts.RoughClustermaxGap = 500; 
@@ -360,7 +360,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.HighlyAccurate = false;
 			opts.anchor_rate=8.0;
-			opts.NumAln=3;
+			opts.NumAln=2;
    			opts.PrintNumAln = 1;
    			opts.merge_dist = 30;
    			opts.RoughClustermaxGap=5000; 
@@ -692,11 +692,24 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 			HelpStoreLocal();
 			exit(1);
 		}
-		else if (ArgIs(argv[argi], "-CCS") or ArgIs(argv[argi], "-CONTIG") or ArgIs(argv[argi], "-CLR") or ArgIs(argv[argi], "-ONT") 
-			or ArgIs(argv[argi], "--CalculateMinimizerStats")) {
+		else if (ArgIs(argv[argi], "-CCS") or ArgIs(argv[argi], "-CONTIG") or ArgIs(argv[argi], "--CalculateMinimizerStats")) {
 			argi+=1;
 			continue;
 		}	
+		else if (ArgIs(argv[argi], "-CLR")) {
+			opts.localK = 10;
+			opts.localW	= 5;
+			opts.localMaxFreq = 50;
+			glIndex.k = opts.localK;
+			glIndex.maxFreq = opts.localMaxFreq;
+		}
+		else if (ArgIs(argv[argi], "-ONT")) {
+			opts.localK = 10;
+			opts.localW	= 5;
+			opts.localMaxFreq = 20;
+			glIndex.k = opts.localK;
+			glIndex.maxFreq = opts.localMaxFreq;
+		}
 		else if (ArgIs(argv[argi], "-k")) {
 			argi++;
 			opts.localK = atoi(argv[argi]);
@@ -789,9 +802,9 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalK = 12;
 			opts.globalW = 10;
 			opts.globalWinsize = 7;
-			opts.localK = opts.globalK - 3;
-			opts.localW	= opts.globalW - 3;
-			opts.localMaxFreq = opts.globalMaxFreq * 3;
+			// opts.localK = 7;
+			// opts.localW	= opts.globalW - 5;
+			// opts.localMaxFreq = opts.globalMaxFreq * 4;
 
 		}
 		else if (ArgIs(argv[argi], "-ONT")) {
@@ -804,9 +817,9 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalK = 12;
 			opts.globalW = 10;
 			opts.globalWinsize = 7;
-			opts.localK = opts.globalK - 3;
-			opts.localW	= opts.globalW - 3;
-			opts.localMaxFreq = opts.globalMaxFreq * 3;
+			// opts.localK = 7;
+			// opts.localW	= 5;
+			// opts.localMaxFreq = opts.globalMaxFreq * 4;
 		}
 		else if (ArgIs(argv[argi], "-F")) {
 			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));

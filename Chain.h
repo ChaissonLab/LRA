@@ -517,6 +517,67 @@ public:
 // 	chain.resize(m);
 // }
 
+
+//
+// This function removes paired indels in the finalchain after SDP;
+//
+template<typename Tup>
+void RemoveSmallPairedIndels (Tup &chain) {
+
+ 	if (chain.size() < 2) return;
+	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
+	vector<int> SV;
+	vector<int> SVpos;
+	vector<long> SVgenome;
+
+	for (int c = 1; c < chain.size(); c++) {
+		if (chain.strand(c) == chain.strand(c-1)) {
+			if (chain.strand(c) == 0) {
+				int Gap = (int)(((long)chain.tStart(c) - (long)chain.qStart(c)) - ((long)chain.tStart(c - 1) - (long)chain.qStart(c - 1)));
+
+				if (abs(Gap) > 5 and abs(Gap) <= 50) { 
+					SV.push_back(Gap);	
+					SVgenome.push_back(chain.tStart(c));
+					SVpos.push_back(c);
+				}
+			}
+			else {
+				int Gap = (int)((long)(chain.qEnd(c) + chain.tStart(c)) - (long)(chain.qEnd(c - 1) + chain.tStart(c - 1)));
+				if (abs(Gap) > 5 and abs(Gap) <= 50) { 
+					SV.push_back(Gap);	
+					SVgenome.push_back(chain.tStart(c));
+					SVpos.push_back(c);
+				}				
+			}
+		}
+		else {
+			SVgenome.push_back(chain.tStart(c));
+			SVpos.push_back(c);
+			SV.push_back(0);
+		}
+	}
+	//
+	// Remove the anchors if it is resulting in paired_indels (almost equal length)
+	//
+	for (int c = 1; c < SV.size(); c++) {
+		if (sign(SV[c]) != sign(SV[c-1]) and SV[c] != 0 and SV[c-1] != 0 and abs(SV[c] + SV[c-1]) <= 20 and SVpos[c] - SVpos[c-1] < 3) { 
+			for (int i = SVpos[c-1]; i < SVpos[c]; i++) { if (chain.length(i) <= 50) remove[i] = true;}
+		} 
+	}
+	int m = 0;
+	for (int i = 0; i < chain.size(); i++) {
+		if (remove[i] == false) {
+			chain.chain[m] = chain.chain[i];
+			chain.ClusterIndex[m] = chain.ClusterIndex[i];
+			if (!chain.link.empty() and m >= 1) {chain.link[m - 1] = chain.link[i - 1];}
+			m++;
+		}
+	}
+	chain.chain.resize(m);
+	chain.ClusterIndex.resize(m);
+	if (!chain.link.empty()) chain.link.resize(m-1);
+}
+
 //
 // This function removes paired indels in the finalchain after SDP;
 //
@@ -585,7 +646,6 @@ void RemovePairedIndels (Tup &chain) {
 		// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
 		// The last condition is to ensure both SV[c] and SV[c-1] are not zeros.
 		//
-		int blink = max(abs(SV[c]), abs(SV[c-1]));
 		if (sign(SV[c]) != sign(SV[c-1]) and SV[c] != 0 and SV[c-1] != 0 and abs(SV[c]) >= 300 and abs(SV[c-1]) >= 300 and SVpos[c] - SVpos[c-1] < 3) {
 			for (int i = SVpos[c-1]; i < SVpos[c]; i++) { if (chain.length(i) < 100) remove[i] = true;}			
 		}

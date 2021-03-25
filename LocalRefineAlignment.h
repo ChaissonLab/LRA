@@ -244,7 +244,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			// cerr << "min(read_dist, genome_dist): " << min(read_dist, genome_dist) << endl;
 			// cerr << "curReadEnd: " << curReadEnd << "  curGenomeEnd: " << curGenomeEnd << "  nextReadStart: " << nextReadStart << "  nextGenomeStart: " << nextGenomeStart << endl;
 			int refineSpaceDiag = (int) (0.15f * read_dist);			
- 			RefineSpace(tinyOpts.localK, tinyOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, tinyOpts, genome, read, 
+ 			RefineSpace(tinyOpts.globalK, tinyOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, tinyOpts, genome, read, 
  					strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);
 			//
 			// If anchor is still too sparse, try finding seeds in the inversed direction
@@ -256,7 +256,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				curReadEnd = read.length - nextReadStart;
 				nextReadStart = read.length - temp;
 				// refineSpaceDiag = 100; 
-				RefineSpace(tinyOpts.localK, tinyOpts.localW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
+				RefineSpace(tinyOpts.globalK, tinyOpts.globalW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, inv_str);	
 				// inversion = 1;	
 				if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) > 1000) {
@@ -289,7 +289,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				GenomePairs ExtendBtwnPairs;
 				vector<int> ExtendBtwnPairsMatchesLength;
 				vector<unsigned int> BtwnChain;
-				LinearExtend(BtwnPairs, ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, tinyOpts, genome, read, chromIndex, 0, 0, tinyOpts.localK);
+				LinearExtend(BtwnPairs, ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, tinyOpts, genome, read, chromIndex, 0, 0, tinyOpts.globalK);
 
 				if (inversion == 0) {
 					//
@@ -495,7 +495,10 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 		SparseDP(splitchains[st], ExtendClusters, finalchain, smallOpts, LookUpTable, read);
 		// timing.Tick("2nd SDP");
 		
-		if (tinyOpts.RemovePairedIndels) RemovePairedIndels<FinalChain>(finalchain); //(This is deleting lots of good anchors)
+		if (tinyOpts.RemovePairedIndels) {
+			RemoveSmallPairedIndels<FinalChain> (finalchain);
+			RemovePairedIndels<FinalChain>(finalchain); 
+		}
 		if (tinyOpts.RemoveSpuriousAnchors) RemoveSpuriousAnchors(finalchain);
 		//
 		// switch back to the original anchors;
@@ -711,10 +714,10 @@ void RefindEnds(GenomePos &qPos, int cur, UltimateChain &chain, bool str, Alignm
 	assert(curReadEnd <= nextReadStart);
 	if (curGenomeEnd >= nextGenomeStart + 100 or curReadEnd >= nextReadStart + 100) return;
 	GenomePairs EndPairs;
-	RefineSpace(opts.localK, opts.localW, 20, 0, EndPairs, opts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);	
+	RefineSpace(opts.globalK, opts.globalW, 20, 0, EndPairs, opts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);	
 	if (EndPairs.size() > 0 and (EndPairs.size() / (float) (nextReadStart - curReadEnd)) >= opts.anchorstoosparse ) {
 		GenomePairs ExtendEndPairs; vector<int> ExtendEndPairsMatchesLength; vector<unsigned int> EndChain;
-		LinearExtend(&EndPairs, ExtendEndPairs, ExtendEndPairsMatchesLength, opts, genome, read, chromIndex, 0, 0, opts.localK);	
+		LinearExtend(&EndPairs, ExtendEndPairs, ExtendEndPairsMatchesLength, opts, genome, read, chromIndex, 0, 0, opts.globalK);	
 		TrimOverlappedAnchors(ExtendEndPairs, ExtendEndPairsMatchesLength);
 		float value = 0; int NumofAnchors = 0;
 		SparseDP_ForwardOnly(ExtendEndPairs, ExtendEndPairsMatchesLength, EndChain, opts, LookUpTable, value, NumofAnchors, 1/2); //1

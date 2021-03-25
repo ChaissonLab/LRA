@@ -189,7 +189,7 @@ SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitC
 			or (ExtendClusters[cur]->strand == 0 and ExtendClusters[prev]->strand == 1) // inversion
 			or (ExtendClusters[cur]->strand == 1 and ExtendClusters[prev]->strand == 0) // inversion
 			or (ExtendClusters[prev]->OverlaprateOnGenome(ExtendClusters[cur]) >= 0.3)
-			or  (ExtendClusters[prev]->OverlapOnGenome(ExtendClusters[cur]) >= 100 // If two clusters overlap exceeds 0.3, then it is a DUP
+			or  (ExtendClusters[prev]->OverlapOnGenome(ExtendClusters[cur]) >= 500 // If two clusters overlap exceeds 0.3, then it is a DUP
 				and ExtendClusters[prev]->anchorfreq <= 1.05f and ExtendClusters[cur]->anchorfreq <= 1.05f)) {  // If two clusters overlap exceeds 100bp and they are both linear, then it is a DUP
 			splitchains.push_back(SplitChain(onec, lk));
 			onec.clear();
