@@ -657,16 +657,16 @@ void RemovePairedIndels (Tup &chain) {
 	
 	if (lastValidDist == -1 or firstValidDist == -1) {
 		// all invalid
-		for (int i=0; i < chain.size(); i++) { remove[i] = true;}
+		for (int i=0; i < chain.size(); i++) { if (chain.length(i) < 100) remove[i] = true;}
 	}
 
 	if (firstValidDist > 0 and firstValidDist < 3) {
 		//		cout << "Trimming start " << firstValidDist << "\t" << chain.size() << endl;
-		for (int i=0; i < firstValidDist; i++) { remove[i] = true;}
+		for (int i=0; i < firstValidDist; i++) { if (chain.length(i) < 100) remove[i] = true;}
 	}
 	if (lastValidDist+1 >= chain.size() and chain.size() - lastValidDist < 3) {
 		//		cout << " trimming " << lastValidDist << "\t" << chain.size() << endl;
-		for (int i=lastValidDist+1; i < chain.size(); i++) { remove[i] = true;}
+		for (int i=lastValidDist+1; i < chain.size(); i++) { if (chain.length(i) < 100) remove[i] = true;}
 	}
 	
 	int m = 0;
