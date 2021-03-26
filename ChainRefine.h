@@ -175,11 +175,205 @@ RefineBtwnSpace_AppendCloseCluster (vector<Cluster> &RevBtwnCluster, bool twoblo
 	// }
 }
 
+int	TrimSplitChainDiagonal(vector<SplitChain> &spchain, vector<Cluster> & refined_clusters)  
+{
+	assert(spchain.size() == refined_clusters.size());
+	vector<bool> remove;
+	int nRemoved=0, totalMatches=0;
+	int nInline=0;	
+	
+	for (int c=0; c < spchain.size(); c++) 
+		{
+			totalMatches += refined_clusters[c].matches.size();
+			
+			if (spchain[c].size() == 1) 
+				{
+					continue;
+				}
+			
+
+			remove.resize(refined_clusters[c].matches.size());
+			fill(remove.begin(), remove.end(), false);
+			//
+			// Sort by first.pos (read) then second.pos (genome)
+			//
+			CartesianSort(refined_clusters[c].matches);
+			if (spchain[c].Strand == false) 
+				{
+					int ci=0;
+					int mi=0;
+					int lastChain=spchain[c].size();
+					int lastMatch=refined_clusters[c].matches.size();
+ 
+					
+					while (ci < lastChain-1) 
+						{
+							long offset=50;							
+							long minDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) - offset;
+							long maxDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) + offset;
+							/*
+							cout << "Chain index " << ci << "\t" << spchain[c].qStart(ci) << "-" << spchain[c].qStart(ci+1) << "\ttarget\t" 
+									 << spchain[c].tStart(ci)  << "-" << spchain[c].tStart(ci+1) << "\tmin: " << minDiag << "\tmax: " << maxDiag << endl;
+							*/
+							while(mi < lastMatch and refined_clusters[c].matches[mi].first.pos < spchain[c].qStart(ci+1)) 
+								{
+									long refinedDiag=refined_clusters[c].matches[mi].second.pos-refined_clusters[c].matches[mi].first.pos;
+									//									cout << "Match " << mi << "\t" << refined_clusters[c].matches[mi].first.pos << "\t" << refined_clusters[c].matches[mi].second.pos << "\t" << refinedDiag << "\t" << refinedDiag- minDiag << "\t" << maxDiag - refinedDiag << endl;
+									
+									
+									if (refinedDiag < minDiag or refinedDiag > maxDiag) 
+										{
+											//											cout << "Removed" << endl;
+											
+											remove[mi] = true;
+											++nRemoved;											
+										}																			
+									mi++;									
+								}
+							ci++;							
+						}
+				}			
+			else	{
+				int ci=0;
+				
+				int mi=refined_clusters[c].matches.size()-1;
+				int lastChain=spchain[c].size();
+				
+				{
+					long minDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) - 50;
+					long maxDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) + 50;
+					/*
+												cout << "Chain index " << ci << "\t" << spchain[c].qStart(ci) << "-" << spchain[c].qStart(ci+1) << "\ttarget\t" 
+													<< spchain[c].tStart(ci)  << "-" << spchain[c].tStart(ci+1) << "\tmin: " << minDiag << "\tmax: " << maxDiag << endl;
+					*/
+					while(mi >= 0 and refined_clusters[c].matches[mi].first.pos > spchain[c].qStart(ci+1)) 
+						{
+							long refinedDiag=refined_clusters[c].matches[mi].second.pos-refined_clusters[c].matches[mi].first.pos;
+							/*
+																cout << "Match " << mi << "\t" << refined_clusters[c].matches[mi].first.pos << "\t" << refined_clusters[c].matches[mi].second.pos << "\t" << refinedDiag << "\t" << refinedDiag- minDiag << "\t" << maxDiag - refinedDiag << endl;
+							*/
+							
+							if (refinedDiag < minDiag or refinedDiag > maxDiag) 
+								{
+									//									cout << "Removed" << endl;
+									
+									remove[mi] = true;
+									++nRemoved;											
+								}																			
+							mi--;
+						}
+					ci++;				
+				}
+		 
+				
+			}
+			
+			int curMatch=0;					
+			for (int mi=0; mi < refined_clusters[c].matches.size(); mi++) 
+				{
+					if (remove[mi] == false) 
+						{
+							refined_clusters[c].matches[curMatch] = refined_clusters[c].matches[mi];
+								curMatch++;
+						}
+				}
+			refined_clusters[c].matches.resize(curMatch);												
+		
+	
+				
+	
+	if (spchain[c].Strand == false) 
+				{
+					//
+					// Take advantage of the sorting to remove in line anchors.
+					//
+					int mi=0;
+					int last=refined_clusters[c].matches.size();
+
+					
+						while (mi < refined_clusters[c].matches.size())
+							{
+								int next=mi+1;
+								int run=0;								
+								
+								if (next < last and 
+										refined_clusters[c].matches[next].first.pos >  refined_clusters[c].matches[mi].first.pos and
+										refined_clusters[c].matches[next].second.pos >  refined_clusters[c].matches[mi].second.pos and
+										refined_clusters[c].matches[next].second.pos - refined_clusters[c].matches[next].first.pos == 
+										refined_clusters[c].matches[mi].second.pos - refined_clusters[c].matches[mi].first.pos) 
+									{
+										nInline++;										
+										next++;
+										run++;										
+									}
+								if (run > 0) 
+									{
+										for (int r=0; r < run; r++) 
+											{
+												remove[mi+1+r]=true;
+											}
+										//							refined_clusters[c].matchesLengths[mi] = refined_clusters[c].matches[mi+run].second.pos - refined_clusters[c].matches[mi].second.pos + refined_clusters[c].matchesLengths[mi+run];										
+									}															
+								mi=next;								
+							}								
+				}
+	
+		}
+	
+
+
+			
+	//	cerr << "Removed " << nRemoved << " of " << totalMatches << endl;
+	//	cerr << " would have merged " << nInline << " of " << totalMatches << endl;	
+
+	return nRemoved;
+	
+
+}
+
+
+	
+
 //
 // This function refines the Clusters in chain and store refined anchors in refinedClusters
 // NOTICE: Inside this function, we need to flip reversed Cluster into forward direction to find refined matches;
 // And flip them back after the refining step;
 //
+
+void SetGenomeOffset(vector<SplitChain> &splitchains, Genome &genome) 
+{
+	for (int c=0; c < splitchains.size(); c++) 
+		{
+			splitchains[c].chromOffset = genome.header.pos[splitchains[c].chromIndex];
+		}
+}
+
+void SubtractGenomeOffset(vector<SplitChain> &splitchains) 
+{
+	for (int c=0; c < splitchains.size(); c++) 
+		{
+			for (int ci=0; ci < splitchains[c].size(); ci++) 
+				{
+					splitchains[c].genomepair(ci).second.pos -= splitchains[c].chromOffset;
+				}
+		}
+}
+void AddGenomeOffset(vector<SplitChain> &splitchains) 
+{
+	for (int c=0; c < splitchains.size(); c++) 
+		{
+			for (int ci=0; ci < splitchains[c].size(); ci++) 
+				{
+					splitchains[c].genomepair(ci).second.pos += splitchains[c].chromOffset;
+				}
+		}
+}	
+
+
+			
+
+			
+			
 int 
 Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<Cluster> & refinedclusters, vector<Cluster> &clusters, Genome & genome, Read & read,  
 				LocalIndex & glIndex, LocalIndex *localIndexes[2], Options & smallOpts, Options & opts) {
@@ -215,10 +409,14 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		int64_t maxDN, minDN;
 		maxDN = (int64_t) splitchains[ph].tStart(0) - (int64_t) splitchains[ph].qStart(0); // trans_ takes care of reverse strand and offset
 		minDN = maxDN;
-		for (int db = 0; db < splitchains[ph].size() - 1; db++) {
+
+		for (int db = 0; db < splitchains[ph].size(); db++) {
 			maxDN = max(maxDN, (int64_t) splitchains[ph].tStart(db) - (int64_t) splitchains[ph].qStart(db));
 			minDN = min(minDN, (int64_t) splitchains[ph].tStart(db) - (int64_t) splitchains[ph].qStart(db));
-		}						
+		}
+		//		cerr << "chain with " << splitchains[ph].size() << " qspan " << splitchains[ph].qStart(0) << "\t" << splitchains[ph].qEnd(splitchains[ph].size()-1) << " has tlen " << splitchains[ph].tEnd(splitchains[ph].size()-1) - splitchains[ph].tStart(0) << " diag " << minDN << "\t" << maxDN << "\t" << maxDN - minDN << endl;
+		
+		
 		refinedclusters[ph].maxDiagNum = maxDN + 50; //20
 		refinedclusters[ph].minDiagNum = minDN - 50;//20
 		//

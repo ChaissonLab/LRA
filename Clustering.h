@@ -203,6 +203,7 @@ class Cluster : public ClusterCoordinates {
 	int matchStart;
 	vector<bool> overlap;
 	bool flip = 0;
+
 	Cluster() { refined=0; coarse=-1; rank=-1; flip = 0;}
  Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1; refined=0; flip = 0;}
 

@@ -325,6 +325,7 @@ public:
 	vector<bool> link;
 	GenomePos QStart, QEnd, TStart, TEnd;
 	int chromIndex;
+	GenomePos chromOffset;
 	UltimateChain *chain;
 	bool Strand;
 	int clusterIndex; // for one refined_clusters

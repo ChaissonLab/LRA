@@ -202,7 +202,7 @@ SwitchToOriginalAnchors(FinalChain &prev, UltimateChain &cur, vector<Cluster_Sam
 void
 RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &chromIndex, UltimateChain &chain, vector<SegAlignmentGroup> &alignments,
 							Alignment *alignment, Read &read, Genome &genome, char *strands[2], vector<int> &scoreMat, 
-							vector<Arrow> &pathMat, Options &tinyOpts, AffineAlignBuffers &buff, 
+							vector<Arrow> &pathMat, Options tinyOpts, AffineAlignBuffers &buff, 
 							const vector<float> & LookUpTable, bool &inversion, bool &breakalignment, ostream *svsigstrm) {
 
 	if (str == 0) alignment->blocks.push_back(Block(chain[cur].first.pos, chain[cur].second.pos, chain.length(cur)));
@@ -244,6 +244,19 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			// cerr << "min(read_dist, genome_dist): " << min(read_dist, genome_dist) << endl;
 			// cerr << "curReadEnd: " << curReadEnd << "  curGenomeEnd: " << curGenomeEnd << "  nextReadStart: " << nextReadStart << "  nextGenomeStart: " << nextGenomeStart << endl;
 			int refineSpaceDiag = (int) (0.15f * read_dist);			
+			if (max(read_dist,genome_dist) < 100) {
+				tinyOpts.globalK = 6;
+				tinyOpts.localW  = 5;
+			}
+			else if (max(read_dist,genome_dist) < 500) {
+				tinyOpts.globalK = 9;
+				tinyOpts.localW  = 7;
+			}
+			else {
+				tinyOpts.globalK = 13;
+				tinyOpts.localW  = 7;
+			}
+				
  			RefineSpace(tinyOpts.globalK, tinyOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, tinyOpts, genome, read, 
  					strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);
 			//
