@@ -320,21 +320,12 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			}
 			clust.close();
 		}	
-<<<<<<< HEAD
 
 		// SetGenomeOffset(spchain, genome);
 		// SubtractGenomeOffset(spchain);		
 		// TrimSplitChainDiagonal(spchain, refined_clusters);
 		// AddGenomeOffset(spchain);
 		
-=======
-		/*
-		SetGenomeOffset(spchain, genome);
-		SubtractGenomeOffset(spchain);		
-		TrimSplitChainDiagonal(spchain, refined_clusters);
-		AddGenomeOffset(spchain);
-		*/
->>>>>>> aeb22f9a494ad9688411bdb0977e5ad644f15b20
 		if (opts.dotPlot and opts.readname == read.name) {
 			ofstream clust("RefinedClustersPostTrim.tab", std::ofstream::app);
 			for (int t = 0; t < refined_clusters.size(); t++) {
@@ -531,7 +522,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		vector<UltimateChain> ultimatechains(merge_spcluster.size());
 		for (int t = 0; t < merge_spcluster.size(); t++) {
 			ultimatechains[t].clusters = &extend_clusters;
-			if (extend_clusters.size() > 0 and extend_clusters[0].matches.size() < 3*read.length) {
+			if (extend_clusters.size() > 0) { // and extend_clusters[0].matches.size() < 3*read.length
 				SparseDP(merge_spcluster[t], extend_clusters, ultimatechains[t], smallOpts, LookUpTable, read);
 				// ultimatechains[t].DebugCheck(read.length, genome);
 				RemovePairedIndels<UltimateChain>(ultimatechains[t]); 
@@ -605,4 +596,4 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	return 0;
 }
 
-#endif
+#
