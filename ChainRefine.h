@@ -198,6 +198,7 @@ int	TrimSplitChainDiagonal(vector<SplitChain> &spchain, vector<Cluster> & refine
 			// Sort by first.pos (read) then second.pos (genome)
 			//
 			CartesianSort(refined_clusters[c].matches);
+			long offset=500;	
 			if (spchain[c].Strand == false) 
 				{
 					int ci=0;
@@ -207,8 +208,7 @@ int	TrimSplitChainDiagonal(vector<SplitChain> &spchain, vector<Cluster> & refine
  
 					
 					while (ci < lastChain-1) 
-						{
-							long offset=50;							
+						{						
 							long minDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) - offset;
 							long maxDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) + offset;
 							/*
@@ -240,8 +240,8 @@ int	TrimSplitChainDiagonal(vector<SplitChain> &spchain, vector<Cluster> & refine
 				int lastChain=spchain[c].size();
 				
 				{
-					long minDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) - 50;
-					long maxDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) + 50;
+					long minDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) - offset;
+					long maxDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) + offset;
 					/*
 												cout << "Chain index " << ci << "\t" << spchain[c].qStart(ci) << "-" << spchain[c].qStart(ci+1) << "\ttarget\t" 
 													<< spchain[c].tStart(ci)  << "-" << spchain[c].tStart(ci+1) << "\tmin: " << minDiag << "\tmax: " << maxDiag << endl;
@@ -368,7 +368,6 @@ void AddGenomeOffset(vector<SplitChain> &splitchains)
 				}
 		}
 }	
-
 			
 int 
 Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<Cluster> & refinedclusters, vector<Cluster> &clusters, Genome & genome, Read & read,  

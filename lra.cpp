@@ -782,47 +782,54 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalK = 17;
 			opts.globalW = 10;
 			opts.globalMaxFreq = 60;
-			opts.globalWinsize = 12;
+			opts.globalWinsize = 16; //12
 			opts.NumOfminimizersPerWindow = 1;	
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
-			opts.globalK = 15;
+			// opts.globalK = 15;
+			// opts.globalW = 10;
+			// opts.globalMaxFreq = 200;
+			// opts.globalWinsize = 9;
+			// opts.NumOfminimizersPerWindow = 1;		
+
+			opts.globalK = 17;
 			opts.globalW = 10;
 			opts.globalMaxFreq = 200;
-			opts.globalWinsize = 9;
-			opts.NumOfminimizersPerWindow = 1;		
-			// opts.localK = ;
-			// opts.localW	= opts.globalW - 3;
-			opts.localMaxFreq = opts.globalMaxFreq * 3;
+			opts.globalWinsize = 16;
+			opts.NumOfminimizersPerWindow = 1;	
 		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
+			// opts.globalK = 15;
+			// opts.globalW = 10;
+			// opts.globalMaxFreq = 200;
+			// opts.globalWinsize = 9;
+			// opts.NumOfminimizersPerWindow = 1;	
+
+			// opts.globalK = 12;
+			// opts.globalW = 10;
+			// opts.globalWinsize = 7;
+
 			opts.globalK = 15;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 200;
-			opts.globalWinsize = 9;
+			opts.globalMaxFreq = 250;
+			opts.globalWinsize = 13;
 			opts.NumOfminimizersPerWindow = 1;	
-
-			opts.globalK = 12;
-			opts.globalW = 10;
-			opts.globalWinsize = 7;
-			// opts.localK = 7;
-			// opts.localW	= opts.globalW - 5;
-			// opts.localMaxFreq = opts.globalMaxFreq * 4;
-
 		}
 		else if (ArgIs(argv[argi], "-ONT")) {
+			// opts.globalK = 15;
+			// opts.globalW = 10;
+			// opts.globalMaxFreq = 200;
+			// opts.globalWinsize = 9;
+			// opts.NumOfminimizersPerWindow = 1;	
+
+			// opts.globalK = 12;
+			// opts.globalW = 10;
+			// opts.globalWinsize = 7;
 			opts.globalK = 15;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 200;
-			opts.globalWinsize = 9;
+			opts.globalMaxFreq = 250;
+			opts.globalWinsize = 13;
 			opts.NumOfminimizersPerWindow = 1;	
-
-			opts.globalK = 12;
-			opts.globalW = 10;
-			opts.globalWinsize = 7;
-			// opts.localK = 7;
-			// opts.localW	= 5;
-			// opts.localMaxFreq = opts.globalMaxFreq * 4;
 		}
 		else if (ArgIs(argv[argi], "-F")) {
 			opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
