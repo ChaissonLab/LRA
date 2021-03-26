@@ -596,4 +596,4 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	return 0;
 }
 
-#
+#endif
