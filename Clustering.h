@@ -872,7 +872,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 						// }						
 					}
 
-					if (read.name == opts.readname) cerr << "avgfreq: " << avgfreq << " MinDiagCluster: " << MinDiagCluster << endl;
+					//					if (read.name == opts.readname) cerr << "avgfreq: " << avgfreq << " MinDiagCluster: " << MinDiagCluster << endl;
 					counter++;
 				}
 			}

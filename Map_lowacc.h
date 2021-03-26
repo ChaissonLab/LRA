@@ -320,6 +320,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			}
 			clust.close();
 		}	
+
 		SetGenomeOffset(spchain, genome);
 		SubtractGenomeOffset(spchain);		
 		TrimSplitChainDiagonal(spchain, refined_clusters);

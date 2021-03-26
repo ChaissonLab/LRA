@@ -598,7 +598,22 @@ void RemovePairedIndels (Tup &chain) {
 	long totalDist=0;
 	long totDistSq=0;
 	for (int c = 1; c < chain.size(); c++) {
-		int dist=min(abs((long)(chain.tStart(c) - chain.tEnd(c-1))), abs((long)(chain.qStart(c) - chain.qEnd(c-1))));
+
+		long tDist=0, qDist=0;
+		if (chain.tStart(c)  > chain.tEnd(c-1) ) {
+			tDist=chain.tStart(c) - chain.tEnd(c-1);
+		}
+		else {
+			tDist=chain.tStart(c-1) - chain.tEnd(c);
+		}
+		if (chain.qStart(c) > chain.qEnd(c-1)) {
+				qDist = chain.qStart(c) - chain.tEnd(c-1);
+		}
+		else {
+			qDist = chain.qStart(c-1) - chain.qEnd(c);
+		}
+		int dist=min(tDist, qDist);
+
 		totDistSq+=dist*dist;
 		totalDist+=dist;
 		if (chain.strand(c) == chain.strand(c-1)) {
@@ -633,7 +648,22 @@ void RemovePairedIndels (Tup &chain) {
 	int firstValidDist=-1;
 	int lastValidDist=-1;
 	for (int c=1; c < chain.size(); c++) {
-		int dist=min(abs((long)(chain.tStart(c) - chain.tEnd(c-1))), abs((long)(chain.qStart(c) - chain.qEnd(c-1))));
+		long tDist=0, qDist=0;
+		if (chain.tStart(c)  > chain.tEnd(c-1) ) {
+			tDist=chain.tStart(c) - chain.tEnd(c-1);
+		}
+		else {
+			tDist=chain.tStart(c-1) - chain.tEnd(c);
+		}
+		if (chain.qStart(c) > chain.qEnd(c-1)) {
+				qDist = chain.qStart(c) - chain.tEnd(c-1);
+		}
+		else {
+			qDist = chain.qStart(c-1) - chain.qEnd(c);
+		}
+
+		
+		int dist=min(tDist, qDist);
 
 		if (dist < meanDist + 4*sdDist) {
 			if (firstValidDist == -1 ){
@@ -665,7 +695,7 @@ void RemovePairedIndels (Tup &chain) {
 		//		cout << "Trimming start " << firstValidDist << "\t" << chain.size() << endl;
 		for (int i=0; i < firstValidDist; i++) { if (chain.length(i) < 100) remove[i] = true;}
 	}
-	if (lastValidDist+1 >= chain.size() and chain.size() - lastValidDist < 3) {
+	if (lastValidDist+1 <= chain.size() and chain.size() - lastValidDist < 3) {
 		//		cout << " trimming " << lastValidDist << "\t" << chain.size() << endl;
 		for (int i=lastValidDist+1; i < chain.size(); i++) { if (chain.length(i) < 100) remove[i] = true;}
 	}
