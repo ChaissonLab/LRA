@@ -702,7 +702,7 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.localK = 10;
 			opts.localW	= 5;
-			opts.localMaxFreq = 50;
+			opts.localMaxFreq = 20;
 			glIndex.k = opts.localK;
 			glIndex.maxFreq = opts.localMaxFreq;
 		}
