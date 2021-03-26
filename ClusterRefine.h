@@ -255,11 +255,10 @@ int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePair
 	for (int rm = 0; rm < EndPairs.size(); rm++) {
 		EndPairs[rm].first.pos += qs;
 		EndPairs[rm].second.pos += ts-lrts;
-		assert(EndPairs[rm].first.pos < read.length);
+		assert(EndPairs[rm].first.pos + K < read.length);
+		assert(EndPairs[rm].second.pos + K < genome.lengths[ChromIndex]);
 		if (consider_str == true and st == 1) EndPairs[rm].first.pos = read.length - EndPairs[rm].first.pos - K;
 		assert(EndPairs[rm].first.pos + K <= read.length);
-
-		
 	}	
 	return 0;
 }

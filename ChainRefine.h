@@ -369,10 +369,6 @@ void AddGenomeOffset(vector<SplitChain> &splitchains)
 		}
 }	
 
-
-			
-
-			
 			
 int 
 Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<Cluster> & refinedclusters, vector<Cluster> &clusters, Genome & genome, Read & read,  
@@ -624,6 +620,8 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 		// 	}
 		// }
 		if (te1 <= ts1) {c++; continue;}
+		if (te1 >= genome.lengths[RefinedClusters[cur].chromIndex]) {c++; continue;}
+		if (max(qe - qs, te1 - ts1) >= 5*opts.refineSpaceDist) {c++; continue;}
 		SpaceLength = min(qe - qs, te1 - ts1); 
 		// if (twoblocks) {cerr << "refinetwoblocks " << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;}
 		if (SpaceLength <= opts.refineSpaceDist and RefinedClusters[cur].chromIndex == RefinedClusters[prev].chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
@@ -633,6 +631,8 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 		}		
 		if (twoblocks) {
 			if (te2 <= ts2) {c++; continue;}
+			if (te2 >= genome.lengths[RefinedClusters[cur].chromIndex]) {c++; continue;}
+			if (max(qe - qs, te2 - ts2) >= 5*opts.refineSpaceDist) {c++; continue;}
 			SpaceLength = min(qe - qs, te2 - ts2); 
 			// if (twoblocks) {cerr << "refinetwoblocks " << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;}
 			if (SpaceLength <= opts.refineSpaceDist and RefinedClusters[cur].chromIndex == RefinedClusters[prev].chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
