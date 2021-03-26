@@ -289,7 +289,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.readType=Options::ccs;
 			opts.HighlyAccurate = true;
 			opts.anchor_rate=18.0;
-			opts.NumAln=3;
+			opts.NumAln=2;
    			opts.PrintNumAln = 1;
       		opts.merge_dist = 100;
       		opts.RoughClustermaxGap=500; 
@@ -300,6 +300,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.punish_anchorfreq=10;
      		opts.anchorPerlength=10;
      		opts.refineSpaceDist=10000;
+
+     		opts.anchor_rate=9.0f;
+     		opts.minClusterSize=5;
 
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;

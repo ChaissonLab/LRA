@@ -658,16 +658,16 @@ void RemovePairedIndels (Tup &chain) {
 	
 	if (lastValidDist == -1 or firstValidDist == -1) {
 		// all invalid
-		for (int i=0; i < chain.size(); i++) { remove[i] = true;}
+		for (int i=0; i < chain.size(); i++) { if (chain.length(i) < 100) remove[i] = true;}
 	}
 
 	if (firstValidDist > 0 and firstValidDist < 3) {
 		//		cout << "Trimming start " << firstValidDist << "\t" << chain.size() << endl;
-		for (int i=0; i < firstValidDist; i++) { remove[i] = true;}
+		for (int i=0; i < firstValidDist; i++) { if (chain.length(i) < 100) remove[i] = true;}
 	}
 	if (lastValidDist+1 >= chain.size() and chain.size() - lastValidDist < 3) {
 		//		cout << " trimming " << lastValidDist << "\t" << chain.size() << endl;
-		for (int i=lastValidDist+1; i < chain.size(); i++) { remove[i] = true;}
+		for (int i=lastValidDist+1; i < chain.size(); i++) { if (chain.length(i) < 100) remove[i] = true;}
 	}
 	
 	int m = 0;
@@ -901,5 +901,30 @@ void RemoveSpuriousJump (Tup &chain) {
 	chain.chain.resize(m);
 	chain.ClusterIndex.resize(m);
 	if (!chain.link.empty()) chain.link.resize(m-1);
+}
+
+template<typename Tup>
+int LargestSplitChain(vector<Tup> &splitchains) {
+	int maxi = 0;
+	for (int mi = 1; mi < splitchains.size(); mi++) {
+		if (splitchains[mi].size() > splitchains[maxi].size()) {
+			maxi = mi;
+		}
+	}
+	return maxi;
+}
+
+template<typename Tup>
+int LargestSplitChain_dist(vector<Tup> &splitchains) {
+	if (splitchains.size() == 0) return 0;
+	int maxi = 0; int maxi_d = (splitchains[maxi].QEnd > splitchains[maxi].QStart) ? splitchains[maxi].QEnd - splitchains[maxi].QStart : 0;
+	for (int mi = 1; mi < splitchains.size(); mi++) {
+		int d = (splitchains[mi].QEnd > splitchains[mi].QStart) ? splitchains[mi].QEnd - splitchains[mi].QStart : 0;
+		if (d > maxi_d) {
+			maxi = mi;
+			maxi_d = d;
+		}
+	}
+	return maxi;
 }
 #endif

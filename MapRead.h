@@ -188,7 +188,7 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 	CompareLists<GenomeTuple, Tuple>(readmm, genomemm, allMatches, opts, true);
 	timing.Tick("CompareLists");
 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and opts.readname == read.name ) {
 		ofstream clust("all-matches.dots");
 		for (int m = 0; m < allMatches.size(); m++) {
 			clust << allMatches[m].first.pos << "\t" << allMatches[m].second.pos
@@ -205,7 +205,7 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		output_unaligned(read, opts, *output);
 		return 0;
 	} 
-	if (opts.dotPlot) {
+	if (opts.dotPlot and opts.readname == read.name ) {
 		ofstream fclust("for-matches_original.dots");
 		for (int m = 0; m < forMatches.size(); m++) {
 			fclust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"

@@ -641,7 +641,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 				vector<SplitChain> splitchains;
 				SPLITChain(read, ExtendClusters, splitchains, Primary_chains[p].chains[h].link, smallOpts);
 				// cerr << "splitchains.size(): " << splitchains.size() << endl;
-				int LSC = LargestSplitChain(splitchains);
+				int LSC = LargestSplitChain_dist(splitchains);
 				//
 				// Apply SDP on all splitchains to get the final rough alignment path;
 				// store the result in GenomePairs tupChain; 
@@ -706,6 +706,10 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 			}
 		}
 	}
+	if (read.unaligned or alignments.size() == 0) {
+		output_unaligned(read, opts, *output);
+		return 0;
+	} 	
 	OUTPUT(alignmentsOrder, read, opts, genome, output);
 	//
 	// Done with one read. Clean memory.
