@@ -444,9 +444,10 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 			//
 			// Find the coordinates in the cluster fragment that start in this local index.
 			//
+			if (glIndex.seqOffsets[lsi] < chromOffset or glIndex.seqOffsets[lsi + 1] < chromOffset) continue; 
 			GenomePos genomeLocalIndexStart = glIndex.seqOffsets[lsi]  - chromOffset;
-			GenomePos genomeLocalIndexEnd   = glIndex.seqOffsets[lsi + 1] - 1 - chromOffset;
-
+			GenomePos genomeLocalIndexEnd = glIndex.seqOffsets[lsi + 1] - 1 - chromOffset;
+			if (genomeLocalIndexStart >= genomeLocalIndexEnd) continue;
 			// assert(clusters.back().matches.size() == 1); // dummy matches
 			// clusters.back().matches[0].first.pos = 0; clusters.back().matches[0].second.pos = genomeLocalIndexStart;
 			// int matchStart = splitchains[ph].CartesianTargetLowerBound(0, 1, splitchains[ph].sptc.size() - 1);
