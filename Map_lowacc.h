@@ -320,7 +320,40 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			}
 			clust.close();
 		}	
-
+		SetGenomeOffset(spchain, genome);
+		SubtractGenomeOffset(spchain);		
+		TrimSplitChainDiagonal(spchain, refined_clusters);
+		AddGenomeOffset(spchain);
+		
+		if (opts.dotPlot and opts.readname == read.name) {
+			ofstream clust("RefinedClustersPostTrim.tab", std::ofstream::app);
+			for (int t = 0; t < refined_clusters.size(); t++) {
+				for (int h = 0; h < refined_clusters[t].matches.size(); h++) {
+					if (refined_clusters[t].strand  == 0) {
+						clust << refined_clusters[t].matches[h].first.pos << "\t"
+							  << refined_clusters[t].matches[h].second.pos << "\t"
+							  << refined_clusters[t].matches[h].first.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK << "\t"
+							  << t << "\t"
+							  << p << "\t"
+							  << genome.header.names[refined_clusters[t].chromIndex] <<"\t"
+							  << refined_clusters[t].strand << endl;
+					}
+					else {
+						clust << refined_clusters[t].matches[h].first.pos << "\t"
+							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].first.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].second.pos<< "\t"
+							  << t << "\t"
+							  << p << "\t"
+							  << genome.header.names[refined_clusters[t].chromIndex] <<"\t"
+							  << refined_clusters[t].strand << endl;					
+					}
+				}
+			}
+			clust.close();
+		}	
+		
 		//
 		// refine between splitchain -- uncomment the next block!
 		//
@@ -328,6 +361,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		
 		vector<tuple<int, int, int> > tracerev;
 		Refine_Btwnsplitchain(spchain, refined_clusters, RevBtwnCluster, tracerev, genome, read, smallOpts, strands, spchain_link);
+
 		/*
 		//
 		// Add back RevBtwnCluster; Edit spchain based on tracerev;
@@ -439,6 +473,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		for (int ep = 0; ep < extend_clusters.size(); ep++) {
 			SizeExtendClusters += extend_clusters[ep].matches.size();
 		}	
+		//		cerr << "Refined versus extend " << SizeRefinedClusters << "\t" << SizeExtendClusters << endl;
+		
 		if (p == 0 and SizeRefinedClusters == 0) {
 			read.unaligned = 1;
 			output_unaligned(read, opts, *output);

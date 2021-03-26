@@ -10,7 +10,7 @@ CCOPTS=-O2 $(CCOPTS_BASE)  -DNDEBUG
 endif
 STATIC=
 ifneq ($(OPT), "")
-#CCOPTS=-g $(CCOPTS_BASE) -lprofiler
+CCOPTS=-O -g $(CCOPTS_BASE) -lprofiler
 #STATIC=
 STATIC=-g -L $(PROF) -lprofiler
 CCOPTS=-g
