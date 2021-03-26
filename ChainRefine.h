@@ -240,8 +240,8 @@ int	TrimSplitChainDiagonal(vector<SplitChain> &spchain, vector<Cluster> & refine
 				int lastChain=spchain[c].size();
 				
 				{
-					long minDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) - 50;
-					long maxDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) + 50;
+					long minDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) - 100;
+					long maxDiag=min(spchain[c].tStart(ci) - spchain[c].qStart(ci), spchain[c].tStart(ci+1) - spchain[c].qStart(ci+1)) + 100;
 					/*
 												cout << "Chain index " << ci << "\t" << spchain[c].qStart(ci) << "-" << spchain[c].qStart(ci+1) << "\ttarget\t" 
 													<< spchain[c].tStart(ci)  << "-" << spchain[c].tStart(ci+1) << "\tmin: " << minDiag << "\tmax: " << maxDiag << endl;

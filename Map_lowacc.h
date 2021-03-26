@@ -320,12 +320,12 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			}
 			clust.close();
 		}	
-
+		/*
 		SetGenomeOffset(spchain, genome);
 		SubtractGenomeOffset(spchain);		
 		TrimSplitChainDiagonal(spchain, refined_clusters);
 		AddGenomeOffset(spchain);
-		
+		*/
 		if (opts.dotPlot and opts.readname == read.name) {
 			ofstream clust("RefinedClustersPostTrim.tab", std::ofstream::app);
 			for (int t = 0; t < refined_clusters.size(); t++) {
