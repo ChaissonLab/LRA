@@ -442,7 +442,8 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 			//
 			// Find the coordinates in the cluster fragment that start in this local index.
 			//
-			GenomePos genomeLocalIndexStart = glIndex.seqOffsets[lsi]  - chromOffset;
+			if (glIndex.seqOffsets[lsi] < chromOffset or glIndex.seqOffsets[lsi + 1] < chromOffset) continue; 
+			GenomePos genomeLocalIndexStart = glIndex.seqOffsets[lsi] - chromOffset;
 			GenomePos genomeLocalIndexEnd   = glIndex.seqOffsets[lsi + 1] - 1 - chromOffset;
 
 			// assert(clusters.back().matches.size() == 1); // dummy matches
@@ -623,7 +624,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 		if (max(qe - qs, te1 - ts1) >= 5*opts.refineSpaceDist) {c++; continue;}
 		SpaceLength = min(qe - qs, te1 - ts1); 
 		// if (twoblocks) {cerr << "refinetwoblocks " << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;}
-		if (SpaceLength <= opts.refineSpaceDist and RefinedClusters[cur].chromIndex == RefinedClusters[prev].chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
+		if (SpaceLength >= 500 and SpaceLength <= opts.refineSpaceDist and RefinedClusters[cur].chromIndex == RefinedClusters[prev].chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
 			if (RefineBtwnSpace_AppendCloseCluster(RevBtwnCluster, twoblocks, &RefinedClusters[cur], &RefinedClusters[prev], opts, genome, read, strands, qe, qs, te1, ts1, st1)) {
 				tracerev.push_back(make_tuple(0, c, RevBtwnCluster.size() - 1)); // Insert a rev cluster
 			}
@@ -634,7 +635,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 			if (max(qe - qs, te2 - ts2) >= 5*opts.refineSpaceDist) {c++; continue;}
 			SpaceLength = min(qe - qs, te2 - ts2); 
 			// if (twoblocks) {cerr << "refinetwoblocks " << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;}
-			if (SpaceLength <= opts.refineSpaceDist and RefinedClusters[cur].chromIndex == RefinedClusters[prev].chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
+			if (SpaceLength >= 500 and SpaceLength <= opts.refineSpaceDist and RefinedClusters[cur].chromIndex == RefinedClusters[prev].chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
 				RefineBtwnSpace(opts.globalK, opts.globalW, RevBtwnCluster, twoblocks, &RefinedClusters[prev], opts, genome, read, strands, qe, qs, te2, ts2, st2);
 			}				
 		}
@@ -662,7 +663,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 		// cerr << "rigt: " << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 		if (qe > qs and te > ts) {
 			SpaceLength = min(qe - qs, te - ts); 
-			if (SpaceLength < opts.refineSpaceDist and te + 500 < genome.lengths[RefinedClusters[rh].chromIndex]) { // used (1000, 6000)
+			if (SpaceLength >= 500 and SpaceLength < opts.refineSpaceDist and te + 500 < genome.lengths[RefinedClusters[rh].chromIndex]) { // used (1000, 6000)
 				GenomePos lrts=0, lrlength=0;
 				if (st==0) {
 					lrts=0;
@@ -698,7 +699,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 		// cerr << "left qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 		if (qe > qs and te > ts) {
 			SpaceLength = min(qe - qs, te - ts);
-			if (SpaceLength < opts.refineSpaceDist and te+500 < genome.lengths[RefinedClusters[lh].chromIndex]) { // used (1000, 6000)
+			if (SpaceLength >= 500 and SpaceLength < opts.refineSpaceDist and te+500 < genome.lengths[RefinedClusters[lh].chromIndex]) { // used (1000, 6000)
 				GenomePos lrts=0, lrlength=0;
 				if (st==0) { 
 					if (ts>500) lrts=500;
