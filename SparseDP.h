@@ -1717,7 +1717,7 @@ DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, Sta
 			// assert(qEnd - qStart > 10);
 			if (chains.back().size() >= 5 and chains.back().QEnd > chains.back().QStart 
 				and ((float)(chains.back().QEnd - chains.back().QStart)/read.length) > 0.005 
-				and chains.back().QEnd - chains.back().QStart >= 1000) {
+				and chains.back().QEnd - chains.back().QStart >= 500) {
 				if (chains.size() > 1 and chains.back().OverlapsOnT(chains[0].TStart, chains[0].TEnd, 0.1f)) {
 					chains.back().NumOfAnchors0 = chains.back().chain.size();
 					chains.back().FirstSDPValue = fragments_valueOrder[fv];				

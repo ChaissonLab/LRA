@@ -401,7 +401,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "--bypassClustering")) {
 			opts.bypassClustering = true;
-			opts.NumAln=2;
+		}
+		else if (ArgIs(argv[argi], "--NotbypassClustering")) {
+			opts.bypassClustering = false;
 		}
 		else if (ArgIs(argv[argi], "--debug")) {
 			opts.debug = true;
