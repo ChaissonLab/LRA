@@ -801,7 +801,7 @@ MergeMatchesSameDiag (vector<Cluster> &ExtendClusters, vector<Cluster_SameDiag> 
 		GenomePos prev_qEnd = ExtendClusters[c].matches[0].first.pos + ExtendClusters[c].matchesLengths[0];
 		int q = 1;
 		while (q < ExtendClusters[c].matches.size()) {
-			long cur_diag = GetDiag(ExtendClusters[c].matches[q],ExtendClusters[c].matchesLengths[q],  ExtendClusters[c].strand);
+			long cur_diag = GetDiag(ExtendClusters[c].matches[q],ExtendClusters[c].matchesLengths[q], ExtendClusters[c].strand);
 			if (ExtendClusters[c].overlap[q - 1] == 0 and ExtendClusters[c].overlap[q] == 0 
 				and prev_diag == cur_diag and prev_qEnd < ExtendClusters[c].matches[q].first.pos
 				and GapDifference(ExtendClusters[c].matches[q - 1], ExtendClusters[c].matches[q], ExtendClusters[c].matchesLengths[q - 1]) <= opts.merge_dist) { // 100 for contig

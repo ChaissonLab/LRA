@@ -214,6 +214,11 @@ public:
 		return (*clusters)[clusterNum].matchesLengths[chain[i]];		
 	}
 
+	int chromIndex(int i) {
+		int clusterNum = ClusterIndex[i];	
+		return (*clusters)[clusterNum].chromIndex;		
+	}
+
 	GenomePos &qStart(int i) {return (*clusters)[ClusterIndex[i]].matches[chain[i]].first.pos;}
 	GenomePos &tStart(int i) {return (*clusters)[ClusterIndex[i]].matches[chain[i]].second.pos;}
 	GenomePos qEnd(int i) {return (*clusters)[ClusterIndex[i]].matches[chain[i]].first.pos + (*clusters)[ClusterIndex[i]].matchesLengths[chain[i]];}
@@ -231,6 +236,7 @@ public:
 
 	bool OverlapsOnT (GenomePos tS, GenomePos tE, float rate);
 	void CleanSpuriousJumpingAnchors ();
+	void DebugCheck(int readLen, Genome &genome);
 	long diag(int i) {
 		if (strand(i) == 1) { return (long) qEnd(i) + (long) tStart(i);}
 		else { return (long) tStart(i) - (long) qStart(i);}
@@ -317,6 +323,13 @@ void UltimateChain::CleanSpuriousJumpingAnchors () {
 	ClusterIndex.resize(c);
 	link.resize(c-1);
 	return;
+}
+
+void UltimateChain::DebugCheck(int readLen, Genome &genome) {
+	for (int u = 0; u < chain.size(); u++) {
+		assert(qEnd(u) < readLen);
+		assert(tEnd(u) < genome.lengths[chromIndex(u)]);
+	}
 }
 
 class SplitChain {

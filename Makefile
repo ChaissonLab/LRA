@@ -1,4 +1,4 @@
-all:  lra alchemy2
+all:  lra 
 PROF=/home/cmb-16/mjc/shared/lib/
 CCOPTS_BASE=
 DEBUG?=""
