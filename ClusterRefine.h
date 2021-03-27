@@ -135,7 +135,8 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 			//
 			if (glIndex.seqOffsets[lsi] < chromOffset or glIndex.seqOffsets[lsi + 1] < chromOffset) continue; 
 			GenomePos genomeLocalIndexStart = glIndex.seqOffsets[lsi]  - chromOffset;
-			GenomePos genomeLocalIndexEnd   = glIndex.seqOffsets[lsi+1] - 1 - chromOffset;
+			GenomePos genomeLocalIndexEnd = glIndex.seqOffsets[lsi+1] - 1 - chromOffset;
+			if (genomeLocalIndexStart >= genomeLocalIndexEnd) continue;
 
 			int matchStart = CartesianTargetLowerBound<GenomeTuple>(clusters[ph].matches.begin(), clusters[ph].matches.end(), genomeLocalIndexStart);
 
