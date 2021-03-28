@@ -364,27 +364,27 @@ void
 OUTPUT(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts, Genome &genome, ostream *output){
 
 	if (alignmentsOrder.size() > 0 and alignmentsOrder[0].SegAlignment.size() > 0) {
-	for (int a = 0; a < (int) min(alignmentsOrder.size(), opts.PrintNumAln); a++){
 		int primary_num = 0;
-		for (int s = alignmentsOrder[a].SegAlignment.size() - 1; s >= 0; s--) {
-			if (alignmentsOrder[a].SegAlignment[s]->Supplymentary == 0) primary_num++;
-			alignmentsOrder[a].SegAlignment[s]->order = alignmentsOrder[a].SegAlignment.size() - 1 - s;
-			alignmentsOrder[a].SegAlignment[s]->wholegenomeLen = genome.header.pos[alignmentsOrder[a].SegAlignment[s]->chromIndex];
-			if (opts.printFormat == "b") {
-				alignmentsOrder[a].SegAlignment[s]->PrintBed(*output);
-			}
-			else if (opts.printFormat == "s") {
-				alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts, alignmentsOrder[a].SegAlignment, s, read.passthrough);
-			}
-			else if (opts.printFormat == "a") {
-				alignmentsOrder[a].SegAlignment[s]->PrintPairwise(*output);
-			}
-			else if (opts.printFormat == "p" or opts.printFormat == "pc") {
-				alignmentsOrder[a].SegAlignment[s]->PrintPAF(*output, opts.printFormat == "pc");
+		for (int a = 0; a < (int) min(alignmentsOrder.size(), opts.PrintNumAln); a++){
+			for (int s = alignmentsOrder[a].SegAlignment.size() - 1; s >= 0; s--) {
+				if (alignmentsOrder[a].SegAlignment[s]->Supplymentary == 0) primary_num++;
+				alignmentsOrder[a].SegAlignment[s]->order = alignmentsOrder[a].SegAlignment.size() - 1 - s;
+				alignmentsOrder[a].SegAlignment[s]->wholegenomeLen = genome.header.pos[alignmentsOrder[a].SegAlignment[s]->chromIndex];
+				if (opts.printFormat == "b") {
+					alignmentsOrder[a].SegAlignment[s]->PrintBed(*output);
+				}
+				else if (opts.printFormat == "s") {
+					alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts, alignmentsOrder[a].SegAlignment, s, read.passthrough);
+				}
+				else if (opts.printFormat == "a") {
+					alignmentsOrder[a].SegAlignment[s]->PrintPairwise(*output);
+				}
+				else if (opts.printFormat == "p" or opts.printFormat == "pc") {
+					alignmentsOrder[a].SegAlignment[s]->PrintPAF(*output, opts.printFormat == "pc");
+				}
 			}
 		}
 		assert(primary_num == opts.PrintNumAln);
-	}
 	}
 	else if (read.unaligned == 1) {
 	output_unaligned(read, opts, *output);
@@ -395,8 +395,8 @@ OUTPUT(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts, Genome &geno
 void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts) {
 	if (read.unaligned) return;
 	float q_coef;
-	// if (opts.bypassClustering) q_coef = 10.0f; // 40
-	q_coef = 1.0f; // 40
+	if (opts.bypassClustering) q_coef = 1.0f; // 40
+	else q_coef = 22.0f; // 40
 	int len = alignmentsOrder.size(); // number of primary aln and secondary aln
 	for (int r = 0; r < len; r++) {
 		if (r == 0 and len == 1) {
@@ -426,7 +426,9 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts) {
 																	alignmentsOrder[r].SegAlignment[s]->ndel + alignmentsOrder[r].SegAlignment[s]->nins);
 				float l = ( alignmentsOrder[r].SegAlignment[s]->value > 3? logf(alignmentsOrder[r].SegAlignment[s]->value / opts.globalK) : 0);
 				identity = (identity < 1? identity : 1);
-				long mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l * identity);
+				long mapq;
+				if (!opts.bypassClustering) mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l * identity);
+				else mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * identity);
 				// long mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l);
 				mapq -= (int)(4.343f * logf(len) + .499f);
 				mapq = mapq > 0? mapq : 0;

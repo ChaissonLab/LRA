@@ -537,6 +537,7 @@ void IndelRefineAlignment(Read &read,
 						 curMat=insMat;
 					 }
 					 else {
+						 assert(curMatPos < pathMat.size());
 						 path.push_back(pathMat[curMatPos]);
 						 pathMat[curMatPos] = 90+pathMat[curMatPos];
 					 }
@@ -619,17 +620,19 @@ void IndelRefineAlignment(Read &read,
 				 }
 				 int tgapLen=0;
 				 int qgapLen=0;
+				 if (pi < path.size()) {
 
-				 if (path[pi] == left) {
-					 while (pi < path.size() and path[pi] == left) {
-						 qgapLen++;
-						 pi++;
+					 if (path[pi] == left) {
+						 while (pi < path.size() and path[pi] == left) {
+							 qgapLen++;
+							 pi++;
 					 }
-				 }
-				 else if (path[pi] == down) {
-					 while (pi < path.size() and path[pi] == down) {
-						 tgapLen++;
-						 pi++;
+					 }
+					 else if (path[pi] == down) {
+						 while (pi < path.size() and path[pi] == down) {
+							 tgapLen++;
+							 pi++;
+						 }
 					 }
 				 }
 
