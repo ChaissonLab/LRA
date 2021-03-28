@@ -174,8 +174,8 @@ RefineByLinearAlignment(GenomePos &btc_curReadEnd, GenomePos &btc_curGenomeEnd, 
 				Lclust.close();
 			}	
 			for (int bb = 1; bb < alignment->blocks.size(); bb++) {
-				assert(alignment->blocks[bb-1].qPos + alignment->blocks[bb-1].length < read.length);
-				assert(alignment->blocks[bb-1].tPos + alignment->blocks[bb-1].length < genome.lengths[chromIndex]);
+				assert(alignment->blocks[bb-1].qPos + alignment->blocks[bb-1].length <= read.length);
+				assert(alignment->blocks[bb-1].tPos + alignment->blocks[bb-1].length <= genome.lengths[chromIndex]);
 				assert(alignment->blocks[bb-1].qPos + alignment->blocks[bb-1].length <= alignment->blocks[bb].qPos);
 				assert(alignment->blocks[bb-1].tPos + alignment->blocks[bb-1].length <= alignment->blocks[bb].tPos);	
 			}
@@ -211,8 +211,8 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 	else {
 		alignment->blocks.push_back(Block(read.length - chain[cur].first.pos - chain.length(cur), chain[cur].second.pos, chain.length(cur)));
 	}
-	assert(chain[cur].first.pos + chain.length(cur) < read.length);
-	assert(chain[cur].second.pos + chain.length(cur) < genome.lengths[chromIndex]);
+	assert(chain[cur].first.pos + chain.length(cur) <= read.length);
+	assert(chain[cur].second.pos + chain.length(cur) <= genome.lengths[chromIndex]);
 	debug_alignment(alignment, read.length, genome.lengths[chromIndex]);
 	//
 	// Refine the alignment in the space between two adjacent anchors;
@@ -231,8 +231,8 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 		nextGenomeStart = chain[next].second.pos;
 	}
 	assert(curReadEnd <= nextReadStart);
-	assert(nextReadStart < read.length);
-	assert(nextGenomeStart < genome.lengths[chromIndex]);
+	assert(nextReadStart <= read.length);
+	assert(nextGenomeStart <= genome.lengths[chromIndex]);
 	
 	if (curGenomeEnd <= nextGenomeStart) {
 		long read_dist = nextReadStart - curReadEnd;
