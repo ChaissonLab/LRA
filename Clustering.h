@@ -740,9 +740,19 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 	int counter = 0;
 	if (minDiagCluster >= 0) {
 		for (int i = 0; i < matches.size(); i++) {
-			if (prevOnDiag == false and onDiag[i] == true) {
-				diagStart = i;
-			}
+				if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
+					ofstream fclust("for-matches_check.dots", ofstream::app);
+						fclust << matches[i].first.pos << "\t" << matches[i].second.pos << "\t" << opts.globalK + matches[i].first.pos << "\t"
+								<< matches[i].second.pos + opts.globalK << "\t" << counter << "\t" << "0" << "\t" << onDiag[i] << endl;
+					fclust.close();
+				}
+				if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
+					ofstream rclust("rev-matches_check.dots", ofstream::app);
+						rclust << matches[i].first.pos << "\t" << matches[i].second.pos + opts.globalK << "\t" << opts.globalK + matches[i].first.pos << "\t"
+								 << matches[i].second.pos << "\t" << counter << "\t" << "0" << "\t" << onDiag[i] << endl;
+					rclust.close();
+				}
+			if (prevOnDiag == false and onDiag[i] == true) { diagStart = i; }
 			if (prevOnDiag == true and onDiag[i] == false) {
 				float avgfreq = 0;
 				if (i - diagStart + 1 < minDiagCluster) { // used to be minDiagCluster not opts.minDiagCluster
@@ -760,12 +770,12 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 						if (avgfreq >= 2.0f and i - diagStart + 1 >= opts.cleanClustersize) {
 							MinDiagCluster = opts.SecondCleanMinDiagCluster + floor((avgfreq - 1.5f)/ 1.0f) * opts.punish_anchorfreq + 
 									floor((i - diagStart + 1 - opts.cleanClustersize)/opts.cleanClustersize) * opts.anchorPerlength;
-							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, strand, diagOrigin, diagDrift);						
+							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, strand, diagOrigin, diagDrift);						
 						}
 						else if (avgfreq >= 1.5f and i - diagStart + 1 >= opts.cleanClustersize) {
 							MinDiagCluster = opts.SecondCleanMinDiagCluster + floor((avgfreq - 1.5f)/ 1.5f) * opts.punish_anchorfreq + 
 									floor((i - diagStart + 1 - opts.cleanClustersize)/opts.cleanClustersize) * opts.anchorPerlength;
-							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, strand, diagOrigin, diagDrift);	
+							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, strand, diagOrigin, diagDrift);	
 						}	
 						else {
 							for (int j = diagStart; j <= i; j++) {
@@ -785,12 +795,12 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 						if (avgfreq >= 4.0f and i - diagStart + 1 >= opts.cleanClustersize) {
 							MinDiagCluster = opts.SecondCleanMinDiagCluster + floor((avgfreq - 1.5f)/ 1.0f) * opts.punish_anchorfreq + 
 									floor((i - diagStart + 1 - opts.cleanClustersize)/opts.cleanClustersize) * opts.anchorPerlength;
-							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, strand, diagOrigin, diagDrift);						
+							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, strand, diagOrigin, diagDrift);						
 						}
 						else if (avgfreq >= 1.5f and i - diagStart + 1 >= opts.cleanClustersize) {
 							MinDiagCluster = opts.SecondCleanMinDiagCluster + floor((avgfreq - 1.5f)/ 1.5f) * opts.punish_anchorfreq + 
 									floor((i - diagStart + 1 - opts.cleanClustersize)/opts.cleanClustersize) * opts.anchorPerlength;
-							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, strand, diagOrigin, diagDrift);						
+							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, strand, diagOrigin, diagDrift);						
 						}
 						// else if (avgfreq >= 15.0f) {
 						// 	int MinDiagCluster = 100;
@@ -819,12 +829,12 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 						else if (avgfreq > 1.0f and i - diagStart + 1 >= opts.cleanClustersize) {
 							MinDiagCluster = opts.SecondCleanMinDiagCluster - (5 - floor((avgfreq - 1.0f) / 0.1f)) * (opts.punish_anchorfreq/2) + 
 									floor((i - diagStart + 1 - opts.cleanClustersize)/opts.cleanClustersize) * (opts.anchorPerlength / 2);
-							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, strand, diagOrigin, diagDrift);
+							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, strand, diagOrigin, diagDrift);
 						}
 						else if (avgfreq > 1.0f) {
 							MinDiagCluster = opts.SecondCleanMinDiagCluster - (5 - floor((avgfreq - 1.0f) / 0.1f)) * (opts.punish_anchorfreq/2) - 
 									floor((opts.cleanClustersize - i + diagStart - 1)/15) * (opts.anchorPerlength / 2);
-							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, strand, diagOrigin, diagDrift);
+							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, strand, diagOrigin, diagDrift);
 						}
 						// else if (avgfreq >= 1.3f and i - diagStart >= 100) {
 						// 	int MinDiagCluster = opts.SecondCleanMinDiagCluster - 5; //30
@@ -843,9 +853,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
 						// }	
 						else {
-							for (int j = diagStart; j <= i; j++) {
-								Second_onDiag[j] = true;
-							}							
+							for (int j = diagStart; j <= i; j++) { Second_onDiag[j] = true;}							
 						}					
 					}
 					if (read.name == opts.readname) cerr << "avgfreq: " << avgfreq << " MinDiagCluster: " << MinDiagCluster << endl;
@@ -854,7 +862,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 					ofstream fclust("for-matches_cleanoffdiagonal.dots", ofstream::app);
 					for (int j = diagStart; j <= i; j++) {
 						fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
-								<< matches[j].second.pos + opts.globalK << "\t" << counter << "\t" << avgfreq << "\t" << Second_onDiag[i] << endl;
+								<< matches[j].second.pos + opts.globalK << "\t" << counter << "\t" << avgfreq << "\t" << Second_onDiag[j] << endl;
 					}
 					fclust.close();
 				}
@@ -862,7 +870,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 					ofstream rclust("rev-matches_cleanoffdiagonal.dots", ofstream::app);
 					for (int j = diagStart; j <= i; j++) {			
 						rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
-								 << matches[j].second.pos << "\t" << counter << "\t" << avgfreq << "\t" << Second_onDiag[i] << endl;
+								 << matches[j].second.pos << "\t" << counter << "\t" << avgfreq << "\t" << Second_onDiag[j] << endl;
 					}
 					rclust.close();
 				}
@@ -889,29 +897,32 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 
 template<typename Tup>
 void SecondRoundCleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int &MinDiagCluster,int &CleanMaxDiag, vector<bool> &OriginalOnDiag, int os, int oe, 
-									int strand=0, int diagOrigin=-1, int diagDrift=-1) {
+									Options &opts, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (MinDiagCluster < 0 or MinDiagCluster >= oe - os) return;
 	int nOnDiag2=0;
 	// for (int i = os; i < oe; i++) {
 	// 	OriginalOnDiag[i] = false;
 	// }	
-	if ((oe - os) > 1 and abs(DiagonalDifference(matches[os], matches[os + 1], strand)) < CleanMaxDiag 
-						   and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[os], strand) < diagDrift)) { 
-		OriginalOnDiag[os] = true;
-		nOnDiag2++;
-	}
+	if (oe - os <= 1) return;
+	// if ((oe - os) > 1 
+	// 	and abs(DiagonalDifference(matches[os], matches[os + 1], strand)) < CleanMaxDiag 
+	// 	and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[os], strand) < diagDrift)) { 
+	// 	OriginalOnDiag[os] = true;
+	// 	nOnDiag2++;
+	// }
 	
 	for (int i = os + 1; i < oe; i++) {
 		if (abs(DiagonalDifference(matches[i], matches[i - 1], strand)) < CleanMaxDiag 
 			and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift)) {	
 			// OriginalOnDiag[i] = true;
-			OriginalOnDiag[i- 1] = true;
+			OriginalOnDiag[i - 1] = true;
 			nOnDiag2++;
 		}
 	}
 
 	bool prevOnDiag = false;
 	int  diagStart;
+	int counter = 0;
 	for (int i = os; i < oe; i++) {
 		if (prevOnDiag == false and OriginalOnDiag[i] == true) {
 			diagStart = i;
@@ -925,6 +936,23 @@ void SecondRoundCleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int &MinDiagC
 			else {
 				OriginalOnDiag[i] = true;
 			}
+			if (opts.dotPlot and strand == 0) {
+				ofstream fclust("for-matches_secondcleanoffdiagonal.dots", ofstream::app);
+				for (int j = diagStart; j <= i; j++) {
+					fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
+							<< matches[j].second.pos + opts.globalK << "\t" << counter << "\t" << "0" << "\t" << OriginalOnDiag[j] << endl;
+				}
+				fclust.close();
+			}
+			if (opts.dotPlot and strand == 1){
+				ofstream rclust("rev-matches_secondcleanoffdiagonal.dots", ofstream::app);
+				for (int j = diagStart; j <= i; j++) {			
+					rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
+							 << matches[j].second.pos << "\t" << counter << "\t" << "0" << "\t" << OriginalOnDiag[j] << endl;
+				}
+				rclust.close();
+			}
+			counter++;
 		}
 		prevOnDiag = OriginalOnDiag[i];
 	}
