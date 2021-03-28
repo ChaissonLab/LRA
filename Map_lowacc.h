@@ -580,11 +580,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	if (read.unaligned or alignments.size() == 0) {
 		output_unaligned(read, opts, *output);
 		return 0;
-	} 
-	//
-	// retrieve the ends
-	//
-	RetrieveEnd(alignments);	
+	} 	
 	alignmentsOrder.Update(&alignments);
 	SimpleMapQV(alignmentsOrder, read, smallOpts);	
 	OUTPUT(alignmentsOrder, read, opts, genome, output);
