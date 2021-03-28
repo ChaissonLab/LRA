@@ -620,9 +620,6 @@ void IndelRefineAlignment(Read &read,
 				 }
 				 int tgapLen=0;
 				 int qgapLen=0;
-				 if (pi == path.size()) {
-					 cout << "Should deal with this" << endl;
-				 }
 				 if (pi < path.size()) {
 
 					 if (path[pi] == left) {
