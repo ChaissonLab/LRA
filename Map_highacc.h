@@ -586,18 +586,18 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 				assert(extend_clusters[ep].matches[eh].first.pos + extend_clusters[ep].matchesLengths[eh] <= read.length);
 				if (extend_clusters[ep].strand == 0) {
 					clust << extend_clusters[ep].matches[eh].first.pos << "\t"
-						  << extend_clusters[ep].matches[eh].second.pos << "\t"
+						  << extend_clusters[ep].matches[eh].second.pos + genome.header.pos[extend_clusters[ep].chromIndex]<< "\t"
 						  << extend_clusters[ep].matches[eh].first.pos + extend_clusters[ep].matchesLengths[eh] << "\t"
-						  << extend_clusters[ep].matches[eh].second.pos + extend_clusters[ep].matchesLengths[eh] << "\t"
+						  << extend_clusters[ep].matches[eh].second.pos + extend_clusters[ep].matchesLengths[eh] + genome.header.pos[extend_clusters[ep].chromIndex]<< "\t"
 						  << genome.header.names[extend_clusters[ep].chromIndex]<< "\t"
 						  << extend_clusters[ep].strand << "\t"
 						  << ep << endl;
 				}
 				else {
 					clust << extend_clusters[ep].matches[eh].first.pos << "\t"
-						  << extend_clusters[ep].matches[eh].second.pos + extend_clusters[ep].matchesLengths[eh] << "\t"
-						  << extend_clusters[ep].matches[eh].first.pos + extend_clusters[ep].matchesLengths[eh] << "\t"
-						  << extend_clusters[ep].matches[eh].second.pos<< "\t"
+						  << extend_clusters[ep].matches[eh].second.pos + extend_clusters[ep].matchesLengths[eh] + genome.header.pos[extend_clusters[ep].chromIndex] << "\t"
+						  << extend_clusters[ep].matches[eh].first.pos + extend_clusters[ep].matchesLengths[eh]<< "\t"
+						  << extend_clusters[ep].matches[eh].second.pos + genome.header.pos[extend_clusters[ep].chromIndex]<< "\t"
 						  << genome.header.names[extend_clusters[ep].chromIndex]<< "\t"
 						  << extend_clusters[ep].strand << "\t"
 						  << ep << endl;					
