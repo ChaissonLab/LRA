@@ -176,6 +176,8 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		// StoreMinimizers_noncanonical<GenomeTuple, Tuple>(read.seq, read.length, allOpts.globalK, allOpts.globalW, readmm, true);			
 	}
 	else {
+		// Options partOpts = opts;
+		// partOpts.globalW = opts.globalW - 5;
 		StoreMinimizers<GenomeTuple, Tuple>(read.seq, read.length, opts.globalK, opts.globalW, readmm, true);
 		// StoreMinimizers_noncanonical<GenomeTuple, Tuple>(read.seq, read.length, opts.globalK, opts.globalW, readmm, true);
 	}

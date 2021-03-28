@@ -184,7 +184,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		if (ArgIs(argv[argi], "-a")) {
 			opts.storeAll=true;
 		}				
-		if (ArgIs(argv[argi], "-m")) {
+		else if (ArgIs(argv[argi], "-m")) {
 			opts.minRefinedClusterSize = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}	
@@ -264,45 +264,48 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.readType=Options::contig;
-			opts.HighlyAccurate = true;
+			opts.HighlyAccurate=true;
 			opts.anchor_rate=1.0; // boost the match score for 1st SDP
-			opts.cleanMaxDiag=100; // For CleanOffDiagonal
 			opts.maxDiag=100; // For StoreFineCluster
 			opts.maxGap=500; // for StoreFineCluster; cannot be too large, otherwise lose lots of INV
 			opts.RoughClustermaxGap=500;  // for SplitRoughCluster; cannot be too large, otherwise cannot find INV
 			opts.NumAln=2; 
    			opts.PrintNumAln = 1;
-   			opts.anchorstoosparse=0.01; // For Cluster Refinement
-   			opts.minDiagCluster=10;
+   			opts.anchorstoosparse=0.02; // For Cluster Refinement
    			opts.minClusterLength=100;
    			opts.minClusterSize=30;
    			opts.firstcoefficient=24;
-     		opts.merge_dist = 100;
-     		opts.SecondCleanMinDiagCluster=40;
+     		opts.merge_dist=100;
+			opts.cleanMaxDiag=50; //100 // For CleanOffDiagonal
+     		opts.SecondCleanMinDiagCluster=30;
      		opts.minDiagCluster=30;
+     		opts.minClusterSize=10;
      		opts.refineSpaceDist=100000;
+     		opts.cleanClustersize=100;
+     		opts.punish_anchorfreq=10;
+     		opts.anchorPerlength=10;
    			// opts.secondcoefficient=15;
    			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.readType=Options::ccs;
-			opts.HighlyAccurate = true;
-			opts.anchor_rate=18.0;
+			opts.HighlyAccurate=true;
+			// opts.anchor_rate=18.0;
 			opts.NumAln=2;
-   			opts.PrintNumAln = 1;
-      		opts.merge_dist = 100;
+   			opts.PrintNumAln=1;
+      		opts.merge_dist=100;
       		opts.RoughClustermaxGap=500; 
-     		opts.maxGap = 400;
-     		opts.SecondCleanMinDiagCluster=40;
+     		opts.maxGap=400;
+    		opts.cleanMaxDiag=50;
+     		opts.SecondCleanMinDiagCluster=30;
      		opts.minDiagCluster=10;
+     		opts.minClusterSize=10;
      		opts.cleanClustersize=100;
      		opts.punish_anchorfreq=10;
      		opts.anchorPerlength=10;
      		opts.refineSpaceDist=10000;
-
      		opts.anchor_rate=4.0f;
-     		opts.minClusterSize=10;
 
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;
@@ -317,78 +320,46 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			// opts.maxGapBtwnAnchors=1500;
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
-			opts.HighlyAccurate = false;
-			opts.anchor_rate=8.0;
+			opts.HighlyAccurate=false;
 			opts.NumAln=2;
-   			opts.PrintNumAln = 1;
-     		opts.merge_dist = 100;
-     		opts.RoughClustermaxGap = 500; 
-     		opts.maxGap = 500;
-     		opts.SecondCleanMinDiagCluster=20;
-     		opts.minDiagCluster=10;
+   			opts.PrintNumAln=1;
+   			opts.merge_dist=100;
+   			opts.RoughClustermaxGap=1000; 
+     		opts.maxGap=1000;
+     		opts.cleanMaxDiag=50;
+     		opts.SecondCleanMinDiagCluster=30;
       		opts.refineSpaceDist=10000;
-    	
-
-    		opts.minDiagCluster = 10;
-    		opts.cleanMaxDiag = 30;
-    		opts.RemovePairedIndels = false;
-    		opts.RemoveSpuriousAnchors = false;
-    		opts.bypassClustering = true;
-    		opts.anchor_rate = 6;
-    		opts.SecondCleanMinDiagCluster = 5;
-    		opts.punish_anchorfreq = 5;
-    		opts.anchorPerlength = 5;
-    		opts.cleanClustersize = 100;
-    		opts.SecondCleanMaxDiag = 30;
-    		opts.maxGap = 1000;
-    		opts.minClusterSize = 2;
-    		opts.anchorstoosparse = 0.02;
-
-    		opts.anchor_rate = 18.0f;
-    		opts.minDiagCluster = 5;
-			// opts.rate_FirstSDPValue=0;
-			// opts.rate_value=1;		
-			// opts.NumAln=3;
-   			// opts.PrintNumAln = 1;
-			// opts.rate_FirstSDPValue=0;
-			// opts.rate_value=1;	
-			// opts.maxDiag=800;
-			// opts.maxGap=5000;
-			// opts.globalMaxFreq = 50;
-			// opts.NumOfminimizersPerWindow = 1;
-			//opts.minClusterSize=5; 
-			//opts.minClusterLength=50; 
-			// opts.maxGapBtwnAnchors=1800;
+      		opts.minDiagCluster=3;
+    		opts.minClusterSize=3;
+    		opts.RemovePairedIndels=false;
+    		opts.RemoveSpuriousAnchors=false;
+    		opts.bypassClustering=true;
+     		opts.anchor_rate=18.0f;
+    		opts.punish_anchorfreq=5;
+    		opts.anchorPerlength=5;
+    		opts.cleanClustersize=100;
+    		opts.anchorstoosparse=0.02; 
 		}		
 		else if (ArgIs(argv[argi], "-ONT")) {
-			opts.HighlyAccurate = false;
-			opts.anchor_rate=8.0;
+			opts.HighlyAccurate=false;
 			opts.NumAln=2;
-   			opts.PrintNumAln = 1;
-   			opts.merge_dist = 30;
-   			opts.RoughClustermaxGap=5000; 
-     		opts.maxGap = 500;
+   			opts.PrintNumAln=1;
+   			opts.merge_dist=100;
+   			opts.RoughClustermaxGap=1000; 
+     		opts.maxGap=1000;
+     		opts.cleanMaxDiag=50;
      		opts.SecondCleanMinDiagCluster=30;
-     		opts.minDiagCluster=10;
       		opts.refineSpaceDist=10000;
- 
-     		opts.minDiagCluster = 10;
-    		opts.cleanMaxDiag = 30;
-    		opts.RemovePairedIndels = false;
-    		opts.RemoveSpuriousAnchors = false;
-    		opts.bypassClustering = true;
-    		opts.anchor_rate = 6;
-    		opts.SecondCleanMinDiagCluster = 5;
-    		opts.punish_anchorfreq = 5;
-    		opts.anchorPerlength = 5;
-    		opts.cleanClustersize = 100;
-    		opts.SecondCleanMaxDiag = 30;
-    		opts.maxGap = 1000;
-    		opts.minClusterSize = 2;
-    		opts.anchorstoosparse = 0.02;
-
-    		opts.anchor_rate = 18.0f;
-    		opts.minDiagCluster = 5;   		
+      		opts.minDiagCluster=3;
+    		opts.minClusterSize=3;
+    		opts.RemovePairedIndels=false;
+    		opts.RemoveSpuriousAnchors=false;
+    		opts.bypassClustering=true;
+     		opts.anchor_rate=18.0f;
+    		opts.punish_anchorfreq=5;
+    		opts.anchorPerlength=5;
+    		opts.cleanClustersize=100;
+    		opts.anchorstoosparse=0.02; 		
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
 			// opts.HighlyAccurate = false;

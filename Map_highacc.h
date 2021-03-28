@@ -412,9 +412,9 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	//
 	bool sparse = 0;
 	for (int p = 0; p < clusters.size(); p++) {
-		if (((float)(clusters[p].Val)/(clusters[p].qEnd - clusters[p].qStart)) < 0.01 and read.length <= 50000) sparse = 1;
-		else sparse = 0;
+		if (((float)(clusters[p].matches.size())/(clusters[p].qEnd - clusters[p].qStart)) <= 0.05 and read.length <= 50000) sparse = 1;
 	}
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) cerr << "sparse: " << sparse << endl;
 	//
 	// Refining each cluster in "clusters" needed if CLR reads are aligned OR CCS reads with very few anchors. Otherwise, skip this step
 	// After this step, the t coordinates in clusters and refinedclusters have been substract chromOffSet. 
@@ -462,7 +462,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	tinyOpts.globalK=smallOpts.globalK-3;
 	tinyOpts.globalW=tinyOpts.localW;
 	int K, W;
-	if (opts.HighlyAccurate and sparse == 1) {K = opts.globalK; W = opts.globalW;}
+	if (opts.HighlyAccurate and sparse == 0) {K = opts.globalK; W = opts.globalW;}
 	else {K = smallOpts.globalK; W = smallOpts.globalW;}
 
 	if (RefinedClusters.size() == 0) {
