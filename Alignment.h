@@ -897,7 +897,14 @@ public:
 			(*alignments)[index[i]].ISsecondary = 1;
 		}
 		Oldend = index.size();
-
+		//
+		// Set primary to be the first one if on one is primary
+		//
+		int totoal_primary = 0;
+		for (int i = 0; i< (*alignments).size(); i++) {
+			if ((*alignments)[i].ISsecondary == 0) totoal_primary += 1;
+		}		
+		if (totoal_primary == 0) (*alignments)[0].ISsecondary = 0;
 		for (int i = 0; i< (*alignments).size(); i++) {
 			if ((*alignments)[i].ISsecondary == 1) {
 				for (int z = 0; z < (*alignments)[i].SegAlignment.size(); z++) {
