@@ -1639,32 +1639,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 					Primary_chains[0].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv], Num_Anchors));					
 				}
 				else {
-					break;
-					// bool newpr = 1, inserted = 0;
-					// int p = 0;
-					// while (p < Primary_chains.size()) {
-					// 	if (Primary_chains[p].chains[0].OverlapsOnQ(qStart, qEnd, 0.5)) {
-					// 		if (!Primary_chains[p].chains[0].OverlapsOnT(tStart, tEnd, 0.3)) {
-					// 			if (Primary_chains[p].chains.size() < opts.NumAln) {
-					// 				Primary_chains[p].chains.push_back(CHain(qStart, qEnd, tStart, tEnd, onechain, 
-					// 															link, fragments_valueOrder[fv], Num_Anchors));
-					// 				inserted = 1;								
-					// 			}
-					// 			break;
-					// 		}
-					// 	}
-					// 	else{
-					// 		newpr = 0;
-					// 	}
-					// 	++p;
-					// }			
-					// if (p == Primary_chains.size() - 1 and inserted == 0 and newpr == 0) {		
-					// 	if (Primary_chains.size() < 2) { // TODO(Jingwen): how to decide the number of Primary alignments
-					// 		Primary_chain Pc(CHain(qStart, qEnd, tStart, tEnd, onechain, link, fragments_valueOrder[fv], Num_Anchors));
-					// 		Primary_chains.push_back(Pc);
-					// 	}	
-					// 	else break;		
-					// }	
+					break;	
 				}
 			}
 			else break;				
@@ -1683,7 +1658,7 @@ DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, Sta
 					const vector<Fragment_Info> & Value, vector<UltimateChain> &chains, Read & read, Options & opts, vector<int> &MatchStart) {
 	vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-	float value_thres = max(0.80f * fragments_valueOrder[0], fragments_valueOrder[0] - 100*opts.globalK);//30 for 50kb
+	float value_thres = 0.80f * fragments_valueOrder[0];
 	//float value_thres = opts.alnthres*fragments_valueOrder[0];
 	// cerr << "value_thres: " << value_thres << endl;
 	// cerr << "fragments_valueOrder[0]: " << fragments_valueOrder[0] << " fragments_valueOrder[1]: " << fragments_valueOrder[1] << endl;
