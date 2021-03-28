@@ -740,18 +740,6 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 	int counter = 0;
 	if (minDiagCluster >= 0) {
 		for (int i = 0; i < matches.size(); i++) {
-				if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
-					ofstream fclust("for-matches_check.dots", ofstream::app);
-						fclust << matches[i].first.pos << "\t" << matches[i].second.pos << "\t" << opts.globalK + matches[i].first.pos << "\t"
-								<< matches[i].second.pos + opts.globalK << "\t" << counter << "\t" << "0" << "\t" << onDiag[i] << endl;
-					fclust.close();
-				}
-				if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
-					ofstream rclust("rev-matches_check.dots", ofstream::app);
-						rclust << matches[i].first.pos << "\t" << matches[i].second.pos + opts.globalK << "\t" << opts.globalK + matches[i].first.pos << "\t"
-								 << matches[i].second.pos << "\t" << counter << "\t" << "0" << "\t" << onDiag[i] << endl;
-					rclust.close();
-				}
 			if (prevOnDiag == false and onDiag[i] == true) { diagStart = i; }
 			if (prevOnDiag == true and onDiag[i] == false) {
 				float avgfreq = 0;
@@ -770,12 +758,12 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 						if (avgfreq >= 2.0f and i - diagStart + 1 >= opts.cleanClustersize) {
 							MinDiagCluster = opts.SecondCleanMinDiagCluster + floor((avgfreq - 1.5f)/ 1.0f) * opts.punish_anchorfreq + 
 									floor((i - diagStart + 1 - opts.cleanClustersize)/opts.cleanClustersize) * opts.anchorPerlength;
-							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, strand, diagOrigin, diagDrift);						
+							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, avgfreq, strand, diagOrigin, diagDrift);						
 						}
 						else if (avgfreq >= 1.5f and i - diagStart + 1 >= opts.cleanClustersize) {
 							MinDiagCluster = opts.SecondCleanMinDiagCluster + floor((avgfreq - 1.5f)/ 1.5f) * opts.punish_anchorfreq + 
 									floor((i - diagStart + 1 - opts.cleanClustersize)/opts.cleanClustersize) * opts.anchorPerlength;
-							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, strand, diagOrigin, diagDrift);	
+							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, avgfreq, strand, diagOrigin, diagDrift);	
 						}	
 						else {
 							for (int j = diagStart; j <= i; j++) {
@@ -783,75 +771,27 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 							}							
 						}
 					}
-					else {
-						// if (avgfreq >= 40.0f) {
-						// 	MinDiagCluster = 1000;
-						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);						
-						// }
-						// else if (avgfreq >= 30.0f) {
-						// 	MinDiagCluster = 500;
-						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);						
-						// }		
+					else {		
 						if (avgfreq >= 4.0f and i - diagStart + 1 >= opts.cleanClustersize) {
 							MinDiagCluster = opts.SecondCleanMinDiagCluster + floor((avgfreq - 1.5f)/ 1.0f) * opts.punish_anchorfreq + 
 									floor((i - diagStart + 1 - opts.cleanClustersize)/opts.cleanClustersize) * opts.anchorPerlength;
-							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, strand, diagOrigin, diagDrift);						
+							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, avgfreq, strand, diagOrigin, diagDrift);						
 						}
 						else if (avgfreq >= 1.5f and i - diagStart + 1 >= opts.cleanClustersize) {
 							MinDiagCluster = opts.SecondCleanMinDiagCluster + floor((avgfreq - 1.5f)/ 1.5f) * opts.punish_anchorfreq + 
 									floor((i - diagStart + 1 - opts.cleanClustersize)/opts.cleanClustersize) * opts.anchorPerlength;
-							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, strand, diagOrigin, diagDrift);						
+							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, avgfreq, strand, diagOrigin, diagDrift);						
 						}
-						// else if (avgfreq >= 15.0f) {
-						// 	int MinDiagCluster = 100;
-						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);						
-						// }
-						// else if (avgfreq >= 5.0f) {
-						// 	int MinDiagCluster = opts.SecondCleanMinDiagCluster + 30;
-						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
-						// }
-						// else if (avgfreq >= 4.0f) {
-						// 	int MinDiagCluster = opts.SecondCleanMinDiagCluster + 20;
-						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
-						// }	
-						// else if (avgfreq >= 3.0f) {
-						// 	int MinDiagCluster = opts.SecondCleanMinDiagCluster + 10; //30
-						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
-						// }
-						// else if (avgfreq >= 1.5f and i - diagStart >= 100) {
-						// 	int MinDiagCluster = opts.SecondCleanMinDiagCluster; //30
-						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
-						// }
-						// else if (avgfreq >= 1.4f and i - diagStart >= 100) {
-						// 	int MinDiagCluster = opts.SecondCleanMinDiagCluster - 5; //30
-						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
-						// }
 						else if (avgfreq > 1.0f and i - diagStart + 1 >= opts.cleanClustersize) {
 							MinDiagCluster = opts.SecondCleanMinDiagCluster - (5 - floor((avgfreq - 1.0f) / 0.1f)) * (opts.punish_anchorfreq/2) + 
 									floor((i - diagStart + 1 - opts.cleanClustersize)/opts.cleanClustersize) * (opts.anchorPerlength / 2);
-							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, strand, diagOrigin, diagDrift);
+							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, avgfreq, strand, diagOrigin, diagDrift);
 						}
 						else if (avgfreq > 1.0f) {
 							MinDiagCluster = opts.SecondCleanMinDiagCluster - (5 - floor((avgfreq - 1.0f) / 0.1f)) * (opts.punish_anchorfreq/2) - 
 									floor((opts.cleanClustersize - i + diagStart - 1)/15) * (opts.anchorPerlength / 2);
-							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, strand, diagOrigin, diagDrift);
-						}
-						// else if (avgfreq >= 1.3f and i - diagStart >= 100) {
-						// 	int MinDiagCluster = opts.SecondCleanMinDiagCluster - 5; //30
-						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
-						// }
-						// else if (avgfreq >= 1.2f and i - diagStart >= 100) {
-						// 	int MinDiagCluster = opts.SecondCleanMinDiagCluster - 15; //30
-						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
-						// }
-						// else if (avgfreq >= 1.1f and i - diagStart >= 100) {
-						// 	int MinDiagCluster = opts.SecondCleanMinDiagCluster - 10; //30
-						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
-						// }
-						// else if (avgfreq > 1.0f) {
-						// 	int MinDiagCluster = 10; //30
-						// 	SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, onDiag, diagStart, i, strand, diagOrigin, diagDrift);
-						// }	
+							SecondRoundCleanOffDiagonal(matches, MinDiagCluster, opts.SecondCleanMaxDiag, Second_onDiag, diagStart, i + 1, opts, avgfreq, strand, diagOrigin, diagDrift);
+						}	
 						else {
 							for (int j = diagStart; j <= i; j++) { Second_onDiag[j] = true;}							
 						}					
@@ -897,65 +837,94 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 
 template<typename Tup>
 void SecondRoundCleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int &MinDiagCluster,int &CleanMaxDiag, vector<bool> &OriginalOnDiag, int os, int oe, 
-									Options &opts, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
+									Options &opts, float avgfreq, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (MinDiagCluster < 0 or MinDiagCluster >= oe - os) return;
 	int nOnDiag2=0;
-	// for (int i = os; i < oe; i++) {
-	// 	OriginalOnDiag[i] = false;
-	// }	
 	if (oe - os <= 1) return;
-	// if ((oe - os) > 1 
-	// 	and abs(DiagonalDifference(matches[os], matches[os + 1], strand)) < CleanMaxDiag 
-	// 	and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[os], strand) < diagDrift)) { 
-	// 	OriginalOnDiag[os] = true;
-	// 	nOnDiag2++;
-	// }
-	
-	for (int i = os + 1; i < oe; i++) {
-		if (abs(DiagonalDifference(matches[i], matches[i - 1], strand)) < CleanMaxDiag 
-			and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift)) {	
-			// OriginalOnDiag[i] = true;
-			OriginalOnDiag[i - 1] = true;
-			nOnDiag2++;
-		}
-	}
+	// if (avgfreq <= 6.0f) {
+	// 	for (int i = os + 1; i < oe; i++) {
+	// 		if (abs(DiagonalDifference(matches[i], matches[i - 1], strand)) < CleanMaxDiag 
+	// 			and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift)) {	
+	// 			OriginalOnDiag[i - 1] = true;
+	// 			nOnDiag2++;
+	// 		}
+	// 	}
 
-	bool prevOnDiag = false;
-	int  diagStart;
-	int counter = 0;
-	for (int i = os; i < oe; i++) {
-		if (prevOnDiag == false and OriginalOnDiag[i] == true) {
-			diagStart = i;
+	// 	bool prevOnDiag = false;
+	// 	int  diagStart;
+	// 	int counter = 0;
+	// 	for (int i = os; i < oe; i++) {
+	// 		if (prevOnDiag == false and OriginalOnDiag[i] == true) {
+	// 			diagStart = i;
+	// 		}
+	// 		if (prevOnDiag == true and OriginalOnDiag[i] == false) {
+	// 			if (i - diagStart + 1 < MinDiagCluster) { // [diagStart, i]
+	// 				for (int j = diagStart; j <= i; j++) {
+	// 					OriginalOnDiag[j] = false;
+	// 				}
+	// 			}
+	// 			else {
+	// 				OriginalOnDiag[i] = true;
+	// 			}
+	// 			counter++;
+	// 		}
+	// 		prevOnDiag = OriginalOnDiag[i];
+	// 	}		
+	// }
+	// else {
+		//
+		// starting from forward order
+		//
+		vector<bool> foward_onDiag(oe - os, false);
+		vector<bool> reverse_onDiag(oe - os, false);
+		for (int i = os + 1; i < oe; i++) {
+			if (abs(DiagonalDifference(matches[i], matches[i - 1], strand)) < CleanMaxDiag 
+				and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift)) {	
+				foward_onDiag[i - 1 - os] = true;
+				nOnDiag2++;
+			}
 		}
-		if (prevOnDiag == true and OriginalOnDiag[i] == false) {
-			if (i - diagStart + 1 < MinDiagCluster) { // [diagStart, i]
-				for (int j = diagStart; j <= i; j++) {
-					OriginalOnDiag[j] = false;
+
+		bool prevOnDiag = false; int diagStart; int counter = 0;
+		for (int i = os; i < oe; i++) {
+			if (prevOnDiag == false and foward_onDiag[i - os] == true) { diagStart = i;}
+			if (prevOnDiag == true and foward_onDiag[i - os] == false) {
+				if (i - diagStart + 1 < MinDiagCluster) { // [diagStart, i]
+					for (int j = diagStart; j <= i; j++) { foward_onDiag[j - os] = false; }
 				}
+				else { foward_onDiag[i - os] = true; }
+				counter++;
 			}
-			else {
-				OriginalOnDiag[i] = true;
+			prevOnDiag = foward_onDiag[i - os];
+		}	
+		//
+		// starting from reverse order
+		//
+		for (int i = oe - 2; i >= os; i--) {
+			if (abs(DiagonalDifference(matches[i], matches[i + 1], strand)) < CleanMaxDiag 
+				and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift)) {	
+				reverse_onDiag[i + 1 - os] = true;
+				nOnDiag2++;
 			}
-			if (opts.dotPlot and strand == 0) {
-				ofstream fclust("for-matches_secondcleanoffdiagonal.dots", ofstream::app);
-				for (int j = diagStart; j <= i; j++) {
-					fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
-							<< matches[j].second.pos + opts.globalK << "\t" << counter << "\t" << "0" << "\t" << OriginalOnDiag[j] << endl;
-				}
-				fclust.close();
-			}
-			if (opts.dotPlot and strand == 1){
-				ofstream rclust("rev-matches_secondcleanoffdiagonal.dots", ofstream::app);
-				for (int j = diagStart; j <= i; j++) {			
-					rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
-							 << matches[j].second.pos << "\t" << counter << "\t" << "0" << "\t" << OriginalOnDiag[j] << endl;
-				}
-				rclust.close();
-			}
-			counter++;
 		}
-		prevOnDiag = OriginalOnDiag[i];
-	}
+
+		prevOnDiag = false; counter = 0;
+		for (int i = oe - 1; i >= os; i--) {
+			if (prevOnDiag == false and reverse_onDiag[i - os] == true) { diagStart = i;}
+			if (prevOnDiag == true and reverse_onDiag[i - os] == false) {
+				if (diagStart - i + 1 < MinDiagCluster) { // [diagStart, i]
+					for (int j = i; j <= diagStart; j++) { reverse_onDiag[j - os] = false; }
+				}
+				else { reverse_onDiag[i - os] = true; }
+				counter++;
+			}
+			prevOnDiag = reverse_onDiag[i - os];
+		}		
+		for (int i = os; i < oe; i++) {
+			if (foward_onDiag[i - os] == true and reverse_onDiag[i - os] == true) { OriginalOnDiag[i] = true; }
+			else {OriginalOnDiag[i] = false;}
+		}
+	// }
 }
 
 template<typename Tup>
