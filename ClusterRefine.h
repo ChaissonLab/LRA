@@ -437,7 +437,7 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 		if (te1 <= ts1) {c++; continue;}
 		SpaceLength = min(qe - qs, te1 - ts1); 
 		//		if (twoblocks) cerr << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;
-		if (SpaceLength >= 500 and SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
+		if (SpaceLength >= 300 and SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
 			// btwnClusters have GenomePos, st, matches, coarse
 			// This function also set the "coarse" flag for RefinedClusters[cur]
 			if (RefineBtwnSpace(K, W, RevBtwnCluster, twoblocks, RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te1, ts1, st1)) {
@@ -450,7 +450,7 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 		if (te2 <= ts2) {c++; continue;}
 		SpaceLength = min(qe - qs, te2 - ts2); 
 		//		if (twoblocks) cerr << read.name << " qs: " << qs << " qe: " << qe << " ts2: " << ts2 << " te2: " << te2 << endl;
-		if (SpaceLength >= 500 and SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
+		if (SpaceLength >= 300 and SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
 			// btwnClusters have GenomePos, st, matches, coarse
 			// This function also set the "coarse" flag for RefinedClusters[cur]
 			RefineBtwnSpace(K, W, RevBtwnCluster, twoblocks, RefinedClusters[prev], smallOpts, genome, read, strands, qe, qs, te2, ts2, st2);
@@ -478,7 +478,7 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 	//cerr << "right  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 	if (qe > qs and te > ts) {
 		SpaceLength = min(qe - qs, te - ts); 
-		if (SpaceLength >= 500 and  SpaceLength < 50000 and te+500 < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (1000, 6000)
+		if (SpaceLength >= 300 and  SpaceLength < 50000 and te+500 < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (1000, 6000)
 			GenomePos lrts=0, lrlength=0;
 			if (st==0) {
 				lrts=0;
@@ -511,7 +511,7 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 	//cerr << "left  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 	if (qe > qs and te > ts) {
 		SpaceLength = min(qe - qs, te - ts);
-		if (SpaceLength >= 500 and SpaceLength < 50000 and te+500 < genome.lengths[RefinedClusters[lh]->chromIndex]) { // used (1000, 6000)
+		if (SpaceLength >= 300 and SpaceLength < 50000 and te+500 < genome.lengths[RefinedClusters[lh]->chromIndex]) { // used (1000, 6000)
 			GenomePos lrts=0, lrlength=0;
 			if (st==0) { 
 				if (ts>500) lrts=500;
