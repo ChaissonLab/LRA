@@ -85,7 +85,7 @@ int CHain::OverlapsOnT (GenomePos &tS, GenomePos &tE, float rate) {
 	float denomA = tEnd - tStart;
 	//float denomB = qE - qS;
 
-	if (ovp/denomA >= rate) {return true;}
+	if (ovp/denomA <= rate) {return true;}
 	//if (max(ovp/denomA, ovp/denomB) >= rate) {return true;}
 	else {return false;}
 }

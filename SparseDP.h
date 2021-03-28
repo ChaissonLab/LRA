@@ -1681,55 +1681,100 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 void 
 DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
 					const vector<Fragment_Info> & Value, vector<UltimateChain> &chains, Read & read, Options & opts, vector<int> &MatchStart) {
-
+	vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-	float value_thres = max(0.95f * fragments_valueOrder[0], fragments_valueOrder[0] - 100*opts.globalK);//30 for 50kb
+	float value_thres = max(0.80f * fragments_valueOrder[0], fragments_valueOrder[0] - 100*opts.globalK);//30 for 50kb
 	//float value_thres = opts.alnthres*fragments_valueOrder[0];
 	// cerr << "value_thres: " << value_thres << endl;
-	// cerr << "fragments_valueOrder[0]: " << fragments_valueOrder[0] << " fragments_valueOrder[1]: " << 
-	// 			fragments_valueOrder[1] << endl;
+	// cerr << "fragments_valueOrder[0]: " << fragments_valueOrder[0] << " fragments_valueOrder[1]: " << fragments_valueOrder[1] << endl;
 	int fv = 0;
 	while (fv < fragments_valueOrder.size() and fragments_valueOrder[fv] >= value_thres) {
 		unsigned int d = fragments_valueOrder.index[fv];
-		if (fv < opts.NumAln) chains.push_back(UltimateChain(&FragInput));
-		else break;
-		TraceBack(SubR1, SubC1, SubR2, SubC2, Value, d, chains.back().chain, chains.back().link);
-
-		if (chains.back().chain.size() != 0) {
+		// if (fv >= opts.NumAln) break;
+		// if (fv < opts.NumAln) chains.push_back(UltimateChain(&FragInput));
+		// else break;
+		vector<unsigned int> onechain;
+		vector<bool> link;
+		// TraceBack(SubR1, SubC1, SubR2, SubC2, Value, d, chains.back().chain, chains.back().link, used);
+		TraceBack(SubR1, SubC1, SubR2, SubC2, Value, d, onechain, link, used);
+		if (onechain.size() != 0) {
+		// if (chains.back().chain.size() != 0) {
 			// Note: onechain store index from the last one to the first one
-			int f = chains.back().chain[0]; int l = chains.back().chain.back();
+			GenomePos QEnd, QStart, TEnd, TStart;
+			int f = onechain[0]; int l = onechain.back();
 			int fi = Value[f].clusterNum; int li = Value[l].clusterNum;
-			chains.back().QEnd = FragInput[fi].matches[f - MatchStart[fi]].first.pos + FragInput[fi].matchesLengths[f - MatchStart[fi]];
-			chains.back().QStart = FragInput[li].matches[l - MatchStart[li]].first.pos;
-			chains.back().TEnd = FragInput[fi].matches[f - MatchStart[fi]].second.pos + FragInput[fi].matchesLengths[f - MatchStart[fi]];
-			chains.back().TStart = FragInput[li].matches[l - MatchStart[li]].second.pos;
+			QEnd = FragInput[fi].matches[f - MatchStart[fi]].first.pos + FragInput[fi].matchesLengths[f - MatchStart[fi]];
+			QStart = FragInput[li].matches[l - MatchStart[li]].first.pos;
+			TEnd = FragInput[fi].matches[f - MatchStart[fi]].second.pos + FragInput[fi].matchesLengths[f - MatchStart[fi]];
+			TStart = FragInput[li].matches[l - MatchStart[li]].second.pos;
 
-			for (int c = 0; c < chains.back().chain.size(); c++) {
-				f = chains.back().chain[c]; fi = Value[f].clusterNum;
-				chains.back().QEnd = max(chains.back().QEnd , FragInput[fi].matches[f - MatchStart[fi]].first.pos + FragInput[fi].matchesLengths[f - MatchStart[fi]]);
-				chains.back().TEnd = max(chains.back().TEnd, FragInput[fi].matches[f - MatchStart[fi]].second.pos + FragInput[fi].matchesLengths[f - MatchStart[fi]]);
-				chains.back().QStart = min(chains.back().QStart, FragInput[fi].matches[f - MatchStart[fi]].first.pos);
-				chains.back().TStart = min(chains.back().TStart, FragInput[fi].matches[f - MatchStart[fi]].second.pos);
+			for (int c = 0; c < onechain.size(); c++) {
+				f = onechain[c]; fi = Value[f].clusterNum;
+				QEnd = max(QEnd, FragInput[fi].matches[f - MatchStart[fi]].first.pos + FragInput[fi].matchesLengths[f - MatchStart[fi]]);
+				QStart = min(QStart, FragInput[fi].matches[f - MatchStart[fi]].first.pos);
+				TStart = min(TStart, FragInput[fi].matches[f - MatchStart[fi]].second.pos);
+				TEnd = min(TEnd, FragInput[fi].matches[f - MatchStart[fi]].second.pos + FragInput[fi].matchesLengths[f - MatchStart[fi]]);
 			}
+
+			if (opts.readname == read.name) cerr << "onechain.size(): " << onechain.size() << " ((float)(QEnd - QStart)/read.length): " << ((float)(QEnd - QStart)/read.length) << " QEnd - QStart: " << QEnd - QStart << endl;
+			if (onechain.size() >= 3 and QEnd > QStart and ((float)(QEnd - QStart)/read.length) > 0.005 and QEnd - QStart >= 200) {
+				//
+				// Compare onechain to all the primary chains we've found. 
+				// If onechain overlaps with one primary chain over 50% ---> onechain is a secondary chain 
+				// If onechain overlaps with all the primary chains less than 50% ---> onechain is another primary chain
+				//
+				if (chains.size() == 0) {
+					chains.push_back(UltimateChain(&FragInput));
+					chains.back().QEnd = QEnd; chains.back().TEnd = TEnd; 
+					chains.back().QStart = QStart; chains.back().TStart = TStart; 
+					chains.back().chain = onechain; chains.back().link = link;
+					chains.back().NumOfAnchors0 = chains.back().chain.size();
+					chains.back().FirstSDPValue = fragments_valueOrder[fv];
+				} 
+				else if (chains.size() < opts.NumAln) {
+					if (chains.size() >= 1 and chains[0].OverlapsOnT(TStart, TEnd, 0.05f)) {
+						chains.push_back(UltimateChain(&FragInput));
+						chains.back().QEnd = QEnd; chains.back().TEnd = TEnd; 
+						chains.back().QStart = QStart; chains.back().TStart = TStart; 
+						chains.back().chain = onechain; chains.back().link = link;
+						chains.back().NumOfAnchors0 = chains.back().chain.size();
+						chains.back().FirstSDPValue = fragments_valueOrder[fv];							
+					}
+				}
+				else break;
+			}
+			else break;		
 			//
 			// If this chain overlap with read greater than 0.5%, insert it to chains
 			//
 			// assert(qEnd - qStart > 10);
-			if (chains.back().size() >= 5 and chains.back().QEnd > chains.back().QStart 
-				and ((float)(chains.back().QEnd - chains.back().QStart)/read.length) > 0.005 
-				and chains.back().QEnd - chains.back().QStart >= 500) {
-				if (chains.size() > 1 and chains.back().OverlapsOnT(chains[0].TStart, chains[0].TEnd, 0.1f)) {
-					chains.back().NumOfAnchors0 = chains.back().chain.size();
-					chains.back().FirstSDPValue = fragments_valueOrder[fv];				
-				}
-				else if (chains.size() > 1) {chains.pop_back();}
-				else {
-					chains.back().NumOfAnchors0 = chains.back().chain.size();
-					chains.back().FirstSDPValue = fragments_valueOrder[fv];						
-				}
-			}
-			else {chains.pop_back();}			
+			// if (onechain.size() >= 3 and QEnd > QStart and ((float)(QEnd - QStart)/read.length) > 0.005 and QEnd - QStart >= 200) {
+			// 	if (chains.size() > 1 and chains[0].OverlapsOnT(TStart, TEnd, 0.05f)) {
+			// 		// int t = chains.size();
+			// 		// chains.resize(t + 1);
+			// 		chains.push_back(UltimateChain(&FragInput));
+			// 		chains.back().QEnd = QEnd; chains.back().TEnd = TEnd; 
+			// 		chains.back().QStart = QStart; chains.back().TStart = TStart; 
+			// 		chains.back().chain = onechain; chains.back().link = link;
+			// 		chains.back().NumOfAnchors0 = chains.back().chain.size();
+			// 		chains.back().FirstSDPValue = fragments_valueOrder[fv];				
+			// 	}
+			// 	// else if (chains.size() > 1) {chains.pop_back();}
+			// 	else if (chains.size() == 0) {
+			// 		// int t = chains.size();
+			// 		// chains.resize(t + 1);
+			// 		chains.push_back(UltimateChain(&FragInput));
+			// 		chains.back().QEnd = QEnd; chains.back().TEnd = TEnd; 
+			// 		chains.back().QStart = QStart; chains.back().TStart = TStart; 
+			// 		chains.back().chain = onechain; chains.back().link = link;
+			// 		chains.back().NumOfAnchors0 = chains.back().chain.size();
+			// 		chains.back().FirstSDPValue = fragments_valueOrder[fv];						
+			// 	}
+			// }
+			// else {chains.pop_back();}			
 		}
+		onechain.clear();
+		link.clear();
 		fv++;
 	}
 }
@@ -1741,8 +1786,7 @@ DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, Sta
 //
 // Only insert s1, e1 for forward matches and s2, e2 for reverse matches
 //
-int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, FinalChain &finalchain, Options &opts, 
-			 const vector<float> &LookUpTable, Read &read) {
+int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, FinalChain &finalchain, Options &opts, const vector<float> &LookUpTable, Read &read) {
 	if (read.unaligned) return 0;
 	if (inputChain.size() == 0) return 0;
 	//
