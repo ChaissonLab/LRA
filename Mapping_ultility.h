@@ -364,27 +364,27 @@ void
 OUTPUT(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts, Genome &genome, ostream *output){
 
 	if (alignmentsOrder.size() > 0 and alignmentsOrder[0].SegAlignment.size() > 0) {
-	for (int a = 0; a < (int) min(alignmentsOrder.size(), opts.PrintNumAln); a++){
 		int primary_num = 0;
-		for (int s = alignmentsOrder[a].SegAlignment.size() - 1; s >= 0; s--) {
-			if (alignmentsOrder[a].SegAlignment[s]->Supplymentary == 0) primary_num++;
-			alignmentsOrder[a].SegAlignment[s]->order = alignmentsOrder[a].SegAlignment.size() - 1 - s;
-			alignmentsOrder[a].SegAlignment[s]->wholegenomeLen = genome.header.pos[alignmentsOrder[a].SegAlignment[s]->chromIndex];
-			if (opts.printFormat == "b") {
-				alignmentsOrder[a].SegAlignment[s]->PrintBed(*output);
-			}
-			else if (opts.printFormat == "s") {
-				alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts, alignmentsOrder[a].SegAlignment, s, read.passthrough);
-			}
-			else if (opts.printFormat == "a") {
-				alignmentsOrder[a].SegAlignment[s]->PrintPairwise(*output);
-			}
-			else if (opts.printFormat == "p" or opts.printFormat == "pc") {
-				alignmentsOrder[a].SegAlignment[s]->PrintPAF(*output, opts.printFormat == "pc");
+		for (int a = 0; a < (int) min(alignmentsOrder.size(), opts.PrintNumAln); a++){
+			for (int s = alignmentsOrder[a].SegAlignment.size() - 1; s >= 0; s--) {
+				if (alignmentsOrder[a].SegAlignment[s]->Supplymentary == 0) primary_num++;
+				alignmentsOrder[a].SegAlignment[s]->order = alignmentsOrder[a].SegAlignment.size() - 1 - s;
+				alignmentsOrder[a].SegAlignment[s]->wholegenomeLen = genome.header.pos[alignmentsOrder[a].SegAlignment[s]->chromIndex];
+				if (opts.printFormat == "b") {
+					alignmentsOrder[a].SegAlignment[s]->PrintBed(*output);
+				}
+				else if (opts.printFormat == "s") {
+					alignmentsOrder[a].SegAlignment[s]->PrintSAM(*output, opts, alignmentsOrder[a].SegAlignment, s, read.passthrough);
+				}
+				else if (opts.printFormat == "a") {
+					alignmentsOrder[a].SegAlignment[s]->PrintPairwise(*output);
+				}
+				else if (opts.printFormat == "p" or opts.printFormat == "pc") {
+					alignmentsOrder[a].SegAlignment[s]->PrintPAF(*output, opts.printFormat == "pc");
+				}
 			}
 		}
 		assert(primary_num == opts.PrintNumAln);
-	}
 	}
 	else if (read.unaligned == 1) {
 	output_unaligned(read, opts, *output);
