@@ -557,4 +557,5 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 	}
 	clusters.resize(c);
 }
+
 #endif

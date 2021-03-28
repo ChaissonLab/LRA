@@ -468,7 +468,22 @@ class Alignment {
 			tEnd   = blocks[last-1].tPos + blocks[last-1].length;
 		}
 	}
-	
+
+	//
+	// Mark
+	//
+	void RetrieveEnd(int s){
+		//
+		// blocks -- which contain matches
+		//
+		if (s == 0) {
+			// the right segment -- add to the back of blocks
+		}
+		else {
+			// the left segment -- add to the front of blocks
+		}
+	}
+
 	bool Overlaps(const Alignment &b, float frac) const {
 		int ovp=0;
 		if (b.qStart >= qStart and b.qStart < qEnd) {

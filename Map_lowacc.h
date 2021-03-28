@@ -570,6 +570,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		}
 		for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
 			if (opts.skipBandedRefine == false) { IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], smallOpts, indelRefineBuffers); }
+			if (s == 0 or s == alignments.back().SegAlignment.size() - 1) alignments.back().RetrieveEnd(s);// retrieve the ends
 			alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
 		}
 		alignments.back().SetFromSegAlignment(smallOpts);
@@ -579,7 +580,11 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	if (read.unaligned or alignments.size() == 0) {
 		output_unaligned(read, opts, *output);
 		return 0;
-	} 	
+	} 
+	//
+	// retrieve the ends
+	//
+	RetrieveEnd(alignments);	
 	alignmentsOrder.Update(&alignments);
 	SimpleMapQV(alignmentsOrder, read, smallOpts);	
 	OUTPUT(alignmentsOrder, read, opts, genome, output);
