@@ -277,7 +277,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
    			opts.firstcoefficient=24;
      		opts.merge_dist=100;
 			opts.cleanMaxDiag=50; //100 // For CleanOffDiagonal
-     		opts.SecondCleanMinDiagCluster=30;
+     		opts.SecondCleanMaxDiag=30;			
+     		opts.SecondCleanMinDiagCluster=20; //30
      		opts.minDiagCluster=30;
      		opts.minClusterSize=10;
      		opts.refineSpaceDist=100000;
@@ -298,7 +299,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
       		opts.RoughClustermaxGap=500; 
      		opts.maxGap=400;
     		opts.cleanMaxDiag=50;
-     		opts.SecondCleanMinDiagCluster=30;
+     		opts.SecondCleanMaxDiag=30;
+     		opts.SecondCleanMinDiagCluster=20; //30
      		opts.minDiagCluster=10;
      		opts.minClusterSize=10;
      		opts.cleanClustersize=100;
@@ -321,24 +323,26 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.HighlyAccurate=false;
-			opts.NumAln=2;
+			opts.NumAln=3; //2
    			opts.PrintNumAln=1;
    			opts.merge_dist=100;
    			opts.RoughClustermaxGap=1000; 
      		opts.maxGap=1000;
-     		opts.cleanMaxDiag=50;
-     		opts.SecondCleanMinDiagCluster=30;
+     		opts.cleanMaxDiag=150; //50
+     		opts.SecondCleanMaxDiag=75;
+     		opts.SecondCleanMinDiagCluster=10; //30
       		opts.refineSpaceDist=10000;
       		opts.minDiagCluster=3;
     		opts.minClusterSize=3;
     		opts.RemovePairedIndels=false;
     		opts.RemoveSpuriousAnchors=false;
     		opts.bypassClustering=true;
-     		opts.anchor_rate=18.0f;
+     		opts.anchor_rate=5.0f; //18.0f
     		opts.punish_anchorfreq=5;
     		opts.anchorPerlength=5;
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.02; 
+    		// opts.second_anchor_rate=4.0f; //2
 		}		
 		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.HighlyAccurate=false;
@@ -347,19 +351,21 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
    			opts.merge_dist=100;
    			opts.RoughClustermaxGap=1000; 
      		opts.maxGap=1000;
-     		opts.cleanMaxDiag=50;
-     		opts.SecondCleanMinDiagCluster=30;
+     		opts.cleanMaxDiag=150; //50
+     		opts.SecondCleanMaxDiag=75;
+     		opts.SecondCleanMinDiagCluster=10;
       		opts.refineSpaceDist=10000;
       		opts.minDiagCluster=3;
     		opts.minClusterSize=3;
     		opts.RemovePairedIndels=false;
     		opts.RemoveSpuriousAnchors=false;
     		opts.bypassClustering=true;
-     		opts.anchor_rate=18.0f;
+     		opts.anchor_rate=5.0f;
     		opts.punish_anchorfreq=5;
     		opts.anchorPerlength=5;
     		opts.cleanClustersize=100;
-    		opts.anchorstoosparse=0.02; 		
+    		opts.anchorstoosparse=0.02; 
+    		// opts.second_anchor_rate=4.0f; //2		
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
 			// opts.HighlyAccurate = false;
@@ -475,10 +481,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "--minClusterLength")) {
 			opts.minClusterLength = atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}
-		else if (ArgIs(argv[argi], "--minDiagCluster")) {
-			opts.minDiagCluster = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--maxCandidates")) {
@@ -675,14 +677,14 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.localK = 10;
 			opts.localW	= 5;
-			opts.localMaxFreq = 20;
+			opts.localMaxFreq = 15;
 			glIndex.k = opts.localK;
 			glIndex.maxFreq = opts.localMaxFreq;
 		}
 		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.localK = 10;
 			opts.localW	= 5;
-			opts.localMaxFreq = 20;
+			opts.localMaxFreq = 15;
 			glIndex.k = opts.localK;
 			glIndex.maxFreq = opts.localMaxFreq;
 		}
@@ -767,8 +769,8 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 
 			opts.globalK = 17;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 200;
-			opts.globalWinsize = 16;
+			opts.globalMaxFreq = 150; //200
+			opts.globalWinsize = 15;
 			opts.NumOfminimizersPerWindow = 1;	
 		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
@@ -785,7 +787,7 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalK = 15;
 			opts.globalW = 10;
 			opts.globalMaxFreq = 250;
-			opts.globalWinsize = 13;
+			opts.globalWinsize = 10;
 			opts.NumOfminimizersPerWindow = 1;	
 		}
 		else if (ArgIs(argv[argi], "-ONT")) {
@@ -801,7 +803,7 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalK = 15;
 			opts.globalW = 10;
 			opts.globalMaxFreq = 250;
-			opts.globalWinsize = 13;
+			opts.globalWinsize = 10;
 			opts.NumOfminimizersPerWindow = 1;	
 		}
 		else if (ArgIs(argv[argi], "-F")) {

@@ -1352,7 +1352,6 @@ void
 TraceBack (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
 		   const vector<Fragment_Info> & Value, unsigned int & i, vector<unsigned int> & onechain, vector<bool> & link, 
 		   vector<bool> & used) {
-
 	long int prev_sub = Value[i].prev_sub;
 	long int prev_ind = Value[i].prev_ind;
 	if (used[i] == 0) {
@@ -1658,12 +1657,12 @@ DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, Sta
 					const vector<Fragment_Info> & Value, vector<UltimateChain> &chains, Read & read, Options & opts, vector<int> &MatchStart) {
 	vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-	float value_thres = 0.80f * fragments_valueOrder[0];
+	float value_thres = 0.70f * fragments_valueOrder[0];
 	//float value_thres = opts.alnthres*fragments_valueOrder[0];
 	// cerr << "value_thres: " << value_thres << endl;
 	// cerr << "fragments_valueOrder[0]: " << fragments_valueOrder[0] << " fragments_valueOrder[1]: " << fragments_valueOrder[1] << endl;
 	int fv = 0;
-	while (fv < fragments_valueOrder.size() and fragments_valueOrder[fv] >= value_thres) {
+	while (chains.size() < opts.NumAln and fv < fragments_valueOrder.size() and fragments_valueOrder[fv] >= value_thres) {
 		unsigned int d = fragments_valueOrder.index[fv];
 		// if (fv >= opts.NumAln) break;
 		// if (fv < opts.NumAln) chains.push_back(UltimateChain(&FragInput));
@@ -2161,7 +2160,7 @@ int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options
 				// insert start point s2 into H1
 				insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 1, 0);
 				if (i == 0 or i == FragInput[cm].matches.size() - 1) insertPointsPair(H1, i + MatchStart[cm], FragInput[cm].matches[i].first.pos, FragInput[cm].matches[i].second.pos, FragInput[cm].matchesLengths[i], cm, 0, 0);	
-			}
+			}	
 		}
 		totalMatch += FragInput[cm].matches.size();
 	}
