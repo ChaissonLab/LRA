@@ -278,7 +278,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.merge_dist=100;
 			opts.cleanMaxDiag=50; //100 // For CleanOffDiagonal
      		opts.SecondCleanMaxDiag=30;			
-     		opts.SecondCleanMinDiagCluster=20; //30
+     		opts.SecondCleanMinDiagCluster=30; //30
      		opts.minDiagCluster=30;
      		opts.minClusterSize=10;
      		opts.refineSpaceDist=100000;
@@ -300,7 +300,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.maxGap=400;
     		opts.cleanMaxDiag=50;
      		opts.SecondCleanMaxDiag=30;
-     		opts.SecondCleanMinDiagCluster=20; //30
+     		opts.SecondCleanMinDiagCluster=30; //30
      		opts.minDiagCluster=10;
      		opts.minClusterSize=10;
      		opts.cleanClustersize=100;
@@ -337,7 +337,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.RemovePairedIndels=false;
     		opts.RemoveSpuriousAnchors=false;
     		opts.bypassClustering=true;
-     		opts.anchor_rate=5.0f; //18.0f
+     		opts.anchor_rate=9.0f; //5.0f
     		opts.punish_anchorfreq=5;
     		opts.anchorPerlength=5;
     		opts.cleanClustersize=100;
