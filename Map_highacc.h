@@ -40,32 +40,32 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	vector<Cluster> clusters;
 	MatchesToFineClusters(forMatches, clusters, genome, read, opts, timing);
 	MatchesToFineClusters(revMatches, clusters, genome, read, opts, timing, 1);
-	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-		ofstream cpclust("clusters-pre-remove.tab");
-		for (int m = 0; m < clusters.size(); m++) {
-			for (int n = 0; n < clusters[m].matches.size(); n++) {
-				if (clusters[m].strand == 0) {
-					cpclust << clusters[m].matches[n].first.pos << "\t"
-						  << clusters[m].matches[n].second.pos << "\t"
-						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
-						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
-						  << m << "\t"
-						  << genome.header.names[clusters[m].chromIndex]<< "\t"
-						  << clusters[m].strand << endl;
-				}
-				else {
-					cpclust << clusters[m].matches[n].first.pos << "\t"
-						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
-						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
-						  << clusters[m].matches[n].second.pos << "\t"
-						  << m << "\t"
-						  << genome.header.names[clusters[m].chromIndex]<< "\t"
-						  << clusters[m].strand << endl;
-				}				
-			}
-		}
-		cpclust.close();
-	}
+	// if (opts.debug and opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+	// 	ofstream cpclust("clusters-pre-remove.tab");
+	// 	for (int m = 0; m < clusters.size(); m++) {
+	// 		for (int n = 0; n < clusters[m].matches.size(); n++) {
+	// 			if (clusters[m].strand == 0) {
+	// 				cpclust << clusters[m].matches[n].first.pos << "\t"
+	// 					  << clusters[m].matches[n].second.pos << "\t"
+	// 					  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
+	// 					  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
+	// 					  << m << "\t"
+	// 					  << genome.header.names[clusters[m].chromIndex]<< "\t"
+	// 					  << clusters[m].strand << endl;
+	// 			}
+	// 			else {
+	// 				cpclust << clusters[m].matches[n].first.pos << "\t"
+	// 					  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
+	// 					  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
+	// 					  << clusters[m].matches[n].second.pos << "\t"
+	// 					  << m << "\t"
+	// 					  << genome.header.names[clusters[m].chromIndex]<< "\t"
+	// 					  << clusters[m].strand << endl;
+	// 			}				
+	// 		}
+	// 	}
+	// 	cpclust.close();
+	// }
 	//
 	// Continue work on Clusters
 	//
@@ -505,7 +505,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 		}
 	}	
 
-	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+	if (opts.debug and opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream clust("RefinedClusters.tab", std::ofstream::app);
 		for (int p = 0; p < RefinedClusters.size(); p++) {
 			for (int h = 0; h < RefinedClusters[p]->matches.size(); h++) {

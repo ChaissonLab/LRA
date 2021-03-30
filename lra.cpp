@@ -199,6 +199,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-H")) {
 			opts.hardClip = true;
 		}
+		else if (ArgIs(argv[argi], "-SkipH")) {
+			opts.hardClip = false;
+		}
 		else if (ArgIs(argv[argi], "-p")) {			
 			opts.printFormat = GetArgv(argv, argc, argi);
 			++argi;
@@ -285,6 +288,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.cleanClustersize=100;
      		opts.punish_anchorfreq=10;
      		opts.anchorPerlength=10;
+     		opts.hardClip=true;
 
    			// opts.secondcoefficient=15;
    			// opts.rate_FirstSDPValue=0;
@@ -310,6 +314,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.refineSpaceDist=10000;
      		opts.anchor_rate=4.0f;
     		opts.anchorstoosparse=0.005; 
+     		opts.hardClip=true;
+
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;
 
@@ -344,6 +350,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.anchorPerlength=5;
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.02; 
+      		opts.hardClip=true;
+   		
     		// opts.second_anchor_rate=4.0f; //2
 		}		
 		else if (ArgIs(argv[argi], "-ONT")) {
@@ -368,6 +376,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.anchorPerlength=5;
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.02; 
+      		opts.hardClip=true;
+   		
     		// opts.second_anchor_rate=4.0f; //2		
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	

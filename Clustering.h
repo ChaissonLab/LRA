@@ -679,22 +679,22 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 					}
 					if (read.name == opts.readname) cerr << "avgfreq: " << avgfreq << " MinDiagCluster: " << MinDiagCluster << endl;
 				}
-				if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
-					ofstream fclust("for-matches_cleanoffdiagonal.dots", ofstream::app);
-					for (int j = diagStart; j <= i; j++) {
-						fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
-								<< matches[j].second.pos + opts.globalK << "\t" << counter << "\t" << avgfreq << "\t" << Second_onDiag[j] << endl;
-					}
-					fclust.close();
-				}
-				if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
-					ofstream rclust("rev-matches_cleanoffdiagonal.dots", ofstream::app);
-					for (int j = diagStart; j <= i; j++) {			
-						rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
-								 << matches[j].second.pos << "\t" << counter << "\t" << avgfreq << "\t" << Second_onDiag[j] << endl;
-					}
-					rclust.close();
-				}
+				// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
+				// 	ofstream fclust("for-matches_cleanoffdiagonal.dots", ofstream::app);
+				// 	for (int j = diagStart; j <= i; j++) {
+				// 		fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
+				// 				<< matches[j].second.pos + opts.globalK << "\t" << counter << "\t" << avgfreq << "\t" << Second_onDiag[j] << endl;
+				// 	}
+				// 	fclust.close();
+				// }
+				// if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
+				// 	ofstream rclust("rev-matches_cleanoffdiagonal.dots", ofstream::app);
+				// 	for (int j = diagStart; j <= i; j++) {			
+				// 		rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
+				// 				 << matches[j].second.pos << "\t" << counter << "\t" << avgfreq << "\t" << Second_onDiag[j] << endl;
+				// 	}
+				// 	rclust.close();
+				// }
 				counter++;
 			}
 			prevOnDiag = onDiag[i];
@@ -1462,7 +1462,7 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 		timing.Tick("roughclusters");
 
 		//cerr << "roughClusters.size(): " << roughClusters.size() << " split_roughClusters.size(): " << split_roughClusters.size()<< endl;
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		if (opts.debug and opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream fclust("for-matches.dots");
 			for (int m = 0; m < Matches.size(); m++) {
 				fclust << Matches[m].first.pos << "\t" << Matches[m].second.pos << "\t" << opts.globalK + Matches[m].first.pos << "\t"
@@ -1515,7 +1515,7 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 		timing.Tick("roughclusters");
 
 		// cerr << "revroughClusters.size(): " << revroughClusters.size() << " split_revroughClusters.dots: " << split_revroughClusters.size()<< endl;
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		if (opts.debug and opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 			ofstream rclust("rev-matches.dots");
 			for (int m=0; m < Matches.size(); m++) {			
 				rclust << Matches[m].first.pos << "\t" << Matches[m].second.pos + opts.globalK << "\t" << opts.globalK + Matches[m].first.pos  << "\t"

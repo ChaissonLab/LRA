@@ -166,9 +166,9 @@ RefineByLinearAlignment(GenomePos &btc_curReadEnd, GenomePos &btc_curGenomeEnd, 
 				ofstream Lclust("LinearAlignment.tab", std::ofstream::app);
 				for (b = 0; b < betweenAnchorAlignment.blocks.size(); b++) {
 					Lclust << betweenAnchorAlignment.blocks[b].qPos << "\t"
-						  << betweenAnchorAlignment.blocks[b].tPos << "\t"
+						  << betweenAnchorAlignment.blocks[b].tPos + genome.header.pos[chromIndex]<< "\t"
 						  << betweenAnchorAlignment.blocks[b].qPos + betweenAnchorAlignment.blocks[b].length << "\t"
-						  << betweenAnchorAlignment.blocks[b].tPos + betweenAnchorAlignment.blocks[b].length << "\t"
+						  << betweenAnchorAlignment.blocks[b].tPos + betweenAnchorAlignment.blocks[b].length + genome.header.pos[chromIndex]<< "\t"
 						  << str << endl;
 				}
 				Lclust.close();
@@ -337,38 +337,38 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				SparseDP_ForwardOnly(ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, BtwnChain, tinyOpts, LookUpTable, inv_value, inv_NumofAnchors, 2); //1
 				RemovePairedIndels(ExtendBtwnPairs, BtwnChain, ExtendBtwnPairsMatchesLength);
 
-				if (tinyOpts.dotPlot and read.name == tinyOpts.readname) {
+				if (tinyOpts.debug and tinyOpts.dotPlot and read.name == tinyOpts.readname) {
 					ofstream pSclust("BtwnPairs.tab", std::ofstream::app);
 					for (int bp = BtwnPairs->size()-1; bp >= 0; bp--) {
 						if (inversion == 0) {
 							if (str == 0) {
 								pSclust << (*BtwnPairs)[bp].first.pos << "\t"
-									  << (*BtwnPairs)[bp].second.pos << "\t"
+									  << (*BtwnPairs)[bp].second.pos + genome.header.pos[chromIndex] << "\t"
 									  << (*BtwnPairs)[bp].first.pos + tinyOpts.globalK << "\t"
-									  << (*BtwnPairs)[bp].second.pos + tinyOpts.globalK << "\t"
+									  << (*BtwnPairs)[bp].second.pos + tinyOpts.globalK + genome.header.pos[chromIndex] << "\t"
 									  << 0 << endl;
 							}
 							else if (str == 1) {
 								pSclust << read.length - (*BtwnPairs)[bp].first.pos - tinyOpts.globalK << "\t"
-									  << (*BtwnPairs)[bp].second.pos + tinyOpts.globalK << "\t"
+									  << (*BtwnPairs)[bp].second.pos + tinyOpts.globalK + genome.header.pos[chromIndex]<< "\t"
 									  << read.length - (*BtwnPairs)[bp].first.pos << "\t"
-									  << (*BtwnPairs)[bp].second.pos << "\t"
+									  << (*BtwnPairs)[bp].second.pos + genome.header.pos[chromIndex] << "\t"
 									  << 1 << endl;					
 							}						
 						} 
 						else {
 							if (inv_str == 0) {
 								pSclust << (*BtwnPairs)[bp].first.pos << "\t"
-									  << (*BtwnPairs)[bp].second.pos << "\t"
+									  << (*BtwnPairs)[bp].second.pos + genome.header.pos[chromIndex] << "\t"
 									  << (*BtwnPairs)[bp].first.pos + tinyOpts.globalK << "\t"
-									  << (*BtwnPairs)[bp].second.pos + tinyOpts.globalK << "\t"
+									  << (*BtwnPairs)[bp].second.pos + tinyOpts.globalK + genome.header.pos[chromIndex]<< "\t"
 									  << 0 << endl;
 							}
 							else if (inv_str == 1) {
 								pSclust << read.length - (*BtwnPairs)[bp].first.pos - tinyOpts.globalK << "\t"
-									  << (*BtwnPairs)[bp].second.pos + tinyOpts.globalK << "\t"
+									  << (*BtwnPairs)[bp].second.pos + tinyOpts.globalK + genome.header.pos[chromIndex] << "\t"
 									  << read.length - (*BtwnPairs)[bp].first.pos << "\t"
-									  << (*BtwnPairs)[bp].second.pos << "\t"
+									  << (*BtwnPairs)[bp].second.pos + genome.header.pos[chromIndex] << "\t"
 									  << 1 << endl;					
 							}							
 						}
@@ -380,32 +380,32 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 						if (inversion == 0) {
 							if (str == 0) {
 								eSclust << ExtendBtwnPairs[bp].first.pos << "\t"
-									  << ExtendBtwnPairs[bp].second.pos << "\t"
+									  << ExtendBtwnPairs[bp].second.pos + genome.header.pos[chromIndex]<< "\t"
 									  << ExtendBtwnPairs[bp].first.pos + ExtendBtwnPairsMatchesLength[bp] << "\t"
-									  << ExtendBtwnPairs[bp].second.pos + ExtendBtwnPairsMatchesLength[bp] << "\t"
+									  << ExtendBtwnPairs[bp].second.pos + ExtendBtwnPairsMatchesLength[bp] + genome.header.pos[chromIndex]<< "\t"
 									  << 0 << endl;
 							}
 							else if (str == 1) {
 								eSclust << read.length - ExtendBtwnPairs[bp].first.pos - ExtendBtwnPairsMatchesLength[bp] << "\t"
-									  << ExtendBtwnPairs[bp].second.pos + ExtendBtwnPairsMatchesLength[bp] << "\t"
+									  << ExtendBtwnPairs[bp].second.pos + ExtendBtwnPairsMatchesLength[bp] + genome.header.pos[chromIndex] << "\t"
 									  << read.length - ExtendBtwnPairs[bp].first.pos << "\t"
-									  << ExtendBtwnPairs[bp].second.pos << "\t"
+									  << ExtendBtwnPairs[bp].second.pos + genome.header.pos[chromIndex] << "\t"
 									  << 1 << endl;					
 							}							
 						}
 						else {
 							if (inv_str == 0) {
 								eSclust << ExtendBtwnPairs[bp].first.pos << "\t"
-									  << ExtendBtwnPairs[bp].second.pos << "\t"
+									  << ExtendBtwnPairs[bp].second.pos + genome.header.pos[chromIndex] << "\t"
 									  << ExtendBtwnPairs[bp].first.pos + ExtendBtwnPairsMatchesLength[bp] << "\t"
-									  << ExtendBtwnPairs[bp].second.pos + ExtendBtwnPairsMatchesLength[bp] << "\t"
+									  << ExtendBtwnPairs[bp].second.pos + ExtendBtwnPairsMatchesLength[bp] + genome.header.pos[chromIndex] << "\t"
 									  << 0 << endl;
 							}
 							else if (inv_str == 1) {
 								eSclust << read.length - ExtendBtwnPairs[bp].first.pos - ExtendBtwnPairsMatchesLength[bp] << "\t"
-									  << ExtendBtwnPairs[bp].second.pos + ExtendBtwnPairsMatchesLength[bp] << "\t"
+									  << ExtendBtwnPairs[bp].second.pos + ExtendBtwnPairsMatchesLength[bp] + genome.header.pos[chromIndex] << "\t"
 									  << read.length - ExtendBtwnPairs[bp].first.pos << "\t"
-									  << ExtendBtwnPairs[bp].second.pos << "\t"
+									  << ExtendBtwnPairs[bp].second.pos + genome.header.pos[chromIndex]<< "\t"
 									  << 1 << endl;					
 							}							
 						}
@@ -419,32 +419,32 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 							if (inversion == 0) {
 								if (str == 0) {
 									Sclust << ExtendBtwnPairs[BtwnChain[btc]].first.pos << "\t"
-										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos << "\t"
+										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + genome.header.pos[chromIndex]<< "\t"
 										  << ExtendBtwnPairs[BtwnChain[btc]].first.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] << "\t"
-										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] << "\t"
+										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] + genome.header.pos[chromIndex]<< "\t"
 										  << 0 << endl;
 								}
 								else if (str == 1) {
 									Sclust << read.length - ExtendBtwnPairs[BtwnChain[btc]].first.pos - ExtendBtwnPairsMatchesLength[BtwnChain[btc]] << "\t"
-										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] << "\t"
+										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] + genome.header.pos[chromIndex]<< "\t"
 										  << read.length - ExtendBtwnPairs[BtwnChain[btc]].first.pos << "\t"
-										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos << "\t"
+										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + genome.header.pos[chromIndex]<< "\t"
 										  << 1 << endl;					
 								}		
 							}
 							else {
 								if (inv_str == 0) {
 									Sclust << ExtendBtwnPairs[BtwnChain[btc]].first.pos << "\t"
-										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos << "\t"
+										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + genome.header.pos[chromIndex] << "\t"
 										  << ExtendBtwnPairs[BtwnChain[btc]].first.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] << "\t"
-										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] << "\t"
+										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] + genome.header.pos[chromIndex]<< "\t"
 										  << 0 << endl;
 								}
 								else if (inv_str == 1) {
 									Sclust << read.length - ExtendBtwnPairs[BtwnChain[btc]].first.pos - ExtendBtwnPairsMatchesLength[BtwnChain[btc]] << "\t"
-										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] << "\t"
+										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + ExtendBtwnPairsMatchesLength[BtwnChain[btc]] + genome.header.pos[chromIndex] << "\t"
 										  << read.length - ExtendBtwnPairs[BtwnChain[btc]].first.pos << "\t"
-										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos << "\t"
+										  << ExtendBtwnPairs[BtwnChain[btc]].second.pos + genome.header.pos[chromIndex] << "\t"
 										  << 1 << endl;					
 								}							
 							}
@@ -535,31 +535,6 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 
 		//cerr << "2nd SDP done!" << endl;
 		if (ultimatechain.size() == 0) continue; // cannot be mapped to the genome!
-		if (smallOpts.dotPlot and read.name == smallOpts.readname ) {
-			ofstream clust("SparseDP.tab", ofstream::app);
-			for (int ep = 0; ep < ultimatechain.size(); ep++) {
-				if (ultimatechain.strand(ep) == 0) {
-					clust << ultimatechain[ep].first.pos << "\t"
-						  << ultimatechain[ep].second.pos << "\t"
-						  << ultimatechain[ep].first.pos + ultimatechain.length(ep) << "\t"
-						  << ultimatechain[ep].second.pos + ultimatechain.length(ep) << "\t"
-						  << st << "\t"
-						  << ultimatechain.ClusterNum(ep) << "\t"
-						  << ultimatechain.strand(ep) << endl;
-				}
-				else {
-					clust << ultimatechain[ep].first.pos << "\t"
-						  << ultimatechain[ep].second.pos + ultimatechain.length(ep) << "\t"
-						  << ultimatechain[ep].first.pos + ultimatechain.length(ep) << "\t"
-						  << ultimatechain[ep].second.pos << "\t"
-						  << st << "\t"
-						  << ultimatechain.ClusterNum(ep) << "\t"
-						  << ultimatechain.strand(ep) << endl;					
-				}
-			}
-			clust.close();
-		}	
-
 		//
 		// Refine and store the alignment; NOTICE: when filling in the space between two adjacent anchors, 
 		// the process works in forward direction, so we need to flip the small matches
@@ -572,6 +547,31 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 		bool str = ultimatechain.strand(start);
 		int cln = ultimatechain.ClusterNum(start);
 		int chromIndex = extend_clusters[cln].chromIndex;
+
+		if (smallOpts.dotPlot and read.name == smallOpts.readname ) {
+			ofstream clust("SparseDP.tab", ofstream::app);
+			for (int ep = 0; ep < ultimatechain.size(); ep++) {
+				if (ultimatechain.strand(ep) == 0) {
+					clust << ultimatechain[ep].first.pos << "\t"
+						  << ultimatechain[ep].second.pos + genome.header.pos[chromIndex] << "\t"
+						  << ultimatechain[ep].first.pos + ultimatechain.length(ep) << "\t"
+						  << ultimatechain[ep].second.pos + ultimatechain.length(ep) + genome.header.pos[chromIndex]<< "\t"
+						  << st << "\t"
+						  << ultimatechain.ClusterNum(ep) << "\t"
+						  << ultimatechain.strand(ep) << endl;
+				}
+				else {
+					clust << ultimatechain[ep].first.pos << "\t"
+						  << ultimatechain[ep].second.pos + ultimatechain.length(ep) + genome.header.pos[chromIndex]<< "\t"
+						  << ultimatechain[ep].first.pos + ultimatechain.length(ep) << "\t"
+						  << ultimatechain[ep].second.pos + genome.header.pos[chromIndex] << "\t"
+						  << st << "\t"
+						  << ultimatechain.ClusterNum(ep) << "\t"
+						  << ultimatechain.strand(ep) << endl;					
+				}
+			}
+			clust.close();
+		}	
 		Alignment *alignment = new Alignment(Primary_chains[p].chains[h].value, strands[str], read.seq, read.length, 
 											 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
 											 genome.header.names[chromIndex], chromIndex); 
