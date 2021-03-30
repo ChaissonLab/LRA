@@ -634,8 +634,11 @@ class Alignment {
 				}
 			}
 			else {
-				string readStr(read, 0, readLen);
-				samStrm << readStr;
+				//				string readStr(read, 0, readLen);
+
+				//				samStrm << readStr;
+				samStrm.write(read,readLen);
+
 				if (qual[0] == '*') {
 					qualStr = "*";
 				}
@@ -643,11 +646,11 @@ class Alignment {
 					qualStr.assign(qual, readLen);
 				}
 				if (qualStr != "*") {
-					assert(qualStr.length() == readStr.length());
+					assert(qualStr.length() == readLen);
 				}
 			}
 			samStrm << "\t";
-			if ( qual == NULL ) {
+			if ( qual == NULL) {
 				samStrm << "*";
 			}
 			else {
