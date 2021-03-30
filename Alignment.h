@@ -629,6 +629,9 @@ class Alignment {
 				else {
 					qualStr= "*";
 				}
+				if (qualStr != "*") {
+					assert(qualStr.length() == subStr.length());
+				}
 			}
 			else {
 				string readStr(read, 0, readLen);
@@ -639,6 +642,9 @@ class Alignment {
 				else {
 					qualStr.assign(qual, readLen);
 				}
+				if (qualStr != "*") {
+					assert(qualStr.length() == readStr.length());
+				}
 			}
 			samStrm << "\t";
 			if ( qual == NULL ) {
@@ -647,6 +653,22 @@ class Alignment {
 			else {
 				samStrm << qualStr;
 			}
+			// char clipOp = 'S';
+			// if (Supplymentary and opts.hardClip) {
+			// 	clipOp = 'H';				
+			// }
+			// if (preClip > 0) {
+			// 	samStrm << preClip << clipOp;
+			// }
+			// samStrm << cigar;
+			// if (sufClip > 0) {
+			// 	samStrm << sufClip << clipOp;
+			// }
+			// // Rnext, Pnext
+			// samStrm << "\t*\t0\t";
+			// // Template length
+			// samStrm << "0\t"; // samStrm << tEnd - tStart << "\t";
+			// string qualStr;
 			// string readStr;	
 			// if (Supplymentary == 0) assert(flag == 0 or flag == 16 or flag == 256 or flag == 272);
 			// if (!Supplymentary) {
@@ -774,6 +796,9 @@ class Alignment {
 				else {
 					qualStr= "*";
 				}
+				if (qualStr != "*") {
+					assert(qualStr.length() == subStr.length());
+				}
 			}
 			else {
 				string readStr(read, readLen);
@@ -783,6 +808,9 @@ class Alignment {
 				}
 				else {
 					qualStr.assign(qual, readLen);
+				}
+				if (qualStr != "*") {
+					assert(qualStr.length() == readStr.length());
 				}
 			}
 			samStrm << "\t";
