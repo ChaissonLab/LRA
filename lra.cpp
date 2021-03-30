@@ -322,6 +322,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			// opts.maxGapBtwnAnchors=1500;
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
+			opts.readType=Options::raw;
 			opts.HighlyAccurate=false;
 			opts.NumAln=3; //2
    			opts.PrintNumAln=1;
@@ -345,6 +346,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		// opts.second_anchor_rate=4.0f; //2
 		}		
 		else if (ArgIs(argv[argi], "-ONT")) {
+			opts.readType=Options::raw;
 			opts.HighlyAccurate=false;
 			opts.NumAln=2;
    			opts.PrintNumAln=1;
