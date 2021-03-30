@@ -796,6 +796,9 @@ class Alignment {
 				else {
 					qualStr= "*";
 				}
+				if (qualStr != "*") {
+					assert(qualStr.length() == subStr.length());
+				}
 			}
 			else {
 				string readStr(read, readLen);
@@ -805,6 +808,9 @@ class Alignment {
 				}
 				else {
 					qualStr.assign(qual, readLen);
+				}
+				if (qualStr != "*") {
+					assert(qualStr.length() == readStr.length());
 				}
 			}
 			samStrm << "\t";

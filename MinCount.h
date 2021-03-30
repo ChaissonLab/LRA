@@ -23,9 +23,11 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 	int nextValidWindowEnd=0;
 	int nextValidWindowStart=0;
 	bool valid=false;
+	if (seqLen < windowSpan) return; 
 	while (nextValidWindowStart < seqLen - windowSpan and !valid) {
 		valid=true;
 		for (int n=nextValidWindowStart; valid and n < nextValidWindowStart+windowSpan; n++ ) {
+			if (seqLen < n) return;
 			if (seqMapN[seq[n]] > 3) {
 				nextValidWindowStart = n+1;
 				valid=false;
