@@ -655,9 +655,9 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 
 				for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
 					if (opts.skipBandedRefine == false) {
-						IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts, indelRefineBuffers);
+						IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], opts, indelRefineBuffers, true);
 					}
-					if (s == 0 or s == alignments.back().SegAlignment.size() - 1) alignments.back().SegAlignment[s]->RetrieveEnd(s);// retrieve the ends
+					//					if (s == 0 or s == alignments.back().SegAlignment.size() - 1) alignments.back().SegAlignment[s]->RetrieveEnd(s);// retrieve the ends
 					alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable); // final value gets compuated here
 				}
 				alignments.back().SetFromSegAlignment(smallOpts);

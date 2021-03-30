@@ -577,9 +577,11 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 	bool prevOnDiag = false;
 	int  diagStart;
 	int  Largest_ClusterNum = 0;
+	bool diagStartSet=false;
 	for (int i = 0; i < matches.size(); i++) {
 		if (prevOnDiag == false and onDiag[i] == true) {
 			diagStart = i;
+			diagStartSet=true;
 		}
 		if (prevOnDiag == true and onDiag[i] == false) {
 			Largest_ClusterNum = max(Largest_ClusterNum, i - diagStart + 1); // [diagStart, i]
@@ -587,6 +589,14 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 		prevOnDiag = onDiag[i];
 	}
 	int sz = matches.size();
+	if (diagStartSet == false) 
+		{
+			matches.clear();
+			return;			
+		}
+	
+			
+	assert(diagStartSet==true);
 	Largest_ClusterNum = max(Largest_ClusterNum, sz - diagStart);
 	int minDiagCluster = (int) floor(Largest_ClusterNum/10);
 	if (minDiagCluster >= opts.minDiagCluster) minDiagCluster = opts.minDiagCluster;

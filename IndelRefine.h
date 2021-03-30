@@ -54,7 +54,7 @@ void IndelRefineAlignment(Read &read,
 													Genome &genome, 
 													Alignment &alignment, 
 													Options &opts,
-													IndelRefineBuffers &buffers) {
+													IndelRefineBuffers &buffers, bool endAlign=false) {
 
 	int startBlock=0, endBlock=0;
 	int k=opts.refineBand;
@@ -78,7 +78,54 @@ void IndelRefineAlignment(Read &read,
 	//
 	if (alignment.blocks.size() == 0 or alignment.blocks.size() == 1) { return; }
 	int st=0,sq=0;
-	int tbe=min(10,(int) alignment.blocks.size());
+
+
+	int startMatch=0;
+	int endMatch=0;
+	//
+	// qPos and  tPos are at the 
+	if ( endAlign and alignment.blocks.size() > 0 ) {
+		int nExtra=0;
+		long qStart=alignment.blocks[0].qPos;
+		long tStart=alignment.blocks[0].tPos;
+		int minStart=min(qStart,tStart);				
+		int addStart=0;
+		if (minStart < 20) {
+			tStart=tStart-minStart;
+			qStart=qStart-minStart;					
+			startMatch=minStart;
+			addStart=1;
+		}
+		int e=alignment.blocks.size();
+		long qAlnEnd=alignment.blocks[e-1].qPos+alignment.blocks[e-1].length;
+		long tAlnEnd=alignment.blocks[e-1].tPos+alignment.blocks[e-1].length;
+
+		int minEnd=min(read.length-qAlnEnd, genome.lengths[alignment.chromIndex]-tAlnEnd);
+		int addEnd=0;
+		
+		if (minEnd < 20) {
+			endMatch=minEnd;
+			qPos+=minEnd;
+			tPos+=minEnd;
+			addEnd++;
+		}								
+		vector<Block> newBlocks(alignment.blocks.size() + addStart+addEnd);
+		long origTEnd=tAlnEnd;
+		long origQEnd=qAlnEnd;
+		if (addStart) {
+			newBlocks[0].qPos   = qStart;
+			newBlocks[0].tPos   = tStart;
+			newBlocks[0].length = startMatch;
+		}
+		copy(alignment.blocks.begin(), alignment.blocks.end(), newBlocks.begin()+addStart);
+		if (addEnd) {
+			int e=newBlocks.size()-1;
+			newBlocks[e].tPos = origTEnd;
+			newBlocks[e].qPos = origQEnd;
+			newBlocks[e].length=endMatch;
+		}
+		alignment.blocks=newBlocks;
+	}
 
 	while (endBlock < alignment.blocks.size()) {
 		
@@ -111,12 +158,15 @@ void IndelRefineAlignment(Read &read,
 			//
 			// Multiple blocks, need to do a banded alignment
 			//		
+			
+ 
+			
 			long qEnd   = alignment.blocks[endBlock].qPos + alignment.blocks[endBlock].length;
 			long tEnd   = alignment.blocks[endBlock].tPos + alignment.blocks[endBlock].length;
 
+
 			long qLen=qPos-qStart;
 			long tLen=tPos-tStart;
-
 
 			qS.resize(tLen, -1);
 			qE.resize(tLen, -1);
@@ -124,9 +174,12 @@ void IndelRefineAlignment(Read &read,
 			fill(qE.begin(), qE.end(), -1);
 			long t, q;
 			int tOff=0, qOff=0;
+			
+
 			t=alignment.blocks[startBlock].tPos;
 			q=alignment.blocks[startBlock].qPos;
 			//			cout << "Block boundaries " << endl;
+			
 			for (int b=startBlock; b <= endBlock; b++) {
 				int qGap=0, tGap=0;
 				int commonGap   = 0;
