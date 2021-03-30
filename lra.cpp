@@ -270,8 +270,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.maxGap=500; // for StoreFineCluster; cannot be too large, otherwise lose lots of INV
 			opts.RoughClustermaxGap=500;  // for SplitRoughCluster; cannot be too large, otherwise cannot find INV
 			opts.NumAln=2; 
-   			opts.PrintNumAln = 1;
-   			opts.anchorstoosparse=0.02; // For Cluster Refinement
+   			opts.PrintNumAln=1;
+   			opts.anchorstoosparse=0.005; // For Cluster Refinement
    			opts.minClusterLength=100;
    			opts.minClusterSize=30;
    			opts.firstcoefficient=24;
@@ -280,11 +280,12 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.SecondCleanMaxDiag=30;			
      		opts.SecondCleanMinDiagCluster=30; //30
      		opts.minDiagCluster=30;
-     		opts.minClusterSize=10;
+     		opts.minClusterSize=10; //10
      		opts.refineSpaceDist=100000;
      		opts.cleanClustersize=100;
      		opts.punish_anchorfreq=10;
      		opts.anchorPerlength=10;
+
    			// opts.secondcoefficient=15;
    			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
@@ -308,7 +309,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.anchorPerlength=10;
      		opts.refineSpaceDist=10000;
      		opts.anchor_rate=4.0f;
-
+    		opts.anchorstoosparse=0.005; 
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;
 
@@ -756,7 +757,7 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.globalK = 17;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 60;
+			opts.globalMaxFreq = 40;
 			opts.globalWinsize = 16; //12
 			opts.NumOfminimizersPerWindow = 1;	
 		}

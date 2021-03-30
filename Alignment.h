@@ -604,8 +604,8 @@ class Alignment {
 			int last = blocks.size();
 			samStrm << (unsigned int) flag << "\t" << chrom << "\t" << tStart+1 << "\t" << (unsigned int) mapqv << "\t";
 			char clipOp = 'S';
-			if (Supplymentary and opts.hardClip) {
-				clipOp = 'H';				
+			if (opts.hardClip) {
+				clipOp = 'H';
 			}
 			if (preClip > 0) {
 				samStrm << preClip << clipOp;
@@ -617,32 +617,29 @@ class Alignment {
 			// Rnext, Pnext
 			samStrm << "\t*\t0\t";
 			// Template length
-			samStrm << "0\t"; // samStrm << tEnd - tStart << "\t";
+			samStrm << tEnd - tStart << "\t";
 			string qualStr;
-			string readStr;	
-			if (Supplymentary == 0) assert(flag == 0 or flag == 16 or flag == 256 or flag == 272);
-			if (!Supplymentary) {
-				readStr = string(read, readLen);
-				samStrm << readStr;					
-			}
-			else {
-				if (opts.hardClip) {
-					readStr = string(read + qStart, qEnd - qStart);
-					samStrm << readStr;						
+			if (opts.hardClip) {
+				string subStr;
+				subStr=string(read, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);								
+				samStrm << subStr;
+				if (qual != NULL and strncmp(qual,"*",1) != 0) {
+					qualStr = string(qual, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);
 				}
-				else{
-					readStr = string(read, readLen);
-					samStrm << readStr;						
-				}	
-			}
-			if (qual[0] == '*') {
-				qualStr = "*";
+				else {
+					qualStr= "*";
+				}
 			}
 			else {
-				if (Supplymentary and opts.hardClip) qualStr = string(qual + blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length - blocks[0].qPos);
-				else qualStr.assign(qual, readLen);
+				string readStr(read, 0, readLen);
+				samStrm << readStr;
+				if (qual[0] == '*') {
+					qualStr = "*";
+				}
+				else {
+					qualStr.assign(qual, readLen);
+				}
 			}
-			// }
 			samStrm << "\t";
 			if ( qual == NULL ) {
 				samStrm << "*";
@@ -650,6 +647,53 @@ class Alignment {
 			else {
 				samStrm << qualStr;
 			}
+			// char clipOp = 'S';
+			// if (Supplymentary and opts.hardClip) {
+			// 	clipOp = 'H';				
+			// }
+			// if (preClip > 0) {
+			// 	samStrm << preClip << clipOp;
+			// }
+			// samStrm << cigar;
+			// if (sufClip > 0) {
+			// 	samStrm << sufClip << clipOp;
+			// }
+			// // Rnext, Pnext
+			// samStrm << "\t*\t0\t";
+			// // Template length
+			// samStrm << "0\t"; // samStrm << tEnd - tStart << "\t";
+			// string qualStr;
+			// string readStr;	
+			// if (Supplymentary == 0) assert(flag == 0 or flag == 16 or flag == 256 or flag == 272);
+			// if (!Supplymentary) {
+			// 	readStr = string(read, readLen);
+			// 	samStrm << readStr;					
+			// }
+			// else {
+			// 	if (opts.hardClip) {
+			// 		readStr = string(read + qStart, qEnd - qStart);
+			// 		samStrm << readStr;						
+			// 	}
+			// 	else{
+			// 		readStr = string(read, readLen);
+			// 		samStrm << readStr;						
+			// 	}	
+			// }
+			// if (qual[0] == '*') {
+			// 	qualStr = "*";
+			// }
+			// else {
+			// 	if (Supplymentary and opts.hardClip) qualStr = string(qual + blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length - blocks[0].qPos);
+			// 	else qualStr.assign(qual, readLen);
+			// }
+			// // }
+			// samStrm << "\t";
+			// if ( qual == NULL ) {
+			// 	samStrm << "*";
+			// }
+			// else {
+			// 	samStrm << qualStr;
+			// }
 			samStrm << "\t";
 			samStrm << "NM:i:" << nmm + ndel + nins << "\t";
 			// samStrm << "NX:i:" << nmm << "\t";
