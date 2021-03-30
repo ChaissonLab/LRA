@@ -278,7 +278,14 @@ RefineBtwnSpace(int K, int W, vector<Cluster> &RevBtwnCluster, bool twoblocks, C
 		qs = read.length - qe;
 		qe = read.length - t;
 	}
-	int refineSpaceDiag = (int) floor(0.15f * (qe - qs));
+	int refineSpaceDiag = 0;
+	if (opts.readType == Options::contig or opts.readType == Options::ccs ) {
+		refineSpaceDiag = min((int) floor(0.01f * (qe - qs)), 100);
+	}
+	else if (opts.readType == Options::raw) {
+		refineSpaceDiag = min((int) floor(0.15f * (qe - qs)), 1000);	
+	}
+
 	// cerr << refineSpaceDiag << endl;
 	//
 	// Find matches in read and reference 
@@ -385,6 +392,7 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 		qe = RefinedClusters[prev]->qStart;
 		te1 = 0; ts1 = 0; te2 = 0; ts2 = 0;
 		if (qe <= qs) {c++; continue;}
+		if (smallOpts.readType == Options::contig) twoblocks = 0; // Do not refine end for INV and DUP when aligning contig
 		if (RefinedClusters[cur]->strand == RefinedClusters[prev]->strand) {
 			twoblocks = 0;
 			st1 = RefinedClusters[cur]->strand;
@@ -425,7 +433,6 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 			}
 			else {c++; continue;}// No need to refine the space!
 		}
-
 		// //cerr << "btwn  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 		// if (qe > qs and te1 > ts1) {
 		// 	SpaceLength = max(qe - qs, te1 - ts1); 
@@ -454,6 +461,9 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 		SpaceLength = min(qe - qs, te2 - ts2); 
 		//		if (twoblocks) cerr << read.name << " qs: " << qs << " qe: " << qe << " ts2: " << ts2 << " te2: " << te2 << endl;
 		if (SpaceLength >= low_b and SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
+			if (smallOpts.readType == Options::contig) {
+				cerr << "Shouldn't run this " << read.name << endl;
+			}
 			// btwnClusters have GenomePos, st, matches, coarse
 			// This function also set the "coarse" flag for RefinedClusters[cur]
 			RefineBtwnSpace(K, W, RevBtwnCluster, twoblocks, RefinedClusters[prev], smallOpts, genome, read, strands, qe, qs, te2, ts2, st2);

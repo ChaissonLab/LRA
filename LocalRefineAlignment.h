@@ -247,7 +247,16 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			// cerr << "abs(read_dist-genome_dist): "  << abs(read_dist-genome_dist)<< endl;
 			// cerr << "min(read_dist, genome_dist): " << min(read_dist, genome_dist) << endl;
 			// cerr << "curReadEnd: " << curReadEnd << "  curGenomeEnd: " << curGenomeEnd << "  nextReadStart: " << nextReadStart << "  nextGenomeStart: " << nextGenomeStart << endl;
-			int refineSpaceDiag = (int) (0.15f * read_dist);			
+			int refineSpaceDiag = 0;
+			if (tinyOpts.readType == Options::contig or tinyOpts.readType == Options::ccs ) {
+				refineSpaceDiag = min((int) floor(0.01f * read_dist), 100);
+			}
+			else if (tinyOpts.readType == Options::raw) {
+				refineSpaceDiag = min((int) floor(0.15f * read_dist), 2000);	
+			}
+			// int refineSpaceDiag = (int) (0.15f * read_dist);	
+			if (refineSpaceDiag > 800) cerr << "refineSpaceDiag: " << refineSpaceDiag << " read.name: " << read.name << endl;
+
 			if (max(read_dist,genome_dist) < 100) {
 				tinyOpts.globalK = 6;
 				tinyOpts.localW  = 5;
