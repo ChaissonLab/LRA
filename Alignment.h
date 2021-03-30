@@ -644,26 +644,27 @@ class Alignment {
 			if (sufClip > 0) {
 				samStrm << sufClip << clipOp;
 			}
-			// Rnext, Pnext
-			samStrm << "\t*\t0\t";
-			// Template length
-			samStrm << tEnd - tStart << "\t";			
 			// // Rnext, Pnext
 			// samStrm << "\t*\t0\t";
 			// // Template length
-			// samStrm << "0\t"; // samStrm << tEnd - tStart << "\t";
+			// samStrm << tEnd - tStart << "\t";			
+			// Rnext, Pnext
+			samStrm << "\t*\t0\t";
+			// Template length
+			samStrm << "0\t"; // samStrm << tEnd - tStart << "\t";
 			string qualStr;
 			string readStr;	
 			if (Supplymentary == 0) assert(flag == 0 or flag == 16 or flag == 256 or flag == 272);
-			if (!Supplymentary) {
+			if (!Supplymentary) { // primary alignment
 				samStrm.write(read,readLen);
 				// readStr = string(read, readLen);
 				// samStrm << readStr;					
 			}
-			else {
+			else { // supplementary alignment
 				if (opts.hardClip) {
-					readStr = string(read, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);	
-					samStrm << readStr;						
+					readStr = string(read, qStart, qEnd - qStart);	
+					samStrm << readStr;	
+					// assert(cigar.length() == readStr.length());					
 				}
 				else{
 					samStrm.write(read,readLen);
@@ -675,7 +676,7 @@ class Alignment {
 				qualStr = "*";
 			}
 			else {
-				if (Supplymentary and opts.hardClip) qualStr = string(qual + blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length - blocks[0].qPos);
+				if (Supplymentary and opts.hardClip) qualStr = string(qual, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length - blocks[0].qPos);
 				else qualStr.assign(qual, readLen);
 			}
 			samStrm << "\t";
