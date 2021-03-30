@@ -383,6 +383,7 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 		//
 		qs = RefinedClusters[cur]->qEnd; 
 		qe = RefinedClusters[prev]->qStart;
+		te1 = 0; ts1 = 0; te2 = 0; ts2 = 0;
 		if (qe <= qs) {c++; continue;}
 		if (RefinedClusters[cur]->strand == RefinedClusters[prev]->strand) {
 			twoblocks = 0;

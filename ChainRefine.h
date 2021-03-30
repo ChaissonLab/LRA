@@ -552,6 +552,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 		//
 		if (RefinedClusters[cur].matches.size() == 0 or RefinedClusters[prev].matches.size() == 0) {c++; continue;}
 		qs = RefinedClusters[cur].qEnd; qe = RefinedClusters[prev].qStart;
+		ts1 = 0; te1 = 0; ts2 = 0; te2 = 0;
 		if (qe <= qs) {c++; continue;}
 		if (RefinedClusters[cur].strand == RefinedClusters[prev].strand and spchain_link[c - 1] == 0) { // Missing TRA or INV
 			twoblocks = 0;
