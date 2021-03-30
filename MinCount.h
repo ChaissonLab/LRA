@@ -112,7 +112,8 @@ void StoreMinimizers(char *seq, GenomePos seqLen, int k, int w, vector<TupPos> &
 			}
 			else {
 				nextValidWindowStart = p+k;
-				valid=false;			
+				valid=false;		
+				if (seqLen < windowSpan) return; 	
 				while (nextValidWindowStart < seqLen - windowSpan and not valid) {
 					valid=true;
 					for (int n=nextValidWindowStart; valid and n < nextValidWindowStart+windowSpan; n++ ) {
@@ -195,9 +196,11 @@ void StoreMinimizers_noncanonical(char *seq, GenomePos seqLen, int k, int w, vec
 	int nextValidWindowStart=0;
 	int windowSpan=w+k-1;
 	bool valid=false;
+	if (seqLen < windowSpan) return; 
 	while (nextValidWindowStart < seqLen - windowSpan and !valid) {
 		valid=true;
 		for (int n=nextValidWindowStart; valid and n < nextValidWindowStart+windowSpan; n++ ) {
+			if (seqLen < n) return;
 			if (seqMapN[seq[n]] > 3) {
 				nextValidWindowStart = n+1;
 				valid=false;
@@ -285,10 +288,12 @@ void StoreMinimizers_noncanonical(char *seq, GenomePos seqLen, int k, int w, vec
 			}
 			else {
 				nextValidWindowStart = p+k;
-				valid=false;			
+				valid=false;		
+				if (seqLen < windowSpan) return; 	
 				while (nextValidWindowStart < seqLen - windowSpan and not valid) {
 					valid=true;
 					for (int n=nextValidWindowStart; valid and n < nextValidWindowStart+windowSpan; n++ ) {
+						if (seqLen < n) return;
 						if (seqMapN[seq[n]] > 3) {
 							nextValidWindowStart = n+1;
 							valid=false;
