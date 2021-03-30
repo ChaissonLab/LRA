@@ -686,7 +686,6 @@ class Alignment {
 			// 	if (Supplymentary and opts.hardClip) qualStr = string(qual + blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length - blocks[0].qPos);
 			// 	else qualStr.assign(qual, readLen);
 			// }
-			// // }
 			// samStrm << "\t";
 			// if ( qual == NULL ) {
 			// 	samStrm << "*";
