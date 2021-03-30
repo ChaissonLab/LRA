@@ -255,7 +255,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				refineSpaceDiag = min((int) floor(0.15f * read_dist), 2000);	
 			}
 			// int refineSpaceDiag = (int) (0.15f * read_dist);	
-			if (refineSpaceDiag > 800) cerr << "refineSpaceDiag: " << refineSpaceDiag << " read.name: " << read.name << endl;
+			if (refineSpaceDiag >= 100) cerr << "refineSpaceDiag: " << refineSpaceDiag << " read.name: " << read.name << endl;
 
 			if (max(read_dist,genome_dist) < 100) {
 				tinyOpts.globalK = 6;
@@ -519,7 +519,7 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 		//
 		FinalChain finalchain(&ExtendClusters);
 		SparseDP(splitchains[st], ExtendClusters, finalchain, smallOpts, LookUpTable, read);
-		// timing.Tick("2nd SDP");
+		//timing.Tick("2nd SDP");
 		
 		if (tinyOpts.RemovePairedIndels) {
 			RemoveSmallPairedIndels<FinalChain> (finalchain);
