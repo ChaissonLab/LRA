@@ -173,12 +173,12 @@ RefineByLinearAlignment(GenomePos &btc_curReadEnd, GenomePos &btc_curGenomeEnd, 
 				}
 				Lclust.close();
 			}	
-			for (int bb = 1; bb < alignment->blocks.size(); bb++) {
-				assert(alignment->blocks[bb-1].qPos + alignment->blocks[bb-1].length <= read.length);
-				assert(alignment->blocks[bb-1].tPos + alignment->blocks[bb-1].length <= genome.lengths[chromIndex]);
-				assert(alignment->blocks[bb-1].qPos + alignment->blocks[bb-1].length <= alignment->blocks[bb].qPos);
-				assert(alignment->blocks[bb-1].tPos + alignment->blocks[bb-1].length <= alignment->blocks[bb].tPos);	
-			}
+			// for (int bb = 1; bb < alignment->blocks.size(); bb++) {
+			// 	assert(alignment->blocks[bb-1].qPos + alignment->blocks[bb-1].length <= read.length);
+			// 	assert(alignment->blocks[bb-1].tPos + alignment->blocks[bb-1].length <= genome.lengths[chromIndex]);
+			// 	assert(alignment->blocks[bb-1].qPos + alignment->blocks[bb-1].length <= alignment->blocks[bb].qPos);
+			// 	assert(alignment->blocks[bb-1].tPos + alignment->blocks[bb-1].length <= alignment->blocks[bb].tPos);	
+			// }
 			betweenAnchorAlignment.blocks.clear();
 		}
 	}	
@@ -661,13 +661,13 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 			alignments.back().SegAlignment.back()->blocks.push_back(Block(read.length - ultimatechain[end - 1].first.pos - ultimatechain.length(end - 1), 
 												ultimatechain[end - 1].second.pos, ultimatechain.length(end - 1)));
 		}
-		// debug checking
-		for (int bb = 1; bb < alignments.back().SegAlignment.back()->blocks.size(); bb++) {
-			assert(alignments.back().SegAlignment.back()->blocks[bb-1].qPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= read.length);
-			assert(alignments.back().SegAlignment.back()->blocks[bb-1].tPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= genome.lengths[chromIndex]);
-			assert(alignments.back().SegAlignment.back()->blocks[bb-1].qPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= alignments.back().SegAlignment.back()->blocks[bb].qPos);
-			assert(alignments.back().SegAlignment.back()->blocks[bb-1].tPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= alignments.back().SegAlignment.back()->blocks[bb].tPos);	
-		}
+		// // debug checking
+		// for (int bb = 1; bb < alignments.back().SegAlignment.back()->blocks.size(); bb++) {
+		// 	assert(alignments.back().SegAlignment.back()->blocks[bb-1].qPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= read.length);
+		// 	assert(alignments.back().SegAlignment.back()->blocks[bb-1].tPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= genome.lengths[chromIndex]);
+		// 	assert(alignments.back().SegAlignment.back()->blocks[bb-1].qPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= alignments.back().SegAlignment.back()->blocks[bb].qPos);
+		// 	assert(alignments.back().SegAlignment.back()->blocks[bb-1].tPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= alignments.back().SegAlignment.back()->blocks[bb].tPos);	
+		// }
 		//
 		// Set some parameters in Alignment alignment
 		//
@@ -918,13 +918,13 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
 			alignments.back().SegAlignment.back()->NumOfAnchors1 = fl - last;
 			alignments.back().SegAlignment.back()->blocks.push_back(Block(read.length - ultimatechains[st][end].first.pos - ultimatechains[st].length(end), ultimatechains[st][end].second.pos, ultimatechains[st].length(end)));			
 		}
-		// debug checking
-		for (int bb = 1; bb < alignments.back().SegAlignment.back()->blocks.size(); bb++) {
-			assert(alignments.back().SegAlignment.back()->blocks[bb-1].qPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= read.length);
-			assert(alignments.back().SegAlignment.back()->blocks[bb-1].tPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= genome.lengths[chromIndex]);
-			assert(alignments.back().SegAlignment.back()->blocks[bb-1].qPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= alignments.back().SegAlignment.back()->blocks[bb].qPos);
-			assert(alignments.back().SegAlignment.back()->blocks[bb-1].tPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= alignments.back().SegAlignment.back()->blocks[bb].tPos);	
-		}
+		// // debug checking
+		// for (int bb = 1; bb < alignments.back().SegAlignment.back()->blocks.size(); bb++) {
+		// 	assert(alignments.back().SegAlignment.back()->blocks[bb-1].qPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= read.length);
+		// 	assert(alignments.back().SegAlignment.back()->blocks[bb-1].tPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= genome.lengths[chromIndex]);
+		// 	assert(alignments.back().SegAlignment.back()->blocks[bb-1].qPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= alignments.back().SegAlignment.back()->blocks[bb].qPos);
+		// 	assert(alignments.back().SegAlignment.back()->blocks[bb-1].tPos + alignments.back().SegAlignment.back()->blocks[bb-1].length <= alignments.back().SegAlignment.back()->blocks[bb].tPos);	
+		// }
 		//
 		// Set some parameters in Alignment alignment
 		//
