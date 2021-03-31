@@ -279,8 +279,11 @@ RefineBtwnSpace(int K, int W, vector<Cluster> &RevBtwnCluster, bool twoblocks, C
 		qe = read.length - t;
 	}
 	int refineSpaceDiag = 0;
-	if (opts.readType == Options::contig or opts.readType == Options::ccs ) {
+	if (opts.readType == Options::contig) {
 		refineSpaceDiag = min((int) floor(0.01f * (qe - qs)), 100);
+	}
+	else if (opts.readType == Options::ccs) {
+		refineSpaceDiag = min((int) floor(0.02f * (qe - qs)), 300);
 	}
 	else if (opts.readType == Options::raw) {
 		refineSpaceDiag = min((int) floor(0.15f * (qe - qs)), 1000);	
@@ -380,7 +383,13 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 	bool twoblocks = 0;
 	int SpaceLength;
 	int low_b = 20;
-	if (smallOpts.readType == Options::contig) {low_b = 1000;} 
+	if (smallOpts.readType == Options::contig) {
+		low_b = 1000;
+		SpaceLength = 50000;
+	} 
+	else if (smallOpts.readType == Options::ccs) {
+		SpaceLength = 10000;
+	}
 	while (c < Primary_chains[p].chains[h].ch.size()) {
 
 		int cur = Primary_chains[p].chains[h].ch[c];
@@ -488,7 +497,7 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 		if (te > qe - qs) ts = te - (qe - qs);
 		else te = 0;
 	}
-	//cerr << "right  p: " << p << " h: " << h << "chrom: " << RefinedClusters[rh]->chromIndex <<  " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+	cerr << "right  p: " << p << " h: " << h << "chrom: " << RefinedClusters[rh]->chromIndex <<  " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 	if (qe > qs and te > ts) {
 		SpaceLength = min(qe - qs, te - ts); 
 		if (SpaceLength >= low_b and SpaceLength < 50000 and te+500 < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (1000, 6000)
