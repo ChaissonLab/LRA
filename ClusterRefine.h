@@ -247,6 +247,10 @@ int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePair
 	maxDiagNum = max(diag1, diag2) + refineSpaceDiag; 
 
 	vector<GenomeTuple> EndReadTup, EndGenomeTup;
+
+	string refSeq(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength);
+	string querySeq(strands[st] + qs, qe - qs);
+	  
 	StoreMinimizers_noncanonical<GenomeTuple, Tuple>(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength, K, W, EndGenomeTup, false); // local minimizer
 	sort(EndGenomeTup.begin(), EndGenomeTup.end());
 	StoreMinimizers_noncanonical<GenomeTuple, Tuple>(strands[st] + qs, qe - qs, K, W, EndReadTup, false);
@@ -280,10 +284,10 @@ RefineBtwnSpace(int K, int W, vector<Cluster> &RevBtwnCluster, bool twoblocks, C
 	}
 	int refineSpaceDiag = 0;
 	if (opts.readType == Options::contig or opts.readType == Options::ccs ) {
-		refineSpaceDiag = min((int) floor(0.01f * (qe - qs)), 100);
+	  refineSpaceDiag = min((int) floor(max(100.f,0.01f * (qe - qs))), 100);
 	}
 	else if (opts.readType == Options::raw) {
-		refineSpaceDiag = min((int) floor(0.15f * (qe - qs)), 1000);	
+	  refineSpaceDiag = min((int) floor(max(100.f,0.15f * (qe - qs))), 1000);	
 	}
 
 	// cerr << refineSpaceDiag << endl;
