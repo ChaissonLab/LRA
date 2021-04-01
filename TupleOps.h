@@ -165,7 +165,6 @@ void AppendValues(GenomePairs &dest, typename List::iterator sourceStart, typena
 	typename List::iterator sourceIt=sourceStart;
 	int64_t diag;
 	for (; sourceIt < sourceEnd; ++sourceIt) {
-<<<<<<< HEAD
 	  diag = (int64_t)(sourceIt->second.pos + targetOffset) - (int64_t)(sourceIt->first.pos + queryOffset);
 	  if ( diag >= minDiagNum and diag <= maxDiagNum
 	       and sourceIt->first.pos + queryOffset >= qs 
@@ -192,19 +191,6 @@ void AppendValues(GenomePairs &dest, typename List::iterator sourceStart, typena
 	      }
 	    */
 	  }
-=======
-		int64_t diag = (int64_t)(sourceIt->second.pos + targetOffset) - (int64_t)(sourceIt->first.pos + queryOffset);
-		if (diag >= minDiagNum and diag <= maxDiagNum 
-			and sourceIt->first.pos + queryOffset >= qs 
-			and sourceIt->first.pos + queryOffset < qe 
-			and sourceIt->second.pos + targetOffset >= ts 
-			and sourceIt->second.pos + targetOffset < te) {
-			dest.push_back(GenomePair(GenomeTuple(sourceIt->first.t, sourceIt->first.pos + queryOffset), 
-						   GenomeTuple(sourceIt->second.t, sourceIt->second.pos + targetOffset)));
-			prev_readEnd = max(prev_readEnd, sourceIt->first.pos + queryOffset);
-			prev_readStart = min(prev_readStart, sourceIt->first.pos + queryOffset);
-	    }
->>>>>>> 959af4af89bbb88bdaebc333382a00dca93ed5e0
 	}
 }
 #endif
