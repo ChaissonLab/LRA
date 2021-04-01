@@ -542,7 +542,7 @@ class Alignment {
 			strandChar = '-';
 		}
 
-		out << readName << "\t" << queryString.size() << "\t";
+		out << readName << "\t" << "readLen: " << readLen << "\t";
 		if (strand == 0) out << "qStart:" << qStart << "\t" << "qEnd:" << qEnd << "\t";
 		else out << "qStart:" << readLen - qEnd << "\t" << "qEnd:" << readLen - qStart << "\t";
 		out << strandChar << "\t" << chrom << "\t" << genomeLen << "\t" 
