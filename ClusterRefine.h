@@ -391,12 +391,13 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 	bool twoblocks = 0;
 	int SpaceLength;
 	int low_b = 20;
+	int SpaceLength_upper;
 	if (smallOpts.readType == Options::contig) {
 		low_b = 1000;
-		SpaceLength = 50000;
+		SpaceLength_upper = 100000;
 	} 
-	else if (smallOpts.readType == Options::ccs) {
-		SpaceLength = 10000;
+	else {
+		SpaceLength_upper = 50000;
 	}
 	while (c < Primary_chains[p].chains[h].ch.size()) {
 
@@ -464,7 +465,7 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 		if (te1 <= ts1) {c++; continue;}
 		SpaceLength = min(qe - qs, te1 - ts1); 
 		//		if (twoblocks) cerr << read.name << " qs: " << qs << " qe: " << qe << " ts1: " << ts1 << " te1: " << te1 << endl;
-		if (SpaceLength >= low_b and SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
+		if (SpaceLength >= low_b and SpaceLength <= SpaceLength_upper and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
 			// btwnClusters have GenomePos, st, matches, coarse
 			// This function also set the "coarse" flag for RefinedClusters[cur]
 			if (RefineBtwnSpace(K, W, RevBtwnCluster, twoblocks, RefinedClusters[cur], smallOpts, genome, read, strands, qe, qs, te1, ts1, st1)) {
@@ -477,7 +478,7 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 		if (te2 <= ts2) {c++; continue;}
 		SpaceLength = min(qe - qs, te2 - ts2); 
 		//		if (twoblocks) cerr << read.name << " qs: " << qs << " qe: " << qe << " ts2: " << ts2 << " te2: " << te2 << endl;
-		if (SpaceLength >= low_b and SpaceLength <= 100000 and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
+		if (SpaceLength >= low_b and SpaceLength <= SpaceLength_upper and RefinedClusters[cur]->chromIndex == RefinedClusters[prev]->chromIndex) {//used to be 100000; mapping contigs requires larger threshold;
 			if (smallOpts.readType == Options::contig) {
 				cerr << "Shouldn't run this " << read.name << endl;
 			}
@@ -505,10 +506,9 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 		if (te > qe - qs) ts = te - (qe - qs);
 		else te = 0;
 	}
-	//	cerr << "right  p: " << p << " h: " << h << "chrom: " << RefinedClusters[rh]->chromIndex <<  " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 	if (qe > qs and te > ts) {
 		SpaceLength = min(qe - qs, te - ts); 
-		if (SpaceLength >= low_b and SpaceLength < 50000 and te+500 < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (1000, 6000)
+		if (SpaceLength >= low_b and SpaceLength < SpaceLength_upper and te+500 < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (1000, 6000)
 			GenomePos lrts=0, lrlength=0;
 			if (st==0) {
 				lrts=0;
@@ -541,7 +541,7 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 	//cerr << "left  p: " << p << " h: " << h << "chrom: " << RefinedClusters[rh]->chromIndex << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 	if (qe > qs and te > ts) {
 		SpaceLength = min(qe - qs, te - ts);
-		if (SpaceLength >= low_b and SpaceLength < 50000 and te+500 < genome.lengths[RefinedClusters[lh]->chromIndex]) { // used (1000, 6000)
+		if (SpaceLength >= low_b and SpaceLength < SpaceLength_upper and te+500 < genome.lengths[RefinedClusters[lh]->chromIndex]) { // used (1000, 6000)
 			GenomePos lrts=0, lrlength=0;
 			if (st==0) { 
 				if (ts>500) lrts=500;

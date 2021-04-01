@@ -512,18 +512,18 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 				assert(RefinedClusters[p]->matches[h].first.pos + K <= read.length);
 				if (RefinedClusters[p]->strand == 0) {
 					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos + genome.header.pos[RefinedClusters[p]->chromIndex] << "\t"
 						  << RefinedClusters[p]->matches[h].first.pos + K << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos + K << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos + K + genome.header.pos[RefinedClusters[p]->chromIndex] << "\t"
 						  << p << "\t"
 						  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
 						  << RefinedClusters[p]->strand << endl;
 				}
 				else {
 					clust << RefinedClusters[p]->matches[h].first.pos << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos + K << "\t"
+						  << RefinedClusters[p]->matches[h].second.pos + K + genome.header.pos[RefinedClusters[p]->chromIndex] << "\t"
 						  << RefinedClusters[p]->matches[h].first.pos + K << "\t"
-						  << RefinedClusters[p]->matches[h].second.pos<< "\t"
+						  << RefinedClusters[p]->matches[h].second.pos + genome.header.pos[RefinedClusters[p]->chromIndex]<< "\t"
 						  << p << "\t"
 						  << genome.header.names[RefinedClusters[p]->chromIndex] <<"\t"
 						  << RefinedClusters[p]->strand << endl;					

@@ -384,7 +384,7 @@ OUTPUT(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts, Genome &geno
 				}
 			}
 		}
-		assert(primary_num == opts.PrintNumAln);
+		assert(primary_num <= opts.PrintNumAln);
 	}
 	else if (read.unaligned == 1) {
 	output_unaligned(read, opts, *output);
