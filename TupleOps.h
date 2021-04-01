@@ -163,19 +163,34 @@ void AppendValues(GenomePairs &dest, typename List::iterator sourceStart, typena
 	//int i=dest.size();
 	//dest.resize(dest.size() + sourceEnd-sourceStart);
 	typename List::iterator sourceIt=sourceStart;
+	int64_t diag;
 	for (; sourceIt < sourceEnd; ++sourceIt) {
-		int64_t diag = (int64_t)(sourceIt->second.pos + targetOffset) - (int64_t)(sourceIt->first.pos + queryOffset);
-		if (diag >= minDiagNum and diag <= maxDiagNum 
-			and sourceIt->first.pos + queryOffset >= qs 
-			and sourceIt->first.pos + queryOffset < qe 
-			and sourceIt->second.pos + targetOffset >= ts 
-			and sourceIt->second.pos + targetOffset < te) {
-			dest.push_back(GenomePair(GenomeTuple(sourceIt->first.t, sourceIt->first.pos + queryOffset), 
-						   GenomeTuple(sourceIt->second.t, sourceIt->second.pos + targetOffset)));
-			prev_readEnd = max(prev_readEnd, sourceIt->first.pos + queryOffset);
-			prev_readStart = min(prev_readStart, sourceIt->first.pos + queryOffset);
-		
-		}
+	  diag = (int64_t)(sourceIt->second.pos + targetOffset) - (int64_t)(sourceIt->first.pos + queryOffset);
+	  if ( diag >= minDiagNum and diag <= maxDiagNum
+	       and sourceIt->first.pos + queryOffset >= qs 
+	       and sourceIt->first.pos + queryOffset < qe 
+	       and sourceIt->second.pos + targetOffset >= ts 
+	       and sourceIt->second.pos + targetOffset < te) {
+
+	    dest.push_back(GenomePair(GenomeTuple(sourceIt->first.t, sourceIt->first.pos + queryOffset), 
+				      GenomeTuple(sourceIt->second.t, sourceIt->second.pos + targetOffset)));
+	    prev_readEnd = max(prev_readEnd, sourceIt->first.pos + queryOffset);
+	    prev_readStart = min(prev_readStart, sourceIt->first.pos + queryOffset);
+	    
+	  }
+	  else {
+	    /*
+	    cout << "Not adding " << "\t" << diag << "\t" << minDiagNum << "\t" << maxDiagNum << endl;
+	    cout << "target: " << sourceIt->second.pos + targetOffset << "\t" << sourceIt->second.pos << "\t" << targetOffset << "\t" << ts << "\t" << te << endl;
+	    cout << "query: " << sourceIt->first.pos + queryOffset << "\t" << sourceIt->first.pos << "\t" << queryOffset << "\t" << qs << "\t" << qe << endl;
+	    cout <<  "diag " << (int) (diag >= minDiagNum and diag <= maxDiagNum) << "\t"
+		 << "qs "<< (int) (sourceIt->first.pos + queryOffset >= qs ) << "\t"
+		 << "qe " << (int) ( sourceIt->first.pos + queryOffset < qe ) << "\t"
+		 << "ts " <<  (int)( sourceIt->second.pos + targetOffset >= ts ) << "\t"
+		 << "te " << (int) (sourceIt->second.pos + targetOffset < te ) << endl;
+	      }
+	    */
+	  }
 	}
 }
 #endif

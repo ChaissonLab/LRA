@@ -248,11 +248,13 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			// cerr << "min(read_dist, genome_dist): " << min(read_dist, genome_dist) << endl;
 			// cerr << "curReadEnd: " << curReadEnd << "  curGenomeEnd: " << curGenomeEnd << "  nextReadStart: " << nextReadStart << "  nextGenomeStart: " << nextGenomeStart << endl;
 			int refineSpaceDiag = 0;
+			//
+			// Create a diagonal band that is not too big, not too small
 			if (tinyOpts.readType == Options::contig or tinyOpts.readType == Options::ccs ) {
-				refineSpaceDiag = min((int) floor(0.01f * read_dist), 80);
+			  refineSpaceDiag = min((int) floor(max(80.f,0.01f * read_dist)), 80);
 			}
 			else if (tinyOpts.readType == Options::raw) {
-				refineSpaceDiag = min((int) floor(0.15f * read_dist), 2000);	
+			  refineSpaceDiag = min((int) floor(max(100.f,0.15f * read_dist)), 2000);	
 			}
 			// int refineSpaceDiag = (int) (0.15f * read_dist);	
 			// if (refineSpaceDiag >= 100) cerr << "refineSpaceDiag: " << refineSpaceDiag << " read.name: " << read.name << endl;

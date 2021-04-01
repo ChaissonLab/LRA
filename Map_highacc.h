@@ -429,7 +429,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 		smallOpts.globalK=glIndex.k;
 		smallOpts.globalW=glIndex.w;
 		smallOpts.secondcoefficient+=3; // used to be 15
-		smallOpts.globalMaxFreq=6;
+		smallOpts.globalMaxFreq=10;
 		smallOpts.cleanMaxDiag=10;// used to be 25
 		smallOpts.maxDiag=50;
 		smallOpts.maxGapBtwnAnchors=100; // used to be 200 // 200 seems a little bit large

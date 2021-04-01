@@ -92,8 +92,8 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 			maxDN = max(maxDN, (int64_t)clusters[ph].matches[db].second.pos - (int64_t)clusters[ph].matches[db].first.pos);
 			minDN = min(minDN, (int64_t)clusters[ph].matches[db].second.pos - (int64_t)clusters[ph].matches[db].first.pos);
 		}						
-		clusters[ph].maxDiagNum = maxDN + 50; //20
-		clusters[ph].minDiagNum = minDN - 50;//20
+		clusters[ph].maxDiagNum = maxDN + (int64_t)100; //20
+		clusters[ph].minDiagNum = minDN - (int64_t)100;//20
 		//
 		// Get shorthand access to alignment boundaries.
 		//
@@ -201,7 +201,7 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 			int queryIndexStart = readIndex->LookupIndex(readStart);
 			int queryIndexEnd = readIndex->LookupIndex(min(readEnd, (GenomePos) read.length-1));
 			assert(queryIndexEnd < readIndex->seqOffsets.size()+1);
-
+			//			cout << "ph\t"<< ph << "\tlsi " << lsi << "\tle" << le << "\tqis " << queryIndexStart << "\t" << queryIndexEnd << "\t" << readIndex->tupleBoundaries.size() << endl;
 			for (int qi = queryIndexStart; qi <= queryIndexEnd; ++qi){ 
 				LocalPairs smallMatches;
 				GenomePos qStartBoundary = readIndex->tupleBoundaries[qi];
@@ -215,11 +215,15 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 									glIndex.minimizers.begin()+ glIndex.tupleBoundaries[lsi+1], smallMatches, smallOpts, false, 0, 0, false);
 				//
 				// Add refined anchors if they fall into the diagonal band and cluster box
-				//
+
+				//				AppendValues<LocalPairs>(refinedclusters[ph].matches, smallMatches.begin(), smallMatches.end(), readSegmentStart, genomeLocalIndexStart);
+
 				AppendValues<LocalPairs>(refinedclusters[ph].matches, smallMatches.begin(), smallMatches.end(), readSegmentStart, 
 										genomeLocalIndexStart, clusters[ph].maxDiagNum, clusters[ph].minDiagNum, clusters[ph].qStart, 
 										clusters[ph].qEnd, clusters[ph].tStart-chromOffset, clusters[ph].tEnd-chromOffset, 
 										prev_readStart, prev_readEnd);
+
+			
 			}
 		}
 		if (refinedclusters[ph].matches.size() == 0) continue;
@@ -501,7 +505,7 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 		if (te > qe - qs) ts = te - (qe - qs);
 		else te = 0;
 	}
-	cerr << "right  p: " << p << " h: " << h << "chrom: " << RefinedClusters[rh]->chromIndex <<  " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+	//	cerr << "right  p: " << p << " h: " << h << "chrom: " << RefinedClusters[rh]->chromIndex <<  " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
 	if (qe > qs and te > ts) {
 		SpaceLength = min(qe - qs, te - ts); 
 		if (SpaceLength >= low_b and SpaceLength < 50000 and te+500 < genome.lengths[RefinedClusters[rh]->chromIndex]) { // used (1000, 6000)
