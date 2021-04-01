@@ -174,8 +174,7 @@ void AppendValues(GenomePairs &dest, typename List::iterator sourceStart, typena
 						   GenomeTuple(sourceIt->second.t, sourceIt->second.pos + targetOffset)));
 			prev_readEnd = max(prev_readEnd, sourceIt->first.pos + queryOffset);
 			prev_readStart = min(prev_readStart, sourceIt->first.pos + queryOffset);
-		
-		}
+	    }
 	}
 }
 #endif

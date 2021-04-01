@@ -390,10 +390,10 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 	int SpaceLength_upper;
 	if (smallOpts.readType == Options::contig) {
 		low_b = 1000;
-		SpaceLength_upper = 50000;
+		SpaceLength_upper = 100000;
 	} 
 	else {
-		SpaceLength_upper = 10000;
+		SpaceLength_upper = 50000;
 	}
 	while (c < Primary_chains[p].chains[h].ch.size()) {
 

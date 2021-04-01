@@ -1589,8 +1589,11 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 
 	vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-	float value_thres = max(opts.alnthres * fragments_valueOrder[0], fragments_valueOrder[0] - 100*opts.globalK);//30 for 50kb
-	//float value_thres = opts.alnthres*fragments_valueOrder[0];
+	// float value_thres = max(opts.alnthres * fragments_valueOrder[0], fragments_valueOrder[0] - 100*opts.globalK);//30 for 50kb
+	float value_thres = opts.alnthres*fragments_valueOrder[0];
+	if (opts.readType == Options::contig) {
+		value_thres = max(value_thres, fragments_valueOrder[0] - 100*opts.globalK);//30 for 50kb
+	}
 	// cerr << "value_thres: " << value_thres << endl;
 	// cerr << "fragments_valueOrder[0]: " << fragments_valueOrder[0] << " fragments_valueOrder[1]: " << 
 	// 			fragments_valueOrder[1] << endl;
