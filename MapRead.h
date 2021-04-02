@@ -55,7 +55,7 @@ void RankClustersByScore(vector<Cluster> &clusters) {
 	sort(clusters.begin(), clusters.end(), SortClusterBySize());
 }
 
-int SetStrand(Read &read, Genome &genome, Options &opts, GenomePairs &matches) { 
+int SetStrand(Read &read, Genome &genome, const Options &opts, GenomePairs &matches) { 
 	int nSame=0;
 	int nDifferent=0;
 	for (int m=0; m< matches.size(); m++) {
@@ -88,14 +88,14 @@ void SwapReadCoordinates(vector<T> &matches, GenomePos readLength, GenomePos kme
 	}
 }
 
-// void ReverseClusterStrand(Read &read, Genome &genome, Options &opts, vector<Cluster> &clusters) {
+// void ReverseClusterStrand(Read &read, Genome &genome, const Options &opts, vector<Cluster> &clusters) {
 // 	for (int c = 0; c < clusters.size(); c++) {
 // 			SwapStrand(read, opts, clusters[c].matches);
 // 			clusters[c].strand = 1;
 // 	}
 // }
 
-// void SetClusterStrand(Read &read, Genome &genome, Options &opts, 
+// void SetClusterStrand(Read &read, Genome &genome, const Options &opts, 
 // 											vector<Cluster> &clusters) {
 // 	for (int c = 0; c < clusters.size(); c++) {
 // 		clusters[c].strand = SetStrand(read, genome, opts, clusters[c].matches);
@@ -151,7 +151,7 @@ SeparateMatchesByStrand(Read &read, Genome &genome, int k, vector<GenomePair> &a
 
 
 int 
-MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, 
+MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<GenomeTuple> &genomemm, LocalIndex &glIndex, const Options &opts, 
 				ostream *output, ostream *svsigstrm, Timing &timing, IndelRefineBuffers &indelRefineBuffers, pthread_mutex_t *semaphore=NULL) {
 	read.unaligned = 0;
 	string baseName = read.name;

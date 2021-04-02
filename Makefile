@@ -13,7 +13,7 @@ ifneq ($(OPT), "")
 CCOPTS=-O -g $(CCOPTS_BASE) -lprofiler
 #STATIC=
 STATIC=-g -L $(PROF) -lprofiler
-CCOPTS=-g
+CCOPTS=-g -fsanitize=undefined
 endif
 
 #-D _TESTING_ -lprofiler 

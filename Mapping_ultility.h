@@ -173,7 +173,7 @@ switchindex (vector<Cluster> & splitclusters, vector<Primary_chain> & Primary_ch
 // This function splits the chain if Clusters on the chain are mapped to different chromosomes or different locations (quite far, default: 100000) on the same chromosome;
 // Also split the chain when two forward/reverse clusters are chained in reverse/forward direction.
 void
-SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitChain> & splitchains, vector<bool> & link, Options & opts) {
+SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitChain> & splitchains, vector<bool> & link, const Options & opts) {
 	int im = 0;
 	vector<int> onec; 
 	vector<bool> lk;
@@ -219,7 +219,7 @@ SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitC
 // Also split the chain when two forward/reverse clusters are chained in reverse/forward direction.
 void
 SPLITChain(Read &read, UltimateChain &chain, vector<SplitChain> &splitchains, vector<bool> &splitchains_link, 
-				vector<pair<GenomePos, GenomePos>> &splitchains_qpos, Options &opts) {
+				vector<pair<GenomePos, GenomePos>> &splitchains_qpos, const Options &opts) {
 	int im = 0;
 	vector<int> onec; 
 	vector<bool> lk;
@@ -286,7 +286,7 @@ bool push_new(Genome &genome, vector<int> &onec, vector<bool> &lk, vector<SplitC
 }
 
 void
-SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> &splitchains, vector<bool> &splitchains_link, Options &opts) {
+SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> &splitchains, vector<bool> &splitchains_link, const Options &opts) {
 	int im = 0;
 	vector<int> onec; 
 	vector<bool> lk;
@@ -352,7 +352,7 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 // }
 
 void 
-output_unaligned(Read &read, Options &opts, ostream &output) {
+output_unaligned(Read &read, const Options &opts, ostream &output) {
 	// cerr << "unmapped: " << read.name << endl;
 	if (opts.printFormat == "s") {
 		Alignment unaligned = Alignment(read.seq, read.length, read.name, read.qual);
@@ -361,7 +361,7 @@ output_unaligned(Read &read, Options &opts, ostream &output) {
 }
 
 void 
-OUTPUT(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts, Genome &genome, ostream *output){
+OUTPUT(AlignmentsOrder &alignmentsOrder, Read &read, const Options &opts, Genome &genome, ostream *output){
 
 	if (alignmentsOrder.size() > 0 and alignmentsOrder[0].SegAlignment.size() > 0) {
 		int primary_num = 0;
@@ -392,7 +392,7 @@ OUTPUT(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts, Genome &geno
 }
 
 
-void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts) {
+void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, const Options &opts) {
 	if (read.unaligned) return;
 	float q_coef;
 	if (opts.bypassClustering) q_coef = 1.0f; // 40
@@ -447,7 +447,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, Options &opts) {
 	}
 }
 
-void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOrder, Options &opts) {
+void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOrder, const Options &opts) {
 	int a=0;
 	int ovp=a;
 

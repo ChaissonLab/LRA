@@ -21,7 +21,7 @@
 #include <thread>
 #include <climits>
 
-void append_to_closetcluster(GenomePairs &matches, int start, int end, Cluster *cluster, Cluster *prevcluster, Options &opts, bool st, int K) {
+void append_to_closetcluster(GenomePairs &matches, int start, int end, Cluster *cluster, Cluster *prevcluster, const Options &opts, bool st, int K) {
 	int dist_cur = 0, dist_prev = 0;
 	GenomePos qStart = matches[start].first.pos,  qEnd = qStart + K,
 			  tStart = matches[start].second.pos, tEnd = tStart + K;
@@ -56,7 +56,7 @@ void append_to_closetcluster(GenomePairs &matches, int start, int end, Cluster *
 // This function find anchors btwn two adjacent Clusters;
 //
 int 			
-RefineBtwnSpace_AppendCloseCluster (vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluster, Cluster *prevcluster, Options &opts, Genome &genome, Read &read, char *strands[2], GenomePos qe, GenomePos qs, 
+RefineBtwnSpace_AppendCloseCluster (vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluster, Cluster *prevcluster, const Options &opts, Genome &genome, Read &read, char *strands[2], GenomePos qe, GenomePos qs, 
 				GenomePos te, GenomePos ts, bool st, GenomePos lrts=0, GenomePos lrlength=0) {
 
 	int ChromIndex = cluster->chromIndex;
@@ -371,7 +371,7 @@ void AddGenomeOffset(vector<SplitChain> &splitchains)
 			
 int 
 Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<Cluster> & refinedclusters, vector<Cluster> &clusters, Genome & genome, Read & read,  
-				LocalIndex & glIndex, LocalIndex *localIndexes[2], Options & smallOpts, Options & opts) {
+				LocalIndex & glIndex, LocalIndex *localIndexes[2], const Options & smallOpts, const Options & opts) {
 	if (read.unaligned) return 0;
 	for (int ph = 0; ph < splitchains.size(); ph++) {
 		//
@@ -534,7 +534,7 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 
 void
 Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedClusters, vector<Cluster> &RevBtwnCluster, 
-						vector<tuple<int, int, int> > &tracerev, Genome &genome, Read &read, Options &opts, char *strands[2], vector<bool> &spchain_link) {
+						vector<tuple<int, int, int> > &tracerev, Genome &genome, Read &read, const Options &opts, char *strands[2], vector<bool> &spchain_link) {
 	//
 	// Find matches btwn every two adjacent Clusters;
 	//

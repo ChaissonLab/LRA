@@ -299,7 +299,7 @@ class Cluster : public ClusterCoordinates {
 		}
 	}
 
-	void SetClusterBoundariesFromMatches (Options &opts, bool append_prev_cluster=0) {
+	void SetClusterBoundariesFromMatches (const Options &opts, bool append_prev_cluster=0) {
 		if (!append_prev_cluster) {
 			qStart = matches[0].first.pos;
 			qEnd = qStart + opts.globalK;
@@ -555,7 +555,7 @@ void AVGfreq(int as, int ae, vector<pair<Tup, Tup> > &matches, float &avgfreq) {
 }
 
 template<typename Tup>
-void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_freq, Options &opts, Read &read, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
+void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_freq, const Options &opts, Read &read, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (matches.size() == 0) {
 		return;
 	}
@@ -719,8 +719,8 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 }
 
 template<typename Tup>
-void SecondRoundCleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int &MinDiagCluster,int &CleanMaxDiag, vector<bool> &OriginalOnDiag, int os, int oe, 
-									Options &opts, float avgfreq, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
+void SecondRoundCleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int &MinDiagCluster,int CleanMaxDiag, vector<bool> &OriginalOnDiag, int os, int oe, 
+									const Options &opts, float avgfreq, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (MinDiagCluster < 0 or MinDiagCluster >= oe - os) return;
 	int nOnDiag2=0;
 	if (oe - os <= 1) return;
@@ -821,7 +821,7 @@ void PrintDiagonal(vector<pair<Tup, Tup> > &matches, int strand=0) {
 }
  
 template<typename Tup>
-long GetDiag(pair<Tup, Tup> &match, int strand, Options &opts) {
+long GetDiag(pair<Tup, Tup> &match, int strand, const Options &opts) {
 	if (strand == 0) return (long) match.second.pos - (long) ceil(opts.slope*match.first.pos);
 	else return (long) ceil(opts.slope*match.first.pos) + (long) match.second.pos;
 }
@@ -833,7 +833,7 @@ long GetDiag(pair<Tup, Tup> &match, int &len, bool strand) {
 }
 
 template<typename Tup>
-void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, float anchorfreq, vector<Cluster> &clusters, Options &opts, vector<int> &splitmatchindex,
+void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, float anchorfreq, vector<Cluster> &clusters, const Options &opts, vector<int> &splitmatchindex,
 											 Genome &genome, Read &read, GenomePos readLength, int strand=0, int outerIteration=0) {
 	//
 	// StoreFineClusters based on unique part
@@ -1265,7 +1265,7 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, float anchorfre
 	}
 }
 
-bool CloseToPreviousCluster(Cluster &a, GenomePos &qS, GenomePos &tS, GenomePos &tE, Options &opts) {
+bool CloseToPreviousCluster(Cluster &a, GenomePos &qS, GenomePos &tS, GenomePos &tE, const Options &opts) {
 	long aDiff = abs((long)qS - (long)a.qEnd);
 	long bDiff;
 	if (a.strand == 0) bDiff = abs((long)tS - (long)a.tEnd);
@@ -1292,7 +1292,7 @@ void MergeTwoClusters(Cluster &a, GenomePos &qS, GenomePos &qE, GenomePos &tS, G
 
 void 
 SplitRoughClustersWithGaps(vector<pair<GenomeTuple, GenomeTuple> > &matches, Cluster &OriginalClusters, vector<Cluster> &split, 
-				Options &opts, int &outIter, Read &read, int strand=0) {
+				const Options &opts, int &outIter, Read &read, int strand=0) {
 
 	if (OriginalClusters.end - OriginalClusters.start == 0) {
 		return;
@@ -1374,7 +1374,7 @@ int RemoveSuperRepetitiveClusters (int s, int e, vector<pair<Tup, Tup> > &matche
 
 
 template<typename Tup>
-void StoreDiagonalClusters(Genome &genome, vector<float> &matches_freq, vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, int strand=0) {
+void StoreDiagonalClusters(Genome &genome, vector<float> &matches_freq, vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, const Options &opts, int s, int e, int strand=0) {
 	int cs = s, ce = e;
 	float totalfreq = 0.0f;
 	while (cs < e) {
@@ -1417,7 +1417,7 @@ void StoreDiagonalClusters(Genome &genome, vector<float> &matches_freq, vector<p
 }
 
 // template<typename Tup>
-// void reversechecking_StoreDiagonalClusters(vector<pair<int, int>> &forward_clusters, Genome &genome, vector<float> &matches_freq, vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, int strand=0) {
+// void reversechecking_StoreDiagonalClusters(vector<pair<int, int>> &forward_clusters, Genome &genome, vector<float> &matches_freq, vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, const Options &opts, int s, int e, int strand=0) {
 // 	int cs = e - 1, ce = s;
 // 	float totalfreq = 0.0f;
 // 	while (cs > s) {
@@ -1460,7 +1460,7 @@ void StoreDiagonalClusters(Genome &genome, vector<float> &matches_freq, vector<p
 // }
 
 // template<typename Tup> 
-// void StoreDiagonalClusters(Genome &genome, vector<float> &matches_freq, vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, Options &opts, int s, int e, int strand=0) {
+// void StoreDiagonalClusters(Genome &genome, vector<float> &matches_freq, vector<pair<Tup, Tup> > &matches, vector<Cluster> &clusters, const Options &opts, int s, int e, int strand=0) {
 // 	// forward checking
 // 	int cs = s, ce = e;
 // 	vector<pair<int, int>> forward_clusters;
@@ -1483,7 +1483,7 @@ void StoreDiagonalClusters(Genome &genome, vector<float> &matches_freq, vector<p
 // }
 
 
-void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genome &genome, Read &read, Options &opts, Timing &timing, bool ma_strand = 0) {
+void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genome &genome, Read &read, const Options &opts, Timing &timing, bool ma_strand = 0) {
 	if (read.unaligned) return;
 	if (ma_strand == 0) {
 		//
@@ -1601,7 +1601,7 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 }
 
 
-void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genome &genome, Read &read, Options &opts, Timing &timing, bool ma_strand = 0) {
+void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genome &genome, Read &read, const Options &opts, Timing &timing, bool ma_strand = 0) {
 	if (read.unaligned) return;
 	if (ma_strand == 0) {
 		//

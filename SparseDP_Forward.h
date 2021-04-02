@@ -43,10 +43,10 @@ using std::iota;
 // Note: Each fragment has the same length
 void 
 ProcessPoint_ForwardOnly (const std::vector<Point> & H1, const vector<int> &MatchLengths, std::vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, 
-							std::vector<Fragment_Info> & Value, Options & opts, const std::vector<float> & LookUpTable, int rate) {
+							std::vector<Fragment_Info> & Value, const Options & opts, const std::vector<float> & LookUpTable, int rate) {
 
 //ProcessPoint (const std::vector<Point> & H1, const std::vector<unsigned int> & H3, std::vector<info> & V, StackOfSubProblems & SubR, StackOfSubProblems & SubC,
-//				  std::vector<Fragment_Info> & Value, Options & opts, const std::vector<float> & LookUpTable, int rate) {
+//				  std::vector<Fragment_Info> & Value, const Options & opts, const std::vector<float> & LookUpTable, int rate) {
 
 	bool step_sdp = 1;
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
@@ -309,7 +309,7 @@ TraceBack_ForwardOnly (StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, c
 // The input for this function is GenomePairs which is from gapPairs (from snd SDP)
 // Each fragment has the same length
 //
-int SparseDP_ForwardOnly (const GenomePairs &FragInput, const vector<int> &MatchLengths, std::vector<unsigned int> &chain, Options &opts, 
+int SparseDP_ForwardOnly (const GenomePairs &FragInput, const vector<int> &MatchLengths, std::vector<unsigned int> &chain, const Options &opts, 
 							const std::vector<float> &LookUpTable, float &inv_value, int &inv_NumOfAnchors, int rate = 5) {
 	
 	if (FragInput.size() == 0) return 0;

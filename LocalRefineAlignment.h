@@ -101,7 +101,7 @@ SetMatchAndGaps(GenomePos qs, GenomePos qe, GenomePos ts, GenomePos te, int &m, 
 
 int 
 AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, GenomePos &tStart, GenomePos &tEnd,
-						vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &options, 
+						vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, const Options &options, 
 						AffineAlignBuffers &buff) {
 	int qLen = qEnd-qStart;
 	int tLen = tEnd-tStart;
@@ -131,7 +131,7 @@ AlignSubstrings(char *qSeq, GenomePos &qStart, GenomePos &qEnd, char *tSeq, Geno
 
 void 
 RefineSubstrings(char *read, GenomePos readSubStart, GenomePos readSubEnd, char *genome, GenomePos genomeSubStart, 
-						GenomePos genomeSubEnd, vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, Options &opts,
+						GenomePos genomeSubEnd, vector<int> &scoreMat, vector<Arrow> &pathMat, Alignment &aln, const Options &opts,
 						AffineAlignBuffers &buff) {
 	aln.blocks.clear();
 	AlignSubstrings(read, readSubStart, readSubEnd, genome, genomeSubStart, genomeSubEnd, scoreMat, pathMat, aln, opts, buff);
@@ -145,7 +145,7 @@ RefineSubstrings(char *read, GenomePos readSubStart, GenomePos readSubEnd, char 
 void 
 RefineByLinearAlignment(GenomePos &btc_curReadEnd, GenomePos &btc_curGenomeEnd, GenomePos &btc_nextReadStart, GenomePos &btc_nextGenomeStart, 
 						bool str, int chromIndex, Alignment * alignment, Read & read, Genome & genome, char *strands[2], 
-						vector<int> & scoreMat, vector<Arrow> & pathMat, Options & opts, AffineAlignBuffers &buff) {
+						vector<int> & scoreMat, vector<Arrow> & pathMat, const Options & opts, AffineAlignBuffers &buff) {
 	//
 	// find small matches between fragments in gapChain
 	int m, rg, gg;
@@ -512,8 +512,8 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 
 void
 LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &splitchains, vector<Cluster_SameDiag *> &ExtendClusters, 
-		vector<SegAlignmentGroup> &alignments, Options &smallOpts, const vector<float> & LookUpTable, Read &read, char *strands[2], int &p, int &h, 
-		Genome &genome, int &LSC, Options &tinyOpts, AffineAlignBuffers &buff, ostream *svsigstrm, vector<Cluster> &extend_clusters){
+		vector<SegAlignmentGroup> &alignments, const Options &smallOpts, const vector<float> & LookUpTable, Read &read, char *strands[2], int &p, int &h, 
+		Genome &genome, int &LSC, const Options &tinyOpts, AffineAlignBuffers &buff, ostream *svsigstrm, vector<Cluster> &extend_clusters){
 	for (int st = 0; st < splitchains.size(); st++) {
 		//
 		// Apply SparseDP on extended anchors on every splitchain;
@@ -709,7 +709,7 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 	}	
 }
 
-void RefindEnds(GenomePos &qPos, int cur, UltimateChain &chain, bool str, Alignment *alignment, Options &opts, 
+void RefindEnds(GenomePos &qPos, int cur, UltimateChain &chain, bool str, Alignment *alignment, const Options &opts, 
 				Genome &genome, Read &read, int &chromIndex, char *strands[2], vector<int> &scoreMat, 
 				vector<Arrow> &pathMat, AffineAlignBuffers &buff, const vector<float> & LookUpTable, bool block = 1) { // block = 1: right, block = 0: left
 	
@@ -824,8 +824,8 @@ void RefindEnds(GenomePos &qPos, int cur, UltimateChain &chain, bool str, Alignm
 // For chaining of pure matches
 //
 void
-LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ext_clusters, vector<SegAlignmentGroup> &alignments, Options &smallOpts, 
-	const vector<float> & LookUpTable, Read &read, char *strands[2], int &h, Genome &genome, int &LSC, Options &tinyOpts, AffineAlignBuffers &buff, ostream *svsigstrm){
+LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ext_clusters, vector<SegAlignmentGroup> &alignments, const Options &smallOpts, 
+	const vector<float> & LookUpTable, Read &read, char *strands[2], int &h, Genome &genome, int &LSC, const Options &tinyOpts, AffineAlignBuffers &buff, ostream *svsigstrm){
 
 	for (int st = 0; st < ultimatechains.size(); st++) {
 		if (ultimatechains[st].size() <= 1) continue;

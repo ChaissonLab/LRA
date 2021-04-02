@@ -48,7 +48,7 @@ public:
 
 
 void Checkbp(GenomePair &cur, GenomePair &next, Genome &genome, Read &read, int &ChromIndex, GenomePos& qe, GenomePos& te, 
-				bool strand, Options &opts, int &mat, int K) {
+				bool strand, const Options &opts, int &mat, int K) {
 	GenomePos curQ, curT, nextQ, nextT;
 	if (strand == 0) {
 		curQ = cur.first.pos + K;
@@ -82,7 +82,7 @@ void Checkbp(GenomePair &cur, GenomePair &next, Genome &genome, Read &read, int 
 
 
 int
-CheckOverlap(GenomePair & match, Options & opts, vector<pair<GenomePos, bool>> & Set, bool & Ovp, int K) {
+CheckOverlap(GenomePair & match, const Options & opts, vector<pair<GenomePos, bool>> & Set, bool & Ovp, int K) {
 
 	for (int t = 0; t < Set.size(); t++) {
 		if (Set[t].second == 0 and Set[t].first >= match.first.pos and Set[t].first < match.first.pos + K) {
@@ -130,7 +130,7 @@ DecideCoordinates (Cluster & cluster, bool strand, int chromIndex, float anchorf
 //
 template<typename Tup>
 void
-LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup> & chain, Options & opts, Genome & genome, Read & read, 
+LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup> & chain, const Options & opts, Genome & genome, Read & read, 
 			int start, int &overlap, bool skiprepetitive, int K) {
 
 	vector<pair<GenomePos, bool>> Set;
@@ -353,7 +353,7 @@ LinearExtend(vector<Cluster*> clusters, vector<Cluster> & extCluster, vector<Tup
 // //
 // template<typename Tup>
 // void
-// LinearExtend_MergedCluster(vector<Merge_SplitChain> &mergeinfo, vector<Cluster*> clusters, vector<Cluster> & extCluster, Options & opts, Genome & genome, Read & read, 
+// LinearExtend_MergedCluster(vector<Merge_SplitChain> &mergeinfo, vector<Cluster*> clusters, vector<Cluster> & extCluster, const Options & opts, Genome & genome, Read & read, 
 // 			int start, int &overlap, bool skiprepetitive) {
 
 // 	vector<pair<GenomePos, bool>> Set;
@@ -651,7 +651,7 @@ TrimOverlappedAnchors(vector<Cluster> & extCluster, int start) {
 // Input: GenomePairs pairs; Output: GenomePairs ExtendPairs; vector<int> ExtendPairsMatchesLength;
 // NOTE: Only forward strand;
 //
-void LinearExtend(GenomePairs * pairs, GenomePairs &Extendpairs, vector<int> &ExtendpairsMatchesLength, Options &opts, 
+void LinearExtend(GenomePairs * pairs, GenomePairs &Extendpairs, vector<int> &ExtendpairsMatchesLength, const Options &opts, 
 				Genome &genome, Read &read, int chromIndex, bool strand, bool skipsorting, int K) {
 	//
 	// Sort each Cluster
@@ -778,7 +778,7 @@ TrimOverlappedAnchors(GenomePairs &ExtendPairs, vector<int> &ExtendPairsMatchesL
 template<typename Tup>
 void
 LinearExtend_chain (vector<Tup> &chain, vector<Cluster> &ExtendClusters, vector<Cluster*> &RefinedClusters, 
-			Options &smallOpts, Genome &genome, Read &read, int start, int &overlap, bool skiprepetitive, int K) {
+			const Options &smallOpts, Genome &genome, Read &read, int start, int &overlap, bool skiprepetitive, int K) {
 	//
 	// Do linear extension for each anchors and avoid overlapping locations;
 	// INPUT: RefinedClusters; OUTPUT: ExtendClusters;
@@ -789,7 +789,7 @@ LinearExtend_chain (vector<Tup> &chain, vector<Cluster> &ExtendClusters, vector<
 }
 
 void 
-MergeMatchesSameDiag (vector<Cluster> &ExtendClusters, vector<Cluster_SameDiag> &MergedClusters, Options &opts) {
+MergeMatchesSameDiag (vector<Cluster> &ExtendClusters, vector<Cluster_SameDiag> &MergedClusters, const Options &opts) {
 	int original = 0, reduced = 0;
 	for (int c = 0; c < ExtendClusters.size(); c++) {
 		original += ExtendClusters[c].matches.size();
