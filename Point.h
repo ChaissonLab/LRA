@@ -15,7 +15,7 @@ public:
 	int clusterNum; // store the index of the Cluster which the current point comes from;
 	// int matchstartNum; 
 	Point(unsigned int & frag_num1);
-	Point() {};
+	Point() {orient = 0; ind = 0; inv = 0;};
 	~Point() {};
 	
 	friend std::ostream & operator<<(std::ostream & os, const Point & t); // overload of operator <<
@@ -24,6 +24,7 @@ public:
 
 Point::Point(unsigned int & frag_num1) {
 	frag_num = frag_num1;
+	orient = 0; ind = 0; inv = 0;
 }
 
 std::ostream & operator<<(std::ostream & os, const Point & M) {

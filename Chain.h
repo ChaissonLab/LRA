@@ -26,6 +26,7 @@ public:
 		main = -1;
 		value = 0;
 		NumOfAnchors0 = 0;
+
 	};
 	~CHain() {};
 	CHain (vector<unsigned int> &onechain) {
@@ -345,11 +346,14 @@ public:
 	vector<int> ClusterIndex; // one splitchain can correspond to multiple ext_clusters
 	// int readlength;
 	// int offset;
-	SplitChain() {}
+	SplitChain() {
+		Strand = 0;
+	}
 	~SplitChain() {}
 	SplitChain (vector<int> &sp, vector<bool> &lk) {
 		sptc = sp;
 		link = lk;
+		Strand = 0;
 	}
 	SplitChain (vector<int> &sp, vector<bool> &lk, UltimateChain *c, bool str) : chain(c) {
 		sptc = sp;

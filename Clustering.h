@@ -204,19 +204,19 @@ class Cluster : public ClusterCoordinates {
 	vector<bool> overlap;
 	bool flip = 0;
 
-	Cluster() { refined=0; coarse=-1; rank=-1; flip = 0;}
- Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1; refined=0; flip = 0;}
+ Cluster() {refined=0; refinespace = 0; coarse=-1; rank=-1; flip = 0; split = 0;}
+ Cluster(int s, int e) : ClusterCoordinates(s,e) { coarse=-1; refined=0; flip = 0; split= 0;}
 
- Cluster(int s, int e, int st) : ClusterCoordinates(s,e,st) { coarse=-1; refined=0;flip = 0;}
+ Cluster(int s, int e, int st) : ClusterCoordinates(s,e,st) { coarse=-1; refined=0; refinespace = 0; flip = 0; split = 0;}
 
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
 					GenomePos ts, GenomePos te, 
-					int st) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=-1; refined=0;flip = 0;} 
+					int st) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=-1; refinespace = 0; refined=0; flip = 0; split = 0;} 
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
 					GenomePos ts, GenomePos te, 
-					int st, int cs) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=cs; refined=0;flip = 0;} 
+					int st, int cs) : ClusterCoordinates(s,e,qs,qe,ts,te,st) { coarse=cs; refined=0; refinespace = 0; flip = 0; split = 0;} 
 	
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
@@ -231,6 +231,7 @@ class Cluster : public ClusterCoordinates {
 		Val = 0;
 		NumofAnchors0 = 0;
 		flip = 0;
+		split = 0;
 	}
   Cluster(int s, int e, 
 					GenomePos qs, GenomePos qe,
@@ -244,6 +245,9 @@ class Cluster : public ClusterCoordinates {
 		Val = 0;
 		NumofAnchors0 = 0;
 		flip = 0;
+		refined = 0;
+		refinespace = 0;
+		split = 0;
 	}
   Cluster(GenomePos qs, GenomePos qe, GenomePos ts, GenomePos te, int st, int coa) {
 		qStart = qs;
@@ -256,6 +260,8 @@ class Cluster : public ClusterCoordinates {
 		NumofAnchors0 = 0;
 		split = 0;
 		flip = 0;
+		refined = 0;
+		refinespace = 0;
 	}
   Cluster(int st, GenomePairs::iterator gpBegin, GenomePairs::iterator gpEnd, vector<int>::iterator stBegin, vector<int>::iterator stEnd) {
   		strand = st;
@@ -679,7 +685,7 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 							}	
 						}					
 					}
-					// if (read.name == opts.readname) cerr << "avgfreq: " << avgfreq << " MinDiagCluster: " << MinDiagCluster << endl;
+					if (read.name == opts.readname) cerr << "avgfreq: " << avgfreq << " MinDiagCluster: " << MinDiagCluster << endl;
 				}
 				if (opts.debug and opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
 					ofstream fclust("for-matches_cleanoffdiagonal.dots", ofstream::app);
@@ -719,9 +725,15 @@ void CleanOffDiagonal(vector<pair<Tup, Tup> > &matches, vector<float> &matches_f
 }
 
 template<typename Tup>
-void SecondRoundCleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int &MinDiagCluster,int CleanMaxDiag, vector<bool> &OriginalOnDiag, int os, int oe, 
+void SecondRoundCleanOffDiagonal(vector<pair<Tup, Tup> > &matches, int  MinDiagCluster,int CleanMaxDiag, vector<bool> &OriginalOnDiag, int os, int oe, 
 									const Options &opts, float avgfreq, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
-	if (MinDiagCluster < 0 or MinDiagCluster >= oe - os) return;
+	if (MinDiagCluster >= oe - os) return;
+	if (MinDiagCluster < 0) {
+		for (int i = os; i < oe; i++) {
+			OriginalOnDiag[i] = true;
+		}	
+		return;	
+	}
 	int nOnDiag2=0;
 	if (oe - os <= 1) return;
 	// if (avgfreq <= 6.0f) {
@@ -952,9 +964,6 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, float anchorfre
 	//
 	if (u_maxstart == 0 and u_maxend == 0) { // no unique stretch
 		return;
-	}
-	if (read.name == "S1_11352!chr1!144139507!144159763!-" and outerIteration == 2 and strand == 1) {
-		cerr << "catch you!" << endl;
 	}
 	int c_s = pos_start[u_maxstart], c_e = pos_start[u_maxend - 1] + 1;
 	assert(c_s >= 0 and c_e <= splitmatchindex.size() and c_s <= c_e);
