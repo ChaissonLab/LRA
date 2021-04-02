@@ -953,6 +953,9 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, float anchorfre
 	if (u_maxstart == 0 and u_maxend == 0) { // no unique stretch
 		return;
 	}
+	if (read.name == "S1_11352!chr1!144139507!144159763!-" and outerIteration == 2 and strand == 1) {
+		cerr << "catch you!" << endl;
+	}
 	int c_s = pos_start[u_maxstart], c_e = pos_start[u_maxend - 1] + 1;
 	assert(c_s >= 0 and c_e <= splitmatchindex.size() and c_s <= c_e);
 
