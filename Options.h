@@ -107,6 +107,7 @@ public:
 	bool bypassClustering;
 	bool refineEnd;
 	int refineSpaceDist;
+	bool ExtractDiagonalFromClean;
 	Options() {
 		skipBandedRefine=false;
 		storeTiming=false;
@@ -211,7 +212,7 @@ public:
 		bypassClustering=false;
 		refineEnd=false;
 		refineSpaceDist=10000;
-
+		ExtractDiagonalFromClean=false;
 	}
 };
 #endif
