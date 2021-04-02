@@ -429,8 +429,15 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, const Options &op
 				float l = ( alignmentsOrder[r].SegAlignment[s]->value > 3? logf(alignmentsOrder[r].SegAlignment[s]->value / opts.globalK) : 0);
 				identity = (identity < 1? identity : 1);
 				long mapq;
-				if (!opts.bypassClustering) mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l * identity);
-				else mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * identity);
+				if (x >= 0.980f) {
+					mapq = (int)(pen_cm_1 * (1.0f - x) * identity);
+				}
+				else if (!opts.bypassClustering) {
+					mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l * identity);
+				}
+				else {
+					mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * identity);
+				}
 				// long mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l);
 				mapq -= (int)(4.343f * logf(len) + .499f);
 				mapq = mapq > 0? mapq : 0;
