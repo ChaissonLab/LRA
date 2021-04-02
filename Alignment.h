@@ -455,6 +455,7 @@ class Alignment {
 
 		CreateAlignmentStrings(read, genome, queryString, alignString, refString);
 		AlignStringsToCigar(queryString, refString, cigar, nm, nmm, ndel, nins, opts, LookUpTable);
+
 		if (opts.Printsvsig == true) Printsvsig(read, genome, opts, svsigstrm);
 		preClip = 0;
 		sufClip=0;
@@ -467,6 +468,7 @@ class Alignment {
 			tStart = blocks[0].tPos;
 			tEnd   = blocks[last-1].tPos + blocks[last-1].length;
 		}
+		cout << "aln " << "\t" << tStart << "\t" << tEnd << "\t" << nm << "\t" << nmm << "\t" << ndel << "\t" << nins << endl;		
 	}
 
 	//

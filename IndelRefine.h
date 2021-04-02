@@ -90,7 +90,7 @@ void IndelRefineAlignment(Read &read,
 		long tStart=alignment.blocks[0].tPos;
 		int minStart=min(qStart,tStart);				
 		int addStart=0;
-		if (minStart < 20) {
+		if (minStart < 40) {
 			tStart=tStart-minStart;
 			qStart=qStart-minStart;					
 			startMatch=minStart;
@@ -103,7 +103,7 @@ void IndelRefineAlignment(Read &read,
 		int minEnd=min(read.length-qAlnEnd, genome.lengths[alignment.chromIndex]-tAlnEnd);
 		int addEnd=0;
 		
-		if (minEnd < 20) {
+		if (minEnd < 40) {
 			endMatch=minEnd;
 			qPos+=minEnd;
 			tPos+=minEnd;
