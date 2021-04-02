@@ -650,7 +650,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 				//
 				//cerr << "splitchains.size(): " << splitchains.size()  << endl;
 				LocalRefineAlignment(Primary_chains, splitchains, ExtendClusters, alignments, smallOpts, 
-										LookUpTable, read, strands, p, h, genome, LSC, tinyOpts, buff, svsigstrm, extend_clusters);
+						     LookUpTable, read, strands, p, h, genome, LSC, tinyOpts, buff, svsigstrm, extend_clusters, false);
 				ExtendClusters.clear();
 
 				for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {

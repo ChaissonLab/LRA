@@ -513,7 +513,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 void
 LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &splitchains, vector<Cluster_SameDiag *> &ExtendClusters, 
 		vector<SegAlignmentGroup> &alignments, const Options &smallOpts, const vector<float> & LookUpTable, Read &read, char *strands[2], int &p, int &h, 
-		Genome &genome, int &LSC, const Options &tinyOpts, AffineAlignBuffers &buff, ostream *svsigstrm, vector<Cluster> &extend_clusters){
+		     Genome &genome, int &LSC, const Options &tinyOpts, AffineAlignBuffers &buff, ostream *svsigstrm, vector<Cluster> &extend_clusters, bool refineEnd=true) {
 	for (int st = 0; st < splitchains.size(); st++) {
 		//
 		// Apply SparseDP on extended anchors on every splitchain;
@@ -524,8 +524,8 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 		//timing.Tick("2nd SDP");
 		
 		if (tinyOpts.RemovePairedIndels) {
-			RemoveSmallPairedIndels<FinalChain> (finalchain);
-			RemovePairedIndels<FinalChain>(finalchain); 
+		  RemoveSmallPairedIndels<FinalChain> (finalchain);
+		  RemovePairedIndels<FinalChain>(finalchain, refineEnd); 
 		}
 		if (tinyOpts.RemoveSpuriousAnchors) RemoveSpuriousAnchors(finalchain);
 		//

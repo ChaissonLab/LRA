@@ -600,7 +600,7 @@ void RemoveSmallPairedIndels (Tup &chain) {
 // This function removes paired indels in the finalchain after SDP;
 //
 template<typename Tup>
-void RemovePairedIndels (Tup &chain) {
+void RemovePairedIndels (Tup &chain, bool refineEnds=true) {
 
  	if (chain.size() < 2) return;
 	vector<bool> remove(chain.size(), false); // If remove[i] == true, then remove chain[i]
@@ -615,48 +615,49 @@ void RemovePairedIndels (Tup &chain) {
 	long totalDist=0;
 	long totDistSq=0;
 	for (int c = 1; c < chain.size(); c++) {
-
-		long tDist=0, qDist=0;
-		if (chain.tStart(c)  > chain.tEnd(c-1) ) {
-			tDist=chain.tStart(c) - chain.tEnd(c-1);
-		}
-		else {
-			tDist=chain.tStart(c-1) - chain.tEnd(c);
-		}
-		if (chain.qStart(c) > chain.qEnd(c-1)) {
-				qDist = chain.qStart(c) - chain.tEnd(c-1);
-		}
-		else {
-			qDist = chain.qStart(c-1) - chain.qEnd(c);
-		}
-		int dist=min(tDist, qDist);
-
-		totDistSq+=dist*dist;
-		totalDist+=dist;
-		if (chain.strand(c) == chain.strand(c-1)) {
-			if (chain.strand(c) == 0) {
-				int Gap = (int)(((long)chain.tStart(c) - (long)chain.qStart(c)) - ((long)chain.tStart(c - 1) - (long)chain.qStart(c - 1)));
-
-				if (abs(Gap) > 30) { //30
-					SV.push_back(Gap);	
-					SVgenome.push_back(chain.tStart(c));
-					SVpos.push_back(c);
-				}
-			}
-			else {
-				int Gap = (int)((long)(chain.qEnd(c) + chain.tStart(c)) - (long)(chain.qEnd(c - 1) + chain.tStart(c - 1)));
-				if (abs(Gap) > 30) { //30
-					SV.push_back(Gap);	
-					SVgenome.push_back(chain.tStart(c));
-					SVpos.push_back(c);
-				}				
-			}
-		}
-		else {
-			SVgenome.push_back(chain.tStart(c));
-			SVpos.push_back(c);
-			SV.push_back(0);
-		}
+	  if (refineEnds) {
+	    long tDist=0, qDist=0;
+	    if (chain.tStart(c)  > chain.tEnd(c-1) ) {
+	      tDist=chain.tStart(c) - chain.tEnd(c-1);
+	    }
+	    else {
+	      tDist=chain.tStart(c-1) - chain.tEnd(c);
+	    }
+	    if (chain.qStart(c) > chain.qEnd(c-1)) {
+	      qDist = chain.qStart(c) - chain.tEnd(c-1);
+	    }
+	    else {
+	      qDist = chain.qStart(c-1) - chain.qEnd(c);
+	    }
+	    long dist=min(tDist, qDist);
+	    
+	    totDistSq+=dist*dist;
+	    totalDist+=dist;
+	  }
+	  if (chain.strand(c) == chain.strand(c-1)) {
+	    if (chain.strand(c) == 0) {
+	      int Gap = (int)(((long)chain.tStart(c) - (long)chain.qStart(c)) - ((long)chain.tStart(c - 1) - (long)chain.qStart(c - 1)));
+	      
+	      if (abs(Gap) > 30) { //30
+		SV.push_back(Gap);	
+		SVgenome.push_back(chain.tStart(c));
+		SVpos.push_back(c);
+	      }
+	    }
+	    else {
+	      int Gap = (int)((long)(chain.qEnd(c) + chain.tStart(c)) - (long)(chain.qEnd(c - 1) + chain.tStart(c - 1)));
+	      if (abs(Gap) > 30) { //30
+		SV.push_back(Gap);	
+		SVgenome.push_back(chain.tStart(c));
+		SVpos.push_back(c);
+	      }				
+	    }
+	  }
+	  else {
+	    SVgenome.push_back(chain.tStart(c));
+	    SVpos.push_back(c);
+	    SV.push_back(0);
+	  }
 	}
 	float nDist=chain.size()-1;
 	float meanDist=totalDist/nDist;
@@ -664,57 +665,61 @@ void RemovePairedIndels (Tup &chain) {
 	float sdDist=sqrt(varDist);
 	int firstValidDist=-1;
 	int lastValidDist=-1;
-	for (int c=1; c < chain.size(); c++) {
-		long tDist=0, qDist=0;
-		if (chain.tStart(c)  > chain.tEnd(c-1) ) {
-			tDist=chain.tStart(c) - chain.tEnd(c-1);
-		}
-		else {
-			tDist=chain.tStart(c-1) - chain.tEnd(c);
-		}
-		if (chain.qStart(c) > chain.qEnd(c-1)) {
-				qDist = chain.qStart(c) - chain.tEnd(c-1);
-		}
-		else {
-			qDist = chain.qStart(c-1) - chain.qEnd(c);
-		}
+	for (int c = 1; c < SV.size(); c++) {
+	  //
+	  // If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
+	  // The last condition is to ensure both SV[c] and SV[c-1] are not zeros.
+	  //
+	  if (sign(SV[c]) != sign(SV[c-1]) and SV[c] != 0 and SV[c-1] != 0 and abs(SV[c]) >= 300 and abs(SV[c-1]) >= 300 and SVpos[c] - SVpos[c-1] < 3) {
+	    for (int i = SVpos[c-1]; i < SVpos[c]; i++) { if (chain.length(i) < 100) remove[i] = true;}			
+	  }
+	  if (sign(SV[c]) != sign(SV[c-1]) and SV[c] != 0 and SV[c-1] != 0 and abs(SV[c] + SV[c-1]) < 100 and SVpos[c] - SVpos[c-1] < 3) { 
+	    // remove anchors from SVpos[c-1] to SV[c];
+	    for (int i = SVpos[c-1]; i < SVpos[c]; i++) { if (chain.length(i) < 100) remove[i] = true;}
+	  } 
+	}
+
+	if (refineEnds) {
+	  for (int c=1; c < chain.size(); c++) {
+	    long tDist=0, qDist=0;
+	    if (chain.tStart(c)  > chain.tEnd(c-1) ) {
+	      tDist=chain.tStart(c) - chain.tEnd(c-1);
+	    }
+	    else {
+	      tDist=chain.tStart(c-1) - chain.tEnd(c);
+	    }
+	    if (chain.qStart(c) > chain.qEnd(c-1)) {
+	      qDist = chain.qStart(c) - chain.tEnd(c-1);
+	    }
+	    else {
+	      qDist = chain.qStart(c-1) - chain.qEnd(c);
+	    }
 
 		
-		int dist=min(tDist, qDist);
+	    int dist=min(tDist, qDist);
 
-		if (dist < meanDist + 4*sdDist) {
-			if (firstValidDist == -1 ){
-				firstValidDist = c-1;
-			}
-			lastValidDist=c;
-		}
-	}
-	for (int c = 1; c < SV.size(); c++) {
-		//
-		// If two adjacent SVs have different types and similar lengths, then delete anchors in between those two SVs.
-		// The last condition is to ensure both SV[c] and SV[c-1] are not zeros.
-		//
-		if (sign(SV[c]) != sign(SV[c-1]) and SV[c] != 0 and SV[c-1] != 0 and abs(SV[c]) >= 300 and abs(SV[c-1]) >= 300 and SVpos[c] - SVpos[c-1] < 3) {
-			for (int i = SVpos[c-1]; i < SVpos[c]; i++) { if (chain.length(i) < 100) remove[i] = true;}			
-		}
-		if (sign(SV[c]) != sign(SV[c-1]) and SV[c] != 0 and SV[c-1] != 0 and abs(SV[c] + SV[c-1]) < 100 and SVpos[c] - SVpos[c-1] < 3) { 
-			// remove anchors from SVpos[c-1] to SV[c];
-			for (int i = SVpos[c-1]; i < SVpos[c]; i++) { if (chain.length(i) < 100) remove[i] = true;}
-		} 
-	}
+	    if (dist < meanDist + 4*sdDist) {
+	      if (firstValidDist == -1 ){
+		firstValidDist = c-1;
+	      }
+	      lastValidDist=c;
+	    }
+
+	  }
 	
-	if (lastValidDist == -1 or firstValidDist == -1) {
-		// all invalid
-		for (int i=0; i < chain.size(); i++) { if (chain.length(i) < 100) remove[i] = true;}
-	}
+	  if (lastValidDist == -1 or firstValidDist == -1) {
+	    // all invalid
+	    for (int i=0; i < chain.size(); i++) { if (chain.length(i) < 100) remove[i] = true;}
+	  }
 
-	if (firstValidDist > 0 and firstValidDist < 3) {
-		//		cout << "Trimming start " << firstValidDist << "\t" << chain.size() << endl;
-		for (int i=0; i < firstValidDist; i++) { if (chain.length(i) < 100) remove[i] = true;}
-	}
-	if (lastValidDist+1 <= chain.size() and chain.size() - lastValidDist < 3) {
-		//		cout << " trimming " << lastValidDist << "\t" << chain.size() << endl;
-		for (int i=lastValidDist+1; i < chain.size(); i++) { if (chain.length(i) < 100) remove[i] = true;}
+	  if (firstValidDist > 0 and firstValidDist < 3) {
+	    //		cout << "Trimming start " << firstValidDist << "\t" << chain.size() << endl;
+	    for (int i=0; i < firstValidDist; i++) { if (chain.length(i) < 100) remove[i] = true;}
+	  }
+	  if (lastValidDist+1 <= chain.size() and chain.size() - lastValidDist < 3) {
+	    //		cout << " trimming " << lastValidDist << "\t" << chain.size() << endl;
+	    for (int i=lastValidDist+1; i < chain.size(); i++) { if (chain.length(i) < 100) remove[i] = true;}
+	  }
 	}
 	
 	int m = 0;

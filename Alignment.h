@@ -662,7 +662,8 @@ class Alignment {
 			}
 			else { // supplementary alignment
 				if (opts.hardClip) {
-					readStr = string(read, qStart, qEnd - qStart);	
+				  //					readStr = string(read, qStart, qEnd - qStart);
+					samStrm.write(&read[qStart],qEnd-qStart);
 					samStrm << readStr;	
 					// assert(cigar.length() == readStr.length());					
 				}

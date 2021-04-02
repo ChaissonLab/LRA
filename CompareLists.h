@@ -42,7 +42,12 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 		while (qs <= qe and (qBegin[qs].t & for_mask) < (tBegin[ts].t & for_mask)) {
 			qs++;
 		}
-		startGap.t = (qBegin[qs].t & for_mask) - (tBegin[ts].t & for_mask);
+		if (qs >= qe) {
+		  return;
+		}
+		if (qs < qe) {
+		  startGap.t = (qBegin[qs].t & for_mask) - (tBegin[ts].t & for_mask);
+		}
 		if (qs == qe) {
 			endGap = startGap;
 		}
