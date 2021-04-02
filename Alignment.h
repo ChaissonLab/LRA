@@ -468,7 +468,7 @@ class Alignment {
 			tStart = blocks[0].tPos;
 			tEnd   = blocks[last-1].tPos + blocks[last-1].length;
 		}
-		cout << "aln " << "\t" << tStart << "\t" << tEnd << "\t" << nm << "\t" << nmm << "\t" << ndel << "\t" << nins << endl;		
+		//		cout << "aln " << "\t" << tStart << "\t" << tEnd << "\t" << nm << "\t" << nmm << "\t" << ndel << "\t" << nins << endl;		
 	}
 
 	//
