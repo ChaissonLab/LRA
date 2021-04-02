@@ -29,7 +29,7 @@ using std::endl;
 
 // w function 
 float
-w (long int i, long int j, const std::vector<float> & LookUpTable, Options &opts, bool &step_sdp) {  // step_sdp == 0 means the first sdp; step_sdp == 1 means the second sdp;
+w (long int i, long int j, const std::vector<float> & LookUpTable, const Options &opts, bool &step_sdp) {  // step_sdp == 0 means the first sdp; step_sdp == 1 means the second sdp;
 	long int x = labs(j - i) + 1; 
 	if (x == 1) return 0;
 	int a = (int) floor((x-1)/5);
@@ -168,7 +168,7 @@ FindValueInBlock (long int ForwardDiag, std::stack<LPair> & S_1, std::vector<lon
 // Using Binary search to find the first index in [first, last) that a is worse than b
 unsigned int
 FindBoundary (unsigned int first, unsigned int last, unsigned int a, unsigned int b, std::vector<long int> & Di, 
-				std::vector<float> & Dv, std::vector<long int> & Ei, const std::vector<float> & LookUpTable, Options &opts, bool &step_sdp) {
+				std::vector<float> & Dv, std::vector<long int> & Ei, const std::vector<float> & LookUpTable, const Options &opts, bool &step_sdp) {
 	if (b != -1) {
 		unsigned int it;
 		unsigned int count, step;
@@ -192,7 +192,7 @@ FindBoundary (unsigned int first, unsigned int last, unsigned int a, unsigned in
 void
 Maximization (unsigned int & now, long int & last, std::vector<long int> & Di, std::vector<long int> & Ei, std::vector<float> & Dv, 
 				std::vector<long int> & Db, std::vector<std::pair<long int, long int>> & Block, std::stack<LPair> & S_1, 
-				const std::vector<float> & LookUpTable, Options &opts, bool &step_sdp) { // last and now are both index
+				const std::vector<float> & LookUpTable, const Options &opts, bool &step_sdp) { // last and now are both index
 
  	unsigned int m = Di.size();
  	unsigned int n = Ei.size();

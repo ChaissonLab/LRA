@@ -66,7 +66,7 @@ void RemoveSpuriousSplitChain(vector<SplitChain> &chains, vector<bool> &spchain_
 }
 
 int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vector<float> & LookUpTable, Read &read, Genome &genome, 
-								vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, ostream *svsigstrm,
+								vector<GenomeTuple> &genomemm, LocalIndex &glIndex, const Options &opts, ostream *output, ostream *svsigstrm,
 								Timing &timing, IndelRefineBuffers &indelRefineBuffers, char *strands[2], char* readRC, pthread_mutex_t *semaphore=NULL) {
 	//
 	// bypass clustering splitting

@@ -7,7 +7,7 @@
 // Compare minimizers from reference and reads without frequency
 template<typename tup, typename Tup> 
 void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::iterator qEnd, typename vector<tup>::iterator tBegin, typename vector<tup>::iterator tEnd, 
-						vector<pair<tup, tup>> &result, Options &opts, bool Global, int64_t maxDiagNum = 0, int64_t minDiagNum = 0, bool canonical=true) {
+						vector<pair<tup, tup>> &result, const Options &opts, bool Global, int64_t maxDiagNum = 0, int64_t minDiagNum = 0, bool canonical=true) {
 	//
 	// If canonical == True, for_mask = 0111...11 --> minimizer & for_mask = 0minimizer.
 	// Else, for_mask = 111...11 --> minimizer & for_mask = minimizer
@@ -122,7 +122,7 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 }
 
 template<typename tup, typename Tup> 
-void CompareLists(vector<tup> &query, vector<tup> &target, vector<pair<tup, tup> > &result, Options &opts, bool Global) {
+void CompareLists(vector<tup> &query, vector<tup> &target, vector<pair<tup, tup> > &result, const Options &opts, bool Global) {
 	CompareLists<tup, Tup>(query.begin(), query.end(), target.begin(), target.end(), result, opts, Global);
 }
 

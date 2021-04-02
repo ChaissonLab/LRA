@@ -53,7 +53,7 @@ class IndelRefineBuffers {
 void IndelRefineAlignment(Read &read, 
 													Genome &genome, 
 													Alignment &alignment, 
-													Options &opts,
+													const Options &opts,
 													IndelRefineBuffers &buffers, bool endAlign=false) {
 
 	int startBlock=0, endBlock=0;

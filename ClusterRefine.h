@@ -20,7 +20,7 @@
 #include <thread>
 #include <climits>
 
-void SwapStrand (Read & read, Options & opts, Cluster & cluster, int K) {
+void SwapStrand (Read & read, const Options & opts, Cluster & cluster, int K) {
 	for (int m = 0; m < cluster.matches.size(); m++) {
 		cluster.matches[m].first.pos = read.length - (cluster.matches[m].first.pos + K);
 	}
@@ -29,13 +29,13 @@ void SwapStrand (Read & read, Options & opts, Cluster & cluster, int K) {
 	cluster.qEnd = read.length - r;
 }
 
-void SwapStrand(Read &read, Options &opts, GenomePairs &matches, int K) {
+void SwapStrand(Read &read, const Options &opts, GenomePairs &matches, int K) {
 	for (int m=0; m < matches.size(); m++) {
 		matches[m].first.pos = read.length - (matches[m].first.pos + K);
 	}
 }
 
-void SwapStrand(Read &read, Options &opts, GenomePairs &matches, int start, int end, int K) {
+void SwapStrand(Read &read, const Options &opts, GenomePairs &matches, int start, int end, int K) {
 	for (int m=start; m<end; m++) {
 		matches[m].first.pos = read.length - (matches[m].first.pos + K);
 	}
@@ -48,7 +48,7 @@ void SwapStrand(Read &read, Options &opts, GenomePairs &matches, int start, int 
 //
 int 
 REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Genome & genome, Read & read,  
-				LocalIndex & glIndex, LocalIndex *localIndexes[2], Options & smallOpts, Options & opts) {
+				LocalIndex & glIndex, LocalIndex *localIndexes[2], const Options & smallOpts, const Options & opts) {
 	if (read.unaligned) return 0;
 	for (int ph = 0; ph < clusters.size(); ph++) {
 		//
@@ -238,7 +238,7 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 	return 0;
 }
 
-int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePairs &EndPairs, Options & opts, Genome & genome, Read & read, char *strands[2], int &ChromIndex, GenomePos qe, 
+int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePairs &EndPairs, const Options & opts, Genome & genome, Read & read, char *strands[2], int &ChromIndex, GenomePos qe, 
 				GenomePos qs, GenomePos te, GenomePos ts, bool st, GenomePos lrts=0, GenomePos lrlength=0) {
 	//
 	// Decide the diagonal band for this space
@@ -277,7 +277,7 @@ int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePair
 // This function find anchors btwn two adjacent Clusters;
 //
 int 			
-RefineBtwnSpace(int K, int W, vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluster, Options &opts, Genome &genome, Read &read, char *strands[2], GenomePos qe, GenomePos qs, 
+RefineBtwnSpace(int K, int W, vector<Cluster> &RevBtwnCluster, bool twoblocks, Cluster *cluster, const Options &opts, Genome &genome, Read &read, char *strands[2], GenomePos qe, GenomePos qs, 
 				GenomePos te, GenomePos ts, bool st, GenomePos lrts=0, GenomePos lrlength=0) {
 
 	int ChromIndex = cluster->chromIndex;
@@ -380,7 +380,7 @@ RefineBtwnSpace(int K, int W, vector<Cluster> &RevBtwnCluster, bool twoblocks, C
 
 void
 RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, vector<Cluster*> &RefinedClusters, vector<Cluster> &RevBtwnCluster, 
-						vector<tuple<int, int, int> > &tracerev, Genome &genome, Read &read, Options &smallOpts, int &p, int &h, char *strands[2]) {
+						vector<tuple<int, int, int> > &tracerev, Genome &genome, Read &read, const Options &smallOpts, int &p, int &h, char *strands[2]) {
 	//
 	// Find matches btwn every two adjacent Clusters;
 	//

@@ -271,7 +271,7 @@ class Alignment {
 	}
 
 	// Print out sv signatures within-alignment
-	void Printsvsig(char *query, char* text, Options & opts, ostream* clust) {
+	void Printsvsig(char *query, char* text, const Options & opts, ostream* clust) {
 		stringstream svsigstrm;
 		GenomePos q, t;
 		GenomePos  g;
@@ -349,7 +349,7 @@ class Alignment {
 	}
 
 
-	void AlignStringsToCigar(string &query, string &target, string &cigar, int &nm, int &nmm, int &nins, int &ndel, Options &opts, const std::vector<float> & LookUpTable) {
+	void AlignStringsToCigar(string &query, string &target, string &cigar, int &nm, int &nmm, int &nins, int &ndel, const Options &opts, const std::vector<float> & LookUpTable) {
 		stringstream cigarstrm;
 		int i=0;
 		int p=0;
@@ -444,14 +444,14 @@ class Alignment {
 		prepared=true;
 	}
 
-	void UpdateParameters(bool &str, Options &opts, const std::vector<float> & LookUpTable, ostream *svsigstrm, char *strands[2]) {
+	void UpdateParameters(bool &str, const Options &opts, const std::vector<float> & LookUpTable, ostream *svsigstrm, char *strands[2]) {
 		read = strands[str];
 		strand = str;
 		nblocks = blocks.size();
 		// CalculateStatistics(opts, svsigstrm, LookUpTable);
 	}
 
-	void CalculateStatistics(Options & opts, ostream *svsigstrm, const std::vector<float> & LookUpTable) {
+	void CalculateStatistics(const Options & opts, ostream *svsigstrm, const std::vector<float> & LookUpTable) {
 
 		CreateAlignmentStrings(read, genome, queryString, alignString, refString);
 		AlignStringsToCigar(queryString, refString, cigar, nm, nmm, ndel, nins, opts, LookUpTable);
@@ -586,7 +586,7 @@ class Alignment {
 		out << endl;
 	}
 
-	void PrintSAM(ostream &out, Options &opts, const vector<Alignment*> &alngroup, int as, char *passthrough=NULL) {
+	void PrintSAM(ostream &out, const Options &opts, const vector<Alignment*> &alngroup, int as, char *passthrough=NULL) {
 		stringstream samStrm;
 		samStrm << readName << "\t";
 		assert(prepared);
@@ -741,7 +741,7 @@ class Alignment {
 	}
 
 	// No SA tag
-	void SimplePrintSAM(ostream &out, Options &opts, char *passthrough=NULL) {
+	void SimplePrintSAM(ostream &out, const Options &opts, char *passthrough=NULL) {
 		stringstream samStrm;
 		samStrm << readName << "\t";
 		if (blocks.size() == 0) {
@@ -862,7 +862,7 @@ public:
 	};
 	~SegAlignmentGroup () {};
 
-	void SetFromSegAlignment(Options &opts) {
+	void SetFromSegAlignment(const Options &opts) {
 		if (SegAlignment.size() == 0) {return;}
 		ISsecondary = SegAlignment[0]->ISsecondary; // the SegAlignment[0] contains the info for the whole alignment
 		NumOfAnchors0 =  SegAlignment[0]->NumOfAnchors0;

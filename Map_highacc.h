@@ -35,7 +35,7 @@
 using namespace std;
 
 int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vector<float> & LookUpTable, Read &read, Genome &genome, 
-								vector<GenomeTuple> &genomemm, LocalIndex &glIndex, Options &opts, ostream *output, ostream *svsigstrm,
+								vector<GenomeTuple> &genomemm, LocalIndex &glIndex, const Options &opts, ostream *output, ostream *svsigstrm,
 								Timing &timing, IndelRefineBuffers &indelRefineBuffers, char *strands[2], char* readRC, pthread_mutex_t *semaphore=NULL) {
 	vector<Cluster> clusters;
 	MatchesToFineClusters(forMatches, clusters, genome, read, opts, timing);

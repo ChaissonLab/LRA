@@ -170,7 +170,7 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, 
 }
 
 
-void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & splitclusters, Options & opts, Read &read) {
+void DecideSplitClustersValue (vector<Cluster> & clusters, vector<Cluster> & splitclusters, const Options & opts, Read &read) {
 	if (read.unaligned) return;
 	if (splitclusters.size() == 0) return;
 	//

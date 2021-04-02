@@ -311,7 +311,7 @@ PassValueToD2 (unsigned int i, vector<Fragment_Info> & Value, const vector<Point
 //
 template<typename Tup>
 void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
-				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, Options & opts, 
+				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, const Options & opts, 
 				 const vector<float> & LookUpTable, const vector<Tup> & FragInput, float & rate) { // vector<ClusterCoordinates> & FragInput
 
 	bool step_sdp = 0;
@@ -660,8 +660,8 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 //
 template<typename Tup>
 void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
-				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, Options & opts, 
-				 const vector<float> & LookUpTable, const vector<Tup*> &FragInput, float & rate) { // vector<ClusterCoordinates> & FragInput
+				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, const Options & opts, 
+				 const vector<float> & LookUpTable, const vector<Tup*> &FragInput, float  rate) { // vector<ClusterCoordinates> & FragInput
 	bool step_sdp = 1;
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
@@ -1014,8 +1014,8 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 //
 template<typename Tup>
 void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1,
-				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, Options & opts, 
-				 const vector<float> & LookUpTable, const vector<Tup> &FragInput, const vector<int> & MatchStart, float & rate) { 
+				 StackOfSubProblems & SubR2, StackOfSubProblems & SubC2, vector<Fragment_Info> & Value, const Options & opts, 
+				 const vector<float> & LookUpTable, const vector<Tup> &FragInput, const vector<int> & MatchStart, float  rate) { 
 	bool step_sdp = 0;
 	for (unsigned int i = 0; i < H1.size(); ++i) { // process points by row
 
@@ -1585,7 +1585,7 @@ ComputeNumOfAnchors (const vector<Cluster> & FragInput, const vector<unsigned in
 //
 void 
 DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
-					const vector<Fragment_Info> & Value, vector<Primary_chain> &Primary_chains, Read & read, Options & opts) {
+					const vector<Fragment_Info> & Value, vector<Primary_chain> &Primary_chains, Read & read, const Options & opts) {
 
 	vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
@@ -1657,7 +1657,7 @@ DecidePrimaryChains(const vector<Cluster> & FragInput, StackOfSubProblems & SubR
 //
 void 
 DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, StackOfSubProblems & SubC1, StackOfSubProblems & SubR2, StackOfSubProblems & SubC2,
-					const vector<Fragment_Info> & Value, vector<UltimateChain> &chains, Read & read, Options & opts, vector<int> &MatchStart) {
+					const vector<Fragment_Info> & Value, vector<UltimateChain> &chains, Read & read, const Options & opts, vector<int> &MatchStart) {
 	vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
 	float value_thres = 0.70f * fragments_valueOrder[0];
@@ -1763,7 +1763,7 @@ DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, Sta
 //
 // Only insert s1, e1 for forward matches and s2, e2 for reverse matches
 //
-int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, FinalChain &finalchain, Options &opts, const vector<float> &LookUpTable, Read &read) {
+int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, FinalChain &finalchain, const Options &opts, const vector<float> &LookUpTable, Read &read) {
 	if (read.unaligned) return 0;
 	if (inputChain.size() == 0) return 0;
 	//
@@ -1953,7 +1953,7 @@ int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, Fin
 // fragments of different lengths
 // This SDP needs to insert 4 points for any anchors
 //
-int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, Options & opts, const vector<float> & LookUpTable, Read & read, float & rate) {
+int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chains, const Options & opts, const vector<float> & LookUpTable, Read & read, float & rate) {
 	if (FragInput.size() == 0) return 0;
 	// if (Primary_chains.size() != 0 and Primary_chains[0].chains.size() == opts.NumAln) return 0;
 	vector<Point>  H1;
@@ -2136,7 +2136,7 @@ int SparseDP (vector<Cluster> & FragInput, vector<Primary_chain> & Primary_chain
 //
 // The input to this SparseDP is pure matches -- insert 4 points for each anchor
 //
-int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options &opts, const vector<float> &LookUpTable, Read &read, float rate) {
+int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, const Options &opts, const vector<float> &LookUpTable, Read &read, float rate) {
 	if (read.unaligned) return 0;
 	//
 	// Compute the matches start in each Cluster;
@@ -2284,7 +2284,7 @@ int SparseDP (vector<Cluster> &FragInput, vector<UltimateChain> &chains, Options
 //
 // The input to this SparseDP is for one cluster
 //
-int SparseDP (int ClusterIndex, vector<Cluster> &FragInput, UltimateChain &ultimatechain, Options &opts, const vector<float> &LookUpTable, Read &read) {
+int SparseDP (int ClusterIndex, vector<Cluster> &FragInput, UltimateChain &ultimatechain, const Options &opts, const vector<float> &LookUpTable, Read &read) {
 	if (read.unaligned) return 0;
 	if (FragInput[ClusterIndex].matches.size() == 0) return 0;
 	//
