@@ -1660,7 +1660,7 @@ DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, Sta
 					const vector<Fragment_Info> & Value, vector<UltimateChain> &chains, Read & read, const Options & opts, vector<int> &MatchStart) {
 	vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-	float value_thres = 0.70f * fragments_valueOrder[0];
+	float value_thres = 0.60f * fragments_valueOrder[0];
 	//float value_thres = opts.alnthres*fragments_valueOrder[0];
 	// cerr << "value_thres: " << value_thres << endl;
 	// cerr << "fragments_valueOrder[0]: " << fragments_valueOrder[0] << " fragments_valueOrder[1]: " << fragments_valueOrder[1] << endl;
@@ -2431,7 +2431,7 @@ int SparseDP (int ClusterIndex, vector<Cluster> &FragInput, UltimateChain &ultim
 	ultimatechain.FirstSDPValue = max_value;
 	TraceBack(SubR1, SubC1, SubR2, SubC2, Value, max_pos, chain, link); // NOTICE: This chain is from the last anchors to the first anchor;
 	ultimatechain.Initialize(chain, Value, link);
-	ultimatechain.NumOfAnchors0 = chain.size();
+	ultimatechain.NumOfAnchors1 = chain.size();
 	chain.clear(); link.clear();
 	clear(H1, H2, SubR1, SubC1, SubR2, SubC2, Value, Row, Col);
 	return 0;

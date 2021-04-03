@@ -178,11 +178,13 @@ public:
 	float SecondSDPValue;
 	float FirstSDPValue;
 	int NumOfAnchors0;
+	int NumOfAnchors1;
 	GenomePos QStart, QEnd, TStart, TEnd;
 
 	UltimateChain() {}
 	UltimateChain(vector<Cluster> * c, float &s) : clusters(c), SecondSDPValue(s) {}
 	UltimateChain(vector<Cluster> * cl): clusters(cl) {}
+
 	~UltimateChain() {};
 
 	bool strand (int i) {
