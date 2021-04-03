@@ -351,6 +351,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.02; 
       		opts.hardClip=true;
+      		opts.alnthres=0.6f;
    		
     		// opts.second_anchor_rate=4.0f; //2
 		}		
@@ -377,6 +378,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.02; 
       		opts.hardClip=true;
+      		opts.alnthres=0.6f;
    		
     		// opts.second_anchor_rate=4.0f; //2		
 			// opts.rate_FirstSDPValue=0;

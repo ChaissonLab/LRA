@@ -178,7 +178,7 @@ public:
 		NumOfminimizersPerWindow = 5;
 		Printsvsig=false;
 		svsigLen = 25;
-		alnthres = 0.7;
+		alnthres = 0.7f;
 		timing="";
 		localIndexWindow=256;
 		globalWinsize = 16;
