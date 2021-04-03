@@ -561,7 +561,7 @@ void AVGfreq(int as, int ae, vector<pair<Tup, Tup> > &matches, float &avgfreq) {
 }
 
 template<typename Tup>
-void CleanOffDiagonal(Genome &genome, vector<Cluster> &cluster, vector<pair<Tup, Tup> > &matches, vector<float> &matches_freq, const Options &opts, Read &read, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
+void CleanOffDiagonal(Genome &genome, vector<Cluster> &clusters, vector<pair<Tup, Tup> > &matches, vector<float> &matches_freq, const Options &opts, Read &read, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
 	if (matches.size() == 0) {
 		return;
 	}
@@ -733,9 +733,9 @@ void CleanOffDiagonal(Genome &genome, vector<Cluster> &cluster, vector<pair<Tup,
 		//
 		// Store diagonal in clusters
 		//
-		int count_s = count[0];
-		for (int c = 1; c < count.size(); c++) {
-			if (count[c] == count[c-1]) continue;
+		int count_s = 0; int c = 1;
+		while (c < count.size()) {
+			if (count[c] == count[c-1]) {c++; continue;}
 
 			GenomePos qStart = matches[count_s].first.pos, 
 					  qEnd = matches[count_s].first.pos + opts.globalK, 
@@ -747,7 +747,7 @@ void CleanOffDiagonal(Genome &genome, vector<Cluster> &cluster, vector<pair<Tup,
 				tStart = min(tStart, matches[b].second.pos);
 				tEnd   = max(tEnd, matches[b].second.pos + opts.globalK);
 			}
-
+			assert(count_s < c);
 			if (opts.bypassClustering) { // needs to insert matches
 				clusters.push_back(Cluster(count_s, c, qStart, qEnd, tStart, tEnd, strand));
 				for (int b = count_s; b < c; b++) {
@@ -761,10 +761,110 @@ void CleanOffDiagonal(Genome &genome, vector<Cluster> &cluster, vector<pair<Tup,
 			else {
 				clusters.push_back(Cluster(count_s, c, qStart, qEnd, tStart, tEnd, strand));
 				clusters.back().anchorfreq = matches_freq[count_s];	
-			}		
-		}		
+			}	
+			count_s = c;	
+			c++;			
+		}
+		if (c == count.size() and count_s < c) {
+			GenomePos qStart = matches[count_s].first.pos, 
+					  qEnd = matches[count_s].first.pos + opts.globalK, 
+				      tStart = matches[count_s].second.pos, 
+				      tEnd = matches[count_s].second.pos + opts.globalK;
+			for (int b = count_s; b < c; b++) {
+				qStart = min(qStart, matches[b].first.pos);
+				qEnd   = max(qEnd, matches[b].first.pos + opts.globalK);
+				tStart = min(tStart, matches[b].second.pos);
+				tEnd   = max(tEnd, matches[b].second.pos + opts.globalK);
+			}
+			assert(count_s < c);
+			if (opts.bypassClustering) { // needs to insert matches
+				clusters.push_back(Cluster(count_s, c, qStart, qEnd, tStart, tEnd, strand));
+				for (int b = count_s; b < c; b++) {
+					clusters.back().matches.push_back(matches[b]);
+				}
+				clusters.back().anchorfreq = matches_freq[count_s];
+				clusters.back().SetClusterBoundariesFromMatches(opts);
+				int rci = genome.header.Find(clusters.back().tStart);
+				clusters.back().chromIndex = rci;
+			}
+			else {
+				clusters.push_back(Cluster(count_s, c, qStart, qEnd, tStart, tEnd, strand));
+				clusters.back().anchorfreq = matches_freq[count_s];	
+			}				
+		}	
 	}
 }
+
+
+template<typename Tup>
+void SecondRoundCleanOffDiagonal(vector<int> &count, int out_counter, vector<pair<Tup, Tup> > &matches, int  MinDiagCluster,int CleanMaxDiag, vector<bool> &OriginalOnDiag, int os, int oe, 
+									const Options &opts, float avgfreq, int strand=0, int diagOrigin=-1, int diagDrift=-1) {
+	if (MinDiagCluster >= oe - os) return;
+	if (MinDiagCluster <= 0) {
+		for (int i = os; i < oe; i++) {
+			OriginalOnDiag[i] = true;
+			count[i] = out_counter;
+		}	
+		return;	
+	}
+	if (oe - os <= 1) return;
+	//
+	// starting from forward order
+	//
+	int nOnDiag2=0;
+	vector<bool> foward_onDiag(oe - os, false);
+	vector<bool> reverse_onDiag(oe - os, false);
+	for (int i = os + 1; i < oe; i++) {
+		if (abs(DiagonalDifference(matches[i], matches[i - 1], strand)) < CleanMaxDiag 
+			and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift)) {	
+			foward_onDiag[i - 1 - os] = true;
+			nOnDiag2++;
+		}
+	}
+	bool prevOnDiag = false; int diagStart; int counter = 0;
+	for (int i = os; i < oe; i++) {
+		if (prevOnDiag == false and foward_onDiag[i - os] == true) { diagStart = i;}
+		if (prevOnDiag == true and foward_onDiag[i - os] == false) {
+			if (i - diagStart + 1 < MinDiagCluster) { // [diagStart, i]
+				for (int j = diagStart; j <= i; j++) { foward_onDiag[j - os] = false; }
+			}
+			else { foward_onDiag[i - os] = true; }
+			counter++;
+		}
+		prevOnDiag = foward_onDiag[i - os];
+	}	
+	//
+	// starting from reverse order
+	//
+	for (int i = oe - 2; i >= os; i--) {
+		if (abs(DiagonalDifference(matches[i], matches[i + 1], strand)) < CleanMaxDiag 
+			and (diagOrigin == -1 or DiagonalDrift(diagOrigin, matches[i],strand) < diagDrift)) {	
+			reverse_onDiag[i + 1 - os] = true;
+			nOnDiag2++;
+		}
+	}
+	prevOnDiag = false; counter = 0;
+	for (int i = oe - 1; i >= os; i--) {
+		if (prevOnDiag == false and reverse_onDiag[i - os] == true) { diagStart = i;}
+		if (prevOnDiag == true and reverse_onDiag[i - os] == false) {
+			if (diagStart - i + 1 < MinDiagCluster) { // [diagStart, i]
+				for (int j = i; j <= diagStart; j++) { reverse_onDiag[j - os] = false; }
+			}
+			else { reverse_onDiag[i - os] = true; }
+			counter++;
+		}
+		prevOnDiag = reverse_onDiag[i - os];
+	}
+
+	for (int i = os; i < oe; i++) {
+		if (foward_onDiag[i - os] == true and reverse_onDiag[i - os] == true) { 
+			OriginalOnDiag[i] = true; 
+			count[i] = out_counter;
+		}
+		else {OriginalOnDiag[i] = false;}
+	}
+}
+
 
 template<typename Tup>
 void PrintDiagonal(vector<pair<Tup, Tup> > &matches, int strand=0) {
@@ -1504,9 +1604,9 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 	else {
 		AntiDiagonalSort<GenomeTuple>(Matches, 500);
 		vector<float> Matches_freq(Matches.size(), 1);
-		vector<Cluster> revroughClusters;	
+		vector<Cluster> revroughClusters;
+		vector<Cluster> split_revroughClusters;			
 		if (opts.ExtractDiagonalFromClean) {
-			vector<Cluster> split_revroughClusters;			
 			CleanOffDiagonal(genome, revroughClusters, Matches, Matches_freq, opts, read, 1);			
 		}
 		else {
