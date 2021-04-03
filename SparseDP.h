@@ -1660,7 +1660,7 @@ DecidePrimaryChains(vector<Cluster> & FragInput, StackOfSubProblems & SubR1, Sta
 					const vector<Fragment_Info> & Value, vector<UltimateChain> &chains, Read & read, const Options & opts, vector<int> &MatchStart) {
 	vector<bool> used(Value.size(), 0);
 	Fragment_valueOrder fragments_valueOrder(&Value);
-	float value_thres = 0.60f * fragments_valueOrder[0];
+	float value_thres = opts.alnthres * fragments_valueOrder[0];
 	//float value_thres = opts.alnthres*fragments_valueOrder[0];
 	// cerr << "value_thres: " << value_thres << endl;
 	// cerr << "fragments_valueOrder[0]: " << fragments_valueOrder[0] << " fragments_valueOrder[1]: " << fragments_valueOrder[1] << endl;
