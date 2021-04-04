@@ -680,17 +680,23 @@ class Alignment {
 			}
 			samStrm << "\t";
 			samStrm << "NM:i:" << nmm + ndel + nins << "\t";
-			// samStrm << "NX:i:" << nmm << "\t";
-			// samStrm << "ND:i:" << ndel << "\t";
-			// samStrm << "TD:i:" << tdel << "\t";
-			// samStrm << "NI:i:" << nins << "\t";
-			// samStrm << "TI:i:" << tins << "\t";
+			samStrm << "NX:i:" << nmm << "\t";
+			samStrm << "ND:i:" << ndel << "\t";
+			samStrm << "TD:i:" << tdel << "\t";
+			samStrm << "NI:i:" << nins << "\t";
+			samStrm << "TI:i:" << tins << "\t";
 			samStrm << "NV:f:" << value << "\t";
 			samStrm << "AO:i:" << order << "\t";
-
+			samStrm << "N0:i:" << NumOfAnchors0 << "\t";
+			samStrm << "SD:i:" << nSmallDel << "\t"
+				<< "MD:i:" << nMedDel << "\t"
+				<< "LD:i:" << nLargeDel << "\t"
+				<< "SI:i:" << nSmallIns << "\t"
+				<< "MI:i:" << nMedIns << "\t"
+				<< "LI:i:" << nLargeIns;
 			// output SA tag
 			if (alngroup.size() > 1) {
-				samStrm << "SA:Z:";
+				samStrm << "\tSA:Z:";
 			}
 			for (int ag = alngroup.size() - 1; ag >= 0; ag--) {
 				if (ag == as) {continue;}
@@ -742,7 +748,9 @@ class Alignment {
 			tStart=0;
 			tEnd=0;
 			order=0;
-			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t" << string(read,readLen) << "\t*";
+			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t";
+			samStrm.write(read,readLen);
+			samStrm << "\t*";
 		}
 		else {
 			int last = blocks.size();
