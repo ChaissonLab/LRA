@@ -84,16 +84,6 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	for (int s = 0; s < clusters.size(); s++) {	
 		if (clusters[s].anchorfreq > 1.0f and clusters[s].anchorfreq <= 2.0f and clusters[s].matches.size() >= 500) {repetitivecluster = true;}
 	}		
-
-	for (int s = 0; s < clusters.size(); s++) {	
-		// Subtract chromOffSet from t coord.
-		GenomePos chromOffset = genome.header.pos[clusters[s].chromIndex];
-		for (int m = 0; m < clusters[s].matches.size(); m++) {
-			clusters[s].matches[m].second.pos -= chromOffset;
-		}
-		clusters[s].tStart -= chromOffset;
-		clusters[s].tEnd -= chromOffset;
-	}
 	if (opts.dotPlot and opts.readname == read.name) {
 		ofstream cpclust("clusters-pre-remove.tab");
 		for (int m = 0; m < clusters.size(); m++) {
@@ -122,6 +112,15 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		}
 		cpclust.close();
 	}
+	for (int s = 0; s < clusters.size(); s++) {	
+		// Subtract chromOffSet from t coord.
+		GenomePos chromOffset = genome.header.pos[clusters[s].chromIndex];
+		for (int m = 0; m < clusters[s].matches.size(); m++) {
+			clusters[s].matches[m].second.pos -= chromOffset;
+		}
+		clusters[s].tStart -= chromOffset;
+		clusters[s].tEnd -= chromOffset;
+	}
 	vector<Cluster> ext_clusters(clusters.size());
 	vector<UltimateChain> chains;
 	//
@@ -140,6 +139,16 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	for (int s = 0; s < clusters.size(); s++) {o += clusters[s].matches.size();}
 	for (int s = 0; s < clusters.size(); s++) {a += ext_clusters[s].matches.size();}
 	//cerr << "Linear Extend efficiency: " << (float) a/o << endl;
+	for (int s = 0; s < ext_clusters.size(); s++) {	
+		// Subtract chromOffSet from t coord.
+		GenomePos chromOffset = genome.header.pos[clusters[s].chromIndex];
+		for (int m = 0; m < ext_clusters[s].matches.size(); m++) {
+			ext_clusters[s].matches[m].second.pos += chromOffset;
+		}
+		ext_clusters[s].tStart += chromOffset;
+		ext_clusters[s].tEnd += chromOffset;
+	}	
+	clusters.clear();
 	if (opts.dotPlot and opts.readname == read.name) {
 		ofstream clust("Initial_ExtendClusters.tab", ofstream::app);
 		for (int ep = 0; ep < ext_clusters.size(); ep++) {
@@ -166,16 +175,6 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		}
 		clust.close();
 	}
-	for (int s = 0; s < ext_clusters.size(); s++) {	
-		// Subtract chromOffSet from t coord.
-		GenomePos chromOffset = genome.header.pos[clusters[s].chromIndex];
-		for (int m = 0; m < ext_clusters[s].matches.size(); m++) {
-			ext_clusters[s].matches[m].second.pos += chromOffset;
-		}
-		ext_clusters[s].tStart += chromOffset;
-		ext_clusters[s].tEnd += chromOffset;
-	}	
-	clusters.clear();
 	//
 	// SDP on matches
 	//
@@ -522,6 +521,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		vector<UltimateChain> ultimatechains(merge_spcluster.size());
 		for (int t = 0; t < merge_spcluster.size(); t++) {
 			ultimatechains[t].clusters = &extend_clusters;
+			ultimatechains[t].NumOfAnchors0 = chains[p].NumOfAnchors0;
 			if (extend_clusters.size() > 0) { // and extend_clusters[0].matches.size() < 3*read.length
 				SparseDP(merge_spcluster[t], extend_clusters, ultimatechains[t], smallOpts, LookUpTable, read);
 				// ultimatechains[t].DebugCheck(read.length, genome);

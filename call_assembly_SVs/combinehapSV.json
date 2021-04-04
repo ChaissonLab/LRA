@@ -1,0 +1,7 @@
+{
+	"ref" : "/home/cmb-16/mjc/jingwenr/lra_project_old/SV/ref/human_hs37d5.fasta",
+	"data_path" : "/auto/cmb-16/mjc/jingwenr/LRA_revision/SV_calling/canu_assembly",
+	"samtools" : "/home/cmb-16/mjc/jingwenr/software/samtools",
+	"hap" : ["maternal", "paternal"],
+	"fai" : "/home/cmb-16/mjc/jingwenr/lra_project_old/SV/ref/human_hs37d5.fasta.fai"
+}

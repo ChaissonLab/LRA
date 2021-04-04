@@ -107,6 +107,7 @@ public:
 	bool bypassClustering;
 	bool refineEnd;
 	int refineSpaceDist;
+	bool ExtractDiagonalFromClean;
 	Options() {
 		skipBandedRefine=false;
 		storeTiming=false;
@@ -177,7 +178,7 @@ public:
 		NumOfminimizersPerWindow = 5;
 		Printsvsig=false;
 		svsigLen = 25;
-		alnthres = 0.7;
+		alnthres = 0.7f;
 		timing="";
 		localIndexWindow=256;
 		globalWinsize = 16;
@@ -211,7 +212,7 @@ public:
 		bypassClustering=false;
 		refineEnd=false;
 		refineSpaceDist=10000;
-
+		ExtractDiagonalFromClean=false;
 	}
 };
 #endif

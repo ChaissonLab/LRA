@@ -289,6 +289,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.punish_anchorfreq=10;
      		opts.anchorPerlength=10;
      		opts.hardClip=true;
+     		opts.ExtractDiagonalFromClean=true;
 
    			// opts.secondcoefficient=15;
    			// opts.rate_FirstSDPValue=0;
@@ -315,6 +316,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.anchor_rate=4.0f;
     		opts.anchorstoosparse=0.005; 
      		opts.hardClip=true;
+     		opts.ExtractDiagonalFromClean=true;
 
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;
@@ -351,6 +353,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.02; 
       		opts.hardClip=true;
+      		opts.alnthres=0.50f;
    		
     		// opts.second_anchor_rate=4.0f; //2
 		}		
@@ -377,6 +380,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.02; 
       		opts.hardClip=true;
+      		opts.alnthres=0.65f;
    		
     		// opts.second_anchor_rate=4.0f; //2		
 			// opts.rate_FirstSDPValue=0;
@@ -391,6 +395,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "--bypassClustering")) {
 			opts.bypassClustering = true;
+		}	
+		else if (ArgIs(argv[argi], "--ExtractDiagonalFromClean")) {
+			opts.ExtractDiagonalFromClean = true;
 		}
 		else if (ArgIs(argv[argi], "--NotbypassClustering")) {
 			opts.bypassClustering = false;
@@ -440,6 +447,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "--CheckTrueIntervalInFineCluster")) {
 			opts.CheckTrueIntervalInFineCluster = true;
+		}
+		else if (ArgIs(argv[argi], "--alnthres")) {
+			opts.alnthres = atof(GetArgv(argv,argc,argi));
+			++argi;
 		}
 		else if (ArgIs(argv[argi], "--anchor_rate")) {
 			opts.anchor_rate = atof(GetArgv(argv,argc,argi));

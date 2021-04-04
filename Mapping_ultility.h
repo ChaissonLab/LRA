@@ -402,8 +402,15 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, const Options &op
 		if (r == 0 and len == 1) {
 			// set mapq for each segment
 			for (int s = alignmentsOrder[r].SegAlignment.size() - 1; s >= 0 ; s--) {
-				float pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 > 20? 1.0f : 0.05f ) * alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0;
-				pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 >= 5? 1.0f : 0.1f ) * pen_cm_1;
+				float pen_cm_1;
+				if (!opts.bypassClustering) {
+					pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 > 20? 1.0f : 0.05f ) * alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0;
+					pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 >= 5? 1.0f : 0.1f ) * pen_cm_1;					
+				}
+				else {
+					pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 > 10? 1.0f : 0.05f ) * alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0;
+					pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 >= 5? 1.0f : 0.02f ) * pen_cm_1;	// punish more
+				}
 				float identity = ((float) alignmentsOrder[r].SegAlignment[s]->nm ) / (//alignmentsOrder[r].SegAlignment[s]->nm + 
 												      alignmentsOrder[r].SegAlignment[s]->nmm + 
 												   alignmentsOrder[r].SegAlignment[s]->ndel +
@@ -424,8 +431,16 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, const Options &op
 			// set mapq for each segment
 			float x = (alignmentsOrder[r + 1].value) / (alignmentsOrder[r].value);
 			for (int s = alignmentsOrder[r].SegAlignment.size() - 1; s >= 0 ; s--) {
-				float pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 > 20? 1.0f : 0.05f ) * alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0;
-				pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 >= 5? 1.0f : 0.1f ) * pen_cm_1;
+				float pen_cm_1;
+				if (!opts.bypassClustering) {
+					pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 > 20? 1.0f : 0.05f ) * alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0;
+					pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 >= 5? 1.0f : 0.1f ) * pen_cm_1;					
+				}
+				else {
+					pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 > 10? 1.0f : 0.05f ) * alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0;
+					pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 >= 5? 1.0f : 0.02f ) * pen_cm_1;
+				}
+
 				float identity = (float) alignmentsOrder[r].SegAlignment[s]->nm / ( //alignmentsOrder[r].SegAlignment[s]->nm +
 												   alignmentsOrder[r].SegAlignment[s]->nmm + 
 												   alignmentsOrder[r].SegAlignment[s]->ndel +
