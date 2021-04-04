@@ -1610,9 +1610,175 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 }
 
 
+
+
+class EasyMat {
+public:
+  int score;
+  int prev;
+  int m;
+  int cluster;
+  EasyMat() {
+    score=0; prev=-1; m=0; cluster=-1;
+  }
+};
+
+class ScoreSortOp {
+  public:
+  vector<EasyMat> *mat;  
+  int operator()(const int &i, const int &j) {
+    return (*mat)[i].score  < (*mat)[j].score;
+  }
+};
+
+
+void EasyChain(vector<GenomePair> &matches, Genome &genome, Read &read, const Options &opts, int strand=0) {
+  if (strand == 0) {
+    CartesianSort<GenomeTuple>(matches);
+  }
+  else {
+
+  }
+  vector<EasyMat> mat(matches.size());
+  for (int i=0;i<matches.size(); i++) { mat[i].m=i;}
+  
+  int lookback=opts.globalMaxFreq*2;
+  for (int m=1; m < matches.size(); m++) {
+    int minDist=-1;
+    int minIndex=-1;
+    GenomePair cur=matches[m];
+    int curLookbackIndex=max(0,m-lookback);
+    GenomePair *prevPtr=&matches[curLookbackIndex];
+    GenomePair *curPtr=&matches[m];
+    int prev;
+    int maxScore=0;
+    for ( prev=curLookbackIndex; prev < m ; prevPtr++, prev++) {
+    //    for ( prev=0; prev < m ; prevPtr++, prev++) {    
+      //      int tGap=cur.second.pos - prevPtr->second.pos;
+      //      int qGap=cur.first.pos  - prevPtr->first.pos;
+      int tGap = matches[m].second.pos - matches[prev].second.pos;
+      int qGap = matches[m].first.pos  - matches[prev].first.pos;
+      int gap=max(tGap,qGap) - min(tGap,qGap);
+      int closestCoord=min(tGap,qGap);
+      /*
+      if (matches[m].second.pos > 33583836 && matches[m].second.pos < 33594671) 
+	cout << "LOOKBACK:\t" << m << "\t" << matches[m].first.pos << "\t" << matches[m].second.pos << "\t" << prev << "\t" << matches[prev].first.pos << "\t" << matches[prev].second.pos << "\t" << gap << endl;
+      */
+      if ( gap < opts.maxGapBtwnAnchors) {	
+	minIndex=prev;
+	minDist=gap;
+	if (mat[prev].score >= maxScore) {	  
+	  maxScore=mat[prev].score;
+	}
+      }
+    }
+    // longest common substring, no gap penalty
+    if (minDist != -1) {
+      mat[m].score = mat[minIndex].score + 1;
+      mat[m].prev  = minIndex;
+      assert(minIndex != m);
+      cout << "CHAIN:\t" << m << "\t" << matches[m].first.pos << "\t" << matches[m].second.pos << " \t" << minDist << " to\t" << minIndex << "\t" << matches[minIndex].first.pos << "\t" << matches[m].second.pos << "\t" << mat[m].score << endl;
+    }
+    
+  }
+  //
+  vector<int> index(mat.size());
+  iota(index.begin(), index.end(), 0);
+
+  ScoreSortOp sorter;
+  sorter.mat=&mat;  
+  sort(index.begin(), index.end(), sorter);
+  //  sort(mat.begin(), mat.end(), ScoreSortOp<EasyMat>());
+  for (int m=index.size()-1; m>=0; m--) {
+    int idx=index[m];
+    int prev=mat[idx].prev;
+    if (prev != -1) {
+      cout << "assigning prev " << prev << " score to cur " << m << " " << mat[idx].score << endl;
+      mat[prev].score = mat[idx].score;
+    }
+  }
+  ofstream cmo("chainedMatchesOrig.dots");
+  for (int m=0; m < mat.size(); m++) {
+    if (mat[m].score > 0) {
+      cmo << matches[mat[m].m].first.pos << "\t" << matches[mat[m].m].second.pos << "\t" << mat[m].prev << "\t" << mat[m].score << endl;
+    }
+  }
+  /*
+  int m=mat.size()-1;
+  int cluster=-1;
+  int chainThresholdScore=3;
+  while (m > 0 ) {
+    //
+    // If already processed or no prev, mark and continue
+    //
+    if (mat[m].prev < 0) { m--; continue;}
+    int mc=m;
+    //
+    // Trace this cluster back to beginning    
+    int thisChainScore=mat[mc].score;
+    while (mat[mc].prev != -1) {
+      mc=mat[mc].prev;
+    }
+    assert(mc >=0);
+    int chainStartScore=mat[mc].score;
+    int maxChainScore = max(chainStartScore, thisChainScore);
+    if (maxChainScore < chainThresholdScore) {
+      //
+      // This chain doesn't belong in a cluster, mark 
+      
+      int mi=m;
+      int mip;
+      while(mat[mi].prev != -1) {
+	mat[mi].score=-1;
+	mip=mi;
+	mi=mat[mi].prev;
+	// mark as unused
+	mat[mip].prev = -1;
+	cout << "too low, removing " << mip << endl;
+      }
+      mat[mi].prev=-1;
+      cout << "too low, removing " << mi << endl;
+    }
+    else {
+      int optCluster;
+      if (chainStartScore > thisChainScore) {
+	optCluster=mat[mc].cluster;
+      }
+      else {
+	++cluster;
+	optCluster=cluster;
+      }
+      // Add everything in this chain to the cluster
+      
+      int mi=m;
+      int mip;
+      while (mat[mi].prev != -1) {      
+	mat[mi].score=chainStartScore;
+	cout << "Setting cluster for " << mi << endl;
+	mat[mi].cluster = optCluster;
+	mip=mi;
+	mi=mat[mi].prev;
+	cout << "removing " << mip << endl;
+	mat[mip].prev=-1;
+      }
+    }
+    m--;
+  }
+  ofstream cm("chainedMatches.dots");
+  for (int m=0; m < mat.size(); m++) {
+    if (mat[m].cluster >= 0) {
+      cm << matches[mat[m].m].first.pos << "\t" << matches[mat[m].m].second.pos << "\t" << mat[m].cluster << "\t" << mat[m].score << endl;
+    }
+  }
+
+  cout << "Ended with " << cluster << " clusters" << endl;
+  */
+}
+
 void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genome &genome, Read &read, const Options &opts, Timing &timing, bool ma_strand = 0) {
 	if (read.unaligned) return;
 	if (ma_strand == 0) {
+
 		//
 		// Guess that 500 is where the setup/takedown overhead of an array index is equal to sort by value.
 		// sort fragments in allMatches by forward diagonal, then by first.pos(read)
@@ -1627,7 +1793,7 @@ void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genom
 			fclust.close();
 		}
 		vector<float> Matches_freq(Matches.size(), 1);
-		CleanOffDiagonal(Matches, Matches_freq, opts, read);
+		//		CleanOffDiagonal(Matches, Matches_freq, opts, read);
 		StoreDiagonalClusters(genome, Matches_freq, Matches, clusters, opts, 0, Matches.size(), 0); 
 		timing.Tick("CleanOffDiagonal");
 
@@ -1641,6 +1807,7 @@ void CleanMatches (vector<GenomePair> &Matches, vector<Cluster> &clusters, Genom
 		}	
 	}
 	else {
+
 		AntiDiagonalSort<GenomeTuple>(Matches, 500);
 		if (opts.dotPlot and read.name == opts.readname) {
 			ofstream rclust("rev-matches.dots");

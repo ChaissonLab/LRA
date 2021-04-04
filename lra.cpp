@@ -357,7 +357,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.readType=Options::raw;
 			opts.HighlyAccurate=false;
-			opts.NumAln=2;
+			opts.NumAln=3;
    			opts.PrintNumAln=1;
    			opts.merge_dist=100;
    			opts.RoughClustermaxGap=1000; 
@@ -499,6 +499,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "--maxCandidates")) {
 			opts.maxCandidates = atoi(GetArgv(argv, argc, argi));
 			++argi;
+		}
+		else if (ArgIs(argv[argi], "-F")) {
+		  opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
+		  ++argi;
 		}
 		else {
 			if (genomeFile == "") {
@@ -797,7 +801,7 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			// opts.globalW = 10;
 			// opts.globalWinsize = 7;
 
-			opts.globalK = 15;
+			opts.globalK = 13;
 			opts.globalW = 10;
 			opts.globalMaxFreq = 250;
 			opts.globalWinsize = 10;

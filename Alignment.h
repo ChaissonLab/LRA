@@ -31,6 +31,7 @@ class Alignment {
 	vector<Block> blocks; // The positions in every block are relative to qPos and tPos;
 	int nm, nmm, nins, ndel;
 	int tm, tmm, tins, tdel;
+        int nSmallDel, nMedDel, nLargeDel, nSmallIns, nMedIns, nLargeIns;
 	int preClip, sufClip;
 	string cigar;
 	bool prepared;
@@ -82,6 +83,7 @@ class Alignment {
 		mapqv=0;
 		nm=nmm=nins=ndel=0;
 		tm=tmm=tins=tdel=0;
+		nSmallDel=nSmallIns=nMedDel=nMedIns=nLargeDel=nLargeIns=0;
 		nblocks=0;
 		preClip=0; sufClip=0;
 		prepared=false;
@@ -377,6 +379,16 @@ class Alignment {
 				cigarstrm << i-p << 'D';
 				tdel += i-p;
 				ndel++;
+				if (i-p <= 10) {
+				  nSmallDel+=1;
+				}
+				if (i-p  > 10 && i-p < 50) {
+				  nMedDel += 1;
+				}
+				else if (i-p > 50) {
+				  nLargeDel +=1;
+				}
+
 				if (i-p <= 20) {
 					value -= i-p;
 				}
@@ -393,9 +405,19 @@ class Alignment {
 				cigarstrm << i-p << 'I';
 				tins+=i-p;
 				nins++;
+				if (i-p <= 10) {
+				  nSmallIns+=1;
+				}
+				if (i-p  > 10 && i-p < 50) {
+				  nMedIns += 1;
+				}
+				else if (i-p > 50) {
+				  nLargeIns +=1;
+				}
 				if (i-p <= 20) {
 					value -= i-p;
-				}
+					nSmallIns+=1;
+				}				
 				else if (i-p <= 10001){
 					int a = (int)floor((i-p-1)/5);
 					value += -coefficient*LookUpTable[a] - 1;
@@ -552,12 +574,18 @@ class Alignment {
 			<< "tStart:" << tStart << "\t" << "tEnd:" << tEnd 
 			<< "\t" << "Number of residue matches:" << nm << "\t" << "mapqv: " << (int)mapqv << "\t" << "AO:i:" << order;
 		out << "\tNM:i:" << nmm + ndel + nins << "\t";
-		// out << "NX:i:" << nmm << "\t";
-		// out << "ND:i:" << ndel << "\t";
-		// out << "TD:i:" << tdel << "\t";
-		// out << "NI:i:" << nins << "\t";
-		// out << "TI:i:" << tins << "\t";
-    	out << "NV:f:" << value << "\t";
+		out << "NX:i:" << nmm << "\t";
+		out << "ND:i:" << ndel << "\t";
+		out << "TD:i:" << tdel << "\t";
+		out << "NI:i:" << nins << "\t";
+		out << "TI:i:" << tins << "\t";
+		out << "SD:i:" << nSmallDel << "\t"
+		    << "MD:i:" << nMedDel << "\t"
+		    << "LD:i:" << nLargeDel << "\t"
+		    << "SI:i:" << nSmallIns << "\t"
+		    << "MI:i:" << nMedIns << "\t"
+		    << "LI:i:" << nLargeIns << "\t";
+		out << "NV:f:" << value << "\t";
 		if (typeofaln == 0) {
 			out << "TP:A:" << "P\t";
 		}
