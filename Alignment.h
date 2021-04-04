@@ -605,36 +605,6 @@ class Alignment {
 		else {
 			int last = blocks.size();
 			samStrm << (unsigned int) flag << "\t" << chrom << "\t" << tStart+1 << "\t" << (unsigned int) mapqv << "\t";
-			// if (opts.hardClip) {
-			// 	string subStr;
-			// 	subStr=string(read, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);								
-			// 	samStrm << subStr;
-			// 	if (qual != NULL and strncmp(qual,"*",1) != 0) {
-			// 		qualStr = string(qual, blocks[0].qPos, blocks[last-1].qPos + blocks[last-1].length);
-			// 	}
-			// 	else {
-			// 		qualStr= "*";
-			// 	}
-			// 	if (qualStr != "*") {
-			// 		assert(qualStr.length() == subStr.length());
-			// 	}
-			// }
-			// else {
-			// 	//				string readStr(read, 0, readLen);
-
-			// 	//				samStrm << readStr;
-			// 	samStrm.write(read,readLen);
-
-			// 	if (qual[0] == '*') {
-			// 		qualStr = "*";
-			// 	}
-			// 	else {
-			// 		qualStr.assign(qual, readLen);
-			// 	}
-			// 	if (qualStr != "*") {
-			// 		assert(qualStr.length() == readLen);
-			// 	}
-			// }
 			char clipOp = 'S';
 			if (Supplymentary and opts.hardClip) {
 				clipOp = 'H';				
@@ -646,11 +616,6 @@ class Alignment {
 			if (sufClip > 0) {
 				samStrm << sufClip << clipOp;
 			}
-			// // Rnext, Pnext
-			// samStrm << "\t*\t0\t";
-			// // Template length
-			// samStrm << tEnd - tStart << "\t";			
-			// Rnext, Pnext
 			samStrm << "\t*\t0\t";
 			// Template length
 			samStrm << "0\t"; // samStrm << tEnd - tStart << "\t";
@@ -658,21 +623,15 @@ class Alignment {
 			string readStr;	
 			if (Supplymentary == 0) assert(flag == 0 or flag == 16 or flag == 256 or flag == 272);
 			if (!Supplymentary) { // primary alignment
-				samStrm.write(read,readLen);
-				// readStr = string(read, readLen);
-				// samStrm << readStr;					
+				samStrm.write(read,readLen);				
 			}
 			else { // supplementary alignment
 				if (opts.hardClip) {
-				  //					readStr = string(read, qStart, qEnd - qStart);
 					samStrm.write(&read[qStart],qEnd-qStart);
 					samStrm << readStr;	
-					// assert(cigar.length() == readStr.length());					
 				}
 				else{
-					samStrm.write(read,readLen);
-					// readStr = string(read, readLen);
-					// samStrm << readStr;						
+					samStrm.write(read,readLen);					
 				}	
 			}
 			if (qual[0] == '*') {
@@ -713,9 +672,7 @@ class Alignment {
 				else {
 					samStrm << "-" << ",";
 				}
-				if (opts.hardClip) {
-					clipOp = 'H';
-				}
+				clipOp = 'S';
 				if (alngroup[ag]->preClip > 0) {
 					samStrm << alngroup[ag]->preClip << clipOp;
 				}
