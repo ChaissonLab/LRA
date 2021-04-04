@@ -628,7 +628,7 @@ class Alignment {
 			tStart=0;
 			tEnd=0;
 			order=0;
-			samStrm << "\t*\t0\t0\t*\t*\t0\t0\t";
+			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t";
 			samStrm.write(read,readLen);
 			samStrm << "\t*";
 		}
