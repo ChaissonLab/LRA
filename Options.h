@@ -139,7 +139,7 @@ public:
 		minClusterSize=2; // 
 		minClusterLength=50;  // For CCS, need to be larger!(200)
 		minRefinedClusterSize=40;
-		window=2000; 
+		window=100; 
 		mergeGapped=false;
 		viewPairwise=false;
 		hardClip=false;
