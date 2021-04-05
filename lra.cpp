@@ -395,9 +395,12 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			// opts.NumOfminimizersPerWindow = 1;
 			// opts.maxGapBtwnAnchors=1800;
 		}
+		else if (ArgIs(argv[argi], "--trimrefine")) {
+			opts.trimrefine = true;
+		}	
 		else if (ArgIs(argv[argi], "--bypassClustering")) {
 			opts.bypassClustering = true;
-		}	
+		}
 		else if (ArgIs(argv[argi], "--ExtractDiagonalFromClean")) {
 			opts.ExtractDiagonalFromClean = true;
 		}
