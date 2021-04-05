@@ -399,6 +399,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			// opts.NumOfminimizersPerWindow = 1;
 			// opts.maxGapBtwnAnchors=1800;
 		}
+		else if (ArgIs(argv[argi], "--skiplimitrefine")) {
+			opts.limitrefine = false;
+		}	
 		else if (ArgIs(argv[argi], "--trimrefine")) {
 			opts.trimrefine = true;
 		}	
