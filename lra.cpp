@@ -338,8 +338,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
    			opts.merge_dist=100;
    			opts.RoughClustermaxGap=1000; 
      		opts.maxGap=1000;
-     		opts.cleanMaxDiag=150; //50
-     		opts.SecondCleanMaxDiag=75;
+     		opts.cleanMaxDiag=200; //150
+     		opts.SecondCleanMaxDiag=120;
      		opts.SecondCleanMinDiagCluster=10; //30
       		opts.refineSpaceDist=10000;
       		opts.minDiagCluster=3;
@@ -354,6 +354,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.anchorstoosparse=0.02; 
       		opts.hardClip=true;
       		opts.alnthres=0.50f;
+     		opts.ExtractDiagonalFromClean=true;
    		
     		// opts.second_anchor_rate=4.0f; //2
 		}		
@@ -365,8 +366,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
    			opts.merge_dist=100;
    			opts.RoughClustermaxGap=1000; 
      		opts.maxGap=1000;
-     		opts.cleanMaxDiag=150; //50
-     		opts.SecondCleanMaxDiag=75;
+     		opts.cleanMaxDiag=200; //50
+     		opts.SecondCleanMaxDiag=100;
      		opts.SecondCleanMinDiagCluster=10;
       		opts.refineSpaceDist=10000;
       		opts.minDiagCluster=3;
@@ -381,7 +382,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.anchorstoosparse=0.02; 
       		opts.hardClip=true;
       		opts.alnthres=0.65f;
-   		
+      		opts.ExtractDiagonalFromClean=true;
+  		
     		// opts.second_anchor_rate=4.0f; //2		
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
@@ -811,7 +813,7 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalK = 15;
 			opts.globalW = 10;
 			opts.globalMaxFreq = 250;
-			opts.globalWinsize = 10;
+			opts.globalWinsize = 12;
 			opts.NumOfminimizersPerWindow = 1;	
 		}
 		else if (ArgIs(argv[argi], "-ONT")) {
@@ -827,7 +829,7 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalK = 15;
 			opts.globalW = 10;
 			opts.globalMaxFreq = 250;
-			opts.globalWinsize = 10;
+			opts.globalWinsize = 12;
 			opts.NumOfminimizersPerWindow = 1;	
 		}
 		else if (ArgIs(argv[argi], "-F")) {
