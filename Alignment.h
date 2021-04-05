@@ -600,7 +600,10 @@ class Alignment {
 			tStart=0;
 			tEnd=0;
 			order=0;
-			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t" << string(read,readLen) << "\t*";
+			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t";
+			samStrm.write(read,readLen);
+			samStrm << "\t*";
+			 // << string(read,readLen) << "\t*";
 		}
 		else {
 			int last = blocks.size();
@@ -618,7 +621,8 @@ class Alignment {
 			}
 			samStrm << "\t*\t0\t";
 			// Template length
-			samStrm << "0\t"; // samStrm << tEnd - tStart << "\t";
+			//samStrm << "0\t"; 
+			samStrm << tEnd - tStart << "\t"; // calling assembly script depends on tEnd-tStart
 			string qualStr;
 			string readStr;	
 			if (Supplymentary == 0) assert(flag == 0 or flag == 16 or flag == 256 or flag == 272);
@@ -712,7 +716,9 @@ class Alignment {
 			tStart=0;
 			tEnd=0;
 			order=0;
-			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t" << string(read,readLen) << "\t*";
+			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t";
+			samStrm.write(read,readLen);
+			samStrm << "\t*";
 		}
 		else {
 			int last = blocks.size();
