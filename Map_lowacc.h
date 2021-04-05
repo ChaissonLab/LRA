@@ -266,18 +266,18 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			 	for (int ep= 0; ep < spchain[s].size(); ep++) {
 					if (spchain[s].Strand == 0) {
 						clust << spchain[s].genomepair(ep).first.pos << "\t"
-							  << spchain[s].genomepair(ep).second.pos << "\t"
+							  << spchain[s].genomepair(ep).second.pos + genome.header.pos[spchain[s].CHROMIndex(genome)] << "\t"
 							  << spchain[s].genomepair(ep).first.pos + spchain[s].length(ep) << "\t"
-							  << spchain[s].genomepair(ep).second.pos + spchain[s].length(ep) << "\t"
+							  << spchain[s].genomepair(ep).second.pos + spchain[s].length(ep) + genome.header.pos[spchain[s].CHROMIndex(genome)] << "\t"
 							  << s << "\t"
 							  << p << "\t"
 							  << spchain[s].Strand  << endl;
 					}
 					else {
 						clust << spchain[s].genomepair(ep).first.pos  << "\t"
-							  << spchain[s].genomepair(ep).second.pos + spchain[s].length(ep) << "\t"
+							  << spchain[s].genomepair(ep).second.pos + spchain[s].length(ep) + genome.header.pos[spchain[s].CHROMIndex(genome)] << "\t"
 							  << spchain[s].genomepair(ep).first.pos + spchain[s].length(ep) << "\t"
-							  << spchain[s].genomepair(ep).second.pos << "\t"
+							  << spchain[s].genomepair(ep).second.pos + genome.header.pos[spchain[s].CHROMIndex(genome)]<< "\t"
 							  << s << "\t"
 							  << p << "\t"
 							  << spchain[s].Strand  << endl;					
