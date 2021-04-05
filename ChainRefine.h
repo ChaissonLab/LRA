@@ -466,18 +466,33 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 			GenomePos prev_readStart = read.length;
 			GenomePos readStart = splitchains[ph].qStart(matchStart);
 			GenomePos readEnd = splitchains[ph].qStart(matchEnd-1);
+			int64_t minDiag=(long) (splitchains[ph].qStart(matchStart) - splitchains[ph].tStart(matchStart));
+			int64_t maxDiag = minDiag;
 			for (int mi =matchStart; mi < matchEnd; mi++) {
-			  if (splitchains[ph].qStart(mi) < readStart) { readStart = splitchains[ph].qStart(mi); }
-			  if (splitchains[ph].qEnd(mi) > readEnd) { readEnd = splitchains[ph].qEnd(mi);}
+			  if ( abs((long)(splitchains[ph].qStart(mi) - splitchains[ph].tStart(mi)) -
+				   (long)(splitchains[ph].qStart(matchStart) - splitchains[ph].tStart(matchStart))) < opts.localIndexWindow) {
+			    if (splitchains[ph].qStart(mi) < readStart) {
+			      readStart = splitchains[ph].qStart(mi);
+			    }
+			    if (splitchains[ph].qEnd(mi) > readEnd) {
+			      readEnd = splitchains[ph].qEnd(mi);
+			    }
+			    long diag=(long) (splitchains[ph].qStart(mi) - splitchains[ph].tStart(mi));
+			    if (diag < minDiag) { minDiag = diag;}
+			    if (diag > maxDiag) { maxDiag = diag;}
+			  }		  
 			}
-			if (readStart == readEnd) { // there is a gap
-				if (lsi > ls and readStart > prev_readEnd) {readStart = prev_readEnd;} 
-			}
+			minDiag-=25;
+			maxDiag+=25;
+			//			if (readStart == readEnd) { // there is a gap
+			//				if (lsi > ls and readStart > prev_readEnd) {readStart = prev_readEnd;} 
+			//			}
 			//
 			// Expand boundaries of read to match.
 			//
-			if (lsi == ls) {readStart = (readStart < smallOpts.window)? 0 : readStart - smallOpts.window;}
-			if (lsi == le) { readEnd = (readEnd + smallOpts.window > read.length) ? read.length : readEnd + smallOpts.window;}			
+			int sow=500;
+			if (lsi == ls) {readStart = (readStart < sow)? 0 : readStart - sow;}
+			if (lsi == le) { readEnd = (readEnd + sow > read.length) ? read.length : readEnd + sow;}			
 			if (readStart > readEnd) continue; // tandem repear -- get picked up by 3rd SDP;
 			//cerr << "readStart: " << readStart << " readEnd: " << readEnd << " ph: " << ph << endl;
 			//
@@ -487,7 +502,7 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 			int queryIndexEnd = readIndex->LookupIndex(min(readEnd, (GenomePos)read.length - 1));
 			assert(queryIndexEnd < readIndex->seqOffsets.size() + 1);
 			GenomePos qStart, qEnd;
-			//			cerr << "   target " << lsi << " it over " << queryIndexStart << "\t" << queryIndexEnd << endl;
+			//			cerr << "   target " << lsi << " it over " << queryIndexStart << "\t" << queryIndexEnd << endl; 
 			for (int qi = queryIndexStart; qi <= queryIndexEnd; ++qi){ 
 				LocalPairs smallMatches;
 				GenomePos qStartBoundary = readIndex->tupleBoundaries[qi];
@@ -507,9 +522,10 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 				else {qStart = read.length - splitchains[ph].QEnd; qEnd = read.length - splitchains[ph].QStart;}
 				// AppendValues<LocalPairs>(refinedclusters[ph].matches, smallMatches.begin(), smallMatches.end(), readSegmentStart, 
 				// 			genomeLocalIndexStart, refinedclusters[ph].maxDiagNum, refinedclusters[ph].minDiagNum, qStart, 
-				// 			qEnd, splitchains[ph].TStart - chromOffset, splitchains[ph].TEnd - chromOffset, prev_readStart, prev_readEnd);	
+				// 			qEnd, splitchains[ph].TStart - chromOffset, splitchains[ph].TEnd - chromOffset, prev_readStart, prev_readEnd);
+				
 				AppendValues<LocalPairs>(refinedclusters[ph].matches, smallMatches.begin(), smallMatches.end(), readSegmentStart, 
- 							genomeLocalIndexStart, refinedclusters[ph].maxDiagNum, refinedclusters[ph].minDiagNum, qStart, 
+ 							genomeLocalIndexStart, minDiag, maxDiag, qStart, 
  							qEnd, splitchains[ph].TStart - chromOffset, splitchains[ph].TEnd - chromOffset, prev_readStart, prev_readEnd);					
 			}
 		}
