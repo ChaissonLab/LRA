@@ -195,7 +195,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-Flag")) {
 			opts.flagRemove = atoi(GetArgv(argv, argc, argi));
 			++argi;
-		}	
+		}
+		else if (ArgIs(argv[argi], "-f")) {
+		  opts.localMaxFreq=atoi(GetArgv(argv, argc, argi));
+		  ++argi;
+		}
 		else if (ArgIs(argv[argi], "-H")) {
 			opts.hardClip = true;
 		}

@@ -72,8 +72,10 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	// bypass clustering splitting
 	//
 	vector<Cluster> clusters;
+	cerr << "Cleaning " << endl;
 	CleanMatches(forMatches, clusters, genome, read, opts, timing);
 	CleanMatches(revMatches, clusters, genome, read, opts, timing, 1);
+	cerr << "Cleaning done " << endl;
 	forMatches.clear(); revMatches.clear();
 	if (clusters.size() == 0) {
 		read.unaligned = 1;
@@ -374,7 +376,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			spchain_link[I] = 1;
 		}
 		*/
-		
+		timing.Tick("FirstRefine");
 		//
 		// SplitChain spcluster -- each element points to a refined_cluster on the chain
 		//
@@ -518,12 +520,15 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		//
 		// SDP on clusters
 		//
+		timing.Tick("Extend");
 		vector<UltimateChain> ultimatechains(merge_spcluster.size());
 		for (int t = 0; t < merge_spcluster.size(); t++) {
 			ultimatechains[t].clusters = &extend_clusters;
 			ultimatechains[t].NumOfAnchors0 = chains[p].NumOfAnchors0;
 			if (extend_clusters.size() > 0) { // and extend_clusters[0].matches.size() < 3*read.length
+			  cerr << "SDP extended " << read.name << "\t" << read.length << "\t" << extend_clusters.size() << endl;
 				SparseDP(merge_spcluster[t], extend_clusters, ultimatechains[t], smallOpts, LookUpTable, read);
+				cerr << "done " << endl;
 				// ultimatechains[t].DebugCheck(read.length, genome);
 				RemovePairedIndels<UltimateChain>(ultimatechains[t]); 
 				RemoveSpuriousAnchors(ultimatechains[t]);
@@ -576,13 +581,21 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		alignments.back().SetFromSegAlignment(smallOpts);
 		extend_clusters.clear();
 		ultimatechains.clear();
+		timing.Tick("SDP2");
 	}
 	if (read.unaligned or alignments.size() == 0) {
 		output_unaligned(read, opts, *output);
 		return 0;
 	} 	
 	alignmentsOrder.Update(&alignments);
-	SimpleMapQV(alignmentsOrder, read, smallOpts);	
+	SimpleMapQV(alignmentsOrder, read, smallOpts);
+	int e=timing.Elapsed();
+
+	for (int a=0; a < alignments.size(); a++) {
+	  for (int s=0; s< alignments[a].SegAlignment.size(); s++) {
+	    alignments[a].SegAlignment[s]->runtime=e;
+	  }
+	}
 	OUTPUT(alignmentsOrder, read, opts, genome, output);
 	//
 	// Done with one read. Clean memory.
@@ -593,6 +606,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			delete alignments[a].SegAlignment[s];
 		}
 	}
+	timing.Tick("Done");
+	 
 	if (alignments.size() > 0) return 1;
 	return 0;
 }
