@@ -72,10 +72,10 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	// bypass clustering splitting
 	//
 	vector<Cluster> clusters;
-	cerr << "Cleaning " << endl;
+	//	cerr << "Cleaning " << endl;
 	CleanMatches(forMatches, clusters, genome, read, opts, timing);
 	CleanMatches(revMatches, clusters, genome, read, opts, timing, 1);
-	cerr << "Cleaning done " << endl;
+	//	cerr << "Cleaning done " << endl;
 	forMatches.clear(); revMatches.clear();
 	if (clusters.size() == 0) {
 		read.unaligned = 1;
@@ -528,9 +528,9 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			ultimatechains[t].clusters = &extend_clusters;
 			ultimatechains[t].NumOfAnchors0 = chains[p].NumOfAnchors0;
 			if (extend_clusters.size() > 0) { // and extend_clusters[0].matches.size() < 3*read.length
-			  cerr << "SDP extended " << read.name << "\t" << read.length << "\t" << extend_clusters.size() << endl;
+
 				SparseDP(merge_spcluster[t], extend_clusters, ultimatechains[t], smallOpts, LookUpTable, read);
-				cerr << "done " << endl;
+
 				// ultimatechains[t].DebugCheck(read.length, genome);
 				RemovePairedIndels<UltimateChain>(ultimatechains[t]); 
 				RemoveSpuriousAnchors(ultimatechains[t]);

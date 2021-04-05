@@ -437,34 +437,39 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 		//
 		LocalIndex *readIndex;
 		readIndex = localIndexes[splitchains[ph].Strand];
+		//		cerr << "iterating local index " << ls << " to " << le << endl;
+		int matchStart=0, matchEnd=0;
 
 		for (int lsi = ls; lsi <= le; lsi++) {
 			//
 			// Find the coordinates in the cluster fragment that start in this local index.
 			//
+		  
 			if (glIndex.seqOffsets[lsi] < chromOffset or glIndex.seqOffsets[lsi + 1] < chromOffset) continue; 
 			GenomePos genomeLocalIndexStart = glIndex.seqOffsets[lsi]  - chromOffset;
 			GenomePos genomeLocalIndexEnd = glIndex.seqOffsets[lsi + 1] - 1 - chromOffset;
 			if (genomeLocalIndexStart >= genomeLocalIndexEnd) continue;
-			// assert(clusters.back().matches.size() == 1); // dummy matches
-			// clusters.back().matches[0].first.pos = 0; clusters.back().matches[0].second.pos = genomeLocalIndexStart;
-			// int matchStart = splitchains[ph].CartesianTargetLowerBound(0, 1, splitchains[ph].sptc.size() - 1);
 
-			// if (matchStart >= splitchains[ph].size() - 1) continue;
-			// clusters.back().matches[0].first.pos = 0; clusters.back().matches[0].second.pos = genomeLocalIndexEnd;
-			// int matchEnd = splitchains[ph].CartesianTargetUpperBound(matchStart, 1, splitchains[ph].sptc.size() - 1);
+			while (matchStart < splitchains[ph].size() and
+			       splitchains[ph].tStart(matchStart) <= genomeLocalIndexStart ) {
+			  matchStart++;
+			}
+			matchEnd=matchStart;
+			while (matchEnd < splitchains[ph].size() and
+			       splitchains[ph].tStart(matchEnd) < genomeLocalIndexEnd ) {
+			  matchEnd++;
+			}
+			if (matchStart >= splitchains[ph].size()) { continue;}
 
-			// // matchEnd += matchStart;
-			// assert(matchEnd >= matchStart);
-			// if (matchEnd == splitchains[ph].size() - 1) matchEnd--;
-			// if (matchStart >= splitchains[ph].size() - 1 or matchStart >= matchEnd) continue; // If there is no overlap with this cluster
 
 			GenomePos prev_readEnd = 0;
 			GenomePos prev_readStart = read.length;
-			// GenomePos readStart = splitchains[ph].qStart(matchStart);
-			// GenomePos readEnd = splitchains[ph].qStart(matchEnd);
-			GenomePos readStart = splitchains[ph].qStart(0);
-			GenomePos readEnd = splitchains[ph].qEnd(splitchains[ph].size()-1);
+			GenomePos readStart = splitchains[ph].qStart(matchStart);
+			GenomePos readEnd = splitchains[ph].qStart(matchEnd-1);
+			for (int mi =matchStart; mi < matchEnd; mi++) {
+			  if (splitchains[ph].qStart(mi) < readStart) { readStart = splitchains[ph].qStart(mi); }
+			  if (splitchains[ph].qEnd(mi) > readEnd) { readEnd = splitchains[ph].qEnd(mi);}
+			}
 			if (readStart == readEnd) { // there is a gap
 				if (lsi > ls and readStart > prev_readEnd) {readStart = prev_readEnd;} 
 			}
@@ -482,6 +487,7 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 			int queryIndexEnd = readIndex->LookupIndex(min(readEnd, (GenomePos)read.length - 1));
 			assert(queryIndexEnd < readIndex->seqOffsets.size() + 1);
 			GenomePos qStart, qEnd;
+			cerr << "   target " << lsi << " it over " << queryIndexStart << "\t" << queryIndexEnd << endl;
 			for (int qi = queryIndexStart; qi <= queryIndexEnd; ++qi){ 
 				LocalPairs smallMatches;
 				GenomePos qStartBoundary = readIndex->tupleBoundaries[qi];
