@@ -416,8 +416,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					else {
 						clust << Refined_Clusters[t]->matches[h].first.pos << "\t"
 							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.globalK + genome.header.pos[Refined_Clusters[t]->chromIndex] << "\t"
-							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.globalK + genome.header.pos[Refined_Clusters[t]->chromIndex] << "\t"
-							  << Refined_Clusters[t]->matches[h].second.pos<< "\t"
+							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.globalK << "\t"
+							  << Refined_Clusters[t]->matches[h].second.pos + genome.header.pos[Refined_Clusters[t]->chromIndex] << "\t"
 							  << t << "\t"
 							  << p << "\t"
 							  << genome.header.names[Refined_Clusters[t]->chromIndex] <<"\t"
