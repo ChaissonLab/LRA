@@ -689,6 +689,7 @@ class Alignment {
 			samStrm << "NV:f:" << value << "\t";
 			samStrm << "AO:i:" << order << "\t";
 			samStrm << "N0:i:" << NumOfAnchors0 << "\t";
+			samStrm << "RT:i:" << runtime << "\t";			
 			samStrm << "SD:i:" << nSmallDel << "\t"
 				<< "MD:i:" << nMedDel << "\t"
 				<< "LD:i:" << nLargeDel << "\t"
@@ -807,6 +808,7 @@ class Alignment {
 				samStrm << qualStr;
 			}
 			samStrm << "\t";
+			samStrm << "\tRT:i:" << runtime;			
 			samStrm << "NM:i:" << nmm + ndel + nins << "\t";
 			samStrm << "NX:i:" << nmm << "\t";
 			samStrm << "ND:i:" << ndel << "\t";
