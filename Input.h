@@ -183,8 +183,9 @@ class Input {
 					for (int i=0;i<ks->seq.l;i++) { read.seq[i] = toupper(ks->seq.s[i]);}
 					read.name=string(ks->name.s);
 					if (ks->qual.s != NULL) {
-						read.qual = new char[ks->seq.l];
+						read.qual = new char[ks->seq.l+1];
 						memcpy(read.qual, ks->qual.s, ks->seq.l);
+						read.qual[ks->seq.l] = '\0';
 					}
 					else {
 						read.qual = new char[2];
