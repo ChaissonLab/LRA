@@ -8,6 +8,7 @@ class Read {
 	char *seq;
 	char *qual;
 	int  length;
+
 	char *passthrough;
 	string name;
 	int flags;
