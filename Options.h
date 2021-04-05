@@ -108,6 +108,7 @@ public:
 	bool refineEnd;
 	int refineSpaceDist;
 	bool ExtractDiagonalFromClean;
+	bool trimrefine;
 	Options() {
 		skipBandedRefine=false;
 		storeTiming=false;
@@ -213,6 +214,7 @@ public:
 		refineEnd=false;
 		refineSpaceDist=10000;
 		ExtractDiagonalFromClean=false;
+		trimrefine=false;
 	}
 };
 #endif

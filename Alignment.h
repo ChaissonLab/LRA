@@ -648,7 +648,8 @@ class Alignment {
 			}
 			samStrm << "\t*\t0\t";
 			// Template length
-			samStrm << "0\t"; // samStrm << tEnd - tStart << "\t";
+			//samStrm << "0\t"; 
+			samStrm << tEnd - tStart << "\t"; // calling assembly script depends on tEnd-tStart
 			string qualStr;
 			string readStr;	
 			if (Supplymentary == 0) assert(flag == 0 or flag == 16 or flag == 256 or flag == 272);
