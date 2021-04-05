@@ -220,6 +220,14 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 					 << revMatches[m].second.pos << "\t" << m << endl;
 		}
 		rclust.close();
+		ofstream rclustdiag("rev-matches_original.diag.dots");
+		for (int m=0; m < revMatches.size(); m++) {			
+			rclustdiag << revMatches[m].first.pos - revMatches[m].second.pos  << "\t" << opts.globalK + revMatches[m].first.pos  << "\t"
+					 << revMatches[m].second.pos << "\t" << m << endl;
+		}
+		rclustdiag.close();
+		
+		
 	}		
 
 	if (opts.bypassClustering) { 

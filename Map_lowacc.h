@@ -90,9 +90,9 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			for (int n = 0; n < clusters[m].matches.size(); n++) {
 				if (clusters[m].strand == 0) {
 					cpclust << clusters[m].matches[n].first.pos << "\t"
-						  << clusters[m].matches[n].second.pos << "\t"
+						  << clusters[m].matches[n].second.pos + genome.header.pos[clusters[m].chromIndex]<< "\t"
 						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
-						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
+						  << clusters[m].matches[n].second.pos + opts.globalK + genome.header.pos[clusters[m].chromIndex] << "\t"
 						  << m << "\t"
 						  << genome.header.names[clusters[m].chromIndex]<< "\t"
 						  << clusters[m].strand << "\t"
@@ -100,9 +100,9 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 				}
 				else {
 					cpclust << clusters[m].matches[n].first.pos << "\t"
-						  << clusters[m].matches[n].second.pos + opts.globalK << "\t"
+						  << clusters[m].matches[n].second.pos + opts.globalK + genome.header.pos[clusters[m].chromIndex] << "\t"
 						  << clusters[m].matches[n].first.pos + opts.globalK << "\t"
-						  << clusters[m].matches[n].second.pos << "\t"
+						  << clusters[m].matches[n].second.pos + genome.header.pos[clusters[m].chromIndex] << "\t"
 						  << m << "\t"
 						  << genome.header.names[clusters[m].chromIndex]<< "\t"
 						  << clusters[m].strand << "\t"

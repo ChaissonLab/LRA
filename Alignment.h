@@ -31,6 +31,7 @@ class Alignment {
 	vector<Block> blocks; // The positions in every block are relative to qPos and tPos;
 	int nm, nmm, nins, ndel;
 	int tm, tmm, tins, tdel;
+        int nSmallDel, nMedDel, nLargeDel, nSmallIns, nMedIns, nLargeIns;
 	int preClip, sufClip;
 	string cigar;
 	bool prepared;
@@ -82,6 +83,7 @@ class Alignment {
 		mapqv=0;
 		nm=nmm=nins=ndel=0;
 		tm=tmm=tins=tdel=0;
+		nSmallDel=nSmallIns=nMedDel=nMedIns=nLargeDel=nLargeIns=0;
 		nblocks=0;
 		preClip=0; sufClip=0;
 		prepared=false;
@@ -377,6 +379,16 @@ class Alignment {
 				cigarstrm << i-p << 'D';
 				tdel += i-p;
 				ndel++;
+				if (i-p <= 10) {
+				  nSmallDel+=1;
+				}
+				if (i-p  > 10 && i-p < 50) {
+				  nMedDel += 1;
+				}
+				else if (i-p > 50) {
+				  nLargeDel +=1;
+				}
+
 				if (i-p <= 20) {
 					value -= i-p;
 				}
@@ -393,9 +405,19 @@ class Alignment {
 				cigarstrm << i-p << 'I';
 				tins+=i-p;
 				nins++;
+				if (i-p <= 10) {
+				  nSmallIns+=1;
+				}
+				if (i-p  > 10 && i-p < 50) {
+				  nMedIns += 1;
+				}
+				else if (i-p > 50) {
+				  nLargeIns +=1;
+				}
 				if (i-p <= 20) {
 					value -= i-p;
-				}
+					nSmallIns+=1;
+				}				
 				else if (i-p <= 10001){
 					int a = (int)floor((i-p-1)/5);
 					value += -coefficient*LookUpTable[a] - 1;
@@ -552,12 +574,18 @@ class Alignment {
 			<< "tStart:" << tStart << "\t" << "tEnd:" << tEnd 
 			<< "\t" << "Number of residue matches:" << nm << "\t" << "mapqv: " << (int)mapqv << "\t" << "AO:i:" << order;
 		out << "\tNM:i:" << nmm + ndel + nins << "\t";
-		// out << "NX:i:" << nmm << "\t";
-		// out << "ND:i:" << ndel << "\t";
-		// out << "TD:i:" << tdel << "\t";
-		// out << "NI:i:" << nins << "\t";
-		// out << "TI:i:" << tins << "\t";
-    	out << "NV:f:" << value << "\t";
+		out << "NX:i:" << nmm << "\t";
+		out << "ND:i:" << ndel << "\t";
+		out << "TD:i:" << tdel << "\t";
+		out << "NI:i:" << nins << "\t";
+		out << "TI:i:" << tins << "\t";
+		out << "SD:i:" << nSmallDel << "\t"
+		    << "MD:i:" << nMedDel << "\t"
+		    << "LD:i:" << nLargeDel << "\t"
+		    << "SI:i:" << nSmallIns << "\t"
+		    << "MI:i:" << nMedIns << "\t"
+		    << "LI:i:" << nLargeIns << "\t";
+		out << "NV:f:" << value << "\t";
 		if (typeofaln == 0) {
 			out << "TP:A:" << "P\t";
 		}
@@ -603,7 +631,6 @@ class Alignment {
 			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t";
 			samStrm.write(read,readLen);
 			samStrm << "\t*";
-			 // << string(read,readLen) << "\t*";
 		}
 		else {
 			int last = blocks.size();
@@ -654,17 +681,23 @@ class Alignment {
 			}
 			samStrm << "\t";
 			samStrm << "NM:i:" << nmm + ndel + nins << "\t";
-			// samStrm << "NX:i:" << nmm << "\t";
-			// samStrm << "ND:i:" << ndel << "\t";
-			// samStrm << "TD:i:" << tdel << "\t";
-			// samStrm << "NI:i:" << nins << "\t";
-			// samStrm << "TI:i:" << tins << "\t";
+			samStrm << "NX:i:" << nmm << "\t";
+			samStrm << "ND:i:" << ndel << "\t";
+			samStrm << "TD:i:" << tdel << "\t";
+			samStrm << "NI:i:" << nins << "\t";
+			samStrm << "TI:i:" << tins << "\t";
 			samStrm << "NV:f:" << value << "\t";
 			samStrm << "AO:i:" << order << "\t";
-
+			samStrm << "N0:i:" << NumOfAnchors0 << "\t";
+			samStrm << "SD:i:" << nSmallDel << "\t"
+				<< "MD:i:" << nMedDel << "\t"
+				<< "LD:i:" << nLargeDel << "\t"
+				<< "SI:i:" << nSmallIns << "\t"
+				<< "MI:i:" << nMedIns << "\t"
+				<< "LI:i:" << nLargeIns;
 			// output SA tag
 			if (alngroup.size() > 1) {
-				samStrm << "SA:Z:";
+				samStrm << "\tSA:Z:";
 			}
 			for (int ag = alngroup.size() - 1; ag >= 0; ag--) {
 				if (ag == as) {continue;}
@@ -775,11 +808,12 @@ class Alignment {
 			}
 			samStrm << "\t";
 			samStrm << "NM:i:" << nmm + ndel + nins << "\t";
-			// samStrm << "NX:i:" << nmm << "\t";
-			// samStrm << "ND:i:" << ndel << "\t";
-			// samStrm << "TD:i:" << tdel << "\t";
-			// samStrm << "NI:i:" << nins << "\t";
-			// samStrm << "TI:i:" << tins << "\t";
+			samStrm << "NX:i:" << nmm << "\t";
+			samStrm << "ND:i:" << ndel << "\t";
+			samStrm << "TD:i:" << tdel << "\t";
+			samStrm << "NI:i:" << nins << "\t";
+			samStrm << "TI:i:" << tins << "\t";
+			samStrm << "N0:i:" << NumOfAnchors0 << "\t";
 			samStrm << "NV:f:" << value << "\t";
 			samStrm << "AO:i:" << order;
 		}
