@@ -407,7 +407,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					assert(Refined_Clusters[t]->matches[h].second.pos + smallOpts.globalK <= genome.lengths[Refined_Clusters[t]->chromIndex]);
 					if (Refined_Clusters[t]->strand == 0) {
 						clust << Refined_Clusters[t]->matches[h].first.pos << "\t"
-							  << Refined_Clusters[t]->matches[h].second.pos + genome.header.pos[Refined_Clusters[t]->chromIndex]<< "\t"
+							  << Refined_Clusters[t]->matches[h].second.pos + genome.header.pos[Refined_Clusters[t]->chromIndex] << "\t"
 							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.globalK << "\t"
 							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.globalK + genome.header.pos[Refined_Clusters[t]->chromIndex]<< "\t"
 							  << t << "\t"
