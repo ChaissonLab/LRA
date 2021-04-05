@@ -198,7 +198,7 @@ int	TrimSplitChainDiagonal(vector<SplitChain> &spchain, vector<Cluster> & refine
 			// Sort by first.pos (read) then second.pos (genome)
 			//
 			CartesianSort(refined_clusters[c].matches);
-			long offset=500;	
+			long offset=100;	
 			if (spchain[c].Strand == false) 
 				{
 					int ci=0;

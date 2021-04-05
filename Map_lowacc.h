@@ -297,9 +297,9 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 				for (int h = 0; h < refined_clusters[t].matches.size(); h++) {
 					if (refined_clusters[t].strand  == 0) {
 						clust << refined_clusters[t].matches[h].first.pos << "\t"
-							  << refined_clusters[t].matches[h].second.pos << "\t"
+							  << refined_clusters[t].matches[h].second.pos + genome.header.pos[refined_clusters[t].chromIndex] << "\t"
 							  << refined_clusters[t].matches[h].first.pos + smallOpts.globalK << "\t"
-							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK  + genome.header.pos[refined_clusters[t].chromIndex] << "\t"
 							  << t << "\t"
 							  << p << "\t"
 							  << genome.header.names[refined_clusters[t].chromIndex] <<"\t"
@@ -307,9 +307,9 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					}
 					else {
 						clust << refined_clusters[t].matches[h].first.pos << "\t"
-							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK  + genome.header.pos[refined_clusters[t].chromIndex] << "\t"
 							  << refined_clusters[t].matches[h].first.pos + smallOpts.globalK << "\t"
-							  << refined_clusters[t].matches[h].second.pos<< "\t"
+							  << refined_clusters[t].matches[h].second.pos  + genome.header.pos[refined_clusters[t].chromIndex] << "\t"
 							  << t << "\t"
 							  << p << "\t"
 							  << genome.header.names[refined_clusters[t].chromIndex] <<"\t"
@@ -320,11 +320,13 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 			clust.close();
 		}	
 
-		// SetGenomeOffset(spchain, genome);
-		// SubtractGenomeOffset(spchain);		
-		// TrimSplitChainDiagonal(spchain, refined_clusters);
-		// AddGenomeOffset(spchain);
-		
+		if (smallOpts.trimrefine) {
+			SetGenomeOffset(spchain, genome);
+			SubtractGenomeOffset(spchain);		
+			TrimSplitChainDiagonal(spchain, refined_clusters);
+			AddGenomeOffset(spchain);			
+		}
+
 		if (opts.dotPlot and opts.readname == read.name) {
 			ofstream clust("RefinedClustersPostTrim.tab", std::ofstream::app);
 			for (int t = 0; t < refined_clusters.size(); t++) {
@@ -332,9 +334,9 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					assert(refined_clusters[t].matches[h].second.pos + smallOpts.globalK <= genome.lengths[refined_clusters[t].chromIndex]);
 					if (refined_clusters[t].strand  == 0) {
 						clust << refined_clusters[t].matches[h].first.pos << "\t"
-							  << refined_clusters[t].matches[h].second.pos << "\t"
+							  << refined_clusters[t].matches[h].second.pos + genome.header.pos[refined_clusters[t].chromIndex] << "\t"
 							  << refined_clusters[t].matches[h].first.pos + smallOpts.globalK << "\t"
-							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK + genome.header.pos[refined_clusters[t].chromIndex]<< "\t"
 							  << t << "\t"
 							  << p << "\t"
 							  << genome.header.names[refined_clusters[t].chromIndex] <<"\t"
@@ -342,9 +344,9 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					}
 					else {
 						clust << refined_clusters[t].matches[h].first.pos << "\t"
-							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK << "\t"
+							  << refined_clusters[t].matches[h].second.pos + smallOpts.globalK + genome.header.pos[refined_clusters[t].chromIndex]<< "\t"
 							  << refined_clusters[t].matches[h].first.pos + smallOpts.globalK << "\t"
-							  << refined_clusters[t].matches[h].second.pos<< "\t"
+							  << refined_clusters[t].matches[h].second.pos + genome.header.pos[refined_clusters[t].chromIndex]<< "\t"
 							  << t << "\t"
 							  << p << "\t"
 							  << genome.header.names[refined_clusters[t].chromIndex] <<"\t"
@@ -403,9 +405,9 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					assert(Refined_Clusters[t]->matches[h].second.pos + smallOpts.globalK <= genome.lengths[Refined_Clusters[t]->chromIndex]);
 					if (Refined_Clusters[t]->strand == 0) {
 						clust << Refined_Clusters[t]->matches[h].first.pos << "\t"
-							  << Refined_Clusters[t]->matches[h].second.pos << "\t"
+							  << Refined_Clusters[t]->matches[h].second.pos + genome.header.pos[Refined_Clusters[t]->chromIndex]<< "\t"
 							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.globalK << "\t"
-							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.globalK << "\t"
+							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.globalK + genome.header.pos[Refined_Clusters[t]->chromIndex]<< "\t"
 							  << t << "\t"
 							  << p << "\t"
 							  << genome.header.names[Refined_Clusters[t]->chromIndex] <<"\t"
@@ -413,8 +415,8 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 					}
 					else {
 						clust << Refined_Clusters[t]->matches[h].first.pos << "\t"
-							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.globalK << "\t"
-							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.globalK << "\t"
+							  << Refined_Clusters[t]->matches[h].second.pos + smallOpts.globalK + genome.header.pos[Refined_Clusters[t]->chromIndex] << "\t"
+							  << Refined_Clusters[t]->matches[h].first.pos + smallOpts.globalK + genome.header.pos[Refined_Clusters[t]->chromIndex] << "\t"
 							  << Refined_Clusters[t]->matches[h].second.pos<< "\t"
 							  << t << "\t"
 							  << p << "\t"
