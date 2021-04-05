@@ -487,7 +487,7 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 			int queryIndexEnd = readIndex->LookupIndex(min(readEnd, (GenomePos)read.length - 1));
 			assert(queryIndexEnd < readIndex->seqOffsets.size() + 1);
 			GenomePos qStart, qEnd;
-			cerr << "   target " << lsi << " it over " << queryIndexStart << "\t" << queryIndexEnd << endl;
+			//			cerr << "   target " << lsi << " it over " << queryIndexStart << "\t" << queryIndexEnd << endl;
 			for (int qi = queryIndexStart; qi <= queryIndexEnd; ++qi){ 
 				LocalPairs smallMatches;
 				GenomePos qStartBoundary = readIndex->tupleBoundaries[qi];
