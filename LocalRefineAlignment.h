@@ -253,7 +253,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			if (tinyOpts.readType == Options::contig or tinyOpts.readType == Options::ccs ) {
 			  refineSpaceDiag = min((int) floor(max(80.f,0.01f * read_dist)), 80);
 			}
-			else if (tinyOpts.readType == Options::raw) {
+			else if (tinyOpts.readType == Options::clr or tinyOpts.readType == Options::ont) {
 			  refineSpaceDiag = min((int) floor(max(100.f,0.15f * read_dist)), 2000);	
 			}
 			// int refineSpaceDiag = (int) (0.15f * read_dist);	

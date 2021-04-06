@@ -335,7 +335,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			// opts.maxGapBtwnAnchors=1500;
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
-			opts.readType=Options::raw;
+			opts.readType=Options::clr;
 			opts.HighlyAccurate=false;
 			opts.NumAln=3; //2
    			opts.PrintNumAln=1;
@@ -355,15 +355,16 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.punish_anchorfreq=5;
     		opts.anchorPerlength=5;
     		opts.cleanClustersize=100;
-    		opts.anchorstoosparse=0.02; 
+    		opts.anchorstoosparse=0.01; // 0.02 
       		opts.hardClip=true;
       		opts.alnthres=0.50f;
      		opts.ExtractDiagonalFromClean=true;
+     		opts.second_anchor_rate=6.0f;
    		
     		// opts.second_anchor_rate=4.0f; //2
 		}		
 		else if (ArgIs(argv[argi], "-ONT")) {
-			opts.readType=Options::raw;
+			opts.readType=Options::ont;
 			opts.HighlyAccurate=false;
 			opts.NumAln=3;
    			opts.PrintNumAln=1;
@@ -371,7 +372,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
    			opts.RoughClustermaxGap=1000; 
      		opts.maxGap=1000;
      		opts.cleanMaxDiag=200; //50
-     		opts.SecondCleanMaxDiag=100;
+     		opts.SecondCleanMaxDiag=100; 
      		opts.SecondCleanMinDiagCluster=10;
       		opts.refineSpaceDist=10000;
       		opts.minDiagCluster=3;
@@ -379,11 +380,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.RemovePairedIndels=false;
     		opts.RemoveSpuriousAnchors=false;
     		opts.bypassClustering=true;
-     		opts.anchor_rate=5.0f;
+     		opts.anchor_rate=6.0f; //5.0f
     		opts.punish_anchorfreq=5;
     		opts.anchorPerlength=5;
     		opts.cleanClustersize=100;
-    		opts.anchorstoosparse=0.02; 
+    		opts.anchorstoosparse=0.02; //0.02
       		opts.hardClip=true;
       		opts.alnthres=0.65f;
       		opts.ExtractDiagonalFromClean=true;

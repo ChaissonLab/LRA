@@ -7,7 +7,7 @@ const unsigned int REF_DP=4;
 
 class Options {
 public:
-	enum AlignType { raw, ccs, contig};
+	enum AlignType { ont, clr, ccs, contig};
 	int globalK;
 	int localK;
 	int globalW;
@@ -113,7 +113,7 @@ public:
 	Options() {
 		skipBandedRefine=false;
 		storeTiming=false;
-		readType=Options::raw;
+		readType=Options::ont;
 		localMatch=4;
 		localMismatch=-3;
 		localIndel=-4;
