@@ -72,7 +72,7 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, 
 		// qSet.insert(clusters[m].qEnd);
 		// tSet.insert(clusters[m].tStart);
 		// tSet.insert(clusters[m].tEnd);	
-		if (clusters[m].anchorfreq <= 1.05f or (clusters[m].anchorfreq <= 3.0f and max(clusters[m].tEnd - clusters[m].tStart, clusters[m].qEnd - clusters[m].qStart) <= 2000)) { 
+		if (true or clusters[m].anchorfreq <= 1.05f or (clusters[m].anchorfreq <= 3.0f and max(clusters[m].tEnd - clusters[m].tStart, clusters[m].qEnd - clusters[m].qStart) <= 2000)) { 
 			// either low avgfreq cluster or a small cluster with relatively large avgfreq (but it's an important short piece, like INV and pieces at the end)
 			//cerr << "cluster " << m << " freq: " << clusters[m].anchorfreq << endl;
 			clusters[m].split = 1;

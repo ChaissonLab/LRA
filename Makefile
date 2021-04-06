@@ -59,7 +59,8 @@ HEADERS=MinCount.h \
   Map_lowacc.h \
   SubRountine.h \
   Types.h \
-  SubProblem.h 
+  SubProblem.h  \
+  SplitClusters.h
 
 CXX=g++ -std=c++11 
 

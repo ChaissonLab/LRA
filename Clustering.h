@@ -534,7 +534,7 @@ long minGapDifference (Tup &a, Tup &b) {
 }
 
 template<typename Tup>
-long GapDifference (Tup &a, Tup &b, int &len) {
+long GapDifference (Tup &a, Tup &b, const int len) {
   long Diff = abs((long)b.first.pos - ((long)a.first.pos + len));
 	return Diff;
 }
@@ -1686,13 +1686,8 @@ class ScoreSortOp {
 };
 
 
-void EasyChain(vector<GenomePair> &matches, Genome &genome, Read &read, const Options &opts, int strand=0) {
-  if (strand == 0) {
-    CartesianSort<GenomeTuple>(matches);
-  }
-  else {
-
-  }
+void EasyChain(vector<GenomePair> &matches, Genome &genome, Read &read, const Options &opts) {
+  //  CartesianSort<GenomeTuple>(matches);
   vector<EasyMat> mat(matches.size());
   for (int i=0;i<matches.size(); i++) { mat[i].m=i;}
   
@@ -1710,10 +1705,11 @@ void EasyChain(vector<GenomePair> &matches, Genome &genome, Read &read, const Op
     //    for ( prev=0; prev < m ; prevPtr++, prev++) {    
       //      int tGap=cur.second.pos - prevPtr->second.pos;
       //      int qGap=cur.first.pos  - prevPtr->first.pos;
-      int tGap = matches[m].second.pos - matches[prev].second.pos;
-      int qGap = matches[m].first.pos  - matches[prev].first.pos;
-      int gap=max(tGap,qGap) - min(tGap,qGap);
-      int closestCoord=min(tGap,qGap);
+      long tGap, qGap;
+      tGap= std::abs((long)matches[m].second.pos- ((long)matches[prev].second.pos + (long) opts.globalK));
+      qGap= abs((long)matches[m].first.pos - ((long)matches[prev].first.pos + (long) opts.globalK));
+      long gap=max(tGap,qGap) - min(tGap,qGap);
+      long closestCoord=min(tGap,qGap);
       /*
       if (matches[m].second.pos > 33583836 && matches[m].second.pos < 33594671) 
 	cout << "LOOKBACK:\t" << m << "\t" << matches[m].first.pos << "\t" << matches[m].second.pos << "\t" << prev << "\t" << matches[prev].first.pos << "\t" << matches[prev].second.pos << "\t" << gap << endl;
