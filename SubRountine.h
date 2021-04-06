@@ -36,66 +36,66 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, const Options
 	if (step_sdp == 0) {
 		if (opts.LookUpTable) {
 			if (x <= 20) {
-				return -x;
+				return - x - opts.gapopen;
 			}
 			else if (x <= 10001){
-				return - opts.firstcoefficient*LookUpTable[a] - 1;
+				return - opts.firstcoefficient*LookUpTable[a] - opts.gapopen;
 			}
 			else if (x <= 500001) {
-				return -2000;
+				return -2000 - opts.gapopen;
 			}
 			else if (x <= 100001){
-				return -4000;
+				return -4000 - opts.gapopen;
 			}
 			else {
-				return -6000;
+				return -6000 - opts.gapopen;
 			}
 		}
 		else {
 			if (x < 501) {
-				return - opts.firstcoefficient*logf(x) - 1;  
+				return - opts.firstcoefficient*logf(x) - opts.gapopen;  
 			}
 			else if (x <= 10001) {
-				return - opts.firstcoefficient*logf(x) - 1;  
+				return - opts.firstcoefficient*logf(x) - opts.gapopen;  
 			}
 			else if (x <= 100001) {
-				return - opts.firstcoefficient*logf(x) - 1;
+				return - opts.firstcoefficient*logf(x) - opts.gapopen;
 			}
 			else {
-				return - opts.firstcoefficient*logf(x) - 1;	
+				return - opts.firstcoefficient*logf(x) - opts.gapopen;	
 			}
 		}
 	}
 	else {
 		if (opts.LookUpTable) {
 			if (x <= 20) {
-				return -x;
+				return -x- opts.gapopen;
 			}
 			else if (x <= 10001){
-				return - opts.secondcoefficient*LookUpTable[a] - 1;
+				return - opts.secondcoefficient*LookUpTable[a] - opts.gapopen;
 			}
 			else if (x <= 500001) {
-				return -2000;
+				return -2000 - opts.gapopen;
 			}
 			else if (x <= 100001){
-				return -4000; //-800
+				return -4000 - opts.gapopen; //-800
 			}
 			else {
-				return -6000;
+				return -6000 - opts.gapopen;
 			}
 		}
 		else {
 			if (x < 501) {
-				return - opts.secondcoefficient*logf(x) - 1;  
+				return - opts.secondcoefficient*logf(x) - opts.gapopen;  
 			}
 			else if (x <= 10001) {
-				return - opts.secondcoefficient*logf(x) - 1;  
+				return - opts.secondcoefficient*logf(x) - opts.gapopen;  
 			}
 			else if (x <= 100001) {
-				return - opts.secondcoefficient*logf(x) - 1;
+				return - opts.secondcoefficient*logf(x) - opts.gapopen;
 			}
 			else {
-				return - opts.secondcoefficient*logf(x) - 1;	
+				return - opts.secondcoefficient*logf(x) - opts.gapopen;	
 			}
 		}		
 	}

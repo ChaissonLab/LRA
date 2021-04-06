@@ -110,6 +110,7 @@ public:
 	bool ExtractDiagonalFromClean;
 	bool trimrefine;
 	bool limitrefine;
+	float gapopen;
 	Options() {
 		skipBandedRefine=false;
 		storeTiming=false;
@@ -217,6 +218,8 @@ public:
 		ExtractDiagonalFromClean=false;
 		trimrefine=false;
 		limitrefine=true;
+		gapopen=2;
+
 	}
 };
 #endif
