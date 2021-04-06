@@ -535,7 +535,7 @@ long minGapDifference (Tup &a, Tup &b) {
 
 template<typename Tup>
 long GapDifference (Tup &a, Tup &b, int &len) {
-	long Diff = abs((long)b.first.pos - (long)a.first.pos + len);
+  long Diff = abs((long)b.first.pos - ((long)a.first.pos + len));
 	return Diff;
 }
 
