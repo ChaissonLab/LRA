@@ -99,7 +99,6 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, 
 	// Find what coordinates appear in the interval of each cluster
 	//
 	for (int m = 0; m < clusters.size(); m++) {
-		cerr << "m: " << m << " clusters[m].split: " << clusters[m].split << endl;
 		if (clusters[m].split == 0) {
 			continue;
 		}
