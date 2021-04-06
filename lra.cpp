@@ -400,6 +400,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			// opts.NumOfminimizersPerWindow = 1;
 			// opts.maxGapBtwnAnchors=1800;
 		}
+		else if (ArgIs(argv[argi], "--forcerefine")) {
+			opts.HighlyAccurate = false;
+		}	
 		else if (ArgIs(argv[argi], "--skiplimitrefine")) {
 			opts.limitrefine = false;
 		}	
