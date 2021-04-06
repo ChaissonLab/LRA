@@ -585,6 +585,7 @@ class Alignment {
 		    << "SI:i:" << nSmallIns << "\t"
 		    << "MI:i:" << nMedIns << "\t"
 		    << "LI:i:" << nLargeIns << "\t";
+		out << "N0:i:" << NumOfAnchors0 << "\t";		
 		out << "NV:f:" << value << "\t";
 		if (typeofaln == 0) {
 			out << "TP:A:" << "P\t";

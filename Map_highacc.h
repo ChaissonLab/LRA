@@ -40,6 +40,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	vector<Cluster> clusters;
 	MatchesToFineClusters(forMatches, clusters, genome, read, opts, timing);
 	MatchesToFineClusters(revMatches, clusters, genome, read, opts, timing, 1);
+
 	// if (opts.debug and opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 	// 	ofstream cpclust("clusters-pre-remove.tab");
 	// 	for (int m = 0; m < clusters.size(); m++) {
