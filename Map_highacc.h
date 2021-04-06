@@ -121,6 +121,8 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 
 		ofstream sclust("clusters_coarse.tab");
 		for (int m = 0; m < clusters.size(); m++) {
+
+			cerr << "anchorfreq: " << clusters[m].anchorfreq << endl;
 				if (clusters[m].strand == 0) {
 					sclust << clusters[m].qStart << "\t"
 						  << clusters[m].tStart << "\t"
@@ -149,7 +151,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	// INPUT: vector<Cluster> clusters   OUTPUT: vector<Cluster> splitclusters with member--"coarse" specify the index of the original cluster splitcluster comes from
 	//
 	vector<Cluster> splitclusters;
-	SplitClusters(clusters, splitclusters, read);
+	SplitClusters(clusters, splitclusters, read, opts);
 	DecideSplitClustersValue(clusters, splitclusters, opts, read);
 	if (splitclusters.size() == 0) {
 		read.unaligned = 1;

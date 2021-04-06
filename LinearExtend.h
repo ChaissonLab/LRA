@@ -817,7 +817,7 @@ MergeMatchesSameDiag (vector<Cluster> &ExtendClusters, vector<Cluster_SameDiag> 
 		}
 		reduced += MergedClusters[c].size();
 	}
-	// cerr << "original: " << original << " reduced: " << reduced << endl;
+	cerr << "original: " << original << " reduced: " << reduced << endl;
 }
 
 #endif

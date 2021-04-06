@@ -60,7 +60,7 @@ public:
 };
 
 
-void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, Read &read) {
+void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, Read &read, const Options &opts) {
 	if (read.unaligned) return;
 	set<GenomePos> qSet;
 	set<GenomePos> tSet;
@@ -72,7 +72,7 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, 
 		// qSet.insert(clusters[m].qEnd);
 		// tSet.insert(clusters[m].tStart);
 		// tSet.insert(clusters[m].tEnd);	
-		if (clusters[m].anchorfreq <= 1.05f or (clusters[m].anchorfreq <= 3.0f and max(clusters[m].tEnd - clusters[m].tStart, clusters[m].qEnd - clusters[m].qStart) <= 2000)) { 
+		if (opts.readType == Options::contig and (clusters[m].anchorfreq <= 1.05f or (clusters[m].anchorfreq <= 3.0f and max(clusters[m].tEnd - clusters[m].tStart, clusters[m].qEnd - clusters[m].qStart) <= 2000))) { 
 			// either low avgfreq cluster or a small cluster with relatively large avgfreq (but it's an important short piece, like INV and pieces at the end)
 			//cerr << "cluster " << m << " freq: " << clusters[m].anchorfreq << endl;
 			clusters[m].split = 1;
@@ -81,10 +81,17 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, 
 			tSet.insert(clusters[m].tStart);
 			tSet.insert(clusters[m].tEnd);			
 		}
-		else {
+		else if (opts.readType == Options::contig ) {
 			clusters[m].split = 0;
 			splitclusters.push_back(Cluster(clusters[m].qStart, clusters[m].qEnd, clusters[m].tStart, clusters[m].tEnd, clusters[m].strand, m));
 			// cerr << "splitclusters: " << splitclusters.size() << " " << clusters[m].qStart << " " << clusters[m].qEnd << endl;				
+		}
+		else {
+			clusters[m].split = 1;
+			qSet.insert(clusters[m].qStart);
+			qSet.insert(clusters[m].qEnd);
+			tSet.insert(clusters[m].tStart);
+			tSet.insert(clusters[m].tEnd);				
 		}
 	} 
 
@@ -92,7 +99,7 @@ void SplitClusters(vector<Cluster> & clusters, vector<Cluster> & splitclusters, 
 	// Find what coordinates appear in the interval of each cluster
 	//
 	for (int m = 0; m < clusters.size(); m++) {
-		// cerr << "clusters: " << m << endl;
+		cerr << "m: " << m << " clusters[m].split: " << clusters[m].split << endl;
 		if (clusters[m].split == 0) {
 			continue;
 		}
