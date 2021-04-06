@@ -519,7 +519,7 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 		// Apply SparseDP on extended anchors on every splitchain;
 		// INPUT: vector<unsigned int> splitchain, vector<Cluster> ExtendClusters; OUTPUT: FinalChain finalchain;
 		//
-		FinalChain finalchain(&ExtendClusters);
+	  FinalChain finalchain(&ExtendClusters);
 		SparseDP(splitchains[st], ExtendClusters, finalchain, smallOpts, LookUpTable, read);
 		//timing.Tick("2nd SDP");
 		
