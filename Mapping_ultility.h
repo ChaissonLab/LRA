@@ -184,13 +184,14 @@ SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitC
 		cur = im + 1; prev = im;
 		if (ExtendClusters[cur]->tStart > ExtendClusters[prev]->tEnd + opts.splitdist // too far
 			or ExtendClusters[cur]->tEnd + opts.splitdist < ExtendClusters[prev]->tStart
-			or (link[im] == 1 and ExtendClusters[cur]->strand == 0 and ExtendClusters[prev]->strand == 0) // repetitive mapping
-			or (link[im] == 0 and ExtendClusters[cur]->strand == 1 and ExtendClusters[prev]->strand == 1) // repetitive mapping
+			or (((link[im] == 1 and ExtendClusters[cur]->strand == 0 and ExtendClusters[prev]->strand == 0) or (link[im] == 0 and ExtendClusters[cur]->strand == 1 and ExtendClusters[prev]->strand == 1))
+				and ExtendClusters[prev]->OverlaprateOnGenome(ExtendClusters[cur]) >= 0.6)// repetitive mapping
 			or (ExtendClusters[cur]->strand == 0 and ExtendClusters[prev]->strand == 1) // inversion
 			or (ExtendClusters[cur]->strand == 1 and ExtendClusters[prev]->strand == 0) // inversion
-			or (ExtendClusters[prev]->OverlaprateOnGenome(ExtendClusters[cur]) >= 0.3)
-			or  (ExtendClusters[prev]->OverlapOnGenome(ExtendClusters[cur]) >= 500 // If two clusters overlap exceeds 0.3, then it is a DUP
-				and ExtendClusters[prev]->anchorfreq <= 1.05f and ExtendClusters[cur]->anchorfreq <= 1.05f)) {  // If two clusters overlap exceeds 100bp and they are both linear, then it is a DUP
+			// or (ExtendClusters[prev]->OverlaprateOnGenome(ExtendClusters[cur]) >= 0.3)
+			// or  (ExtendClusters[prev]->OverlapOnGenome(ExtendClusters[cur]) >= 500 // If two clusters overlap exceeds 0.3, then it is a DUP
+			// 	and ExtendClusters[prev]->anchorfreq <= 1.05f and ExtendClusters[cur]->anchorfreq <= 1.05f) // If two clusters overlap exceeds 100bp and they are both linear, then it is a DUP
+				) {  
 			splitchains.push_back(SplitChain(onec, lk));
 			onec.clear();
 			lk.clear();
