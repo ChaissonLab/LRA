@@ -620,6 +620,32 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	MergeMatchesSameDiag(extend_clusters, samediag_clusters, opts); // There are a lot matches on the same diagonal, especially for contig;
 	timing.Tick("Merged ExtendClusters");
 
+
+	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+		ofstream Mclust("MergeMatchesSameDiag.tab", ofstream::app);
+		for (int ep = 0; ep < samediag_clusters.size(); ep++) {
+			for (int eh = 0; eh < samediag_clusters[ep].start.size(); eh++) {
+				if (samediag_clusters[ep].strand == 0) {
+					Mclust << samediag_clusters[ep].GetqStart(eh) << "\t"
+						  << samediag_clusters[ep].GettStart(eh) + genome.header.pos[extend_clusters[ep].chromIndex] << "\t"
+						  << samediag_clusters[ep].GetqEnd(eh)  << "\t"
+						  << samediag_clusters[ep].GettEnd(eh) + genome.header.pos[extend_clusters[ep].chromIndex] << "\t"
+						  << samediag_clusters[ep].strand << "\t"
+						  << ep << endl;
+				}
+				else {
+					Mclust << samediag_clusters[ep].GetqStart(eh) << "\t"
+						  << samediag_clusters[ep].GettStart(eh) + genome.header.pos[extend_clusters[ep].chromIndex] << "\t"
+						  << samediag_clusters[ep].GetqEnd(eh) << "\t"
+						  << samediag_clusters[ep].GettEnd(eh) + genome.header.pos[extend_clusters[ep].chromIndex] << "\t"
+						  << samediag_clusters[ep].strand << "\t"
+						  << ep << endl;					
+				}
+			}
+		}
+		Mclust.close();
+	}	
+
 	vector<SegAlignmentGroup> alignments;
 	AlignmentsOrder alignmentsOrder(&alignments);
 	AffineAlignBuffers buff;
