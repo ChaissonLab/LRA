@@ -60,7 +60,7 @@ HEADERS=MinCount.h \
   SubRountine.h \
   Types.h \
   SubProblem.h  \
-  SplitClusters.h
+  SplitClusters.h 
 
 CXX=g++ -std=c++11 
 
