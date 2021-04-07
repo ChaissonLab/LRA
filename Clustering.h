@@ -399,7 +399,7 @@ public:
 		}
 		ovp = min(tEnd, b->tEnd) - max(tStart, b->tStart);
 		float denomA = tEnd - tStart;
-		float denomB = b->tEnd - b->tStart;
+		// float denomB = b->tEnd - b->tStart;
 		return ovp/denomA;
 	}
 	int OverlapOnGenome(const Cluster_SameDiag *b) const {
@@ -690,7 +690,7 @@ void CleanOffDiagonal(Genome &genome, vector<Cluster> &clusters, vector<pair<Tup
 					}
 					if (read.name == opts.readname) cerr << "avgfreq: " << avgfreq << " MinDiagCluster: " << MinDiagCluster << endl;
 				}
-				if (opts.debug and opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
+				if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 0) {
 					ofstream fclust("for-matches_cleanoffdiagonal.dots", ofstream::app);
 					for (int j = diagStart; j <= i; j++) {
 						fclust << matches[j].first.pos << "\t" << matches[j].second.pos << "\t" << opts.globalK + matches[j].first.pos << "\t"
@@ -698,7 +698,7 @@ void CleanOffDiagonal(Genome &genome, vector<Cluster> &clusters, vector<pair<Tup
 					}
 					fclust.close();
 				}
-				if (opts.debug and opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
+				if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname and strand == 1){
 					ofstream rclust("rev-matches_cleanoffdiagonal.dots", ofstream::app);
 					for (int j = diagStart; j <= i; j++) {			
 						rclust << matches[j].first.pos << "\t" << matches[j].second.pos + opts.globalK << "\t" << opts.globalK + matches[j].first.pos << "\t"
@@ -1365,8 +1365,9 @@ SplitRoughClustersWithGaps(vector<pair<GenomeTuple, GenomeTuple> > &matches, Clu
 	          split_tEnd = split_tStart + opts.globalK;
 	// if (read.name == "S3_12348!22!16246770!16262110!-") cerr << "opts.RoughClustermaxGap: " << opts.RoughClustermaxGap << " opts.minClusterSize: " << opts.minClusterSize << endl; 
 	for (int m = OriginalClusters.start + 1; m < OriginalClusters.end; m++) {
-		int gap = maxGapDifference(matches[m], matches[m-1]);
-		// int diag_gap=DiagonalDifference(matches[m], matches[m-1], strand);
+		// int gap = maxGapDifference(matches[m], matches[m-1]);
+		int gap = minGapDifference(matches[m], matches[m-1]);
+		// int diag_gap = DiagonalDifference(matches[m], matches[m-1], strand);
 
 		if (gap > opts.RoughClustermaxGap /*or diag_gap > opts.cleanMaxDiag*/) {
 			// cerr << "GAP: " << gap << "\t" << m << "\t" << clusters[c].matches.size() << "\t" << clusters[c].matches[m].second.pos - clusters[c].matches[m-1].second.pos << "\t" << clusters[c].matches[m].first.pos - clusters[c].matches[m-1].first.pos << endl;
@@ -1564,13 +1565,13 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 		timing.Tick("roughclusters");
 
 		//cerr << "roughClusters.size(): " << roughClusters.size() << " split_roughClusters.size(): " << split_roughClusters.size()<< endl;
-		if (opts.debug and opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-			ofstream fclust("for-matches.dots");
-			for (int m = 0; m < Matches.size(); m++) {
-				fclust << Matches[m].first.pos << "\t" << Matches[m].second.pos << "\t" << opts.globalK + Matches[m].first.pos << "\t"
-						<< Matches[m].second.pos + opts.globalK << "\t" << m << endl;
-			}
-			fclust.close();
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+			// ofstream fclust("for-matches.dots");
+			// for (int m = 0; m < Matches.size(); m++) {
+			// 	fclust << Matches[m].first.pos << "\t" << Matches[m].second.pos << "\t" << opts.globalK + Matches[m].first.pos << "\t"
+			// 			<< Matches[m].second.pos + opts.globalK << "\t" << m << endl;
+			// }
+			// fclust.close();
 
 			ofstream rclust("roughClusters.dots");
 			for (int m = 0; m < roughClusters.size(); m++) {
@@ -1624,13 +1625,13 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 		timing.Tick("roughclusters");
 
 		// cerr << "revroughClusters.size(): " << revroughClusters.size() << " split_revroughClusters.dots: " << split_revroughClusters.size()<< endl;
-		if (opts.debug and opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-			ofstream rclust("rev-matches.dots");
-			for (int m=0; m < Matches.size(); m++) {			
-				rclust << Matches[m].first.pos << "\t" << Matches[m].second.pos + opts.globalK << "\t" << opts.globalK + Matches[m].first.pos  << "\t"
-						 << Matches[m].second.pos << "\t" << m << endl;
-			}
-			rclust.close();
+		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+			// ofstream rclust("rev-matches.dots");
+			// for (int m=0; m < Matches.size(); m++) {			
+			// 	rclust << Matches[m].first.pos << "\t" << Matches[m].second.pos + opts.globalK << "\t" << opts.globalK + Matches[m].first.pos  << "\t"
+			// 			 << Matches[m].second.pos << "\t" << m << endl;
+			// }
+			// rclust.close();
 
 			ofstream revsclust("revroughClusters.dots");
 			for (int m=0; m < revroughClusters.size(); m++) {
