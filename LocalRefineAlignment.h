@@ -250,12 +250,15 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			int refineSpaceDiag = 0;
 			//
 			// Create a diagonal band that is not too big, not too small
+			int sv_diag = max(read_dist, genome_dist) - min(read_dist, genome_dist);
 			if (tinyOpts.readType == Options::contig or tinyOpts.readType == Options::ccs ) {
-			  refineSpaceDiag = min((int) floor(max(80.f,0.01f * read_dist)), 80);
+			  refineSpaceDiag = min((int) floor(max(80.f, 0.01f * read_dist)), 500);
 			}
 			else if (tinyOpts.readType == Options::clr or tinyOpts.readType == Options::ont) {
-			  refineSpaceDiag = min((int) floor(max(100.f,0.15f * read_dist)), 2000);	
+			  refineSpaceDiag = min((int) floor(max(100.f, 0.15f * read_dist)), 2000);	
 			}
+			refineSpaceDiag = max(2*sv_diag, refineSpaceDiag);
+
 			// int refineSpaceDiag = (int) (0.15f * read_dist);	
 			// if (refineSpaceDiag >= 100) cerr << "refineSpaceDiag: " << refineSpaceDiag << " read.name: " << read.name << endl;
 
@@ -277,24 +280,38 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			//
 			// If anchor is still too sparse, try finding seeds in the inversed direction
 			//
-			if ((for_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse 
-					and alignments.back().SegAlignment.back()->blocks.size() >=5 ) { // try inversion
-				//BtwnPairs.clear();
+			if ((for_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and alignments.back().SegAlignment.back()->blocks.size() >=5 ) { // try inversion
 				GenomePos temp = curReadEnd;
 				curReadEnd = read.length - nextReadStart;
 				nextReadStart = read.length - temp;
-				// refineSpaceDiag = 100; 
 				RefineSpace(tinyOpts.globalK, tinyOpts.globalW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, inv_str);	
 				// inversion = 1;	
-				if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) > 1000) {
-					// break the alignment;
+
+				if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) >= 1000) {
 					for_BtwnPairs.clear();
-					rev_BtwnPairs.clear();
-					breakalignment = 1;
-					inversion = 0;
-					return;					
+					// try refine in a larger band 1000 (sometimes INS and DEL)
+ 					RefineSpace(tinyOpts.globalK, tinyOpts.localW, 1000, 0, for_BtwnPairs, tinyOpts, genome, read, 
+ 							strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);	
+ 					// break the alignment if still no anchors
+ 					if ((for_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse) {
+						// break the alignment;
+						for_BtwnPairs.clear();
+						rev_BtwnPairs.clear();
+						breakalignment = 1;
+						inversion = 0;
+						return;		 						
+ 					}			
 				}
+
+				// if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) >= 1000) {
+				// 	// break the alignment;
+				// 	for_BtwnPairs.clear();
+				// 	rev_BtwnPairs.clear();
+				// 	breakalignment = 1;
+				// 	inversion = 0;
+				// 	return;					
+				// }
 				if (for_BtwnPairs.size() >= rev_BtwnPairs.size()) {
 					BtwnPairs = &for_BtwnPairs;
 					rev_BtwnPairs.clear();
@@ -339,7 +356,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				SparseDP_ForwardOnly(ExtendBtwnPairs, ExtendBtwnPairsMatchesLength, BtwnChain, tinyOpts, LookUpTable, inv_value, inv_NumofAnchors, 2); //1
 				RemovePairedIndels(ExtendBtwnPairs, BtwnChain, ExtendBtwnPairsMatchesLength);
 
-				if (tinyOpts.debug and tinyOpts.dotPlot and read.name == tinyOpts.readname) {
+				if (tinyOpts.dotPlot and read.name == tinyOpts.readname) {
 					ofstream pSclust("BtwnPairs.tab", std::ofstream::app);
 					for (int bp = BtwnPairs->size()-1; bp >= 0; bp--) {
 						if (inversion == 0) {
