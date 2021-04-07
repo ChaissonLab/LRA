@@ -439,11 +439,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--firstcoefficient")) {
-			opts.firstcoefficient = atoi(GetArgv(argv, argc, argi));
+			opts.firstcoefficient = atof(GetArgv(argv, argc, argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--secondcoefficient")) {
-			opts.secondcoefficient = atoi(GetArgv(argv, argc, argi));
+			opts.secondcoefficient = atof(GetArgv(argv, argc, argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--merge_dist")) {
