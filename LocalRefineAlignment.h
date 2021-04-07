@@ -285,32 +285,31 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				nextReadStart = read.length - temp;
 				RefineSpace(tinyOpts.globalK, tinyOpts.globalW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, inv_str);	
-				// inversion = 1;	
-
-				if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) >= 1000) {
-					for_BtwnPairs.clear();
-					// try refine in a larger band 1000 (sometimes INS and DEL)
- 					RefineSpace(tinyOpts.globalK, tinyOpts.localW, 1000, 0, for_BtwnPairs, tinyOpts, genome, read, 
- 							strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);	
- 					// break the alignment if still no anchors
- 					if ((for_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse) {
-						// break the alignment;
-						for_BtwnPairs.clear();
-						rev_BtwnPairs.clear();
-						breakalignment = 1;
-						inversion = 0;
-						return;		 						
- 					}			
-				}
 
 				// if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) >= 1000) {
-				// 	// break the alignment;
 				// 	for_BtwnPairs.clear();
-				// 	rev_BtwnPairs.clear();
-				// 	breakalignment = 1;
-				// 	inversion = 0;
-				// 	return;					
+				// 	// try refine in a larger band 1000 (sometimes INS and DEL)
+ 			// 		RefineSpace(tinyOpts.globalK, tinyOpts.localW, 1000, 0, for_BtwnPairs, tinyOpts, genome, read, 
+ 			// 				strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);	
+ 			// 		// break the alignment if still no anchors
+ 			// 		if ((for_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse) {
+				// 		// break the alignment;
+				// 		for_BtwnPairs.clear();
+				// 		rev_BtwnPairs.clear();
+				// 		breakalignment = 1;
+				// 		inversion = 0;
+				// 		return;		 						
+ 			// 		}			
 				// }
+
+				if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) >= 1000) {
+					// break the alignment;
+					for_BtwnPairs.clear();
+					rev_BtwnPairs.clear();
+					breakalignment = 1;
+					inversion = 0;
+					return;					
+				}
 				if (for_BtwnPairs.size() >= rev_BtwnPairs.size()) {
 					BtwnPairs = &for_BtwnPairs;
 					rev_BtwnPairs.clear();
