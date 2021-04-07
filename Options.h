@@ -112,7 +112,7 @@ public:
 	bool limitrefine;
 	float gapopen;
         float gapextend;
-        float root;
+        float gaproot;
 	Options() {
 		skipBandedRefine=false;
 		storeTiming=false;
@@ -222,7 +222,7 @@ public:
 		limitrefine=true;
 		gapopen=2;
 		gapextend=10;
-		root=2;
+		gaproot=2.0;
 	}
 };
 #endif

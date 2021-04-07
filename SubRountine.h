@@ -100,9 +100,10 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, const Options
 	long int x = labs(j - i) + 1; 
 	if (x == 1) return 0;
 	int a = (int) floor((x-1)/5);
+
 	//	float exact=opts.gapextend*nroot(x,opts.root)+opts.gapopen;
 	//	float pwl=PWL_w(x);
-	return PWL_w(x);
+	return -PWL_w(x);
 	if (step_sdp == 0) {
 		if (opts.LookUpTable) {
 			if (x <= 20) {
