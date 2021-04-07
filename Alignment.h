@@ -546,7 +546,7 @@ class Alignment {
 			out.width(10);
 			out << t + GetTStart() << " t: " << tsub << endl;
 			t+= tsub.size() - std::count(tsub.begin(), tsub.end(),'-');
-			cout <<endl;
+			out <<endl;
 			i=end;
 		}
 	}

@@ -18,7 +18,7 @@
 #include "SplitClusters.h"
 #include "Timing.h"
 #include "ClusterRefine.h"
-#include "IndelRefine.h"
+//#include "IndelRefine.h"
 #include "LocalRefineAlignment.h"
 
 #include <iostream>

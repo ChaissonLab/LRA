@@ -34,8 +34,7 @@
 //
 // This function seperates finalchain by different strands; 
 //
-void 
-debug_alignment (Alignment *alignment, int readlength, int genomeLen) {
+void debug_alignment (Alignment *alignment, int readlength, int genomeLen) {
 	// This is for debugging
 	if (alignment->blocks.size() > 1) {
 		int last=alignment->blocks.size();

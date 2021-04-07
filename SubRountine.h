@@ -79,10 +79,6 @@ void InitPWL(float intercept, float scalar, float root) {
     SLOPE[i] = slope;
     INTER[i] = vals[i]-STOPS[i]*slope+intercept;
   }
-  ofstream  pwl("pwl.tab");
-  for (int i=0; i < NUMPWL-1; i++) {
-    pwl << i << "\t" << STOPS[i] << "\t" << vals[i] << "\t" << INTER[i] << "\t" << SLOPE[i] << endl;
-  }   
 }
 
 float PWL_w(int x) {
