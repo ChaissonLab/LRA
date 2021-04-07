@@ -403,7 +403,12 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "--gapopen")) {
 			opts.gapopen = atof(GetArgv(argv,argc,argi));
 			++argi;
+		}
+		else if (ArgIs(argv[argi], "--gapextend")) {
+			opts.gapextend = atof(GetArgv(argv,argc,argi));
+			++argi;
 		}			
+
 		else if (ArgIs(argv[argi], "--forcerefine")) {
 			opts.HighlyAccurate = false;
 		}	
@@ -582,6 +587,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	ostream *outSVsig;
 	ofstream outfile;
 	ofstream outsvfile;
+	InitPWL(opts.gapopen, opts.gapextend, opts.root);
 	if (opts.outfile == "" or opts.outfile=="-") {
 		outPtr = &cout;
 	}
@@ -597,7 +603,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		outsvfile.open(opts.outsvfile.c_str());
 		outSVsig = &outsvfile;
 	}
-
+	
 	if (opts.printFormat == "s") {
 		stringstream cl;
 		cl << "lra align";
