@@ -404,6 +404,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.gapopen = atof(GetArgv(argv,argc,argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "--gaproot")) {
+		  opts.gaproot=atof(GetArgv(argv,argc,argi));
+		  ++argi;
+		}
 		else if (ArgIs(argv[argi], "--gapextend")) {
 			opts.gapextend = atof(GetArgv(argv,argc,argi));
 			++argi;
@@ -587,7 +591,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	ostream *outSVsig;
 	ofstream outfile;
 	ofstream outsvfile;
-	InitPWL(opts.gapopen, opts.gapextend, opts.root);
+	InitPWL(opts.gapopen, opts.gapextend, opts.gaproot);
 	if (opts.outfile == "" or opts.outfile=="-") {
 		outPtr = &cout;
 	}
