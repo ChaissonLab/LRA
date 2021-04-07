@@ -207,7 +207,7 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		output_unaligned(read, opts, *output);
 		return 0;
 	} 
-	if (opts.dotPlot and opts.readname == read.name ) {
+	if (opts.debug and opts.dotPlot and opts.readname == read.name ) {
 		ofstream fclust("for-matches_original.dots");
 		for (int m = 0; m < forMatches.size(); m++) {
 			fclust << forMatches[m].first.pos << "\t" << forMatches[m].second.pos << "\t" << opts.globalK + forMatches[m].first.pos << "\t"

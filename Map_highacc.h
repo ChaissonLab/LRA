@@ -123,8 +123,6 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 
 		ofstream sclust("clusters_coarse.tab");
 		for (int m = 0; m < clusters.size(); m++) {
-
-			cerr << "anchorfreq: " << clusters[m].anchorfreq << endl;
 				if (clusters[m].strand == 0) {
 					sclust << clusters[m].qStart << "\t"
 						  << clusters[m].tStart << "\t"
@@ -621,7 +619,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	timing.Tick("Merged ExtendClusters");
 
 
-	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+	if (opts.debug and opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream Mclust("MergeMatchesSameDiag.tab", ofstream::app);
 		for (int ep = 0; ep < samediag_clusters.size(); ep++) {
 			for (int eh = 0; eh < samediag_clusters[ep].start.size(); eh++) {
@@ -700,7 +698,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	SimpleMapQV(alignmentsOrder, read, smallOpts);		
 
 	timing.Tick("2nd SDP + local alignment");
-	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+	if (opts.debug and opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream baseDots("alignment.dots");
 		for (int a=0; a < (int) alignmentsOrder.size(); a++){
 			for (int s = 0; s < alignmentsOrder[a].SegAlignment.size(); s++) {
