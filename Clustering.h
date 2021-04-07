@@ -400,7 +400,7 @@ public:
 		ovp = min(tEnd, b->tEnd) - max(tStart, b->tStart);
 		float denomA = tEnd - tStart;
 		float denomB = b->tEnd - b->tStart;
-		return max(ovp/denomA, ovp/denomB);
+		return ovp/denomA;
 	}
 	int OverlapOnGenome(const Cluster_SameDiag *b) const {
 		int ovp=0;

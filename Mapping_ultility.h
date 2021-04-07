@@ -182,10 +182,15 @@ SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitC
 
 	while (im < ExtendClusters.size() - 1) {
 		cur = im + 1; prev = im;
+		bool rep_map = 0;
+		if (((link[im] == 1 and ExtendClusters[cur]->strand == 0 and ExtendClusters[prev]->strand == 0) or (link[im] == 0 and ExtendClusters[cur]->strand == 1 and ExtendClusters[prev]->strand == 1))
+				and (ExtendClusters[prev]->OverlaprateOnGenome(ExtendClusters[cur]) >= 0.6) and ExtendClusters[cur]->OverlaprateOnGenome(ExtendClusters[prev]) >= 0.6) {
+			// cerr << ExtendClusters[prev]->OverlaprateOnGenome(ExtendClusters[cur]) << "  " <<  ExtendClusters[cur]->OverlaprateOnGenome(ExtendClusters[prev])  << endl;
+			rep_map = 1;
+		}
 		if (ExtendClusters[cur]->tStart > ExtendClusters[prev]->tEnd + opts.splitdist // too far
 			or ExtendClusters[cur]->tEnd + opts.splitdist < ExtendClusters[prev]->tStart
-			or (((link[im] == 1 and ExtendClusters[cur]->strand == 0 and ExtendClusters[prev]->strand == 0) or (link[im] == 0 and ExtendClusters[cur]->strand == 1 and ExtendClusters[prev]->strand == 1))
-				and ExtendClusters[prev]->OverlaprateOnGenome(ExtendClusters[cur]) >= 0.7)// repetitive mapping
+			or rep_map // repetitive mapping
 			or (ExtendClusters[cur]->strand == 0 and ExtendClusters[prev]->strand == 1) // inversion
 			or (ExtendClusters[cur]->strand == 1 and ExtendClusters[prev]->strand == 0) // inversion
 			// or (ExtendClusters[prev]->OverlaprateOnGenome(ExtendClusters[cur]) >= 0.3)
@@ -311,13 +316,13 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 				splitchains_link.push_back(0);
 			}
 		}
-		else if ((chain.link[im] == 1 and chain.strand(cur) == 0 and chain.strand(prev) == 0) or (chain.link[im] == 0 and chain.strand(cur)== 1 and chain.strand(prev) == 1)) { // DUP
-			if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
-				splitchains_link.push_back(1);
-				// if (chain.strand(cur) == 0) splitchains_link.push_back(0);
-				// else splitchains_link.push_back(1);
-			}			
-		}
+		// else if ((chain.link[im] == 1 and chain.strand(cur) == 0 and chain.strand(prev) == 0) or (chain.link[im] == 0 and chain.strand(cur)== 1 and chain.strand(prev) == 1)) { // DUP
+		// 	if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
+		// 		splitchains_link.push_back(1);
+		// 		// if (chain.strand(cur) == 0) splitchains_link.push_back(0);
+		// 		// else splitchains_link.push_back(1);
+		// 	}			
+		// }
 		else if ((chain.strand(cur) == 0 and chain.strand(prev) == 1) or (chain.strand(cur) == 1 and chain.strand(prev) == 0)) { // INV
 			if (push_new(genome, onec, lk, splitchains, splitchains_link, chain, cur)) {
 				splitchains_link.push_back(1);
