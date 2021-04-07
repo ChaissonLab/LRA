@@ -27,79 +27,140 @@ using std::cout;
 using std::endl;
 
 
-// w function 
-float
-w (long int i, long int j, const std::vector<float> & LookUpTable, const Options &opts, bool &step_sdp) {  // step_sdp == 0 means the first sdp; step_sdp == 1 means the second sdp;
-	long int x = labs(j - i) + 1; 
-	if (x == 1) return 0;
-	int a = (int) floor((x-1)/5);
-	if (step_sdp == 0) {
-		if (opts.LookUpTable) {
-			if (x <= 20) {
-				return - x - opts.gapopen;
-			}
-			else if (x <= 10001){
-				return - opts.firstcoefficient*LookUpTable[a] - opts.gapopen;
-			}
-			else if (x <= 500001) {
-				return -2000 - opts.gapopen;
-			}
-			else if (x <= 100001){
-				return -4000 - opts.gapopen;
-			}
-			else {
-				return -6000 - opts.gapopen;
-			}
-		}
-		else {
-			if (x < 501) {
-				return - opts.firstcoefficient*logf(x) - opts.gapopen;  
-			}
-			else if (x <= 10001) {
-				return - opts.firstcoefficient*logf(x) - opts.gapopen;  
-			}
-			else if (x <= 100001) {
-				return - opts.firstcoefficient*logf(x) - opts.gapopen;
-			}
-			else {
-				return - opts.firstcoefficient*logf(x) - opts.gapopen;	
-			}
-		}
-	}
-	else {
-		if (opts.LookUpTable) {
-			if (x <= 20) {
-				return -x- opts.gapopen;
-			}
-			else if (x <= 10001){
-				return - opts.secondcoefficient*LookUpTable[a] - opts.gapopen;
-			}
-			else if (x <= 500001) {
-				return -2000 - opts.gapopen;
-			}
-			else if (x <= 100001){
-				return -4000 - opts.gapopen; //-800
-			}
-			else {
-				return -6000 - opts.gapopen;
-			}
-		}
-		else {
-			if (x < 501) {
-				return - opts.secondcoefficient*logf(x) - opts.gapopen;  
-			}
-			else if (x <= 10001) {
-				return - opts.secondcoefficient*logf(x) - opts.gapopen;  
-			}
-			else if (x <= 100001) {
-				return - opts.secondcoefficient*logf(x) - opts.gapopen;
-			}
-			else {
-				return - opts.secondcoefficient*logf(x) - opts.gapopen;	
-			}
-		}		
-	}
-}
+// // w function 
+// float
+// w (long int i, long int j, const std::vector<float> & LookUpTable, const Options &opts, bool &step_sdp) {  
+// // step_sdp == 0 means the first sdp; step_sdp == 1 means the second sdp;
+// 	long int x = labs(j - i); 
+// 	if (x == 0) return 0;
+// 	int a = (int) floor(x/5);
+// 	if (step_sdp == 0) {
+// 		if (x <= 100) {
+// 			return - opts.firstcoefficient * (0.5f * x + opts.gapopen);
+// 		}
+// 		else if (x <= 500){
+// 			return - opts.firstcoefficient * (0.375f * x + 12.5f + opts.gapopen) - 300;
+// 		}
+// 		else if (x <= 1000) {
+// 			return - opts.firstcoefficient * (0.2f * x + 100 + opts.gapopen) - 300;
+// 		}
+// 		else if (x <= 5000) {
+// 			return - opts.firstcoefficient * (0.175f * x + 125 + opts.gapopen) - 300;
+// 		}
+// 		else if (x <= 20000) {
+// 			return - opts.firstcoefficient * (0.1f * x + 500 + opts.gapopen) - 300;
+// 		}
+// 		else if (x <= 50000) {
+// 			return - opts.firstcoefficient * (0.05f * x + 1500 + opts.gapopen) - 300;
+// 		}
+// 		else if (x <= 100000) {
+// 			return - opts.firstcoefficient * (0.04f * x + 2000 + opts.gapopen) - 300;
+// 		}
+// 		else {
+// 			return - opts.firstcoefficient * 6000 - 300;
+// 		}
+// 	}
+// 	else {
+// 		if (x <= 100) {
+// 			return - opts.secondcoefficient * (0.5f * x + opts.gapopen);
+// 		}
+// 		else if (x <= 500){
+// 			return - opts.secondcoefficient * (0.375f * x + 12.5f + opts.gapopen) - 300;
+// 		}
+// 		else if (x <= 1000) {
+// 			return - opts.secondcoefficient * (0.2f * x + 100 + opts.gapopen) - 300;
+// 		}
+// 		else if (x <= 5000) {
+// 			return - opts.secondcoefficient * (0.175f * x + 125 + opts.gapopen) - 300;
+// 		}
+// 		else if (x <= 20000) {
+// 			return - opts.secondcoefficient * (0.1f * x + 500 + opts.gapopen) - 300;
+// 		}
+// 		else if (x <= 50000) {
+// 			return - opts.secondcoefficient * (0.05f * x + 1500 + opts.gapopen) - 300;
+// 		}
+// 		else if (x <= 100000) {
+// 			return - opts.secondcoefficient * (0.04f * x + 2000 + opts.gapopen) - 300;
+// 		}
+// 		else {
+// 			return - opts.secondcoefficient * 6000 - 300;
+// 		}
+// 	}
+// }
+
+// // w function 
+// float
+// w (long int i, long int j, const std::vector<float> & LookUpTable, const Options &opts, bool &step_sdp) {  // step_sdp == 0 means the first sdp; step_sdp == 1 means the second sdp;
+// 	long int x = labs(j - i) + 1; 
+// 	if (x == 1) return 0;
+// 	int a = (int) floor((x-1)/5);
+// 	if (step_sdp == 0) {
+// 		if (opts.LookUpTable) {
+// 			if (x <= 20) {
+// 				return - x - opts.gapopen;
+// 			}
+// 			else if (x <= 10001){
+// 				return - opts.firstcoefficient*LookUpTable[a] - opts.gapopen;
+// 			}
+// 			else if (x <= 500001) {
+// 				return -2000 - opts.gapopen;
+// 			}
+// 			else if (x <= 100001){
+// 				return -4000 - opts.gapopen;
+// 			}
+// 			else {
+// 				return -6000 - opts.gapopen;
+// 			}
+// 		}
+// 		else {
+// 			if (x < 501) {
+// 				return - opts.firstcoefficient*logf(x) - opts.gapopen;  
+// 			}
+// 			else if (x <= 10001) {
+// 				return - opts.firstcoefficient*logf(x) - opts.gapopen;  
+// 			}
+// 			else if (x <= 100001) {
+// 				return - opts.firstcoefficient*logf(x) - opts.gapopen;
+// 			}
+// 			else {
+// 				return - opts.firstcoefficient*logf(x) - opts.gapopen;	
+// 			}
+// 		}
+// 	}
+// 	else {
+// 		if (opts.LookUpTable) {
+// 			if (x <= 20) {
+// 				return -x- opts.gapopen;
+// 			}
+// 			else if (x <= 10001){
+// 				return - opts.secondcoefficient*LookUpTable[a] - opts.gapopen;
+// 			}
+// 			else if (x <= 500001) {
+// 				return -2000 - opts.gapopen;
+// 			}
+// 			else if (x <= 100001){
+// 				return -4000 - opts.gapopen; //-800
+// 			}
+// 			else {
+// 				return -6000 - opts.gapopen;
+// 			}
+// 		}
+// 		else {
+// 			if (x < 501) {
+// 				return - opts.secondcoefficient*logf(x) - opts.gapopen;  
+// 			}
+// 			else if (x <= 10001) {
+// 				return - opts.secondcoefficient*logf(x) - opts.gapopen;  
+// 			}
+// 			else if (x <= 100001) {
+// 				return - opts.secondcoefficient*logf(x) - opts.gapopen;
+// 			}
+// 			else {
+// 				return - opts.secondcoefficient*logf(x) - opts.gapopen;	
+// 			}
+// 		}		
+// 	}
+// }
 	// original gap penalty
 	// 	if (x < 501) {
 	//     	return - opts.coefficient*logf(x) - 1;   
