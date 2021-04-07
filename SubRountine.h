@@ -26,6 +26,73 @@ using std::cerr;
 using std::cout;
 using std::endl;
 
+#define NUMPWL 20
+#define MAXPWL 20000
+static int STOPS[NUMPWL];
+static float INTER[NUMPWL];
+static float SLOPE[NUMPWL];
+
+
+float nroot(float x, float root) {
+  return std::pow(x,1/root);
+}
+
+void InitPWL(float intercept, float scalar, float root) {
+  //
+  // Determine the spacing.
+  //
+  STOPS[0] = 0;
+  
+  int width=MAXPWL/NUMPWL;
+  float vals[NUMPWL];
+  vals[0] = 0;
+  STOPS[1]=5;
+  STOPS[2]=10;
+  STOPS[3]=20;
+  STOPS[4]=40;
+  STOPS[5]=80;
+  STOPS[6]=100;
+  STOPS[7]=200;
+  STOPS[8]=300;
+  STOPS[9]=500;
+  STOPS[10]=1000;
+  STOPS[11]=2000;
+  STOPS[12]=3000;
+  STOPS[13]=4000;
+  STOPS[14]=5000;
+  STOPS[15]=6000;
+  STOPS[16]=7000;
+  STOPS[17]=8000;
+  STOPS[18]=9000;
+  STOPS[19]=20000;
+  /*
+  for (int i=1; i < NUMPWL;i++) {
+    STOPS[i] = i*width; //floor(nroot(i*width, root));
+    // intercept and scalar can be added later, but why not use now to not forget
+  }
+  */
+  for (int i=1; i < NUMPWL;i++) {
+    vals[i] = intercept+scalar*nroot(STOPS[i], root);	
+  }
+  for (int i=0; i < NUMPWL-1; i++) {
+    float slope=(vals[i+1]-vals[i])/(STOPS[i+1]-STOPS[i]);
+    SLOPE[i] = slope;
+    INTER[i] = vals[i]-STOPS[i]*slope+intercept;
+  }
+  ofstream  pwl("pwl.tab");
+  for (int i=0; i < NUMPWL-1; i++) {
+    pwl << i << "\t" << STOPS[i] << "\t" << vals[i] << "\t" << INTER[i] << "\t" << SLOPE[i] << endl;
+  }   
+}
+
+float PWL_w(int x) {
+
+  // no gap is no penalty
+  if (x == 0) { return 0;}
+  int bound=std::upper_bound(&STOPS[0], &STOPS[NUMPWL], x)-&STOPS[0];  
+  return SLOPE[bound-1]*x + INTER[bound-1];
+}
+  
 
 // w function 
 float
@@ -33,6 +100,7 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, const Options
 	long int x = labs(j - i) + 1; 
 	if (x == 1) return 0;
 	int a = (int) floor((x-1)/5);
+	return PWL_w(x);
 	if (step_sdp == 0) {
 		if (opts.LookUpTable) {
 			if (x <= 20) {

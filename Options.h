@@ -111,6 +111,8 @@ public:
 	bool trimrefine;
 	bool limitrefine;
 	float gapopen;
+        float gapextend;
+        float root;
 	Options() {
 		skipBandedRefine=false;
 		storeTiming=false;
@@ -219,7 +221,8 @@ public:
 		trimrefine=false;
 		limitrefine=true;
 		gapopen=2;
-
+		gapextend=10;
+		root=2;
 	}
 };
 #endif
