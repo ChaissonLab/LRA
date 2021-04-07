@@ -89,7 +89,7 @@ float PWL_w(int x) {
 
   // no gap is no penalty
   if (x == 0) { return 0;}
-  int bound=std::upper_bound(&STOPS[0], &STOPS[NUMPWL], x)-&STOPS[0];  
+  int bound=std::upper_bound(&STOPS[0], &STOPS[NUMPWL-1], x)-&STOPS[0];
   return SLOPE[bound-1]*x + INTER[bound-1];
 }
   
@@ -100,6 +100,8 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, const Options
 	long int x = labs(j - i) + 1; 
 	if (x == 1) return 0;
 	int a = (int) floor((x-1)/5);
+	//	float exact=opts.gapextend*nroot(x,opts.root)+opts.gapopen;
+	//	float pwl=PWL_w(x);
 	return PWL_w(x);
 	if (step_sdp == 0) {
 		if (opts.LookUpTable) {
