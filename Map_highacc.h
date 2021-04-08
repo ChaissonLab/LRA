@@ -398,8 +398,8 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	LocalIndex forwardIndex(glIndex);
 	LocalIndex reverseIndex(glIndex);
 	LocalIndex *localIndexes[2] = {&forwardIndex, &reverseIndex};
-	//	forwardIndex.IndexSeq(read.seq, read.length);
-	//	reverseIndex.IndexSeq(readRC, read.length); 
+	forwardIndex.IndexSeq(read.seq, read.length);
+	reverseIndex.IndexSeq(readRC, read.length); 
 	//
 	// Set the parameters for merging anchors and 1st SDP
 	//
@@ -426,9 +426,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
  	//
  	// 1) read is not highly accurate; 2) read is highly accrate but not this read
  	//
-	//	if (!opts.SkipLocalMinimizer and (opts.HighlyAccurate == false or (opts.HighlyAccurate == true and sparse == 1))) {
-	if (false) {
-			
+	if (!opts.SkipLocalMinimizer and (opts.HighlyAccurate == false or (opts.HighlyAccurate == true and sparse == 1))) {
 		smallOpts.globalK=glIndex.k;
 		smallOpts.globalW=glIndex.w;
 		smallOpts.secondcoefficient+=3; // used to be 15
