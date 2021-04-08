@@ -37,8 +37,8 @@ using namespace std;
 void RemoveSpuriousSplitChain(vector<SplitChain> &chains, vector<bool> &spchain_link) {
 	int total = 0;
 	for (int i = 0; i < chains.size(); i++) {total += chains[i].size();}
-	int filter = (int) floor(0.02f * (float) total);
-	int filter_suspiciousDUPINV = (int)floor(0.03f * (float) total);
+	int filter = max((int) floor(0.02f * (float) total), 2);
+	int filter_suspiciousDUPINV = max((int) floor(0.03f * (float) total), 2);
 	// cerr << min(filter_suspiciousDUPINV, 4) << " " << min(filter, 2) << endl;
 
 	vector<bool> remove(chains.size(), 0);

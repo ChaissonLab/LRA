@@ -346,21 +346,23 @@ public:
 	bool Strand;
 	int clusterIndex; // for one refined_clusters
 	vector<int> ClusterIndex; // one splitchain can correspond to multiple ext_clusters
-	// int readlength;
-	// int offset;
+	char type; // N: unknown; I: inv; T: tra
 	SplitChain() {
 		Strand = 0;
+		type = 'N';
 	}
 	~SplitChain() {}
 	SplitChain (vector<int> &sp, vector<bool> &lk) {
 		sptc = sp;
 		link = lk;
 		Strand = 0;
+		type = 'N';
 	}
 	SplitChain (vector<int> &sp, vector<bool> &lk, UltimateChain *c, bool str) : chain(c) {
 		sptc = sp;
 		link = lk;
 		Strand = str;
+		type = 'N';
 	}
 	// SplitChain (int c) {
 	// 	clusterIndex = c;
