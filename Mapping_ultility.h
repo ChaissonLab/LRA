@@ -224,7 +224,7 @@ void MergeSplitchainINS (vector<SplitChain> & splitchains, vector<bool> &splitch
 
 					cur = splitchains[n].ClusterIndex[s];
 					if (prev != cur) {
-						splitchains[s].ClusterIndex.push_back(cur);
+						splitchains[c].ClusterIndex.push_back(cur);
 						prev = cur;
 					}
 				}				
