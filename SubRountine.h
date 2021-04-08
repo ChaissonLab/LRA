@@ -72,6 +72,7 @@ void InitPWL(float intercept, float scalar, float root) {
   }
   */
   for (int i=1; i < NUMPWL;i++) {
+  	if (i <= 2) intercept = 0;
     vals[i] = intercept+scalar*nroot(STOPS[i], root);	
   }
   for (int i=0; i < NUMPWL-1; i++) {

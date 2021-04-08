@@ -272,7 +272,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.readType=Options::contig;
 			opts.HighlyAccurate=true;
-			opts.anchor_rate=1.0; // boost the match score for 1st SDP
+			opts.initial_anchorbonus=1.0; // boost the match score for 1st SDP
 			opts.maxDiag=100; // For StoreFineCluster
 			opts.maxGap=500; // for StoreFineCluster; cannot be too large, otherwise lose lots of INV
 			opts.RoughClustermaxGap=500;  // for SplitRoughCluster; cannot be too large, otherwise cannot find INV
@@ -288,7 +288,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.SecondCleanMinDiagCluster=30; //30
      		opts.minDiagCluster=30;
      		opts.minClusterSize=10; //10
-     		opts.refineSpaceDist=100000;
+     		opts.refineSpaceDist=50000;
      		opts.cleanClustersize=100;
      		opts.punish_anchorfreq=10;
      		opts.anchorPerlength=10;
@@ -302,7 +302,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.readType=Options::ccs;
 			opts.HighlyAccurate=true;
-			// opts.anchor_rate=18.0;
+			// opts.initial_anchorbonus=18.0;
 			opts.NumAln=2;
    			opts.PrintNumAln=1;
       		opts.merge_dist=100;
@@ -316,8 +316,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.cleanClustersize=100;
      		opts.punish_anchorfreq=10;
      		opts.anchorPerlength=10;
-     		opts.refineSpaceDist=10000;
-     		opts.anchor_rate=4.0f;
+     		opts.refineSpaceDist=30000;
+     		opts.initial_anchorbonus=4.0f;
     		opts.anchorstoosparse=0.005; 
      		opts.hardClip=true;
      		opts.ExtractDiagonalFromClean=true;
@@ -345,23 +345,23 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.cleanMaxDiag=200; //150
      		opts.SecondCleanMaxDiag=120;
      		opts.SecondCleanMinDiagCluster=10; //30
-      		opts.refineSpaceDist=10000;
+      		opts.refineSpaceDist=30000;
       		opts.minDiagCluster=3;
     		opts.minClusterSize=3;
     		opts.RemovePairedIndels=false;
     		opts.RemoveSpuriousAnchors=false;
     		opts.bypassClustering=true;
-     		opts.anchor_rate=9.0f; //5.0f
+     		opts.initial_anchorbonus=20.0f; //9.0f
     		opts.punish_anchorfreq=5;
     		opts.anchorPerlength=5;
     		opts.cleanClustersize=100;
-    		opts.anchorstoosparse=0.01; // 0.02 
+    		opts.anchorstoosparse=0.005; // 0.02 
       		opts.hardClip=true;
       		opts.alnthres=0.50f;
      		opts.ExtractDiagonalFromClean=true;
-     		opts.second_anchor_rate=6.0f;
+     		opts.second_anchorbonus=6.0f;
    		
-    		// opts.second_anchor_rate=4.0f; //2
+    		// opts.second_anchorbonus=4.0f; //2
 		}		
 		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.readType=Options::ont;
@@ -374,26 +374,26 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.cleanMaxDiag=200; //50
      		opts.SecondCleanMaxDiag=100; 
      		opts.SecondCleanMinDiagCluster=10;
-      		opts.refineSpaceDist=10000;
+      		opts.refineSpaceDist=30000;
       		opts.minDiagCluster=3;
     		opts.minClusterSize=3;
     		opts.RemovePairedIndels=false;
     		opts.RemoveSpuriousAnchors=false;
     		opts.bypassClustering=true;
-     		opts.anchor_rate=6.0f; //5.0f
+     		opts.initial_anchorbonus=20.0f; //6.0f
     		opts.punish_anchorfreq=5;
     		opts.anchorPerlength=5;
     		opts.cleanClustersize=100;
-    		opts.anchorstoosparse=0.02; //0.02
+    		opts.anchorstoosparse=0.005; //0.02
       		opts.hardClip=true;
       		opts.alnthres=0.65f;
       		opts.ExtractDiagonalFromClean=true;
-  		
-    		// opts.second_anchor_rate=4.0f; //2		
+  			opts.second_anchorbonus=3.0f; //2
+    		// opts.second_anchorbonus=4.0f; //2		
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
 			// opts.HighlyAccurate = false;
-			// opts.anchor_rate=8.0;
+			// opts.initial_anchorbonus=8.0;
 			// opts.maxDiag=800;
 			// opts.maxGap=5000;
 			// opts.globalMaxFreq = 50;
@@ -481,12 +481,12 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.alnthres = atof(GetArgv(argv,argc,argi));
 			++argi;
 		}
-		else if (ArgIs(argv[argi], "--anchor_rate")) {
-			opts.anchor_rate = atof(GetArgv(argv,argc,argi));
+		else if (ArgIs(argv[argi], "--initial_anchorbonus")) {
+			opts.initial_anchorbonus = atof(GetArgv(argv,argc,argi));
 			++argi;
 		}
-		else if (ArgIs(argv[argi], "--second_anchor_rate")) {
-			opts.second_anchor_rate = atof(GetArgv(argv,argc,argi));
+		else if (ArgIs(argv[argi], "--second_anchorbonus")) {
+			opts.second_anchorbonus = atof(GetArgv(argv,argc,argi));
 			++argi;
 		}
 		else if (ArgIs(argv[argi], "--maxGap")) {

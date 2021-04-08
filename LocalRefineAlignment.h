@@ -302,7 +302,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
  			// 		}			
 				// }
 
-				if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) >= 1000) {
+				if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) >= 1000 and sv_diag <= 50) {
 					// break the alignment;
 					for_BtwnPairs.clear();
 					rev_BtwnPairs.clear();

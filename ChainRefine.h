@@ -68,16 +68,27 @@ RefineBtwnSpace_AppendCloseCluster (vector<Cluster> &RevBtwnCluster, bool twoblo
 	//
 	// Find matches in read and reference 
 	//
+	int refineSpaceDiag;
+	if (opts.readType == Options::clr or opts.readType == Options::ont) {
+	  refineSpaceDiag = min((int) floor(max(100.f, 0.15f * (qe - qs))), 1000);	
+	}
 	GenomePairs EndPairs;
-	RefineSpace(opts.globalK, opts.globalW, 100, 1, EndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, st, lrts, lrlength);
+	RefineSpace(opts.globalK, opts.globalW, refineSpaceDiag, 1, EndPairs, opts, genome, read, strands, ChromIndex, qe, qs, te, ts, st, lrts, lrlength);
 	float eff = ((float) EndPairs.size()) / min(qe - qs, te - ts);
+
 	// if (twoblocks) cerr << "refineEffiency: " << eff << " original: " << cluster->refineEffiency << endl;
 	//
 	// If highest pairwise dist between anchors is too large, then divide EndPairs into parts and assign to close clusters; 
 	// Else assign the whole EndPairs to close cluster
 	//
 	if (EndPairs.size() == 0) return 0;
-	if (twoblocks and eff >= opts.anchorstoosparse * 2) { // two block happends, just insert if anchors are dense
+	// if (twoblocks and eff >= opts.anchorstoosparse * 2) { // two block happends, just insert if anchors are dense
+	// 	cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
+	// 	cluster->SetClusterBoundariesFromMatches(opts);
+	// 	cluster->refinespace = 1;
+	// 	return 0;
+	// }
+	if (eff >= opts.anchorstoosparse * 2) { // two block happends, just insert if anchors are dense
 		cluster->matches.insert(cluster->matches.end(), EndPairs.begin(), EndPairs.end()); 
 		cluster->SetClusterBoundariesFromMatches(opts);
 		cluster->refinespace = 1;
@@ -641,7 +652,7 @@ Refine_Btwnsplitchain(vector<SplitChain> &splitchains, vector<Cluster> &RefinedC
 			else {c++; continue;}// No need to refine the space!			
 		}
 
-		// //cerr << "btwn  p: " << p << " h: " << h << " qs: " << qs << " qe: " << qe << " ts: " << ts << " te: " << te << endl;
+		// cerr << "btwn  " << " qs: " << qs << " qe: " << qe << " ts: " << ts1 << " te: " << te1 << endl;
 		// if (qe > qs and te1 > ts1) {
 		// 	SpaceLength = max(qe - qs, te1 - ts1); 
 		// 	//cerr << "SpaceLength: " << SpaceLength << "st: " << st << endl; 

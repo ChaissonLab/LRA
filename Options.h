@@ -84,7 +84,7 @@ public:
 	int minTightCluster;
 	bool RefineBySDP;
 	int refineSpaceDiag;
-	float anchor_rate;
+	float initial_anchorbonus;
 	float anchorstoosparse;
 	bool passthroughtag;
 	bool CheckTrueIntervalInFineCluster;
@@ -96,7 +96,7 @@ public:
 	bool SkipClusering;
 	bool RemovePairedIndels;
 	bool RemoveSpuriousAnchors;
-	float second_anchor_rate;
+	float second_anchorbonus;
 	int RoughClustermaxGap;
 	int SecondCleanMinDiagCluster;
 	int SecondCleanMaxDiag;
@@ -196,7 +196,7 @@ public:
 		minTightCluster=10;
 		RefineBySDP=true;
 		refineSpaceDiag=5;
-		anchor_rate=1.0;
+		initial_anchorbonus=1.0;
 		anchorstoosparse=0.01;
 		passthroughtag=false;
 		CheckTrueIntervalInFineCluster=false;
@@ -206,7 +206,7 @@ public:
 		SkipClusering=false;
 		RemovePairedIndels=true;
 		RemoveSpuriousAnchors=true;
-		second_anchor_rate=2;
+		second_anchorbonus=2;
 		RoughClustermaxGap=1000;
 		SecondCleanMinDiagCluster=40;
 		SecondCleanMaxDiag=10;

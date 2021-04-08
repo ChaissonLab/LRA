@@ -221,7 +221,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	// NOTICE: chains in Primary_chains do not overlap on Cluster
 	//
 	vector<Primary_chain> Primary_chains;
-	float rate = opts.anchor_rate;
+	float rate = opts.initial_anchorbonus;
 	if (splitclusters.size()/clusters.size() > 20) rate = rate / 2.0;// mapping to repetitive region
 
 	// cerr << "clusters.size(): " << clusters.size() << " splitclusters.size(): " << splitclusters.size() << " rate: " << rate << " read.name: " << read.name << endl;
