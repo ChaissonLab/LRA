@@ -762,7 +762,7 @@ void MergeChain(vector<Cluster *> &clusters, vector<Merge_SplitChain> &mergeinfo
 	while (t < sp.size()) {
 		cur = sp[t]; prev = sp[t - 1];
 		qdist = 9999; tdist = 9999;
-		if (clusters[prev]->strand == clusters[cur]->strand) {
+		if (clusters[prev]->chromIndex == clusters[cur]->chromIndex and clusters[prev]->strand == clusters[cur]->strand) {
 			qdist = (clusters[prev]->qStart > clusters[cur]->qEnd) ? (clusters[prev]->qStart - clusters[cur]->qEnd) : 0;
 			if (clusters[prev]->strand == 0) {
 				tdist = (clusters[prev]->tStart >= clusters[cur]->tEnd)? clusters[prev]->tStart - clusters[cur]->tEnd : 9999;

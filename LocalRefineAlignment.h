@@ -724,116 +724,116 @@ LocalRefineAlignment(vector<Primary_chain> &Primary_chains, vector<SplitChain> &
 	}	
 }
 
-void RefindEnds(GenomePos &qPos, int cur, UltimateChain &chain, bool str, Alignment *alignment, const Options &opts, 
-				Genome &genome, Read &read, int &chromIndex, char *strands[2], vector<int> &scoreMat, 
-				vector<Arrow> &pathMat, AffineAlignBuffers &buff, const vector<float> & LookUpTable, bool block = 1) { // block = 1: right, block = 0: left
+// void RefindEnds(GenomePos &qPos, int cur, UltimateChain &chain, bool str, Alignment *alignment, const Options &opts, 
+// 				Genome &genome, Read &read, int &chromIndex, char *strands[2], vector<int> &scoreMat, 
+// 				vector<Arrow> &pathMat, AffineAlignBuffers &buff, const vector<float> & LookUpTable, bool block = 1) { // block = 1: right, block = 0: left
 	
-	GenomePos curGenomeEnd, curReadEnd, nextGenomeStart, nextReadStart;
-	if (block) { // right
-		if (qPos <= chain.qEnd(cur) + 100) return;
-		if (str == 0) { // forward
-			curReadEnd = chain.qEnd(cur); nextReadStart = qPos - 100; 
-			curGenomeEnd = chain.tEnd(cur); nextGenomeStart = curGenomeEnd + (nextReadStart - curReadEnd);
-		}
-		else { // flip the space if it is reversed stranded
-			curReadEnd = read.length - (qPos - 100); nextReadStart = read.length - chain.qEnd(cur); 
-			nextGenomeStart = chain.tStart(cur); curGenomeEnd = nextGenomeStart - (nextReadStart - curReadEnd);
-		}		
-	}
-	else { // left
-		if (chain.qStart(cur) <= qPos + 100) return;
-		if (str == 0) {
-			curReadEnd = qPos + 100; nextReadStart = chain.qStart(cur); 
-			curGenomeEnd = chain.tStart(cur) - (nextReadStart - curReadEnd); nextGenomeStart = chain.tStart(cur);
-		}
-		else {
-			curReadEnd = read.length - chain.qStart(cur); nextReadStart = read.length - (qPos + 100); 
-			curGenomeEnd = chain.tStart(cur) - (nextReadStart - curReadEnd); nextGenomeStart = chain.tStart(cur);
-		}
+// 	GenomePos curGenomeEnd, curReadEnd, nextGenomeStart, nextReadStart;
+// 	if (block) { // right
+// 		if (qPos <= chain.qEnd(cur) + 100) return;
+// 		if (str == 0) { // forward
+// 			curReadEnd = chain.qEnd(cur); nextReadStart = qPos - 100; 
+// 			curGenomeEnd = chain.tEnd(cur); nextGenomeStart = curGenomeEnd + (nextReadStart - curReadEnd);
+// 		}
+// 		else { // flip the space if it is reversed stranded
+// 			curReadEnd = read.length - (qPos - 100); nextReadStart = read.length - chain.qEnd(cur); 
+// 			nextGenomeStart = chain.tStart(cur); curGenomeEnd = nextGenomeStart - (nextReadStart - curReadEnd);
+// 		}		
+// 	}
+// 	else { // left
+// 		if (chain.qStart(cur) <= qPos + 100) return;
+// 		if (str == 0) {
+// 			curReadEnd = qPos + 100; nextReadStart = chain.qStart(cur); 
+// 			curGenomeEnd = chain.tStart(cur) - (nextReadStart - curReadEnd); nextGenomeStart = chain.tStart(cur);
+// 		}
+// 		else {
+// 			curReadEnd = read.length - chain.qStart(cur); nextReadStart = read.length - (qPos + 100); 
+// 			curGenomeEnd = chain.tStart(cur) - (nextReadStart - curReadEnd); nextGenomeStart = chain.tStart(cur);
+// 		}
 
-	}
-	assert(curGenomeEnd <= nextGenomeStart); 
-	assert(curReadEnd <= nextReadStart);
-	if (curGenomeEnd >= nextGenomeStart + 100 or curReadEnd >= nextReadStart + 100) return;
-	GenomePairs EndPairs;
-	RefineSpace(opts.globalK, opts.globalW, 20, 0, EndPairs, opts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);	
-	if (EndPairs.size() > 0 and (EndPairs.size() / (float) (nextReadStart - curReadEnd)) >= opts.anchorstoosparse ) {
-		GenomePairs ExtendEndPairs; vector<int> ExtendEndPairsMatchesLength; vector<unsigned int> EndChain;
-		LinearExtend(&EndPairs, ExtendEndPairs, ExtendEndPairsMatchesLength, opts, genome, read, chromIndex, 0, 0, opts.globalK);	
-		TrimOverlappedAnchors(ExtendEndPairs, ExtendEndPairsMatchesLength);
-		float value = 0; int NumofAnchors = 0;
-		SparseDP_ForwardOnly(ExtendEndPairs, ExtendEndPairsMatchesLength, EndChain, opts, LookUpTable, value, NumofAnchors, 1/2); //1
-		RemovePairedIndels(ExtendEndPairs, EndChain, ExtendEndPairsMatchesLength);
-		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-			ofstream eSclust("ExtendBtwnPairs.tab", std::ofstream::app);
-			for (int bp = ExtendEndPairs.size()-1; bp >= 0; bp--) {
-				if (str == 0) {
-					eSclust << ExtendEndPairs[bp].first.pos << "\t"
-						  << ExtendEndPairs[bp].second.pos << "\t"
-						  << ExtendEndPairs[bp].first.pos + ExtendEndPairsMatchesLength[bp] << "\t"
-						  << ExtendEndPairs[bp].second.pos + ExtendEndPairsMatchesLength[bp] << "\t"
-						  << 0 << endl;
-				}
-				else if (str == 1) {
-					eSclust << read.length - ExtendEndPairs[bp].first.pos - ExtendEndPairsMatchesLength[bp] << "\t"
-						  << ExtendEndPairs[bp].second.pos + ExtendEndPairsMatchesLength[bp] << "\t"
-						  << read.length - ExtendEndPairs[bp].first.pos << "\t"
-						  << ExtendEndPairs[bp].second.pos << "\t"
-						  << 1 << endl;					
-				}							
-			}
-			eSclust.close();
-			if (opts.dotPlot and read.name == opts.readname) {
-				ofstream Sclust("SparseDP_Forward.tab", std::ofstream::app);
-					for (int btc = EndChain.size()-1; btc >= 0; btc--) {
-						if (str == 0) {
-							Sclust << ExtendEndPairs[EndChain[btc]].first.pos << "\t"
-								  << ExtendEndPairs[EndChain[btc]].second.pos << "\t"
-								  << ExtendEndPairs[EndChain[btc]].first.pos + ExtendEndPairsMatchesLength[EndChain[btc]] << "\t"
-								  << ExtendEndPairs[EndChain[btc]].second.pos + ExtendEndPairsMatchesLength[EndChain[btc]] << "\t"
-								  << 0 << endl;
-						}
-						else if (str == 1) {
-							Sclust << read.length - ExtendEndPairs[EndChain[btc]].first.pos - ExtendEndPairsMatchesLength[EndChain[btc]] << "\t"
-								  << ExtendEndPairs[EndChain[btc]].second.pos + ExtendEndPairsMatchesLength[EndChain[btc]] << "\t"
-								  << read.length - ExtendEndPairs[EndChain[btc]].first.pos << "\t"
-								  << ExtendEndPairs[EndChain[btc]].second.pos << "\t"
-								  << 1 << endl;					
-						}		
-					}
-				Sclust.close();
-			}
-		}	
+// 	}
+// 	assert(curGenomeEnd <= nextGenomeStart); 
+// 	assert(curReadEnd <= nextReadStart);
+// 	if (curGenomeEnd >= nextGenomeStart + 100 or curReadEnd >= nextReadStart + 100) return;
+// 	GenomePairs EndPairs;
+// 	RefineSpace(opts.globalK, opts.globalW, 20, 0, EndPairs, opts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);	
+// 	if (EndPairs.size() > 0 and (EndPairs.size() / (float) (nextReadStart - curReadEnd)) >= opts.anchorstoosparse ) {
+// 		GenomePairs ExtendEndPairs; vector<int> ExtendEndPairsMatchesLength; vector<unsigned int> EndChain;
+// 		LinearExtend(&EndPairs, ExtendEndPairs, ExtendEndPairsMatchesLength, opts, genome, read, chromIndex, 0, 0, opts.globalK);	
+// 		TrimOverlappedAnchors(ExtendEndPairs, ExtendEndPairsMatchesLength);
+// 		float value = 0; int NumofAnchors = 0;
+// 		SparseDP_ForwardOnly(ExtendEndPairs, ExtendEndPairsMatchesLength, EndChain, opts, LookUpTable, value, NumofAnchors, 1/2); //1
+// 		RemovePairedIndels(ExtendEndPairs, EndChain, ExtendEndPairsMatchesLength);
+// 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
+// 			ofstream eSclust("ExtendBtwnPairs.tab", std::ofstream::app);
+// 			for (int bp = ExtendEndPairs.size()-1; bp >= 0; bp--) {
+// 				if (str == 0) {
+// 					eSclust << ExtendEndPairs[bp].first.pos << "\t"
+// 						  << ExtendEndPairs[bp].second.pos << "\t"
+// 						  << ExtendEndPairs[bp].first.pos + ExtendEndPairsMatchesLength[bp] << "\t"
+// 						  << ExtendEndPairs[bp].second.pos + ExtendEndPairsMatchesLength[bp] << "\t"
+// 						  << 0 << endl;
+// 				}
+// 				else if (str == 1) {
+// 					eSclust << read.length - ExtendEndPairs[bp].first.pos - ExtendEndPairsMatchesLength[bp] << "\t"
+// 						  << ExtendEndPairs[bp].second.pos + ExtendEndPairsMatchesLength[bp] << "\t"
+// 						  << read.length - ExtendEndPairs[bp].first.pos << "\t"
+// 						  << ExtendEndPairs[bp].second.pos << "\t"
+// 						  << 1 << endl;					
+// 				}							
+// 			}
+// 			eSclust.close();
+// 			if (opts.dotPlot and read.name == opts.readname) {
+// 				ofstream Sclust("SparseDP_Forward.tab", std::ofstream::app);
+// 					for (int btc = EndChain.size()-1; btc >= 0; btc--) {
+// 						if (str == 0) {
+// 							Sclust << ExtendEndPairs[EndChain[btc]].first.pos << "\t"
+// 								  << ExtendEndPairs[EndChain[btc]].second.pos << "\t"
+// 								  << ExtendEndPairs[EndChain[btc]].first.pos + ExtendEndPairsMatchesLength[EndChain[btc]] << "\t"
+// 								  << ExtendEndPairs[EndChain[btc]].second.pos + ExtendEndPairsMatchesLength[EndChain[btc]] << "\t"
+// 								  << 0 << endl;
+// 						}
+// 						else if (str == 1) {
+// 							Sclust << read.length - ExtendEndPairs[EndChain[btc]].first.pos - ExtendEndPairsMatchesLength[EndChain[btc]] << "\t"
+// 								  << ExtendEndPairs[EndChain[btc]].second.pos + ExtendEndPairsMatchesLength[EndChain[btc]] << "\t"
+// 								  << read.length - ExtendEndPairs[EndChain[btc]].first.pos << "\t"
+// 								  << ExtendEndPairs[EndChain[btc]].second.pos << "\t"
+// 								  << 1 << endl;					
+// 						}		
+// 					}
+// 				Sclust.close();
+// 			}
+// 		}	
 
-		//
-		// Use linear alignment to ligand the gap between local SDP chain;
-		//
-		GenomePos btc_curReadEnd, btc_nextReadStart, btc_curGenomeEnd, btc_nextGenomeStart;
-		btc_curReadEnd = curReadEnd; btc_curGenomeEnd = curGenomeEnd;
-		for (int btc = EndChain.size() - 1; btc >= 0; btc--) {
-			btc_nextGenomeStart = ExtendEndPairs[EndChain[btc]].second.pos;
-			btc_nextReadStart = ExtendEndPairs[EndChain[btc]].first.pos;
-			RefineByLinearAlignment(btc_curReadEnd, btc_curGenomeEnd, btc_nextReadStart, btc_nextGenomeStart, str, chromIndex, alignment, read, genome, strands, scoreMat, pathMat, opts, buff);					
-			alignment->blocks.push_back(Block(ExtendEndPairs[EndChain[btc]].first.pos, ExtendEndPairs[EndChain[btc]].second.pos, ExtendEndPairsMatchesLength[EndChain[btc]]));
-			debug_alignment(alignment, read.length, genome.lengths[chromIndex]);
-			btc_curReadEnd = btc_nextReadStart + ExtendEndPairsMatchesLength[EndChain[btc]];
-			btc_curGenomeEnd = btc_nextGenomeStart + ExtendEndPairsMatchesLength[EndChain[btc]];			
-		}
-		//
-		// Add the linear alignment after the last anchor on BtwnChain;
-		//
-		if (block == 0) {
-			btc_nextGenomeStart = nextGenomeStart;
-			btc_nextReadStart = nextReadStart;			
-			if (btc_nextGenomeStart > btc_curGenomeEnd and btc_nextReadStart > btc_curReadEnd) {
-				RefineByLinearAlignment(btc_curReadEnd, btc_curGenomeEnd, btc_nextReadStart, btc_nextGenomeStart, str, chromIndex, 
-										alignment, read, genome, strands, scoreMat, pathMat, opts, buff);					
-			}				
-		}	
-	}
-	else {return;}
-	return;
-}
+// 		//
+// 		// Use linear alignment to ligand the gap between local SDP chain;
+// 		//
+// 		GenomePos btc_curReadEnd, btc_nextReadStart, btc_curGenomeEnd, btc_nextGenomeStart;
+// 		btc_curReadEnd = curReadEnd; btc_curGenomeEnd = curGenomeEnd;
+// 		for (int btc = EndChain.size() - 1; btc >= 0; btc--) {
+// 			btc_nextGenomeStart = ExtendEndPairs[EndChain[btc]].second.pos;
+// 			btc_nextReadStart = ExtendEndPairs[EndChain[btc]].first.pos;
+// 			RefineByLinearAlignment(btc_curReadEnd, btc_curGenomeEnd, btc_nextReadStart, btc_nextGenomeStart, str, chromIndex, alignment, read, genome, strands, scoreMat, pathMat, opts, buff);					
+// 			alignment->blocks.push_back(Block(ExtendEndPairs[EndChain[btc]].first.pos, ExtendEndPairs[EndChain[btc]].second.pos, ExtendEndPairsMatchesLength[EndChain[btc]]));
+// 			debug_alignment(alignment, read.length, genome.lengths[chromIndex]);
+// 			btc_curReadEnd = btc_nextReadStart + ExtendEndPairsMatchesLength[EndChain[btc]];
+// 			btc_curGenomeEnd = btc_nextGenomeStart + ExtendEndPairsMatchesLength[EndChain[btc]];			
+// 		}
+// 		//
+// 		// Add the linear alignment after the last anchor on BtwnChain;
+// 		//
+// 		if (block == 0) {
+// 			btc_nextGenomeStart = nextGenomeStart;
+// 			btc_nextReadStart = nextReadStart;			
+// 			if (btc_nextGenomeStart > btc_curGenomeEnd and btc_nextReadStart > btc_curReadEnd) {
+// 				RefineByLinearAlignment(btc_curReadEnd, btc_curGenomeEnd, btc_nextReadStart, btc_nextGenomeStart, str, chromIndex, 
+// 										alignment, read, genome, strands, scoreMat, pathMat, opts, buff);					
+// 			}				
+// 		}	
+// 	}
+// 	else {return;}
+// 	return;
+// }
 
 //
 // For chaining of pure matches
