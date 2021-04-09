@@ -1,6 +1,6 @@
 
 <!-- badges: start -->
-(https://github.com/chaissonlab/lra/logo/lra_logo.png)
+(https://github.com/ChaissonLab/LRA/tree/master/logo/lra_logo.png)
 <!-- badges: end -->
 
 ## Users' Guide
