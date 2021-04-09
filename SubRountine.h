@@ -75,10 +75,16 @@ void InitPWL(float intercept, float scalar, float root) {
   	if (i <= 2) intercept = 0;
     vals[i] = intercept+scalar*nroot(STOPS[i], root);	
   }
-  for (int i=0; i < NUMPWL-1; i++) {
+  for (int i=0; i < NUMPWL-1; i++) {		
     float slope=(vals[i+1]-vals[i])/(STOPS[i+1]-STOPS[i]);
-    SLOPE[i] = slope;
-    INTER[i] = vals[i]-STOPS[i]*slope+intercept;
+		if (STOPS[i] <= 10) {
+			SLOPE[i] = 0;
+			INTER[i] = 0;
+		}
+		else {
+			SLOPE[i] = slope;
+			INTER[i] = vals[i]-STOPS[i]*slope+intercept;
+		}
   }
 }
 
@@ -87,7 +93,9 @@ float PWL_w(int x) {
   // no gap is no penalty
   if (x == 0) { return 0;}
   int bound=std::upper_bound(&STOPS[0], &STOPS[NUMPWL-1], x)-&STOPS[0];
-  return SLOPE[bound-1]*x + INTER[bound-1];
+	int penalty=SLOPE[bound-1]*x + INTER[bound-1];
+	if (penalty > 2000) { penalty=2000;}
+  return penalty;
 }
   
 
