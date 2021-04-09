@@ -110,10 +110,14 @@ public:
 	bool ExtractDiagonalFromClean;
 	bool trimrefine;
 	bool limitrefine;
+	int freeGap;
+	int maxP;
 	float gapopen;
         float gapextend;
         float gaproot;
 	Options() {
+		freeGap=10;
+		maxP=2000;
 		skipBandedRefine=false;
 		storeTiming=false;
 		readType=Options::ont;

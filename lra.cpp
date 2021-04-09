@@ -520,6 +520,11 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.localIndel = atoi(GetArgv(argv,argc,argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "--locMismatch")) {
+			opts.localMismatch = atoi(GetArgv(argv,argc,argi));
+			++argi;
+		}
+
 		else if (ArgIs(argv[argi], "--SecondCleanMaxDiag")) {
 			opts.SecondCleanMaxDiag = atoi(GetArgv(argv, argc, argi));
 			++argi;
