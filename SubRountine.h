@@ -163,7 +163,7 @@ float PWL_w(int x) {
 
 // w function 
 float
-w (long int i, long int j, const std::vector<float> & LookUpTable, const Options &opts, bool &step_sdp) {  // step_sdp == 0 means the first sdp; step_sdp == 1 means the second sdp;
+w (long int i, long int j, const std::vector<float> & LookUpTable, const Options &opts, bool step_sdp) {  // step_sdp == 0 means the first sdp; step_sdp == 1 means the second sdp;
 	long int x = labs(j - i) + 1; 
 	if (x == 1) return 0;
 	int a = (int) floor((x-1)/5);
