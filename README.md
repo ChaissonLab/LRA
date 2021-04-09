@@ -1,5 +1,5 @@
 
-![](logo/lra_logo.png)
+![](logo/logo_small.png)
 
 
 ## Users' Guide
