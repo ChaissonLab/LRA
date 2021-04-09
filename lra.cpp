@@ -354,6 +354,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.initial_anchorbonus=20.0f; //9.0f
     		opts.punish_anchorfreq=5;
     		opts.anchorPerlength=5;
+				opts.localMismatch=-1;
+				opts.localIndel=-2;
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.005; // 0.02 
       		opts.hardClip=true;
@@ -385,6 +387,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.anchorPerlength=5;
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.005; //0.02
+				opts.localMismatch=-1;
+				opts.localIndel=-2;
       		opts.hardClip=true;
       		opts.alnthres=0.65f;
       		opts.ExtractDiagonalFromClean=true;
