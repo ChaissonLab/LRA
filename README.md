@@ -1,7 +1,6 @@
 
-<!-- badges: start -->
-(https://github.com/ChaissonLab/LRA/tree/master/logo/lra_logo.png)
-<!-- badges: end -->
+![](logo/lra_logo.png)
+
 
 ## Users' Guide
 lra, the long read aligner for sequences and assembly contigs
