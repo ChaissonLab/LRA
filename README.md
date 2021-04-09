@@ -1,6 +1,6 @@
 
 <!-- badges: start -->
-[![R build status](https://github.com/chaissonlab/lra/logo/lra_logo.png)](https://github.com/chaissonlab/lra/actions)
+(https://github.com/chaissonlab/lra/logo/lra_logo.png)
 <!-- badges: end -->
 
 ## Users' Guide
