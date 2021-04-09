@@ -77,14 +77,17 @@ void InitPWL(float intercept, float scalar, float root) {
   }
   for (int i=0; i < NUMPWL-1; i++) {		
     float slope=(vals[i+1]-vals[i])/(STOPS[i+1]-STOPS[i]);
-		if (STOPS[i] <= 10) {
-			SLOPE[i] = 0;
-			INTER[i] = 0;
-		}
-		else {
-			SLOPE[i] = slope;
-			INTER[i] = vals[i]-STOPS[i]*slope+intercept;
-		}
+		// if (STOPS[i] <= 10) {
+		// 	SLOPE[i] = 0;
+		// 	INTER[i] = 0;
+		// }
+		// else {
+		// 	SLOPE[i] = slope;
+		// 	INTER[i] = vals[i]-STOPS[i]*slope+intercept;
+		// }
+		SLOPE[i] = slope;
+		INTER[i] = vals[i]-STOPS[i]*slope+intercept;
+		
   }
 }
 
