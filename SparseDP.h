@@ -964,7 +964,7 @@ void ProcessPoint (const vector<Point> & H1, vector<info> & V, StackOfSubProblem
 						//cerr << "the index in Di which is the best candidate for ForwardDiag ---- i2: " << i2 << "\n";
 					
 
-						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step_sdp) + 
+						SubC2[j].Ev[i1] = SubC2[j].Dv[i2] + w(SubC2[j].Di[i2], SubC2[j].Ei[i1], LookUpTable, opts, step_sdp) +  
 														rate * FragInput[fi]->length(ii - ms);
 																	// FragInput[inputChain[mi]]->matchesLengths[ii - MatchStart[mi]];
 						SubC2[j].Ep[i1] = i2;							

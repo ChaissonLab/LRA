@@ -182,7 +182,9 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	//
 	float match_rate = opts.initial_anchorbonus;
 	if (repetitivecluster) {match_rate = 3;}
-	SparseDP(ext_clusters, chains, opts, LookUpTable, read, match_rate);
+	Options optsSDP=opts;
+	optsSDP.freeGap=4;	
+	SparseDP(ext_clusters, chains, optsSDP, LookUpTable, read, match_rate);
 	for (int p = 0; p < chains.size(); p++) { 
 		RemoveSpuriousJump<UltimateChain>(chains[p]); 
 		// chains[p].CleanSpurious();

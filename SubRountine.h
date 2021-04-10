@@ -88,13 +88,13 @@ void InitPWL(float intercept, float scalar, float root) {
   }
 }
 
-float PWL_w(int x) {
-
+float PWL_w(int x, int minX=0, int maxP=2000) {
   // no gap is no penalty
-  if (x == 0) { return 0;}
+	minX=2;
+	if (x <= minX) { return 0;}
   int bound=std::upper_bound(&STOPS[0], &STOPS[NUMPWL-1], x)-&STOPS[0];
 	int penalty=SLOPE[bound-1]*x + INTER[bound-1];
-	if (penalty > 2000) { penalty=2000;}
+	if (penalty > maxP) { penalty=maxP;}
   return penalty;
 }
   
@@ -169,7 +169,7 @@ w (long int i, long int j, const std::vector<float> & LookUpTable, const Options
 	int a = (int) floor((x-1)/5);
 	//	float exact=opts.gapextend*nroot(x,opts.root)+opts.gapopen;
 	//	float pwl=PWL_w(x);
-	return -PWL_w(x);
+	return -PWL_w(x, opts.freeGap, opts.maxP);
 	if (step_sdp == 0) {
 		if (opts.LookUpTable) {
 			if (x <= 20) {
