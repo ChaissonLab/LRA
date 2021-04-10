@@ -250,7 +250,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			//
 			// Create a diagonal band that is not too big, not too small
 			int sv_diag = max(read_dist, genome_dist) - min(read_dist, genome_dist);
-			float error_rate = 0;
+			double error_rate = 0;
 			if (tinyOpts.readType == Options::contig or tinyOpts.readType == Options::ccs ) {
 			  refineSpaceDiag = min((int) floor(max(80.f, 0.01f * read_dist)), 500);
 			  error_rate = 0.01f;
@@ -289,37 +289,9 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				nextReadStart = read.length - temp;
 				RefineSpace(tinyOpts.globalK, tinyOpts.globalW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, inv_str);	
-<<<<<<< HEAD
 				
 				if ((rev_BtwnPairs.size() ==0 and min(read_dist,genome_dist) > 500) or
-						((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) >= 500 and sv_diag <= (max((double)50, min(read_dist, genome_dist)*0.1)))) {
-=======
-
-				// if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) >= 1000) {
-				// 	for_BtwnPairs.clear();
-				// 	// try refine in a larger band 1000 (sometimes INS and DEL)
- 			// 		RefineSpace(tinyOpts.globalK, tinyOpts.localW, 1000, 0, for_BtwnPairs, tinyOpts, genome, read, 
- 			// 				strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);	
- 			// 		// break the alignment if still no anchors
- 			// 		if ((for_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse) {
-				// 		// break the alignment;
-				// 		for_BtwnPairs.clear();
-				// 		rev_BtwnPairs.clear();
-				// 		breakalignment = 1;
-				// 		inversion = 0;
-				// 		return;		 						
- 			// 		}			
-				// }
-				if (rev_BtwnPairs.size() == 0 and for_BtwnPairs.size() == 0 and min(read_dist, genome_dist) >= 700) {
-					// break the alignment;
-					for_BtwnPairs.clear();
-					rev_BtwnPairs.clear();
-					breakalignment = 1;
-					inversion = 0;
-					return;							
-				}
-				if ((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) >= 700 and sv_diag <= max(50, (int) (error_rate * min(read_dist,genome_dist)))) {
->>>>>>> b209e8213cd2ac9118832e178691b5a5cda53bf8
+						((rev_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and min(read_dist, genome_dist) >= 500 and sv_diag <= (max((double)50, min(read_dist, genome_dist)*error_rate)))) {
 					// break the alignment;
 					for_BtwnPairs.clear();
 					rev_BtwnPairs.clear();
