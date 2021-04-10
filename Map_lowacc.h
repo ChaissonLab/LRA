@@ -550,7 +550,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 							  << ultimatechains[t].qEnd(s) << "\t"
 							  << ultimatechains[t].tEnd(s)+ genome.header.pos[ultimatechains[t].chromIndex(s)] << "\t"
 							  << p << "\t" // chain_num
-							  << s << "\t" // cluster_num
+							  << t << "\t" // cluster_num
 							  << ultimatechains[t].ClusterNum(s) << "\t"
 							  << ultimatechains[t].strand(s) << endl;
 					}
@@ -560,7 +560,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 							  << ultimatechains[t].qEnd(s) << "\t"
 							  << ultimatechains[t].tStart(s) + genome.header.pos[ultimatechains[t].chromIndex(s)]<< "\t"
 							  << p << "\t" // chain_num
-							  << s << "\t" // cluster_num
+							  << t << "\t" // cluster_num
 							  << ultimatechains[t].ClusterNum(s) << "\t"
 							  << ultimatechains[t].strand(s) << endl;					
 					}

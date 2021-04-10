@@ -77,14 +77,17 @@ void InitPWL(float intercept, float scalar, float root) {
   }
   for (int i=0; i < NUMPWL-1; i++) {		
     float slope=(vals[i+1]-vals[i])/(STOPS[i+1]-STOPS[i]);
-		if (STOPS[i] <= 10) {
-			SLOPE[i] = 0;
-			INTER[i] = 0;
-		}
-		else {
-			SLOPE[i] = slope;
-			INTER[i] = vals[i]-STOPS[i]*slope+intercept;
-		}
+		// if (STOPS[i] <= 10) {
+		// 	SLOPE[i] = 0;
+		// 	INTER[i] = 0;
+		// }
+		// else {
+		// 	SLOPE[i] = slope;
+		// 	INTER[i] = vals[i]-STOPS[i]*slope+intercept;
+		// }
+		SLOPE[i] = slope;
+		INTER[i] = vals[i]-STOPS[i]*slope+intercept;
+		
   }
 }
 
@@ -163,7 +166,7 @@ float PWL_w(int x, int minX=0, int maxP=2000) {
 
 // w function 
 float
-w (long int i, long int j, const std::vector<float> & LookUpTable, const Options &opts, bool &step_sdp) {  // step_sdp == 0 means the first sdp; step_sdp == 1 means the second sdp;
+w (long int i, long int j, const std::vector<float> & LookUpTable, const Options &opts, bool step_sdp) {  // step_sdp == 0 means the first sdp; step_sdp == 1 means the second sdp;
 	long int x = labs(j - i) + 1; 
 	if (x == 1) return 0;
 	int a = (int) floor((x-1)/5);
