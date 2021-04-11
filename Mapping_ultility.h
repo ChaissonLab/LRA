@@ -534,8 +534,8 @@ OUTPUT(AlignmentsOrder &alignmentsOrder, Read &read, const Options &opts, Genome
 void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, const Options &opts) {
 	if (read.unaligned) return;
 	float q_coef;
-	if (opts.bypassClustering and opts.readType==Options::clr) q_coef = 2.0f; // 40
-	else if (opts.bypassClustering and opts.readType==Options::ont) q_coef = 4.0f; // 40
+	if (opts.bypassClustering and opts.readType==Options::clr) q_coef = 16.0f; // 2
+	else if (opts.bypassClustering and opts.readType==Options::ont) q_coef = 18.0f; // 4
 	else q_coef = 22.0f; // 40
 	int len = alignmentsOrder.size(); // number of primary aln and secondary aln
 	for (int r = 0; r < len; r++) {
@@ -570,6 +570,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, const Options &op
 		else if (r == 0 and len > 1) {
 			// set mapq for each segment
 			float x = (alignmentsOrder[r + 1].value) / (alignmentsOrder[r].value);
+			float y = 1.0f;
 			for (int s = alignmentsOrder[r].SegAlignment.size() - 1; s >= 0 ; s--) {
 				float pen_cm_1;
 				if (!opts.bypassClustering) {
@@ -577,6 +578,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, const Options &op
 					pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 >= 5? 1.0f : 0.1f ) * pen_cm_1;					
 				}
 				else {
+					y = ((float)alignmentsOrder[r].NumOfAnchors0) / ((float)alignmentsOrder[r + 1].NumOfAnchors0);
 					pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 > 10? 1.0f : 0.05f ) * alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0;
 					pen_cm_1 = (alignmentsOrder[r].SegAlignment[s]->NumOfAnchors0 >= 5? 1.0f : 0.02f ) * pen_cm_1;
 				}
@@ -588,14 +590,14 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, const Options &op
 				float l = ( alignmentsOrder[r].SegAlignment[s]->value > 3? logf(alignmentsOrder[r].SegAlignment[s]->value / opts.globalK) : 0);
 				identity = (identity < 1? identity : 1);
 				long mapq;
-				if (x >= 0.980f) {
-					mapq = (int)(pen_cm_1 * (1.0f - x) * identity);
+				if (x >= 0.995f) { //0.98 is too low -- too many reads are mapq 0
+					mapq = (int)(pen_cm_1 * (1.0f - x) * y * identity);
 				}
 				else if (!opts.bypassClustering) {
-					mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l * identity);
+					mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l * y * identity);
 				}
 				else {
-					mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * identity);
+					mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * y * identity);
 				}
 				// long mapq = (int)(pen_cm_1 * q_coef * (1.0f - x) * l);
 				mapq -= (int)(4.343f * logf(len) + .499f);

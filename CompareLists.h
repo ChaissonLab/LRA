@@ -66,11 +66,11 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 			// End gap  is how much less the last element in qBegin is than TBegin
 			endGap.t = (tBegin[te-1].t & for_mask) - (qBegin[qe].t & for_mask);
 		}
-		if (startGap.t == 0 or startGap > endGap) {
+	if (startGap.t == 0 or startGap > endGap) {
 			//
 			// Find entry in t that could match qs
 			//
-		        typename vector<tup>::iterator lb;
+		    typename vector<tup>::iterator lb;
 			long tsOrig=ts;
 			long qsOrig=qs;
 			lb = lower_bound(tBegin + ts, tBegin + te, qBegin[qs]);
@@ -84,16 +84,16 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 				for (GenomePos ti = tsStart; ti != tsi; ti++) {
 					if (qs - qsStart < maxFreq) {
 						for (GenomePos qi = qsStart; qi <= qs; qi++) {
-				      if (maxDiagNum != 0 and minDiagNum != 0) {
+				      		if (maxDiagNum != 0 and minDiagNum != 0) {
 								int64_t Diag = (int64_t) tBegin[ti].pos - (int64_t) qBegin[qi].pos;
 								if (Diag <= maxDiagNum and Diag >= minDiagNum) {
 									result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
 								}
 							}
-				      else {								
+				     		 else {								
 								result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
-				      }
-				    }
+				      		}
+				    	}
 					}
 				}
 			}
@@ -124,17 +124,17 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 				while (qe > qs and (qBegin[qe].t & for_mask) == (qBegin[qe-1].t & for_mask)) { qe--;}
 				for (GenomePos ti = tei; ti < teStart; ti++) {
 					if (qeStart - qe < maxFreq) {
-				    for (GenomePos qi = qe; qi <= qeStart; qi++) {
-				      if (maxDiagNum != 0 and minDiagNum != 0) {
+					    for (GenomePos qi = qe; qi <= qeStart; qi++) {
+					      	if (maxDiagNum != 0 and minDiagNum != 0) {
 								int64_t Diag = (int64_t) tBegin[ti].pos - (int64_t) qBegin[qi].pos;
 								if (Diag <= maxDiagNum and Diag >= minDiagNum) {
 									result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
 								}
-				      }
-				      else {
+					      	}
+					      	else {
 								result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
-				      }
-				    }
+					     	}
+					    }
 					}
 				}
 			}
