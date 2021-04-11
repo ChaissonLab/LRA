@@ -70,6 +70,7 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 			//
 		        typename vector<tup>::iterator lb;
 			long tsOrig=ts;
+			long qsOrig=qs;
 			lb = lower_bound(tBegin + ts, tBegin + te, qBegin[qs]);
 			ts = lb - tBegin;
 			if ((tBegin[ts].t & for_mask) == (qBegin[qs].t & for_mask)) {
@@ -79,24 +80,25 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 				GenomePos qsStart = qs;
 				while (qs < qe and (qBegin[qs+1].t & for_mask) == (qBegin[qs].t & for_mask)) { qs++; }				
 				for (GenomePos ti = tsStart; ti != tsi; ti++) {
-				  				  if (qs - qsStart < maxFreq) {
-				    for (GenomePos qi = qsStart; qi <= qs; qi++) {
+					if (qs - qsStart < maxFreq) {
+						for (GenomePos qi = qsStart; qi <= qs; qi++) {
 				      if (maxDiagNum != 0 and minDiagNum != 0) {
-					uint64_t Diag = (uint64_t) tBegin[ti].pos - (uint64_t) qBegin[qi].pos;
-					if (Diag <= maxDiagNum and Diag >= minDiagNum) {
-					  result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
-					}
-						}
-				      else {
-					result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+								uint64_t Diag = (uint64_t) tBegin[ti].pos - (uint64_t) qBegin[qi].pos;
+								if (Diag <= maxDiagNum and Diag >= minDiagNum) {
+
+									result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+								}
+							}
+				      else {								
+								result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
 				      }
 				    }
-				    				  }
+					}
 				}
 			}
-			if (ts == tsOrig) {
-			  while (ts < te and tBegin[ts].t == tBegin[tsOrig].t) { ts++; }
-			}
+
+			while (ts < te and tBegin[ts].t == tBegin[tsOrig].t) { ts++; }
+			while (qs < qe and qBegin[qs].t == qBegin[qsOrig].t)  { qs++;}
 		}
 		else {
 			//
