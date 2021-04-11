@@ -28,7 +28,9 @@ using std::endl;
 
 #define NUMPWL 20
 #define MAXPWL 20000
-static int STOPS[NUMPWL];
+static int firstGapCeiling;
+static int secondGapCeiling;
+static long STOPS[NUMPWL];
 static float INTER[NUMPWL];
 static float SLOPE[NUMPWL];
 
@@ -37,12 +39,14 @@ float nroot(float x, float root) {
   return std::pow(x,1/root);
 }
 
-void InitPWL(float intercept, float scalar, float root) {
+void InitPWL(float intercept, float scalar, float root, int gapCeiling1=2000, int gapCeiling2= 50000) {
   //
   // Determine the spacing.
   //
-  STOPS[0] = 0;
-  
+firstGapCeiling=gapCeiling1;
+secondGapCeiling=gapCeiling2;
+STOPS[0] = 0;
+
   int width=MAXPWL/NUMPWL;
   float vals[NUMPWL];
   vals[0] = 0;
@@ -77,28 +81,40 @@ void InitPWL(float intercept, float scalar, float root) {
   }
   for (int i=0; i < NUMPWL-1; i++) {		
     float slope=(vals[i+1]-vals[i])/(STOPS[i+1]-STOPS[i]);
-		// if (STOPS[i] <= 10) {
-		// 	SLOPE[i] = 0;
-		// 	INTER[i] = 0;
-		// }
-		// else {
-		// 	SLOPE[i] = slope;
-		// 	INTER[i] = vals[i]-STOPS[i]*slope+intercept;
-		// }
-		SLOPE[i] = slope;
-		INTER[i] = vals[i]-STOPS[i]*slope+intercept;
-		
+		if (STOPS[i] <= 10) {
+			SLOPE[i] = 0;
+			INTER[i] = 0;
+		}
+		else {
+			SLOPE[i] = slope;
+			INTER[i] = vals[i]-STOPS[i]*slope+intercept;
+		}
   }
 }
 
-float PWL_w(int x, int minX=0, int maxP=2000) {
+float PWL_w(long x, long minX=0) {
   // no gap is no penalty
 	minX=2;
-	if (x <= minX) { return 0;}
-  int bound=std::upper_bound(&STOPS[0], &STOPS[NUMPWL-1], x)-&STOPS[0];
-	int penalty=SLOPE[bound-1]*x + INTER[bound-1];
-	if (penalty > maxP) { penalty=maxP;}
-  return penalty;
+  long penalty;
+int bound=0;
+  if (x <= minX) { penalty=0;}
+	else {
+     bound=std::upper_bound(&STOPS[0], &STOPS[NUMPWL-1], x)-&STOPS[0];
+	   penalty=SLOPE[bound-1]*x + INTER[bound-1];
+     //
+     // Add two steps to the end of the gap function, one for medium length gaps, and one for long
+     //
+     if (penalty >= firstGapCeiling && penalty <secondGapCeiling) {
+        penalty= firstGapCeiling;
+     }
+     else if (penalty > secondGapCeiling) {
+        penalty = secondGapCeiling;
+     }
+}
+
+
+return penalty;
+
 }
   
 
@@ -166,13 +182,13 @@ float PWL_w(int x, int minX=0, int maxP=2000) {
 
 // w function 
 float
-w (long int i, long int j, const std::vector<float> & LookUpTable, const Options &opts, bool step_sdp) {  // step_sdp == 0 means the first sdp; step_sdp == 1 means the second sdp;
+w (long int i, long int j, const std::vector<float> & LookUpTable, const Options &opts, bool &step_sdp) {  // step_sdp == 0 means the first sdp; step_sdp == 1 means the second sdp;
 	long int x = labs(j - i) + 1; 
 	if (x == 1) return 0;
-	int a = (int) floor((x-1)/5);
+	int a = (long) floor((x-1)/5);
 	//	float exact=opts.gapextend*nroot(x,opts.root)+opts.gapopen;
 	//	float pwl=PWL_w(x);
-	return -PWL_w(x, opts.freeGap, opts.maxP);
+	return -PWL_w(x, opts.freeGap);
 	if (step_sdp == 0) {
 		if (opts.LookUpTable) {
 			if (x <= 20) {

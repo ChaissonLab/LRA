@@ -319,7 +319,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.refineSpaceDist=30000;
      		opts.initial_anchorbonus=4.0f;
     		opts.anchorstoosparse=0.005; 
-     		opts.hardClip=true;
+     		opts.hardClip=false;
      		opts.ExtractDiagonalFromClean=true;
 
 			// opts.rate_FirstSDPValue=0;
@@ -358,7 +358,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 				opts.localIndel=-2;
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.005; // 0.02 
-      		opts.hardClip=true;
+      		opts.hardClip=false;
       		opts.alnthres=0.50f;
      		opts.ExtractDiagonalFromClean=true;
      		opts.second_anchorbonus=6.0f;
@@ -389,7 +389,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.anchorstoosparse=0.005; //0.02
 				opts.localMismatch=-1;
 				opts.localIndel=-2;
-      		opts.hardClip=true;
+      		opts.hardClip=false;
       		opts.alnthres=0.65f;
       		opts.ExtractDiagonalFromClean=true;
   			opts.second_anchorbonus=3.0f; //2
