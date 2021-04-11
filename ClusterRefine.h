@@ -265,10 +265,10 @@ int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePair
 	  for (int b=0; b < aln.blocks.size(); b++) {
 	    if (aln.blocks[b].length > K) {	      
 	      for (int bp=0; bp + K < aln.blocks[b].length; bp+=K) {
-		GenomePair pair;
-		pair.first.pos = aln.blocks[b].qPos+bp;
-		pair.second.pos = aln.blocks[b].tPos+bp;
-		EndPairs.push_back(pair);
+			GenomePair pair;
+			pair.first.pos = aln.blocks[b].qPos+bp;
+			pair.second.pos = aln.blocks[b].tPos+bp;
+			EndPairs.push_back(pair);
 	      }
 	    }
 	  }

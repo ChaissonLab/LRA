@@ -201,7 +201,7 @@ SwitchToOriginalAnchors(FinalChain &prev, UltimateChain &cur, vector<Cluster_Sam
 // This function creates the alignment for a "segment"(one big chunk) in the chain;
 //
 void
-RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &chromIndex, UltimateChain &chain, vector<SegAlignmentGroup> &alignments,
+RefinedAlignmentbtwnAnchors(int cur, int next, bool str, bool inv_str, int &chromIndex, UltimateChain &chain, vector<SegAlignmentGroup> &alignments,
 							Alignment *alignment, Read &read, Genome &genome, char *strands[2], vector<int> &scoreMat, 
 							vector<Arrow> &pathMat, Options tinyOpts, AffineAlignBuffers &buff, 
 							const vector<float> & LookUpTable, bool &inversion, bool &breakalignment, ostream *svsigstrm) {
@@ -282,7 +282,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			// If anchor is still too sparse, try finding seeds in the inversed direction
 			//
 			int minDist = min(read_dist, genome_dist);
-			if ((for_BtwnPairs.size() / (float) minDist) < tinyOpts.anchorstoosparse and alignments.back().SegAlignment.back()->blocks.size() >=5 ) { // try inversion
+			if ((for_BtwnPairs.size() / (float) minDist) < 0.02 and alignments.back().SegAlignment.back()->blocks.size() >=5 ) { // try inversion
 
 				GenomePos temp = curReadEnd;
 				curReadEnd = read.length - nextReadStart;
@@ -293,9 +293,12 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				if (tinyOpts.readType == Options::contig or tinyOpts.readType == Options::ccs ) {
 					driftRate = 0.01f;
 				}
-				else if (tinyOpts.readType == Options::clr or tinyOpts.readType == Options::ont) {
+				else if (tinyOpts.readType == Options::ont or tinyOpts.readType == Options::clr) {
 					driftRate = 0.10f;
 				}
+				// else {
+				// 	driftRate = 0.15f;	
+				// }
 
 				if (for_BtwnPairs.size() == 0 and rev_BtwnPairs.size() == 0 and minDist > 500 and sv_diag <= max((double)50, minDist*driftRate)) {
 					// break the alignment;
@@ -305,7 +308,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 					inversion = 0;
 					return;						
 				}
-				if (rev_BtwnPairs.size() / (float) minDist < tinyOpts.anchorstoosparse){
+				if (rev_BtwnPairs.size() / (float) minDist < 0.02){
 					// break the alignment;
 					for_BtwnPairs.clear();
 					rev_BtwnPairs.clear();
