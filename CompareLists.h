@@ -23,7 +23,7 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 	long qs = 0, qe = qEnd - qBegin - 1;
 	long ts = 0, te = tEnd - tBegin;
 	typename vector<tup>::iterator slb;
-	cout << qs << "\t" << qe << "\t" << ts << "\t" << te << endl;
+
 	if (qBegin == qEnd or tBegin == tEnd) {
 		result.clear();
 		return;
@@ -142,6 +142,7 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 		}
 	} while (qs < qe and ts < te);
 	nAdded=result.size() - origSize;
+
 }
 
 template<typename tup, typename Tup> 
