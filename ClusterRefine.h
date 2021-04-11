@@ -10,7 +10,7 @@
 #include "Clustering.h"
 #include "TupleOps.h"
 #include "Chain.h"
-
+#include "AffineOneGapAlign.h"
 #include <iostream>
 #include <algorithm>
 #include <iterator>
@@ -254,12 +254,32 @@ int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePair
 
 	string refSeq(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength);
 	string querySeq(strands[st] + qs, qe - qs);
-	  
-	StoreMinimizers_noncanonical<GenomeTuple, Tuple>(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength, K, W, EndGenomeTup, false); // local minimizer
-	sort(EndGenomeTup.begin(), EndGenomeTup.end());
-	StoreMinimizers_noncanonical<GenomeTuple, Tuple>(strands[st] + qs, qe - qs, K, W, EndReadTup, false);
-	sort(EndReadTup.begin(), EndReadTup.end());
-	CompareLists<GenomeTuple, Tuple>(EndReadTup.begin(), EndReadTup.end(), EndGenomeTup.begin(), EndGenomeTup.end(), EndPairs, opts, false, maxDiagNum, minDiagNum, false); // By passing maxDiagNum and minDiagNum, this function
+
+
+	// if (refineSpaceDiag >= 100) cerr << "refineSpaceDiag: " << refineSpaceDiag << " read.name: " << read.name << endl;
+	Alignment aln;
+	
+	if (querySeq.size() < 1000 and refSeq.size() < 1000) {
+	  AffineAlignBuffers buff;
+	  AffineOneGapAlign(querySeq, querySeq.size(), refSeq, refSeq.size(), opts.localMatch, opts.localMismatch, opts.localIndel, 30, aln, buff);
+	  for (int b=0; b < aln.blocks.size(); b++) {
+	    if (aln.blocks[b].length > K) {	      
+	      for (int bp=0; bp + K < aln.blocks[b].length; bp+=K) {
+		GenomePair pair;
+		pair.first.pos = aln.blocks[b].qPos+bp;
+		pair.second.pos = aln.blocks[b].tPos+bp;
+		EndPairs.push_back(pair);
+	      }
+	    }
+	  }
+	}
+	else {
+	  StoreMinimizers_noncanonical<GenomeTuple, Tuple>(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength, K, W, EndGenomeTup, false); // local minimizer
+	  sort(EndGenomeTup.begin(), EndGenomeTup.end());
+	  StoreMinimizers_noncanonical<GenomeTuple, Tuple>(strands[st] + qs, qe - qs, K, W, EndReadTup, false);
+	  sort(EndReadTup.begin(), EndReadTup.end());
+	  CompareLists<GenomeTuple, Tuple>(EndReadTup.begin(), EndReadTup.end(), EndGenomeTup.begin(), EndGenomeTup.end(), EndPairs, opts, false, maxDiagNum, minDiagNum, false); // By passing maxDiagNum and minDiagNum, this function
+	}
 										// filters out anchors that are outside the diagonal band;
 
 	for (int rm = 0; rm < EndPairs.size(); rm++) {

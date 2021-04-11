@@ -259,7 +259,6 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			refineSpaceDiag = max(2*sv_diag, refineSpaceDiag);
 
 			// int refineSpaceDiag = (int) (0.15f * read_dist);	
-			// if (refineSpaceDiag >= 100) cerr << "refineSpaceDiag: " << refineSpaceDiag << " read.name: " << read.name << endl;
 
 			if (max(read_dist,genome_dist) < 100) {
 				tinyOpts.globalK = 6;
@@ -269,7 +268,8 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				tinyOpts.globalK = 9;
 				tinyOpts.localW  = 7;
 				// allow repetitive matches
-				tinyOpts.globalMaxFreq = 10;
+				tinyOpts.globalMaxFreq = 50;
+				tinyOpts.localMaxFreq = 50;
 			}
 			else {
 				tinyOpts.globalK = 13;
