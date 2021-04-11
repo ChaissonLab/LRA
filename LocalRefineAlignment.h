@@ -272,7 +272,7 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 				tinyOpts.localMaxFreq = 50;
 			}
 			else {
-				tinyOpts.globalK = 13;
+				tinyOpts.globalK = 12;
 				tinyOpts.localW  = 7;
 			}
 				
@@ -281,15 +281,14 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			//
 			// If anchor is still too sparse, try finding seeds in the inversed direction
 			//
-			if ((for_BtwnPairs.size() ==0 and min(read_dist,genome_dist) > 500) or
-					((for_BtwnPairs.size() / (float) min(read_dist, genome_dist)) < tinyOpts.anchorstoosparse and 
-					 alignments.back().SegAlignment.back()->blocks.size() >=5 )) { // try inversion
+			int minDist = min(read_dist, genome_dist);
+			if ((for_BtwnPairs.size() / (float) minDist) < tinyOpts.anchorstoosparse and alignments.back().SegAlignment.back()->blocks.size() >=5 ) { // try inversion
+
 				GenomePos temp = curReadEnd;
 				curReadEnd = read.length - nextReadStart;
 				nextReadStart = read.length - temp;
 				RefineSpace(tinyOpts.globalK, tinyOpts.globalW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
 							curGenomeEnd, inv_str);	
-				int minDist = min(read_dist, genome_dist);
 				double driftRate;
 				if (tinyOpts.readType == Options::contig or tinyOpts.readType == Options::ccs ) {
 					driftRate = 0.01f;
@@ -298,10 +297,15 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 					driftRate = 0.10f;
 				}
 
-				if ((rev_BtwnPairs.size() == 0 and minDist > 500) or
-						((rev_BtwnPairs.size() / (float) minDist < tinyOpts.anchorstoosparse and 
-							minDist >= 500 and
-							sv_diag <= max((double)50, minDist*driftRate)))) {
+				if (for_BtwnPairs.size() == 0 and rev_BtwnPairs.size() == 0 and minDist > 500 and sv_diag <= max((double)50, minDist*driftRate)) {
+					// break the alignment;
+					for_BtwnPairs.clear();
+					rev_BtwnPairs.clear();
+					breakalignment = 1;
+					inversion = 0;
+					return;						
+				}
+				if (rev_BtwnPairs.size() / (float) minDist < tinyOpts.anchorstoosparse){
 					// break the alignment;
 					for_BtwnPairs.clear();
 					rev_BtwnPairs.clear();
@@ -859,7 +863,7 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
 		Alignment *alignment = new Alignment(ultimatechains[st].FirstSDPValue, strands[str], read.seq, read.length, 
 											 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
 											 genome.header.names[chromIndex], chromIndex); 
-		// alignment->NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
+		alignment->NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
 		alignment->NumOfAnchors1 = ultimatechains[st].NumOfAnchors1;
 		alignments.back().SegAlignment.push_back(alignment);
 		vector<int> scoreMat;
@@ -891,7 +895,9 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
  					alignments.back().SegAlignment.back()->NumOfAnchors1 = last - fl;
 					Alignment *next_alignment = new Alignment(ultimatechains[st].FirstSDPValue, strands[str], read.seq, read.length, 
 											 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
-											 genome.header.names[chromIndex], chromIndex); 
+											 genome.header.names[chromIndex], chromIndex);
+					next_alignment->NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
+ 					// alignments.back().SegAlignment.back()->NumOfAnchors1 = last - fl;											  
 					last = fl;
 					next_alignment->Supplymentary = 1;
 					alignments.back().SegAlignment.push_back(next_alignment);
@@ -923,6 +929,7 @@ LocalRefineAlignment( vector<UltimateChain> &ultimatechains, vector<Cluster> &ex
 					Alignment *next_alignment = new Alignment(ultimatechains[st].FirstSDPValue, strands[str], read.seq, read.length, 
 											 read.name, str, read.qual, genome.seqs[chromIndex], genome.lengths[chromIndex], 
 											 genome.header.names[chromIndex], chromIndex); 
+					next_alignment->NumOfAnchors0 = ultimatechains[st].NumOfAnchors0;
 					last = fl;
 					next_alignment->Supplymentary = 1;
 					alignments.back().SegAlignment.push_back(next_alignment);
