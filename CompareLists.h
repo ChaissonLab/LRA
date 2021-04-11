@@ -18,10 +18,12 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 		for_mask = ~(for_mask & 0);
 	}
     // cerr << "canonical: " << canonical << "  for_mask: " << for_mask << endl;
-
+	int nAdded=0;
+	int origSize=result.size();
 	long qs = 0, qe = qEnd - qBegin - 1;
 	long ts = 0, te = tEnd - tBegin;
 	typename vector<tup>::iterator slb;
+	cout << qs << "\t" << qe << "\t" << ts << "\t" << te << endl;
 	if (qBegin == qEnd or tBegin == tEnd) {
 		result.clear();
 		return;
@@ -83,9 +85,8 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 					if (qs - qsStart < maxFreq) {
 						for (GenomePos qi = qsStart; qi <= qs; qi++) {
 				      if (maxDiagNum != 0 and minDiagNum != 0) {
-								uint64_t Diag = (uint64_t) tBegin[ti].pos - (uint64_t) qBegin[qi].pos;
+								int64_t Diag = (int64_t) tBegin[ti].pos - (int64_t) qBegin[qi].pos;
 								if (Diag <= maxDiagNum and Diag >= minDiagNum) {
-
 									result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
 								}
 							}
@@ -122,24 +123,25 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 				GenomePos qeStart=qe;
 				while (qe > qs and (qBegin[qe].t & for_mask) == (qBegin[qe-1].t & for_mask)) { qe--;}
 				for (GenomePos ti = tei; ti < teStart; ti++) {
-				  				  if (qeStart - qe < maxFreq) {
+					if (qeStart - qe < maxFreq) {
 				    for (GenomePos qi = qe; qi <= qeStart; qi++) {
 				      if (maxDiagNum != 0 and minDiagNum != 0) {
-					int64_t Diag = (int64_t) tBegin[ti].pos - (int64_t) qBegin[qi].pos;
-					if (Diag <= maxDiagNum and Diag >= minDiagNum) {
-					  result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
-					}
+								int64_t Diag = (int64_t) tBegin[ti].pos - (int64_t) qBegin[qi].pos;
+								if (Diag <= maxDiagNum and Diag >= minDiagNum) {
+									result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+								}
 				      }
 				      else {
-					result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
+								result.push_back(pair<tup,tup>(qBegin[qi], tBegin[ti]));
 				      }
 				    }
-				    				  }
+					}
 				}
 			}
 			te=tei;
 		}
 	} while (qs < qe and ts < te);
+	nAdded=result.size() - origSize;
 }
 
 template<typename tup, typename Tup> 
