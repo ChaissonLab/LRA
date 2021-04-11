@@ -1,6 +1,9 @@
+
+![](logo/logo_small.png)
+
+
 ## Users' Guide
-lra, the long read aligner for sequences and assembly contigs
-lra is a sequence alignment program that aligns long reads from single-molecule sequencing (SMS) instruments, or megabase-scale contigs from SMS assemblies. lra implements seed chaining sparse dynamic programming with a convex gap function to read and assembly alignment, which is also extended to allow for inversion cases. Through the Truvari analysis of lra, Minimap2 and NGM-LR alignments. lra achieves higher f1 score over HG002 HiFi, CLR and ONT datasets. 
+lra is a sequence alignment program that aligns long reads from single-molecule sequencing (SMS) instruments, or megabase-scale contigs from SMS assemblies. lra implements seed chaining sparse dynamic programming with a convex gap function to read and assembly alignment, which is also extended to allow for inversion cases. Through the Truvari analysis of lra, Minimap2 and NGM-LR alignments. 
 
 ## Installation
 
