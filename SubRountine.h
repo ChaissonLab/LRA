@@ -27,7 +27,7 @@ using std::cout;
 using std::endl;
 
 #define NUMPWL 20
-#define MAXPWL 20000
+#define MAXPWL 20000 
 static int firstGapCeiling;
 static int secondGapCeiling;
 static long STOPS[NUMPWL];
@@ -39,7 +39,7 @@ float nroot(float x, float root) {
   return std::pow(x,1/root);
 }
 
-void InitPWL(float intercept, float scalar, float root, int gapCeiling1=2000, int gapCeiling2= 50000) {
+void InitPWL(float intercept, float scalar, float root, int gapCeiling1=1500, int gapCeiling2=1500) { // 2000; 50000
   //
   // Determine the spacing.
   //
