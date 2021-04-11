@@ -268,6 +268,8 @@ RefinedAlignmentbtwnAnchors(int &cur, int &next, bool &str, bool &inv_str, int &
 			else if (max(read_dist,genome_dist) < 500) {
 				tinyOpts.globalK = 9;
 				tinyOpts.localW  = 7;
+				// allow repetitive matches
+				tinyOpts.globalMaxFreq = 10;
 			}
 			else {
 				tinyOpts.globalK = 13;

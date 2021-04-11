@@ -259,7 +259,7 @@ int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePair
 	sort(EndGenomeTup.begin(), EndGenomeTup.end());
 	StoreMinimizers_noncanonical<GenomeTuple, Tuple>(strands[st] + qs, qe - qs, K, W, EndReadTup, false);
 	sort(EndReadTup.begin(), EndReadTup.end());
-	CompareLists<GenomeTuple, Tuple>(EndReadTup.begin(), EndReadTup.end(), EndGenomeTup.begin(), EndGenomeTup.end(), EndPairs, opts, true, maxDiagNum, minDiagNum, false); // By passing maxDiagNum and minDiagNum, this function
+	CompareLists<GenomeTuple, Tuple>(EndReadTup.begin(), EndReadTup.end(), EndGenomeTup.begin(), EndGenomeTup.end(), EndPairs, opts, false, maxDiagNum, minDiagNum, false); // By passing maxDiagNum and minDiagNum, this function
 										// filters out anchors that are outside the diagonal band;
 
 	for (int rm = 0; rm < EndPairs.size(); rm++) {

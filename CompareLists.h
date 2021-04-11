@@ -19,14 +19,14 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 	}
     // cerr << "canonical: " << canonical << "  for_mask: " << for_mask << endl;
 
-	int qs = 0, qe = qEnd - qBegin - 1;
-	int ts = 0, te = tEnd - tBegin;
+	long qs = 0, qe = qEnd - qBegin - 1;
+	long ts = 0, te = tEnd - tBegin;
 	typename vector<tup>::iterator slb;
 	if (qBegin == qEnd or tBegin == tEnd) {
 		result.clear();
 		return;
 	}
-	int maxFreq;
+	long maxFreq;
 	if ( Global ) { maxFreq = opts.globalMaxFreq;} else { maxFreq = opts.localMaxFreq;}
 	
 #ifdef _TESTING_
@@ -36,17 +36,20 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 	cout << "Matched " << isect.size() << " slowly." << endl;
 #endif
 
-	int nMatch=0;
-	int iter=0;
+	long nMatch=0;
+	long iter=0;
 	do {
 		tup startGap, endGap;
 		++iter;
+		// ts is at the beginning of the matches in t. Anything before that in qBegin can't match, sl skip past that
 		while (qs <= qe and (qBegin[qs].t & for_mask) < (tBegin[ts].t & for_mask)) {
 			qs++;
 		}
+		// no possible matches, exit.
 		if (qs >= qe) {
 		  return;
 		}
+		// startGap.t is how far below the tuple in t is the tuple in q
 		if (qs < qe) {
 		  startGap.t = (qBegin[qs].t & for_mask) - (tBegin[ts].t & for_mask);
 		}
@@ -58,13 +61,15 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 			while (qe > qs and te > ts and (qBegin[qe].t & for_mask) > (tBegin[te-1].t & for_mask)) {
 				qe--;
 			}
+			// End gap  is how much less the last element in qBegin is than TBegin
 			endGap.t = (tBegin[te-1].t & for_mask) - (qBegin[qe].t & for_mask);
 		}
-		if (startGap > endGap) {
+		if (startGap.t == 0 or startGap > endGap) {
 			//
 			// Find entry in t that could match qs
 			//
-			typename vector<tup>::iterator lb;
+		        typename vector<tup>::iterator lb;
+			long tsOrig=ts;
 			lb = lower_bound(tBegin + ts, tBegin + te, qBegin[qs]);
 			ts = lb - tBegin;
 			if ((tBegin[ts].t & for_mask) == (qBegin[qs].t & for_mask)) {
@@ -88,6 +93,9 @@ void CompareLists(typename vector<tup>::iterator qBegin, typename vector<tup>::i
 				    }
 				    				  }
 				}
+			}
+			if (ts == tsOrig) {
+			  while (ts < te and tBegin[ts].t == tBegin[tsOrig].t) { ts++; }
 			}
 		}
 		else {
