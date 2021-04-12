@@ -259,10 +259,12 @@ RefinedAlignmentbtwnAnchors(int cur, int next, bool str, bool inv_str, int &chro
 			refineSpaceDiag = max(2*sv_diag, refineSpaceDiag);
 
 			// int refineSpaceDiag = (int) (0.15f * read_dist);	
-
+			float minRatio;
 			if (max(read_dist,genome_dist) < 100) {
 				tinyOpts.globalK = 6;
 				tinyOpts.localW  = 5;
+				// Waiting time for a 6-mer with 85% accuracy=29.5
+				minRatio=1/29.5;
 			}
 			else if (max(read_dist,genome_dist) < 500) {
 				tinyOpts.globalK = 9;
@@ -270,25 +272,32 @@ RefinedAlignmentbtwnAnchors(int cur, int next, bool str, bool inv_str, int &chro
 				// allow repetitive matches
 				tinyOpts.globalMaxFreq = 50;
 				tinyOpts.localMaxFreq = 50;
+				// Waiting time for a 9-mer with 85% accuracy=69.1
+				minRatio=1/69.1;
 			}
 			else {
 				tinyOpts.globalK = 12;
 				tinyOpts.localW  = 7;
+				// Waitint time for a 12-mer with 85% accuracy=140.2
+				minRatio=1/140.2;
 			}
-				
+
  			RefineSpace(tinyOpts.globalK, tinyOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, tinyOpts, genome, read, 
  					strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);
 			//
 			// If anchor is still too sparse, try finding seeds in the inversed direction
 			//
 			int minDist = min(read_dist, genome_dist);
-			if ((for_BtwnPairs.size() / (float) minDist) < 0.02 and alignments.back().SegAlignment.back()->blocks.size() >=5 ) { // try inversion
+
+			if ((for_BtwnPairs.size() / (float) minDist) < minRatio and alignments.back().SegAlignment.back()->blocks.size() >=5 ) { // try inversion
 
 				GenomePos temp = curReadEnd;
 				curReadEnd = read.length - nextReadStart;
 				nextReadStart = read.length - temp;
-				RefineSpace(tinyOpts.globalK, tinyOpts.globalW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, 
-							curGenomeEnd, inv_str);	
+
+				RefineSpace(tinyOpts.globalK, tinyOpts.globalW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, inv_str);	
+
+
 				double driftRate;
 				if (tinyOpts.readType == Options::contig or tinyOpts.readType == Options::ccs ) {
 					driftRate = 0.01f;
@@ -308,7 +317,7 @@ RefinedAlignmentbtwnAnchors(int cur, int next, bool str, bool inv_str, int &chro
 					inversion = 0;
 					return;						
 				}
-				if (rev_BtwnPairs.size() / (float) minDist < 0.02){
+				if (rev_BtwnPairs.size() / (float) minDist < minRatio){
 					// break the alignment;
 					for_BtwnPairs.clear();
 					rev_BtwnPairs.clear();
