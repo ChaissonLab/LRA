@@ -294,7 +294,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.anchorPerlength=10;
      		opts.hardClip=true;
      		opts.ExtractDiagonalFromClean=true;
-
+     		opts.gapCeiling1=4000;
+    	    opts.gapCeiling2=8000;
    			// opts.secondcoefficient=15;
    			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
@@ -307,7 +308,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
    			opts.PrintNumAln=1;
       		opts.merge_dist=100;
       		opts.RoughClustermaxGap=500; //500
-     		opts.maxGap=400;
+     		opts.maxGap=400;//400
     		opts.cleanMaxDiag=150;//50
      		opts.SecondCleanMaxDiag=100; //10
      		opts.SecondCleanMinDiagCluster=30; //30
@@ -321,7 +322,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.anchorstoosparse=0.005; 
      		opts.hardClip=false;
      		opts.ExtractDiagonalFromClean=true;
-
+     		opts.gapCeiling1=2000;
+    	    opts.gapCeiling2=2500; //3000
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;
 
@@ -354,14 +356,16 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.initial_anchorbonus=20.0f; //9.0f
     		opts.punish_anchorfreq=5;
     		opts.anchorPerlength=5;
-				opts.localMismatch=-1;
-				opts.localIndel=-2;
+			opts.localMismatch=-1;
+			opts.localIndel=-2;
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.005; // 0.02 
       		opts.hardClip=false;
       		opts.alnthres=0.50f;
      		opts.ExtractDiagonalFromClean=true;
      		opts.second_anchorbonus=6.0f;
+     		opts.gapCeiling1=1500;
+    	    opts.gapCeiling2=3000;
    		
     		// opts.second_anchorbonus=4.0f; //2
 		}		
@@ -387,12 +391,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.anchorPerlength=5;
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.005; //0.02
-				opts.localMismatch=-1;
-				opts.localIndel=-2;
+			opts.localMismatch=-1;
+			opts.localIndel=-2;
       		opts.hardClip=false;
       		opts.alnthres=0.65f;
       		opts.ExtractDiagonalFromClean=true;
-  			opts.second_anchorbonus=3.0f; //2
+  			opts.second_anchorbonus=3.0f; //3
+     		opts.gapCeiling1=1500;
+    	    opts.gapCeiling2=3000;
     		// opts.second_anchorbonus=4.0f; //2		
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
@@ -416,7 +422,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.gapextend = atof(GetArgv(argv,argc,argi));
 			++argi;
 		}			
-
+		else if (ArgIs(argv[argi], "--gapCeiling1")) {
+			opts.gapCeiling1 = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--gapCeiling2")) {
+			opts.gapCeiling2 = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
 		else if (ArgIs(argv[argi], "--forcerefine")) {
 			opts.HighlyAccurate = false;
 		}	
@@ -600,7 +613,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	ostream *outSVsig;
 	ofstream outfile;
 	ofstream outsvfile;
-	InitPWL(opts.gapopen, opts.gapextend, opts.gaproot);
+	InitPWL(opts.gapopen, opts.gapextend, opts.gaproot, opts.gapCeiling1, opts.gapCeiling2);
 	if (opts.outfile == "" or opts.outfile=="-") {
 		outPtr = &cout;
 	}

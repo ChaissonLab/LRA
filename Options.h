@@ -113,8 +113,10 @@ public:
 	int freeGap;
 	int maxP;
 	float gapopen;
-        float gapextend;
-        float gaproot;
+    float gapextend;
+    float gaproot;
+    int gapCeiling1;
+    int gapCeiling2;
 	Options() {
 		freeGap=10;
 		maxP=2000;
@@ -227,6 +229,8 @@ public:
 		gapopen=2;
 		gapextend=10;
 		gaproot=2.0;
+    	gapCeiling1=1500;
+    	gapCeiling2=3000;
 	}
 };
 #endif
