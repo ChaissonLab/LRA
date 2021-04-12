@@ -19,7 +19,7 @@
 #include <sstream>
 #include <thread>
 #include <climits>
-
+#include "LogLookUpTable.h"
 void SwapStrand (Read & read, const Options & opts, Cluster & cluster, int K) {
 	for (int m = 0; m < cluster.matches.size(); m++) {
 		cluster.matches[m].first.pos = read.length - (cluster.matches[m].first.pos + K);
@@ -238,13 +238,15 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 	return 0;
 }
 
-void RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePairs &EndPairs, const Options & opts, Genome & genome, Read & read, char *strands[2], int &ChromIndex, GenomePos qe, 
-				GenomePos qs, GenomePos te, GenomePos ts, bool st, GenomePos lrts=0, GenomePos lrlength=0) {
+float RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, 
+									GenomePairs &EndPairs, const Options & opts, Genome & genome, Read & read, char *strands[2], int &ChromIndex, GenomePos qe, 
+									GenomePos qs, GenomePos te, GenomePos ts, bool st, GenomePos lrts=0, GenomePos lrlength=0) {
 	//
 	// Decide the diagonal band for this space
 	//
 	int64_t minDiagNum, maxDiagNum; 
 	int64_t diag1, diag2;
+	float identity=-1;
 	diag1 = 0;
 	diag2 = (int64_t) (te - (ts - lrts)) - (int64_t) (qe - qs); // scale diag1 and diag2 to the local coordinates
 	minDiagNum = min(diag1, diag2) - refineSpaceDiag; 
@@ -262,7 +264,13 @@ void RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePai
 	if (querySeq.size() < 1000 and refSeq.size() < 1000) {
 	  AffineAlignBuffers buff;
 	  AffineOneGapAlign(querySeq, querySeq.size(), refSeq, refSeq.size(), opts.localMatch, opts.localMismatch, opts.localIndel, 30, aln, buff);
+		int nMatch=0;
 	  for (int b=0; b < aln.blocks.size(); b++) {
+			char *q=&querySeq[aln.blocks[b].qPos];
+			char *t=&refSeq[aln.blocks[b].tPos];			
+			char *te=&refSeq[aln.blocks[b].tPos + aln.blocks[b].length];
+			for (; t != te; t++,q++) { if (*q == *t) { nMatch++;}	}
+
 	    if (aln.blocks[b].length > K) {	      
 	      for (int bp=0; bp + K < aln.blocks[b].length; bp+=K) {
 					char *q=&querySeq[aln.blocks[b].qPos+bp];
@@ -281,6 +289,20 @@ void RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePai
 	      }
 	    }
 	  }
+		identity=nMatch/(float)min(querySeq.size(), refSeq.size());
+		/*
+		vector<float> vect;
+		aln.read=&querySeq[0];
+		aln.genome=&refSeq[0];
+		aln.genomeLen=refSeq.size();
+		aln.readLen=querySeq.size();
+		vector<float> LookUpTable;
+		CreateLookUpTable(LookUpTable);
+		aln.CalculateStatistics(opts, NULL, LookUpTable);
+	//		aln.SimpleAlignStringsToCigar(querySeq, refSeq, cigar);
+		cout << "qs qe " << qs << "\t" << qe << endl;
+		aln.PrintPairwise(cout);
+		*/
 	}
 	else {
 	  StoreMinimizers_noncanonical<GenomeTuple, Tuple>(genome.seqs[ChromIndex]+(ts-lrts), te-ts+lrlength, K, W, EndGenomeTup, false); // local minimizer
@@ -299,7 +321,7 @@ void RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePai
 		if (consider_str == true and st == 1) { EndPairs[rm].first.pos = read.length - EndPairs[rm].first.pos - K; }
 		assert(EndPairs[rm].first.pos + K <= read.length);
 	}	
-
+	return identity;
 }
 
 

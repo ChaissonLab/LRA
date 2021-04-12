@@ -281,22 +281,26 @@ RefinedAlignmentbtwnAnchors(int cur, int next, bool str, bool inv_str, int &chro
 				// Waitint time for a 12-mer with 85% accuracy=140.2
 				minRatio=0.5/140.2;
 			}
-
- 			RefineSpace(tinyOpts.globalK, tinyOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, tinyOpts, genome, read, 
- 					strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);
+			float identity=0;
+ 			identity = RefineSpace(tinyOpts.globalK, tinyOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, tinyOpts, genome, read, 
+														 strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, str);
 			//
 			// If anchor is still too sparse, try finding seeds in the inversed direction
 			//
 			int minDist = min(read_dist, genome_dist);
-
-			if ((for_BtwnPairs.size() / (float) minDist) < minRatio and alignments.back().SegAlignment.back()->blocks.size() >=5 ) { // try inversion
+			//			cout << "fbp " << for_BtwnPairs.size() << "\t" << for_BtwnPairs.size() / (float) minDist << "\t" << minRatio << "\t" << identity << endl;
+			if ((for_BtwnPairs.size() / (float) minDist) < minRatio and 
+					alignments.back().SegAlignment.back()->blocks.size() >=5 and
+					identity < 0.8) { // try inversion
 
 				GenomePos temp = curReadEnd;
 				curReadEnd = read.length - nextReadStart;
 				nextReadStart = read.length - temp;
 
-				RefineSpace(tinyOpts.globalK, tinyOpts.globalW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, inv_str);	
+				identity = RefineSpace(tinyOpts.globalK, tinyOpts.globalW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, inv_str);	
 
+
+				//				cout << "fbp " << rev_BtwnPairs.size() << "\t" << rev_BtwnPairs.size() / (float) minDist << "\t" << minRatio << "\t" << identity << endl;
 				double driftRate;
 				if (tinyOpts.readType == Options::contig or tinyOpts.readType == Options::ccs ) {
 					driftRate = 0.01f;
@@ -308,7 +312,9 @@ RefinedAlignmentbtwnAnchors(int cur, int next, bool str, bool inv_str, int &chro
 				// 	driftRate = 0.15f;	
 				// }
 
-				if (for_BtwnPairs.size() == 0 and rev_BtwnPairs.size() == 0 and minDist > 500 and sv_diag <= max((double)50, minDist*driftRate)) {
+				if (for_BtwnPairs.size() == 0 and 
+						rev_BtwnPairs.size() == 0 and 
+						minDist > 500 and sv_diag <= max((double)50, minDist*driftRate)) {
 					// break the alignment; -- don't break easily
 					for_BtwnPairs.clear();
 					rev_BtwnPairs.clear();
@@ -318,7 +324,8 @@ RefinedAlignmentbtwnAnchors(int cur, int next, bool str, bool inv_str, int &chro
 				}
 				// if (rev_BtwnPairs.size() / (float) minDist < 0.005 and (for_BtwnPairs.size() / (float) minDist) < 0.005){
 				// 	// break the alignment; -- don't break easily
-				if (rev_BtwnPairs.size() / (float) minDist < minRatio){
+				if (identity < 0.8 and 
+						rev_BtwnPairs.size() / (float) minDist < minRatio){
 					// break the alignment;
 					for_BtwnPairs.clear();
 					rev_BtwnPairs.clear();
