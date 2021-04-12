@@ -238,7 +238,7 @@ REFINEclusters(vector<Cluster> & clusters, vector<Cluster> & refinedclusters, Ge
 	return 0;
 }
 
-int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePairs &EndPairs, const Options & opts, Genome & genome, Read & read, char *strands[2], int &ChromIndex, GenomePos qe, 
+void RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePairs &EndPairs, const Options & opts, Genome & genome, Read & read, char *strands[2], int &ChromIndex, GenomePos qe, 
 				GenomePos qs, GenomePos te, GenomePos ts, bool st, GenomePos lrts=0, GenomePos lrlength=0) {
 	//
 	// Decide the diagonal band for this space
@@ -265,10 +265,19 @@ int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePair
 	  for (int b=0; b < aln.blocks.size(); b++) {
 	    if (aln.blocks[b].length > K) {	      
 	      for (int bp=0; bp + K < aln.blocks[b].length; bp+=K) {
-			GenomePair pair;
-			pair.first.pos = aln.blocks[b].qPos+bp;
-			pair.second.pos = aln.blocks[b].tPos+bp;
-			EndPairs.push_back(pair);
+					char *q=&querySeq[aln.blocks[b].qPos+bp];
+					char *t=&refSeq[aln.blocks[b].tPos+bp];
+					char *te=&refSeq[aln.blocks[b].tPos+bp+K];
+					bool mis=false;
+					for (; t!=te ; t++,q++) {
+						if (*t != *q) { mis=true; break;}
+					}
+					if (mis == false) {
+						GenomePair pair;
+						pair.first.pos = aln.blocks[b].qPos+bp;
+						pair.second.pos = aln.blocks[b].tPos+bp;
+						EndPairs.push_back(pair);
+					}
 	      }
 	    }
 	  }
@@ -287,11 +296,11 @@ int RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePair
 		EndPairs[rm].second.pos += ts-lrts;
 		assert(EndPairs[rm].first.pos + K <= read.length);
 		assert(EndPairs[rm].second.pos + K <= genome.lengths[ChromIndex]);
-		if (consider_str == true and st == 1) EndPairs[rm].first.pos = read.length - EndPairs[rm].first.pos - K;
+		if (consider_str == true and st == 1) { EndPairs[rm].first.pos = read.length - EndPairs[rm].first.pos - K; }
 		assert(EndPairs[rm].first.pos + K <= read.length);
 	}	
-	return 0;
 }
+
 
 //
 // This function find anchors btwn two adjacent Clusters;
