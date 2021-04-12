@@ -301,15 +301,15 @@ RefinedAlignmentbtwnAnchors(int cur, int next, bool str, bool inv_str, int &chro
 				// }
 
 				if (for_BtwnPairs.size() == 0 and rev_BtwnPairs.size() == 0 and minDist > 500 and sv_diag <= max((double)50, minDist*driftRate)) {
-					// break the alignment;
+					// break the alignment; -- don't break easily
 					for_BtwnPairs.clear();
 					rev_BtwnPairs.clear();
 					breakalignment = 1;
 					inversion = 0;
 					return;						
 				}
-				if (rev_BtwnPairs.size() / (float) minDist < 0.02){
-					// break the alignment;
+				if (rev_BtwnPairs.size() / (float) minDist < 0.005 and (for_BtwnPairs.size() / (float) minDist) < 0.005){
+					// break the alignment; -- don't break easily
 					for_BtwnPairs.clear();
 					rev_BtwnPairs.clear();
 					breakalignment = 1;

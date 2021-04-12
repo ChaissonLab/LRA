@@ -414,7 +414,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	//
 	bool sparse = 0;
 	for (int p = 0; p < clusters.size(); p++) {
-		if (((float)(clusters[p].matches.size())/(clusters[p].qEnd - clusters[p].qStart)) <= 0.02f and read.length <= 50000) sparse = 1;
+		if (((float)(clusters[p].matches.size())/(clusters[p].qEnd - clusters[p].qStart)) <= 0.01f and read.length <= 50000) sparse = 1;
 	}
 	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) cerr << "sparse: " << sparse << endl;
 	//
