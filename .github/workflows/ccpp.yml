@@ -12,10 +12,10 @@ jobs:
     - name: Git Submodules
       run: git submodule update --init --recursive 
     - name: meson_init
-    - run: pip install meson ninja
+      run: pip install meson ninja
     - name: meson_setup
       run:
         meson setup builddir
     - name: meson_compile
-        meson compile -C builddir
+      run: meson compile -C builddir
 
