@@ -264,7 +264,7 @@ RefinedAlignmentbtwnAnchors(int cur, int next, bool str, bool inv_str, int &chro
 				tinyOpts.globalK = 6;
 				tinyOpts.localW  = 5;
 				// Waiting time for a 6-mer with 85% accuracy=29.5
-				minRatio=1/29.5;
+				minRatio=0.5/29.5;
 			}
 			else if (max(read_dist,genome_dist) < 500) {
 				tinyOpts.globalK = 9;
@@ -273,13 +273,13 @@ RefinedAlignmentbtwnAnchors(int cur, int next, bool str, bool inv_str, int &chro
 				tinyOpts.globalMaxFreq = 50;
 				tinyOpts.localMaxFreq = 50;
 				// Waiting time for a 9-mer with 85% accuracy=69.1
-				minRatio=1/69.1;
+				minRatio=0.5/69.1;
 			}
 			else {
 				tinyOpts.globalK = 12;
 				tinyOpts.localW  = 7;
 				// Waitint time for a 12-mer with 85% accuracy=140.2
-				minRatio=1/140.2;
+				minRatio=0.5/140.2;
 			}
 
  			RefineSpace(tinyOpts.globalK, tinyOpts.localW, refineSpaceDiag, 0, for_BtwnPairs, tinyOpts, genome, read, 
@@ -296,7 +296,6 @@ RefinedAlignmentbtwnAnchors(int cur, int next, bool str, bool inv_str, int &chro
 				nextReadStart = read.length - temp;
 
 				RefineSpace(tinyOpts.globalK, tinyOpts.globalW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, inv_str);	
-
 
 				double driftRate;
 				if (tinyOpts.readType == Options::contig or tinyOpts.readType == Options::ccs ) {

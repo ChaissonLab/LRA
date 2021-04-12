@@ -299,6 +299,7 @@ void RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str, GenomePai
 		if (consider_str == true and st == 1) { EndPairs[rm].first.pos = read.length - EndPairs[rm].first.pos - K; }
 		assert(EndPairs[rm].first.pos + K <= read.length);
 	}	
+
 }
 
 
