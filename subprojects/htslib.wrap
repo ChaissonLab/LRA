@@ -1,0 +1,12 @@
+[wrap-file]
+directory = htslib-1.11
+source_url = https://github.com/samtools/htslib/archive/1.11.zip
+source_filename = 1.11.zip
+source_hash = 8b1c56c212b0b6c823d6136f364aa372c5f6f6c1666c701d1e84bf928ee82853
+patch_url = https://wrapdb.mesonbuild.com/v1/projects/htslib/1.11/1/get_zip
+patch_filename = htslib-1.11-1-wrap.zip
+patch_hash = df746247d7c7e2a7e207a87e84a62e1f75a4419aee17650e62d69c057c6f6187
+
+[provide]
+htslib = htslib_dep
+
