@@ -534,9 +534,9 @@ OUTPUT(AlignmentsOrder &alignmentsOrder, Read &read, const Options &opts, Genome
 void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, const Options &opts) {
 	if (read.unaligned) return;
 	float q_coef;
-	if (opts.bypassClustering and opts.readType==Options::clr) q_coef = 16.0f; // 2
-	else if (opts.bypassClustering and opts.readType==Options::ont) q_coef = 18.0f; // 4
-	else q_coef = 22.0f; // 40
+	if (opts.bypassClustering and opts.readType==Options::clr) q_coef = 4.0f; // 2
+	else if (opts.bypassClustering and opts.readType==Options::ont) q_coef = 30.0f; // 4 //18
+	else q_coef = 1.0f; // 22
 	int len = alignmentsOrder.size(); // number of primary aln and secondary aln
 	for (int r = 0; r < len; r++) {
 		if (r == 0 and len == 1) {
@@ -590,7 +590,7 @@ void SimpleMapQV(AlignmentsOrder &alignmentsOrder, Read &read, const Options &op
 				float l = ( alignmentsOrder[r].SegAlignment[s]->value > 3? logf(alignmentsOrder[r].SegAlignment[s]->value / opts.globalK) : 0);
 				identity = (identity < 1? identity : 1);
 				long mapq;
-				if (x >= 0.995f) { //0.98 is too low -- too many reads are mapq 0
+				if (x >= 0.990f) { //0.98 is too low -- too many reads are mapq 0
 					mapq = (int)(pen_cm_1 * (1.0f - x) * y * identity);
 				}
 				else if (!opts.bypassClustering) {
