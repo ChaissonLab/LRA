@@ -11,8 +11,11 @@ jobs:
     - uses: actions/checkout@v1
     - name: Git Submodules
       run: git submodule update --init --recursive 
-    - name: meson
-      run: |
+    - name: meson_init
+      run: pip install meson ninja
+    - name: meson_setup
+      run:
         meson setup builddir
-        meson compile -C builddir
+    - name: meson_compile
+      run: meson compile -C builddir
 
