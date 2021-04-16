@@ -32,7 +32,7 @@
 using namespace std;
 
 int IO_BUFFER_SIZE=10000000;
-const char* lraVersion="V1.1.2";
+const char* lraVersion="V1.2";
 
 bool ArgIs(const char* a, const char* b) {
 	return strcmp(a,b) == 0;
@@ -271,6 +271,12 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.readType=Options::contig;
+			opts.refineBand=50;
+			opts.gaproot=1.5f;
+			opts.gapextend=20.0f;
+			opts.gapopen=4.0f;
+     		opts.gapCeiling1=3000;
+    	    opts.gapCeiling2=5000;
 			opts.HighlyAccurate=true;
 			opts.initial_anchorbonus=1.0; // boost the match score for 1st SDP
 			opts.maxDiag=100; // For StoreFineCluster
@@ -293,17 +299,17 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.punish_anchorfreq=10;
      		opts.anchorPerlength=10;
      		opts.hardClip=true;
-     		opts.ExtractDiagonalFromClean=true;
-     		opts.gapCeiling1=4000;
-    	    opts.gapCeiling2=8000;
-   			// opts.secondcoefficient=15;
-   			// opts.rate_FirstSDPValue=0;
-			// opts.rate_value=1;	
+     		opts.ExtractDiagonalFromClean=true;	
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
 			opts.readType=Options::ccs;
+			opts.gaproot=1.5f;
+			opts.gapextend=15.0f;
+			opts.gapopen=4.0f;
+     		opts.initial_anchorbonus=10.0f;
+     		opts.gapCeiling1=2000;
+    	    opts.gapCeiling2=3000; 
 			opts.HighlyAccurate=true;
-			// opts.initial_anchorbonus=18.0;
 			opts.NumAln=2;
    			opts.PrintNumAln=1;
       		opts.merge_dist=100;
@@ -318,12 +324,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.punish_anchorfreq=10;
      		opts.anchorPerlength=10;
      		opts.refineSpaceDist=30000;
-     		opts.initial_anchorbonus=4.0f;
     		opts.anchorstoosparse=0.005; 
-     		opts.hardClip=false;
+     		opts.hardClip=true;
      		opts.ExtractDiagonalFromClean=true;
-     		opts.gapCeiling1=2000;
-    	    opts.gapCeiling2=2500; //3000
+
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;
 
@@ -338,8 +342,17 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.readType=Options::clr;
+			opts.refineBand=20;
+			opts.gaproot=1.5f;
+			opts.gapextend=10.0f;
+			opts.gapopen=7.0f;
+     		opts.initial_anchorbonus=15.0f;
+			opts.localMismatch=-1;
+			opts.localIndel=-2;
+     		opts.gapCeiling1=1500;
+    	    opts.gapCeiling2=3000;
 			opts.HighlyAccurate=false;
-			opts.NumAln=3; //2
+			opts.NumAln=2; //2
    			opts.PrintNumAln=1;
    			opts.merge_dist=100;
    			opts.RoughClustermaxGap=1000; 
@@ -356,23 +369,28 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.initial_anchorbonus=20.0f; //9.0f
     		opts.punish_anchorfreq=5;
     		opts.anchorPerlength=5;
-			opts.localMismatch=-1;
-			opts.localIndel=-2;
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.005; // 0.02 
-      		opts.hardClip=false;
+      		opts.hardClip=true;
       		opts.alnthres=0.50f;
      		opts.ExtractDiagonalFromClean=true;
      		opts.second_anchorbonus=6.0f;
-     		opts.gapCeiling1=1500;
-    	    opts.gapCeiling2=3000;
+
    		
     		// opts.second_anchorbonus=4.0f; //2
 		}		
 		else if (ArgIs(argv[argi], "-ONT")) {
 			opts.readType=Options::ont;
+			opts.gaproot=1.5f;
+			opts.gapextend=10.0f;
+			opts.gapopen=7.0f;
+     		opts.initial_anchorbonus=15.0f;
+			opts.localMismatch=-1;
+			opts.localIndel=-2;
+     		opts.gapCeiling1=1500;
+    	    opts.gapCeiling2=3000;
 			opts.HighlyAccurate=false;
-			opts.NumAln=3;
+			opts.NumAln=2;
    			opts.PrintNumAln=1;
    			opts.merge_dist=100;
    			opts.RoughClustermaxGap=1000; 
@@ -391,14 +409,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.anchorPerlength=5;
     		opts.cleanClustersize=100;
     		opts.anchorstoosparse=0.005; //0.02
-			opts.localMismatch=-1;
-			opts.localIndel=-2;
-      		opts.hardClip=false;
+      		opts.hardClip=true;
       		opts.alnthres=0.65f;
       		opts.ExtractDiagonalFromClean=true;
-  			opts.second_anchorbonus=3.0f; //3
-     		opts.gapCeiling1=1500;
-    	    opts.gapCeiling2=3000;
     		// opts.second_anchorbonus=4.0f; //2		
 			// opts.rate_FirstSDPValue=0;
 			// opts.rate_value=1;	
