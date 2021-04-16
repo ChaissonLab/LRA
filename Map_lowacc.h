@@ -31,6 +31,7 @@
 #include <thread>
 #include <climits>
 #include <map>
+#include "RefineBreakpoint.h"
 
 using namespace std;
 
@@ -580,7 +581,21 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 		for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
 			if (opts.skipBandedRefine == false) { IndelRefineAlignment(read, genome, *alignments.back().SegAlignment[s], smallOpts, indelRefineBuffers); }
 			if (s == 0 or s == alignments.back().SegAlignment.size() - 1) alignments.back().SegAlignment[s]->RetrieveEnd(s);// retrieve the ends
-			alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
+		}
+		if (opts.refineBreakpoint) {
+		  for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
+		    if (s > 0) {
+		    //
+		    // segments are guaranteed to be in order from right to left on the read.
+		    //
+		      
+		      RefineBreakpoint(read, genome, *alignments.back().SegAlignment[s], *alignments.back().SegAlignment[s-1], opts);
+		    }
+		  }
+		}
+
+		for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
+		  alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable);
 		}
 		alignments.back().SetFromSegAlignment(smallOpts);
 		extend_clusters.clear();

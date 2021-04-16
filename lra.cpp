@@ -269,6 +269,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "--skipBandedRefine")) {
 			opts.skipBandedRefine = true;
 		}
+		else if (ArgIs(argv[argi], "--refineBreakpoints")) {
+			opts.refineBreakpoint = true;
+		}		
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.readType=Options::contig;
 			opts.HighlyAccurate=true;
@@ -342,7 +345,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.NumAln=3; //2
    			opts.PrintNumAln=1;
    			opts.merge_dist=100;
-   			opts.RoughClustermaxGap=1000; 
+   			opts.RoughClustermaxGap=1000;
+
      		opts.maxGap=1000;
      		opts.cleanMaxDiag=200; //150
      		opts.SecondCleanMaxDiag=120;
@@ -353,7 +357,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.RemovePairedIndels=false;
     		opts.RemoveSpuriousAnchors=false;
     		opts.bypassClustering=true;
-     		opts.initial_anchorbonus=20.0f; //9.0f
+     		opts.initial_anchorbonus=15.0f; //9.0f
     		opts.punish_anchorfreq=5;
     		opts.anchorPerlength=5;
 			opts.localMismatch=-1;
@@ -366,6 +370,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.second_anchorbonus=6.0f;
      		opts.gapCeiling1=1500;
     	    opts.gapCeiling2=3000;
+	    opts.gaproot=1.5;
+	    opts.gapextend=10;
+	    opts.gapopen=7;
+	    
    		
     		// opts.second_anchorbonus=4.0f; //2
 		}		

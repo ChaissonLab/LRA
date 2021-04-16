@@ -133,6 +133,21 @@ class Alignment {
 		}		
 		return 0;
 	}
+        int GetQEnd() const {
+	  if (blocks.size() > 0) {
+	    int l=blocks.size()-1;
+	    return blocks[l].qPos+blocks[l].length;
+	  }
+	  else { return 0;}
+        }
+        int GetTEnd() const {
+	  if (blocks.size() > 0) {
+	    int l=blocks.size()-1;
+	    return blocks[l].tPos+blocks[l].length;
+	  }
+	  else { return 0;}
+        }
+  
 	int GetTStart() const {
 		if (blocks.size() > 0) {
 			return blocks[0].tPos;

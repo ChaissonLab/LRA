@@ -687,6 +687,17 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 					//					if (s == 0 or s == alignments.back().SegAlignment.size() - 1) alignments.back().SegAlignment[s]->RetrieveEnd(s);// retrieve the ends
 					alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable); // final value gets compuated here
 				}
+				if (opts.refineBreakpoint == false) {
+				  for (int s = 1; s < alignments.back().SegAlignment.size(); s++) {
+				    RefineBreakpoint(read, genome, *alignments.back().SegAlignment[s], *alignments.back().SegAlignment[s-1], opts);
+				  }
+				}
+				
+				for (int s = 0; s < alignments.back().SegAlignment.size(); s++) {
+					//					if (s == 0 or s == alignments.back().SegAlignment.size() - 1) alignments.back().SegAlignment[s]->RetrieveEnd(s);// retrieve the ends
+					alignments.back().SegAlignment[s]->CalculateStatistics(smallOpts, svsigstrm, LookUpTable); // final value gets compuated here
+				}
+				
 				alignments.back().SetFromSegAlignment(smallOpts);
 				cur_cluster += Primary_chains[p].chains[h].ch.size();
 			}
