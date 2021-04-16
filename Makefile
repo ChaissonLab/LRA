@@ -60,9 +60,10 @@ HEADERS=MinCount.h \
   SubRountine.h \
   Types.h \
   SubProblem.h  \
-  SplitClusters.h 
+  SplitClusters.h \
+  RefineBreakpoint.h
 
-CXX=g++ -std=c++11 
+CXX=g++ -std=c++14 
 
 # tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 # 	$(CXX) -g TestAffineOneGapAlign.cpp -o tag 

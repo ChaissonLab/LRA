@@ -299,7 +299,7 @@ RefinedAlignmentbtwnAnchors(int cur, int next, bool str, bool inv_str, int &chro
 
 				identity = RefineSpace(tinyOpts.globalK, tinyOpts.globalW, refineSpaceDiag, 0, rev_BtwnPairs, tinyOpts, genome, read, strands, chromIndex, nextReadStart, curReadEnd, nextGenomeStart, curGenomeEnd, inv_str);	
 
-
+				
 				//				cout << "fbp " << rev_BtwnPairs.size() << "\t" << rev_BtwnPairs.size() / (float) minDist << "\t" << minRatio << "\t" << identity << endl;
 				double driftRate;
 				if (tinyOpts.readType == Options::contig or tinyOpts.readType == Options::ccs ) {
