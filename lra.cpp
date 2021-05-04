@@ -56,19 +56,20 @@ void HelpMap() {
 			 << "   -ONT (flag)    Align Nanopore reads. " << endl
 			 << "   -CONTIG (flag) Align large contigs." << endl
 			 << "   -p  [FMT]      Print alignment format FMT='b' bed, 's' sam, 'p' PAF, 'pc' PAF with cigar, 'a' pairwise alignment." << endl
-			 << "   -H             Use hard-clipping for SAM output format" << endl
+			 << "   -H             Use hard-clipping for SAM output format." << endl
 			 << "   -Flag  F(int)  Skip reads with any flags in F set (bam input only)." << endl
-			 << "   -t  n(int)     Use n threads (1)" << endl
+			 << "   -t  n(int)     Use n threads (1)." << endl
 			 << "   -a  (flag)     Query all positions in a read, not just minimizers. " << endl
 			 << "   -SV  (int <path>) Print sv signatures for each alignment with length above the given threshold (DEFAULT:25). And the path of output svsig file" << endl
 			 << "   -at  (float (0,1) Threshold to decide secondary alignments based on chaining value (DEFAULT:0.7)." << endl
 			 << "   --start  (int) Start aligning at this read." << endl
 			 << "   --stride (int) Read stride (for multi-job alignment of the same file)." << endl
-			 << "   -d 	(flag)     Enable dotPlot" << endl
-			 << "   -PAl (int)     Print at most how many alignments for one read" << endl
-			 << "   -Al (int)      Compute at most how many alignments for one read" << endl
-			 << "   --passthrough  Pass auxilary tags from the input unaligned bam to the output" << endl
-			 << "   --refineBreakpoints  Refine alignments of query sequence up to 500 bases near a breakpoint " << endl;
+	                 << "   -d 	(flag)     Enable dotPlot (debugging)" << endl
+			 << "   -PAl (int)     Print at most how many alignments for one read." << endl
+			 << "   -Al (int)      Compute at most how many alignments for one read." << endl
+	     << "   --printMD      Write the MD tag in sam and paf output. " << endl
+			 << "   --passthrough  Pass auxilary tags from the input unaligned bam to the output." << endl
+			 << "   --refineBreakpoints  Refine alignments of query sequence up to 500 bases near a breakpoint." << endl;
 
 	cout << "Examples: " << endl
 			 << "Aligning CCS reads:  lra align -CCS -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
