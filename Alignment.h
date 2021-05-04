@@ -201,6 +201,48 @@ class Alignment {
 			}
 		}
 	}
+  void AlignmentStringsToMD(string &queryStr, string &textStr, string &mdStr) {
+    int s=0;
+    int e=0;
+    stringstream mdStream;
+    string query(queryStr);
+    string text(textStr);
+    for (int i=0;i<query.size();i++) { query[i] = toupper(query[i]);}
+    for (int i=0;i<text.size();i++) { text[i] = toupper(text[i]);}
+    int match=0;    
+    while (s < text.size()) {
+      int i=s;
+      match=0;
+
+      while (i < text.size() and text[i] == query[i] or text[i] == '-') {
+	if (text[i] == query[i]) match++;
+	i++;
+      }
+      //      if (match > 0) {
+      mdStream << match;
+	//      }
+      // mismatch
+      s=i;
+      if (text[i] != query[i] and text[i] != '-' and query[i] != '-') {
+	i++;
+	mdStream << text.substr(s, 1) ;
+	//	cout << s << "\t" << i-s << "\t" << text.substr(s,i-s) << endl;
+      }
+      // Deletion
+      else if (text[i] != '-' and query[i] == '-') {
+	while(i < text.size() and text[i] != '-' and query[i] == '-') {
+	  i++;
+	}
+	mdStream << "^" << text.substr(s,i-s);
+	//	cout << "INS:\t" << s << "\t" << i-s << "\t" << text.substr(s,i-s) << endl; 
+      }
+      while (i < text.size() and text[i] == '-' and query[i] == '=') {
+	i++;
+      }
+      s=i;
+    }
+    mdStr=mdStream.str();    
+  }
 
 	void CreateAlignmentStrings(char *query, char* text, string &queryStr, string &alignStr, string &textStr) {
 		GenomePos q = qPos;
@@ -602,6 +644,7 @@ class Alignment {
 		    << "LI:i:" << nLargeIns << "\t";
 		out << "N0:i:" << NumOfAnchors0 << "\t";		
 		out << "NV:f:" << value << "\t";
+		out << "AS:i:" << (int) value << "\t";
 		if (typeofaln == 0) {
 			out << "TP:A:" << "P\t";
 		}
@@ -703,6 +746,7 @@ class Alignment {
 			samStrm << "NI:i:" << nins << "\t";
 			samStrm << "TI:i:" << tins << "\t";
 			samStrm << "NV:f:" << value << "\t";
+			samStrm << "AS:i:" << (int) value << "\t";
 			samStrm << "AO:i:" << order << "\t";
 			samStrm << "N0:i:" << NumOfAnchors0 << "\t";
 			samStrm << "RT:i:" << runtime << "\t";			
@@ -712,6 +756,11 @@ class Alignment {
 				<< "SI:i:" << nSmallIns << "\t"
 				<< "MI:i:" << nMedIns << "\t"
 				<< "LI:i:" << nLargeIns;
+			if (opts.printMD) {
+			  string mdString;
+			  AlignmentStringsToMD(queryString, refString, mdString);
+			  samStrm << "\tMD:Z:" << mdString;
+			}
 			// output SA tag
 			if (alngroup.size() > 1) {
 				samStrm << "\tSA:Z:";
@@ -833,6 +882,7 @@ class Alignment {
 			samStrm << "TI:i:" << tins << "\t";
 			samStrm << "N0:i:" << NumOfAnchors0 << "\t";
 			samStrm << "NV:f:" << value << "\t";
+			samStrm << "AS:i:" << (int) value << "\t";			
 			samStrm << "AO:i:" << order;
 		}
 		out << samStrm.str();

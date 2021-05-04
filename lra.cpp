@@ -51,32 +51,25 @@ void HelpMap() {
 	cout << "   The genome should be indexed using the 'lra index' program." << endl
 			 << "   'reads' may be either fasta, sam, or bam, and multiple input files may be given." << endl << endl;
 	cout << "Options:" << endl
-			 << "   -CCS (flag) Align CCS reads. " << endl
-			 << "   -CLR (flag) Align CLR reads. " << endl
-			 << "   -ONT (flag) Align Nanopore reads. " << endl
+			 << "   -CCS (flag)    Align CCS reads. " << endl
+			 << "   -CLR (flag)    Align CLR reads. " << endl
+			 << "   -ONT (flag)    Align Nanopore reads. " << endl
 			 << "   -CONTIG (flag) Align large contigs." << endl
-			 << "   -p  [FMT]   Print alignment format FMT='b' bed, 's' sam, 'p' PAF, 'pc' PAF with cigar, 'a' pairwise alignment." << endl
-			 << "   -H          Use hard-clipping for SAM output format" << endl
-     		 << "   -Flag  F(int)  Skip reads with any flags in F set (bam input only)." << endl
-     		 << "   -t  n(int)   Use n threads (1)" << endl
-			 //<< "   -M  M(int)  Do not refine clusters with fewer than M global matches (20)." << endl
-			//<< "   -m  m(int)  Do not align clusters with fewer than m refined"<< endl
-			// << "               matches (40). Typically m > 3*M" << endl
-			 << "   -a  (flag)  Query all positions in a read, not just minimizers. " << endl
-			 //<< "               This is 10-20% slower, with an increase in specificity. " << endl
-			 // << "   -b  (flag)  Skip banded alignment. This is about a 15% speedup." << endl
-			 << "   -SV  (int) (path to svsig file)  Print sv signatures for each alignment with length above the given threshold (DEFAULT:25). And the path of output svsig file" << endl
-			 //<< "   -R  (flag)  MeRge clusters before sparse dynamic programming." << endl
-			 //<< "   -N  (flag)  Use Naive dynamic programming to find the global chain." << endl
-			// << "	-S 	(flag)  Use Sparse dynamic programming to find the global chain." << endl
-			// << "	-T 	(flag)  Use log LookUpTable when gap length is larger than 501." << endl
-			 << "   -at  (float) a float in (0, 1), Threshold to decide secondary alignments based on chaining value (DEFAULT:0.7)." << endl
-			 << "   --start  (int)   Start aligning at this read." << endl
-			 << "   --stride (int)   Read stride (for multi-job alignment of the same file)." << endl
-			 << "   -d 	(flag)  Enable dotPlot" << endl
-			 << "   -PAl (int) Print at most how many alignments for one read" << endl
-			 << "   -Al (int) Compute at most how many alignments for one read" << endl
-			 << "   --passthrough Pass auxilary tags from the input unaligned bam to the output" << endl;
+			 << "   -p  [FMT]      Print alignment format FMT='b' bed, 's' sam, 'p' PAF, 'pc' PAF with cigar, 'a' pairwise alignment." << endl
+			 << "   -H             Use hard-clipping for SAM output format" << endl
+			 << "   -Flag  F(int)  Skip reads with any flags in F set (bam input only)." << endl
+			 << "   -t  n(int)     Use n threads (1)" << endl
+			 << "   -a  (flag)     Query all positions in a read, not just minimizers. " << endl
+			 << "   -SV  (int <path>) Print sv signatures for each alignment with length above the given threshold (DEFAULT:25). And the path of output svsig file" << endl
+			 << "   -at  (float (0,1) Threshold to decide secondary alignments based on chaining value (DEFAULT:0.7)." << endl
+			 << "   --start  (int) Start aligning at this read." << endl
+			 << "   --stride (int) Read stride (for multi-job alignment of the same file)." << endl
+			 << "   -d 	(flag)     Enable dotPlot" << endl
+			 << "   -PAl (int)     Print at most how many alignments for one read" << endl
+			 << "   -Al (int)      Compute at most how many alignments for one read" << endl
+			 << "   --passthrough  Pass auxilary tags from the input unaligned bam to the output" << endl
+			 << "   --refineBreakpoints  Refine alignments of query sequence up to 500 bases near a breakpoint " << endl;
+
 	cout << "Examples: " << endl
 			 << "Aligning CCS reads:  lra align -CCS -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
 			 << "Aligning CLR reads:  lra align -CLR -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
@@ -576,6 +569,9 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 			opts.maxCandidates = atoi(GetArgv(argv, argc, argi));
 			++argi;
 		}
+		else if (ArgIs(argv[argi], "--printMD")) {
+		  opts.printMD = true;
+		}
 		else if (ArgIs(argv[argi], "-F")) {
 		  opts.globalMaxFreq=atoi(GetArgv(argv, argc, argi));
 		  ++argi;
@@ -855,12 +851,6 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.NumOfminimizersPerWindow = 1;	
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
-			// opts.globalK = 15;
-			// opts.globalW = 10;
-			// opts.globalMaxFreq = 200;
-			// opts.globalWinsize = 9;
-			// opts.NumOfminimizersPerWindow = 1;		
-
 			opts.globalK = 17;
 			opts.globalW = 10;
 			opts.globalMaxFreq = 150; //200
@@ -868,16 +858,6 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.NumOfminimizersPerWindow = 1;	
 		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
-			// opts.globalK = 15;
-			// opts.globalW = 10;
-			// opts.globalMaxFreq = 200;
-			// opts.globalWinsize = 9;
-			// opts.NumOfminimizersPerWindow = 1;	
-
-			// opts.globalK = 12;
-			// opts.globalW = 10;
-			// opts.globalWinsize = 7;
-
 			opts.globalK = 13;
 			opts.globalW = 10;
 			opts.globalMaxFreq = 250;
@@ -885,19 +865,10 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.NumOfminimizersPerWindow = 1;	
 		}
 		else if (ArgIs(argv[argi], "-ONT")) {
-			// opts.globalK = 15;
-			// opts.globalW = 10;
-			// opts.globalMaxFreq = 200;
-			// opts.globalWinsize = 9;
-			// opts.NumOfminimizersPerWindow = 1;	
-
-			// opts.globalK = 12;
-			// opts.globalW = 10;
-			// opts.globalWinsize = 7;
-			opts.globalK = 15;
+			opts.globalK = 17;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 250;
-			opts.globalWinsize = 12;
+			opts.globalMaxFreq = 150; //200
+			opts.globalWinsize = 15;
 			opts.NumOfminimizersPerWindow = 1;	
 		}
 		else if (ArgIs(argv[argi], "-F")) {
