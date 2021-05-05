@@ -76,7 +76,7 @@ CXX=g++ -std=c++14
 # 	$(CXX) -g TestIndelRefine.cpp  -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib  -lhts -o tir -lbz2 -lz
 
 lra: lra.o
-	$(CXX) $(STATIC) $(CCOPTS) $^ -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib  -lhts -lz -lpthread -ldeflate -lbz2  -o $@ 
+	$(CXX) $(STATIC) $(CCOPTS) $^ -I  -L/usr/lib64  -L $(CONDA_PREFIX)/lib -lhts -o $@ -lz -lpthread
 
 # alchemy2: Alchemy2.o
 # 	$(CXX) $(STATIC) $(CCOPTS) $^  -L $(CONDA_PREFIX)/lib  -lhts -lz -lpthread -o $@  -Wl,-rpath,$(PWD)/htslib/lib

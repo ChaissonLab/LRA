@@ -750,6 +750,15 @@ class Alignment {
 			samStrm << "AO:i:" << order << "\t";
 			samStrm << "N0:i:" << NumOfAnchors0 << "\t";
 			samStrm << "RT:i:" << runtime << "\t";			
+			if (typeofaln == 0) {
+			  samStrm << "TP:A:" << "P\t";
+			}
+			else if (typeofaln == 1) {
+			  samStrm << "TP:A:" << "S\t";
+			}
+			else {
+			  samStrm << "TP:A:" << "I\t";
+			}
 			samStrm << "SD:i:" << nSmallDel << "\t"
 				<< "ME:i:" << nMedDel << "\t"
 				<< "LD:i:" << nLargeDel << "\t"
