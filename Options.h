@@ -117,9 +117,11 @@ public:
     float gaproot;
     int gapCeiling1;
     int gapCeiling2;
+  bool showmm;
   bool printMD;  
   bool refineBreakpoint;
 	Options() {
+	  showmm=true;
 	  printMD=false;
 	  refineBreakpoint=false;
 		freeGap=10;

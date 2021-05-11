@@ -67,7 +67,8 @@ void HelpMap() {
 	                 << "   -d 	(flag)     Enable dotPlot (debugging)" << endl
 			 << "   -PAl (int)     Print at most how many alignments for one read." << endl
 			 << "   -Al (int)      Compute at most how many alignments for one read." << endl
-	     << "   --printMD      Write the MD tag in sam and paf output. " << endl
+                         << "   --printMD      Write the MD tag in sam and paf output." << endl
+                         << "   --noMismatch   Use M instead of =/X in SAM/PAF output." << endl	  
 			 << "   --passthrough  Pass auxilary tags from the input unaligned bam to the output." << endl
 			 << "   --refineBreakpoints  Refine alignments of query sequence up to 500 bases near a breakpoint." << endl;
 
@@ -265,7 +266,10 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		}
 		else if (ArgIs(argv[argi], "--refineBreakpoints")) {
 			opts.refineBreakpoint = true;
-		}		
+		}
+		else if (ArgIs(argv[argi], "--noMismatch")) {
+		  opts.showmm=false;
+		}
 		else if (ArgIs(argv[argi], "-CONTIG")) {
 			opts.readType=Options::contig;
 			opts.refineBand=50;

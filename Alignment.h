@@ -417,19 +417,30 @@ class Alignment {
 		float coefficient = 3.0f;//3
 		while (i < query.size()) {
 			p=i;
-			while (i < query.size() and seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
-			if (i > p) {
-				cigarstrm << i-p << 'M';
-				nm += i-p;				
-				value += i-p;
-				continue;
+			if (opts.showmm) {
+			  while (i < query.size() and seqMap[query[i]] == seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
+			  if (i > p) {
+			    cigarstrm << i-p << '=';
+			    nm += i-p;				
+			    value += i-p;
+			    continue;
+			  }
+			  while (i < query.size() and seqMap[query[i]] != seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
+			  if (i > p) {
+			    cigarstrm << i-p << 'X';
+			    nmm += i-p;
+			    value -= i-p;
+			    continue;
+			  }
 			}
-			while (i < query.size() and seqMap[query[i]] != seqMap[target[i]] and query[i] != '-' and target[i] != '-') {	i++;}
-			if (i > p) {
-				cigarstrm << i-p << 'X';
-				nmm += i-p;
-				value -= i-p;
-				continue;
+			else {
+			  int runmm=0;
+			  while (i < query.size() and query[i] != '-' and target[i] != '-') { i++; if (seqMap[query[i]] != seqMap[target[i]]) { runmm++;} }
+			  if (i > p) {
+			    cigarstrm << i-p << "M";
+			    nmm += runmm;
+			    value += i-p - nmm;
+			  }
 			}
 			while (i < query.size() and query[i] == '-' and target[i] != '-') {	i++;}
 			if (i > p) {
