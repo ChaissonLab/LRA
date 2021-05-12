@@ -60,22 +60,23 @@ void HelpMap() {
 			 << "   -Flag  F(int)  Skip reads with any flags in F set (bam input only)." << endl
 			 << "   -t  n(int)     Use n threads (1)." << endl
 			 << "   -a  (flag)     Query all positions in a read, not just minimizers. " << endl
-			 << "   -SV  (int <path>) Print sv signatures for each alignment with length above the given threshold (DEFAULT:25). And the path of output svsig file" << endl
+			 // << "   -SV  (int <path>) Print sv signatures for each alignment with length above the given threshold (DEFAULT:25). And the path of output svsig file" << endl
 			 << "   -at  (float (0,1) Threshold to decide secondary alignments based on chaining value (DEFAULT:0.7)." << endl
-			 << "   --start  (int) Start aligning at this read." << endl
+			 // << "   --start  (int) Start aligning at this read." << endl
 			 << "   --stride (int) Read stride (for multi-job alignment of the same file)." << endl
-	                 << "   -d 	(flag)     Enable dotPlot (debugging)" << endl
-			 << "   -PAl (int)     Print at most how many alignments for one read." << endl
-			 << "   -Al (int)      Compute at most how many alignments for one read." << endl
-                         << "   --printMD      Write the MD tag in sam and paf output." << endl
-                         << "   --noMismatch   Use M instead of =/X in SAM/PAF output." << endl	  
+	         << "   -d 	(flag)     Enable dotPlot (debugging)" << endl
+			 << "   -PAl (int)     Print out at most number of alignments for one read. (Use this option if want to print out secondary alignments)" << endl
+			 << "   -Al (int)      Compute at most number of alignments for one read." << endl
+             << "   --printMD      Write the MD tag in sam and paf output." << endl
+             << "   --noMismatch   Use M instead of =/X in SAM/PAF output." << endl	  
 			 << "   --passthrough  Pass auxilary tags from the input unaligned bam to the output." << endl
 			 << "   --refineBreakpoints  Refine alignments of query sequence up to 500 bases near a breakpoint." << endl;
 
 	cout << "Examples: " << endl
 			 << "Aligning CCS reads:  lra align -CCS -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
 			 << "Aligning CLR reads:  lra align -CLR -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
-			 << "Aligning Nanopore reads:  lra align -ONT -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl;
+			 << "Aligning Nanopore reads:  lra align -ONT -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl
+			 << "Aligning CONTIG:  lra align -CONIG -t 16 ref.fa input.fasta/input.bam/input.sam -p s > output.sam" << endl;
 
 }
 
@@ -271,6 +272,13 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		  opts.showmm=false;
 		}
 		else if (ArgIs(argv[argi], "-CONTIG")) {
+			opts.globalK = 19;
+			opts.globalW = 10;
+			opts.globalMaxFreq = 30;
+			opts.globalWinsize = 20; //12
+			opts.NumOfminimizersPerWindow = 1;
+			opts.localMaxFreq = 15;
+
 			opts.readType=Options::contig;
 			opts.refineBand=50;
 			opts.gaproot=1.5f;
@@ -303,6 +311,13 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.ExtractDiagonalFromClean=true;	
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
+			opts.globalK = 17;
+			opts.globalW = 10;
+			opts.globalMaxFreq = 150; //200
+			opts.globalWinsize = 15;
+			opts.NumOfminimizersPerWindow = 1;	
+			opts.localMaxFreq = 15;
+
 			opts.readType=Options::ccs;
 			opts.gaproot=1.5f;
 			opts.gapextend=15.0f;
@@ -328,20 +343,18 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
     		opts.anchorstoosparse=0.005; 
      		opts.hardClip=true;
      		opts.ExtractDiagonalFromClean=true;
-
-			// opts.rate_FirstSDPValue=0;
-			// opts.rate_value=1;
-
-			// opts.maxDiag=500;
-			// opts.maxGap=5000;
-
-			// opts.globalMaxFreq = 30;
-			// opts.NumOfminimizersPerWindow = 1;	
-			//opts.minClusterSize=5; 
-			//opts.minClusterLength=50;  
-			// opts.maxGapBtwnAnchors=1500;
 		}
 		else if (ArgIs(argv[argi], "-CLR")) {
+			opts.globalK = 15;
+			opts.globalW = 10;
+			opts.globalMaxFreq = 250;
+			opts.globalWinsize = 12;
+			opts.NumOfminimizersPerWindow = 1;	
+
+			opts.localK = 10;
+			opts.localW	= 5;
+			opts.localMaxFreq = 15;
+
 			opts.readType=Options::clr;
 			opts.refineBand=20;
 			opts.gaproot=1.5f;
@@ -379,6 +392,16 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.second_anchorbonus=6.0f;
 		}		
 		else if (ArgIs(argv[argi], "-ONT")) {
+			opts.globalK = 17;
+			opts.globalW = 10;
+			opts.globalMaxFreq = 150; //200
+			opts.globalWinsize = 15;
+			opts.NumOfminimizersPerWindow = 1;
+
+			opts.localK = 10;
+			opts.localW	= 5;
+			opts.localMaxFreq = 15;
+
 			opts.readType=Options::ont;
 			opts.gaproot=1.5f;
 			opts.gapextend=10.0f;
@@ -411,16 +434,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
       		opts.hardClip=true;
       		opts.alnthres=0.65f;
       		opts.ExtractDiagonalFromClean=true;
-    		// opts.second_anchorbonus=4.0f; //2		
-			// opts.rate_FirstSDPValue=0;
-			// opts.rate_value=1;	
-			// opts.HighlyAccurate = false;
-			// opts.initial_anchorbonus=8.0;
-			// opts.maxDiag=800;
-			// opts.maxGap=5000;
-			// opts.globalMaxFreq = 50;
-			// opts.NumOfminimizersPerWindow = 1;
-			// opts.maxGapBtwnAnchors=1800;
 		}
 		else if (ArgIs(argv[argi], "--gapopen")) {
 			opts.gapopen = atof(GetArgv(argv,argc,argi));
@@ -602,6 +615,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 	Header header;
 	vector<GenomeTuple> genomemm;
 	LocalIndex glIndex(opts.localIndexWindow);
+	glIndex.k = opts.localK;
+	glIndex.maxFreq = opts.localMaxFreq;
 
 	if (ReadIndex(indexFile, genomemm, header, opts) == 0) {
 		StoreIndex(genomeFile, genomemm, header, opts);
@@ -712,23 +727,6 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 }
 
 void HelpStoreIndex() {
-	cout << "Usage: lra index file.fa [options]" << endl
-			 << "  Global index options " << endl
-			 << "	-CCS (flag) Index for aligning CCS reads" << endl
-			 << "	-CLR (flag) Index for aligning CLR reads" << endl
-			 << "	-ONT (flag) Index for aligning Nanopore reads" << endl
-			 << "   -CONTIG (flag) Index for aligning large contigs" << endl
-			 << "   -W (int) Minimizer window size (10)." << endl
-			 << "   -F (int) Maximum minimizer frequency (DEFAULT: 80)." << endl
-			 << "   -K (int) Word size" << endl
-			 << "  Local index options: "<< endl
-			 << "   -w (int) Local minimizer window size (10)." << endl
-			 << "   -f (int) Local maximum minimizer frequency (5)." << endl
-			 << "   -k (int) Local word size (10)" << endl
-			 << "   -h Print help." << endl;
-}
-
-void HelpStoreGlobal() {
 	cout << "Usage: lra index file.fa [options]" << endl;
 	cout << "Options: " << endl
 			 << "   -CCS (flag) Index for aligning CCS reads" << endl
@@ -736,7 +734,7 @@ void HelpStoreGlobal() {
 			 << "   -ONT (flag) Index for aligning Nanopore reads" << endl
 			 << "   -CONTIG (flag) Index for aligning large contigs" << endl
 			 << "   -W (int) Minimizer window size (10)." << endl
-			 << "   -F (int) Maximum minimizer frequency. (default: 60 for CLR and NANO reads; 50 for CCS reads)" << endl
+			 << "   -F (int) Maximum minimizer frequency. (default: 250 for CLR and ONT reads; 150 for CCS reads, 30 for CONTIG.)" << endl
 			 << "   -K (int) Word size" << endl
 			 << "   -h Print help." << endl;	
 	cout << "Examples: " << endl
@@ -746,12 +744,35 @@ void HelpStoreGlobal() {
 			 << "Index reference for aligning contig: lra index -CONTIG ref.fa" << endl;
 }
 
+void HelpStoreGlobal() {
+	cout << "Usage: lra global file.fa [options]" << endl;
+	cout << "Options: " << endl
+			 << "   -CCS (flag) Index for aligning CCS reads" << endl
+			 << "   -CLR (flag) Index for aligning CLR reads" << endl
+			 << "   -ONT (flag) Index for aligning Nanopore reads" << endl
+			 << "   -CONTIG (flag) Index for aligning large contigs" << endl
+			 << "   -W (int) Minimizer window size (10)." << endl
+			 << "   -F (int) Maximum minimizer frequency. (default: 250 for CLR and ONT reads; 150 for CCS reads, 30 for CONTIG.)" << endl
+			 << "   -K (int) Word size" << endl
+			 << "   -h Print help." << endl;	
+	cout << "Examples: " << endl
+			 << "Index global reference for aligning CCS reads: lra global -CCS ref.fa" << endl
+			 << "Index global reference for aligning CLR reads: lra global -CLR ref.fa" << endl
+			 << "Index global reference for aligning Nanopore reads: lra global -ONT ref.fa" << endl
+			 << "Index global reference for aligning contig: lra global -CONTIG ref.fa" << endl;
+}
+
 void HelpStoreLocal() {
 	cout << "Usage: lra local file.fa [options]" << endl
 			 << "   -w (int) Local minimizer window size (10)." << endl
 			 << "   -f (int) Local maximum minimizer frequency (5)." << endl
 			 << "   -k (int) Local word size (10)" << endl
 			 << "   -h Print help." << endl;
+	cout << "Examples: " << endl
+			 << "Index local reference for aligning CCS reads: lra local -CCS ref.fa" << endl
+			 << "Index local reference for aligning CLR reads: lra local -CLR ref.fa" << endl
+			 << "Index local reference for aligning Nanopore reads: lra local -ONT ref.fa" << endl
+			 << "Index local reference for aligning contig: lra local -CONTIG ref.fa" << endl;			 
 }
 
 void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &opts) {
@@ -765,10 +786,20 @@ void RunStoreLocal(int argc, const char* argv[], LocalIndex &glIndex, Options &o
 			HelpStoreLocal();
 			exit(1);
 		}
-		else if (ArgIs(argv[argi], "-CCS") or ArgIs(argv[argi], "-CONTIG") or ArgIs(argv[argi], "--CalculateMinimizerStats")) {
+		else if (ArgIs(argv[argi], "--CalculateMinimizerStats")) {
 			argi+=1;
 			continue;
 		}	
+		else if (ArgIs(argv[argi], "-CCS")) {
+			opts.localMaxFreq = 15;
+			glIndex.k = opts.localK;
+			glIndex.maxFreq = opts.localMaxFreq;
+		}
+		else if (ArgIs(argv[argi], "-CONTIG")) {
+			opts.localMaxFreq = 15;
+			glIndex.k = opts.localK;
+			glIndex.maxFreq = opts.localMaxFreq;
+		}
 		else if (ArgIs(argv[argi], "-CLR")) {
 			opts.localK = 10;
 			opts.localW	= 5;
@@ -849,10 +880,10 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.globalK = atoi(argv[argi]);
 		}
 		else if (ArgIs(argv[argi], "-CONTIG")) {
-			opts.globalK = 17;
+			opts.globalK = 19;
 			opts.globalW = 10;
-			opts.globalMaxFreq = 40;
-			opts.globalWinsize = 16; //12
+			opts.globalMaxFreq = 30;
+			opts.globalWinsize = 20; //12
 			opts.NumOfminimizersPerWindow = 1;	
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
@@ -863,7 +894,7 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 			opts.NumOfminimizersPerWindow = 1;	
 		}	
 		else if (ArgIs(argv[argi], "-CLR")) {
-			opts.globalK = 13;
+			opts.globalK = 15;
 			opts.globalW = 10;
 			opts.globalMaxFreq = 250;
 			opts.globalWinsize = 12;
