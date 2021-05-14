@@ -154,8 +154,11 @@ void IndelRefineAlignment(Read &read,
       int blockLen=alignment.blocks[endBlock].length;
       qPos=alignment.blocks[endBlock].qPos + blockLen;
       tPos=alignment.blocks[endBlock].tPos + blockLen;
-      tGap=alignment.blocks[endBlock+1].tPos - tPos;
-      qGap=alignment.blocks[endBlock+1].qPos - qPos; 		
+      if (endBlock+1 < alignment.blocks.size()-1) {
+	assert(endBlock < alignment.blocks.size()-1);
+	tGap=alignment.blocks[endBlock+1].tPos - tPos;
+	qGap=alignment.blocks[endBlock+1].qPos - qPos;
+      }
     }
 			
     //
