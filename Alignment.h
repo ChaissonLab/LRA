@@ -272,6 +272,7 @@ class Alignment {
 
 			for (int bl = 0; bl < blocks[b].length; bl++) {
 				assert(t < genomeLen);
+				assert(q < readLen);
 				queryStr.push_back(query[q]);
 				textStr.push_back(text[t]);
 				if (seqMap[query[q]] != seqMap[text[t]]) alignStr.push_back(mismatchChar);

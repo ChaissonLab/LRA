@@ -1252,6 +1252,7 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, float anchorfre
 		//
 		// remove Cluster that has too high slope
 		//
+		assert(clusters.back().qEnd > clusters.back().qStart);
 		if (((long)clusters.back().tEnd - (long)clusters.back().tStart) / ((long) clusters.back().qEnd - (long) clusters.back().qStart) >= 5) {
 			clusters.pop_back();
 		}

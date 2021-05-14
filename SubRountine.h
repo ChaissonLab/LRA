@@ -51,7 +51,7 @@ STOPS[0] = 0;
 
   int width=MAXPWL/NUMPWL;
   float vals[NUMPWL];
-  vals[0] = 0;
+  vals[0]=0;
   STOPS[1]=5;
   STOPS[2]=10;
   STOPS[3]=20;
@@ -70,7 +70,7 @@ STOPS[0] = 0;
   STOPS[16]=7000;
   STOPS[17]=8000;
   STOPS[18]=9000;
-  STOPS[19]=20000;
+  STOPS[19]=15000;
   STOPS[20]=20000;
   STOPS[21]=30000;
   STOPS[22]=40000;
@@ -86,7 +86,8 @@ STOPS[0] = 0;
   	if (i <= 2) intercept = 0;
     vals[i] = intercept+scalar*nroot(STOPS[i], root);	
   }
-  for (int i=0; i < NUMPWL-1; i++) {		
+  for (int i=0; i < NUMPWL-1; i++) {
+  	assert(STOPS[i+1] > STOPS[i]);		
     float slope=(vals[i+1]-vals[i])/(STOPS[i+1]-STOPS[i]);
 		if (STOPS[i] <= 10) {
 			SLOPE[i] = 0;
