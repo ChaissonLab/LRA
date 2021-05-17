@@ -230,14 +230,18 @@ MapRead(const vector<float> & LookUpTable, Read &read, Genome &genome, vector<Ge
 		
 	}		
 
+	int rt = 0;
 	if (opts.bypassClustering) { 
-		return MapRead_lowacc(forMatches, revMatches, LookUpTable, read, genome, genomemm, glIndex, opts, output, svsigstrm, 
+		rt = MapRead_lowacc(forMatches, revMatches, LookUpTable, read, genome, genomemm, glIndex, opts, output, svsigstrm, 
 					timing, indelRefineBuffers, strands, readRC, semaphore);
 	}
 	else { 
-		return MapRead_highacc(forMatches, revMatches, LookUpTable, read, genome, genomemm, glIndex, opts, output, svsigstrm, 
+		rt = MapRead_highacc(forMatches, revMatches, LookUpTable, read, genome, genomemm, glIndex, opts, output, svsigstrm, 
 					timing, indelRefineBuffers, strands, readRC, semaphore);
 	}
+
+	delete[] readRC;
+	return rt;
 
 	// /*
 	// if (semaphore != NULL ) {

@@ -753,7 +753,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	//
 	// Done with one read. Clean memory.
 	//
-	delete[] readRC;
+	// delete[] readRC;
 	for (int a = 0; a < alignments.size(); a++) {
 		for (int s = 0; s < alignments[a].SegAlignment.size(); s++) {
 			delete alignments[a].SegAlignment[s];
