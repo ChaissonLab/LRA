@@ -20,6 +20,7 @@
 #include <thread>
 #include <climits>
 #include "LogLookUpTable.h"
+
 void SwapStrand (Read & read, const Options & opts, Cluster & cluster, int K) {
 	for (int m = 0; m < cluster.matches.size(); m++) {
 		cluster.matches[m].first.pos = read.length - (cluster.matches[m].first.pos + K);
@@ -461,7 +462,10 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 		qs = RefinedClusters[cur]->qEnd; 
 		qe = RefinedClusters[prev]->qStart;
 		te1 = 0; ts1 = 0; te2 = 0; ts2 = 0;
-		if (qe <= qs) {c++; continue;}
+		if (qe <= qs or RefinedClusters[cur]->chromIndex != RefinedClusters[prev]->chromIndex) {
+			c++; 
+			continue;
+		}
 		if (smallOpts.readType == Options::contig) twoblocks = 0; // Do not refine end for INV and DUP when aligning contig
 		if (RefinedClusters[cur]->strand == RefinedClusters[prev]->strand) {
 			twoblocks = 0;

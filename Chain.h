@@ -385,7 +385,7 @@ public:
 
 	int CHROMIndex(Genome & genome) {
 		if (sptc.size() == 0) return 1;
-		int firstChromIndex = genome.header.Find(TStart);
+		int firstChromIndex = genome.header.Find(TStart + 1);
 		int lastChromIndex;
 		lastChromIndex = genome.header.Find(TEnd);
 		if (firstChromIndex != lastChromIndex ) {return 1;}

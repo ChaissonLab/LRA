@@ -325,10 +325,10 @@ class Cluster : public ClusterCoordinates {
 	//
 	bool CHROMIndex(Genome & genome) {
 		if (matches.size() == 0) return 1;
-		int firstChromIndex = genome.header.Find(tStart);
+		int firstChromIndex = genome.header.Find(tStart + 1);
 		int lastChromIndex;
 		lastChromIndex = genome.header.Find(tEnd);
-		if (firstChromIndex != lastChromIndex ) {
+		if (firstChromIndex != lastChromIndex) {
 			return 1;
 		}
 		chromIndex = firstChromIndex;  
@@ -358,6 +358,7 @@ public:
 	int matchStart;
 	int coarse;
 	float anchorfreq;
+	int chromIndex;
 	Cluster_SameDiag() {}
 	Cluster_SameDiag(Cluster * c) : cluster(c) {
 		tStart = cluster->tStart;
@@ -368,6 +369,7 @@ public:
 		matchStart = -1;
 		coarse = -1;
 		anchorfreq = cluster->anchorfreq;
+		chromIndex = cluster->chromIndex;
 	}
 	int length(int i) {
 		if (cluster->matches[end[i] - 1].first.pos + cluster->matchesLengths[end[i] - 1] >= cluster->matches[start[i]].first.pos) {
@@ -1242,20 +1244,31 @@ void StoreFineClusters(int ri, vector<pair<Tup, Tup> > &matches, float anchorfre
 			}
 			fineclusters.close();
 		}	
-		
-		//
-		// remove Cluster that firstChromIndex != lastChromIndex; or remove Cluster of only a few matches;
-		//
-		if (clusters.back().matches.size() <= opts.minClusterSize and clusters.back().CHROMIndex(genome) == 1) {
-			clusters.pop_back();
-		}
-		//
-		// remove Cluster that has too high slope
-		//
-		assert(clusters.back().qEnd > clusters.back().qStart);
-		if (((long)clusters.back().tEnd - (long)clusters.back().tStart) / ((long) clusters.back().qEnd - (long) clusters.back().qStart) >= 5) {
-			clusters.pop_back();
-		}
+
+		if (clusters.size() > 0) {
+			//
+			// Check chromIndex
+			//
+			if (clusters.back().CHROMIndex(genome) == 1) {
+				clusters.pop_back();
+			}	
+			//
+			// remove Cluster that firstChromIndex != lastChromIndex; or remove Cluster of only a few matches;
+			//
+			else if (clusters.back().matches.size() <= opts.minClusterSize) {
+				clusters.pop_back();
+			}
+			//
+			// remove Cluster that has too high slope
+			//
+			else if (clusters.back().qEnd == clusters.back().qStart) {
+				clusters.pop_back();
+			}
+			else if (((long)clusters.back().tEnd - (long)clusters.back().tStart) >= 5 * ((long) clusters.back().qEnd - (long) clusters.back().qStart) ) {
+				clusters.pop_back();
+			}			
+		} 
+
 		
 		//Check the rest unadded stretches. Add them to clusters
 		
@@ -1364,21 +1377,21 @@ SplitRoughClustersWithGaps(vector<pair<GenomeTuple, GenomeTuple> > &matches, Clu
 			  split_tStart = matches[split_cs].second.pos,
 	          split_qEnd = split_qStart + opts.globalK, 
 	          split_tEnd = split_tStart + opts.globalK;
-	// if (read.name == "S3_12348!22!16246770!16262110!-") cerr << "opts.RoughClustermaxGap: " << opts.RoughClustermaxGap << " opts.minClusterSize: " << opts.minClusterSize << endl; 
-	for (int m = OriginalClusters.start + 1; m < OriginalClusters.end; m++) {
-		// int gap = maxGapDifference(matches[m], matches[m-1]);
-		int gap = minGapDifference(matches[m], matches[m-1]);
-		// int diag_gap = DiagonalDifference(matches[m], matches[m-1], strand);
 
-		if (gap > opts.RoughClustermaxGap /*or diag_gap > opts.cleanMaxDiag*/) {
-			// cerr << "GAP: " << gap << "\t" << m << "\t" << clusters[c].matches.size() << "\t" << clusters[c].matches[m].second.pos - clusters[c].matches[m-1].second.pos << "\t" << clusters[c].matches[m].first.pos - clusters[c].matches[m-1].first.pos << endl;
+	for (int m = OriginalClusters.start + 1; m < OriginalClusters.end; m++) {
+		int gap = minGapDifference(matches[m], matches[m-1]);
+
+		if (gap > opts.RoughClustermaxGap or (split.size() > 1 and split.back().chromIndex != OriginalClusters.chromIndex)) {
+
 			if ((m - split_cs) >= opts.minClusterSize) {
-				if (split.size() > cur_s and CloseToPreviousCluster(split.back(), split_qStart, split_tStart, split_tEnd, opts)) {
+				if (split.size() > cur_s and split.back().chromIndex == OriginalClusters.chromIndex 
+									     and CloseToPreviousCluster(split.back(), split_qStart, split_tStart, split_tEnd, opts)) {
 					MergeTwoClusters(split.back(), split_qStart, split_qEnd, split_tStart, split_tEnd, split_cs, m);
 				}
 				else {
 					split.push_back(Cluster(split_cs, m, split_qStart, split_qEnd, split_tStart, split_tEnd, OriginalClusters.strand, outIter));
 					split.back().anchorfreq = OriginalClusters.anchorfreq;
+					split.back().chromIndex = OriginalClusters.chromIndex;
 					for (int q = split_cs; q < m; q++) { split.back().splitmatchindex.push_back(q);}
 				}
 			}
@@ -1437,6 +1450,7 @@ void StoreDiagonalClusters(Genome &genome, vector<float> &matches_freq, vector<p
 			      tStart = matches[cs].second.pos, 
 			      tEnd = matches[cs].second.pos + opts.globalK;
 		totalfreq += matches_freq[cs];
+		int cI = genome.header.Find(tStart);
 
 		while (ce < e and abs(DiagonalDifference(matches[ce], matches[ce-1], strand)) < opts.maxDiag) {
 			qStart = min(qStart, matches[ce].first.pos);
@@ -1462,6 +1476,7 @@ void StoreDiagonalClusters(Genome &genome, vector<float> &matches_freq, vector<p
 			else {
 				clusters.push_back(Cluster(cs,ce, qStart, qEnd, tStart, tEnd, strand));
 				clusters.back().anchorfreq = totalfreq / (ce - cs);
+				clusters.back().chromIndex = cI;
 				totalfreq = 0.0f;				
 			}
 		}
@@ -1567,12 +1582,6 @@ void MatchesToFineClusters (vector<GenomePair> &Matches, vector<Cluster> &cluste
 
 		//cerr << "roughClusters.size(): " << roughClusters.size() << " split_roughClusters.size(): " << split_roughClusters.size()<< endl;
 		if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
-			// ofstream fclust("for-matches.dots");
-			// for (int m = 0; m < Matches.size(); m++) {
-			// 	fclust << Matches[m].first.pos << "\t" << Matches[m].second.pos << "\t" << opts.globalK + Matches[m].first.pos << "\t"
-			// 			<< Matches[m].second.pos + opts.globalK << "\t" << m << endl;
-			// }
-			// fclust.close();
 
 			ofstream rclust("roughClusters.dots");
 			for (int m = 0; m < roughClusters.size(); m++) {
