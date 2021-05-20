@@ -245,13 +245,15 @@ public:
       	  strmPtr->get();
       	}
       }
-      read.seq = new char[seq.size()];
+      read.seq = new char[seq.size()+1];
       memcpy(read.seq, seq.c_str(), seq.size());
       read.length=seq.size();
+      read.seq[read.length] = '\0';
       if (qual.size() > 0) {
       	assert(qual.size() == seq.size());
-      	read.qual = new char[qual.size()];
+      	read.qual = new char[qual.size()+1];
       	memcpy(read.qual, qual.c_str(), qual.size());
+	read.qual[read.length] = '\0';
       }
       read.passthrough=NULL;
       readOne=true;
