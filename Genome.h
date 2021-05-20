@@ -26,6 +26,7 @@ class Header {
 			vector<uint64_t>::iterator it = lower_bound(pos.begin(), pos.end(), query); // used to use lower_bound, but not quite right
 			int i = it - pos.begin();
 			assert(i > 0);
+			if (query == *it) return i;
 			return i - 1;
 		}
 	}
@@ -106,6 +107,8 @@ class Genome {
 	char *GlobalIndexToSeq(long index) {
 		int chrom=header.Find(index);
 		uint64_t chromPos=index-header.pos[chrom];
+		assert(chrom < seqs.size());
+		assert(chromPos < lengths[chrom]);
 		return &seqs[chrom][chromPos];
 	}
 
