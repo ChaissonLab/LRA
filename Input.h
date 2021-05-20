@@ -14,315 +14,375 @@
 #include <iomanip>
 #include <vector>
 #include <assert.h>
+#include <algorithm>
+#include <cctype>
 #include "Options.h"
 
 KSEQ_INIT(gzFile, gzread)
 
 class Input {
- public:
-	int inputType;
-	istream *strmPtr;
-	ifstream strm;
-	gzFile fastaFile;
-	htsFile *htsfp;
-	kseq_t *ks;
-	bam_hdr_t *samHeader;			
-	pthread_mutex_t semaphore;
-	bool doInit;
-	int curFile;
-	int basesRead;
-	long totalRead;
-	bool done;
-	int nReads;
-	int flagRemove;
-	clock_t timestamp;
+public:
+  enum InputType { FASTA, FASTQ, HTS };
+  int inputType;
+  istream *strmPtr;
+  ifstream strm;
+  gzFile fp;
+  htsFile *htsfp;
+  kseq_t *ks;
+  bam_hdr_t *samHeader;			
+  pthread_mutex_t semaphore;
+  bool doInit;
+  int curFile;
+  int basesRead;
+  long totalRead;
+  bool done;
+  int nReads;
+  int flagRemove;
+  string format;
+  clock_t timestamp;
 
-	vector<string> allReads;
-	Input() {
-		flagRemove=0;
-		doInit = true;
-		curFile = 0;
-		basesRead = 0;
-		totalRead = 0;
-		done=false;
-		ks=NULL;
-		htsfp=NULL;
+  vector<string> allReads;
+  Input() {
+    flagRemove=0;
+    doInit = true;
+    curFile = 0;
+    basesRead = 0;
+    totalRead = 0;
+    done=false;
+    ks=NULL;
+    htsfp=NULL;
+    fp=NULL;
+  }
+  bool StreamIsFasta(istream &s) {
+    if (s.eof() or s.good() == false) {
+      return false;
+    }
+    if (s.peek() == '>') {
+      return true;
+    }
+    return false;
+  }
+
+  bool StreamIsFastq(istream &s) {
+    if (s.eof() or s.good() == false) {
+      return false;
+    }
+    vector<string> lines(2);
+    string line;
+    if (s.peek() != '@') { return false;}
+    getline(s,lines[0]);
+    getline(s,lines[1]);
+    bool res=false;
+    if (s.peek() == '+') {
+      res=true;
+    }
+    for (int j=2; j > 0; j--) {
+      s.putback('\n');
+      for (int i=lines[j-1].size(); i > 0; i--) {
+	s.putback(lines[j-1][i-1]);
+      }
+    }
+    return res;
+  }
+  
+  bool Initialize(string &filename) {
+    nReads=0;
+
+    doInit = false;
+		
+    /*
+    // When HTSLIB 1.13 is released, this may be used to initialize input
+    htsfp = hts_open(filename.c_str(),"r");
+    const htsFormat *fmt = hts_get_format(htsfp);
+    format=hts_format_file_extension(fmt);
+		
+    if (format == "fq" or format == "fa") {
+    inputType=0;
+    return true;
+    }
+    else if (format == "sam" or format == "bam" or format == "cram") {
+    samHeader = sam_hdr_read(htsfp);
+    return true;
+    }
+    else {
+    cerr << "Cannot determine type of input " << endl;
+    exit(1);
+    }
+    */
+
+    if (filename == "-" or filename == "stdin" or filename == "/dev/stdin") {
+      strmPtr = &cin;
+    }
+    else {
+      strm.open(filename.c_str());
+      strmPtr=&strm;
+    }
+		   
+    if (StreamIsFasta(*strmPtr)) {
+      inputType=FASTA;
+      return true;		  
+    }
+    else if (StreamIsFastq(*strmPtr) ) {
+      inputType=FASTQ;
+      return true;		  		
+    }
+    else {
+		
+      //
+      // possibly sam 
+      //
+      if (filename == "-" or filename == "stdin" or filename == "/dev/stdin") {
+	cout << "Streaming of sam/bam/cram input is not supported. You can convert to fasta/fastq, e.g.:" << endl
+	     << "samtools fasta input.bam  | lra align ref.fa -" << endl;
+	exit(1);
+      }
+      if (htsfp != NULL) {
+	hts_close(htsfp);
+	bam_hdr_destroy(samHeader);
+		    
+      }
+
+
+      htsfp = hts_open(filename.c_str(),"r");
+      const htsFormat *fmt = hts_get_format(htsfp);
+      if (fmt == NULL or (fmt->format != sam and fmt->format != bam)) {
+	cout << "Cannot determine format of input reads." << endl;
+	exit(1);
+      }
+		  
+      samHeader = sam_hdr_read(htsfp);
+      inputType=HTS;
+      return true;
+    }
+    return false;
+  }
+
+
+  bool Initialize(vector<string> &_allReads) {
+    //
+    // Check to see if the input is fasta
+    //
+    allReads = _allReads;
+    if (allReads.size() == 0) {
+      exit(0);
+    }
+
+
+    pthread_mutex_init(&semaphore, NULL);
+
+
+    if (Initialize(allReads[curFile]) == false) {
+      return 0;
+    }
+    timestamp = clock();
+    doInit = false;
+    return true;
+  }
+
+  bool GetNext(Read &read, Options &opt, bool overrideSemaphore=false, bool top=true) {
+    read.Clear();
+    bool readOne=false;
+    if (overrideSemaphore == false and top == true) {
+      pthread_mutex_lock(&semaphore);
+    }
+    string name;
+    string seq;
+    string qual;
+    if (inputType == FASTA or inputType == FASTQ) {
+      if (strmPtr->eof()) {
+	return 0;
+      }
+      if (inputType == FASTA) {
+	string header;
+	char c;
+	getline(*strmPtr, header);
+	stringstream nameStrm(header);
+	nameStrm >> c >> read.name;
+	c=strmPtr->peek();
+
+	while (c != EOF and c != '>') {
+	  string line;
+	  getline(*strmPtr, line);
+	  int i=0,j=0;
+	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = line[i]; j++;} }
+	  line.resize(j);		      
+	  seq+=line;
+	  c=strmPtr->peek();
 	}
-	bool StreamIsFasta(istream &s) {
-		if (s.eof() or s.good() == false) {
-			return false;
-		}
-		if (s.peek() == '>') {
-			return true;
-		}
-		return false;
+	if (c == EOF) {
+	  strmPtr->get();
 	}
+      }
 
-	bool StreamIsFastq(istream &s) {
+      else if (inputType == FASTQ) {
+	string header;
+	char c;
+	getline(*strmPtr, header);
+	stringstream nameStrm(header);
+	nameStrm >> c >> read.name;
+	c=strmPtr->peek();
 
-		if (s.eof() or s.good() == false) {
-			return false;
-		}
-		vector<string> lines(2);
-		string line;
-		getline(s,lines[0]);
-		getline(s,lines[1]);
-		if (s.peek() == '+') {
-			s.putback('\n');
-			for (int j=2; j > 0; j--) {
-				for (int i=lines[j-1].size(); i > 0; i--) {
-					s.putback(lines[j-1][i]);
-				}
-			}
-			return true;
-		}
-		return false;
+	string line;		  
+	while (c != EOF and c != '+') {
+	  getline(*strmPtr, line);
+	  int i=0,j=0;
+	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = line[i]; j++;} }
+	  line.resize(j);		      
+	  seq+=line;
+	  c=strmPtr->peek();
 	}
-
-
-	bool Initialize(string &filename) {
-		nReads=0;
-		istream *strmPtr;
-		doInit = false;
-		if (filename == "-" or filename == "stdin") {
-			strmPtr = &std::cin;
-		}
-		else {
-			strm.close();
-			strm.open(filename.c_str());
-			strmPtr = &strm;
-		}
-		if (StreamIsFasta(*strmPtr) or StreamIsFastq(*strmPtr) ) {
-			inputType=0;
-			if (ks != NULL) {
-				kseq_destroy(ks);
-				gzclose(fastaFile);
-			}
-			if (filename == "-" or filename == "/dev/stdin" or filename == "stdin") {
-				gzFile fp = gzdopen(fileno(stdin), "r");
-				ks = kseq_init(fp);
-			}
-			else {
-				fastaFile = gzopen(filename.c_str(), "r");
-				ks = kseq_init(fastaFile);
-			}
-			return true;
-		}
-		else {
-			//
-			// possibly sam 
-			//
-			if (htsfp != NULL) {
-				hts_close(htsfp);
-				bam_hdr_destroy(samHeader);
-			}	
-			htsfp = hts_open(filename.c_str(),"r");
-			const htsFormat *fmt = hts_get_format(htsfp);
-			if (fmt == NULL or (fmt->format != sam and fmt->format != bam)) {
-				cout << "Cannot determine format of input reads." << endl;
-				exit(1);
-			}
-
-      		samHeader = sam_hdr_read(htsfp);
-			inputType=1;
-			return true;
-		}
-		return false;
+	getline(*strmPtr, line);
+	c=strmPtr->peek();
+	while (c != EOF and c != '@'){
+	  getline(*strmPtr, line);
+	  int i=0,j=0;
+	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = line[i]; j++;} }
+	  line.resize(j);
+	  qual+=line;
+	  c=strmPtr->peek();
+	}		  
+	if (c == EOF) {
+	  strmPtr->get();
 	}
+      }
+      read.seq = new char[seq.size()];
+      memcpy(read.seq, seq.c_str(), seq.size());
+      read.length=seq.size();
+      if (qual.size() > 0) {
+	assert(qual.size() == seq.size());
+	read.qual = new char[qual.size()];
+	memcpy(read.qual, qual.c_str(), qual.size());
+      }
+      read.passthrough=NULL;
+      readOne=true;
+      nReads++;
+    }
+    else if (inputType == HTS) {
+      int res;
+      bam1_t *b = bam_init1();
+      res= sam_read1(htsfp, samHeader, b);
 
+      while (res >= 0 and readOne == false) {
+	if (res >= 0) {	
+	  if ((b->core.flag & flagRemove) == 0) {		
+	    // // get auxilary tags
+	    // if (opt.passthroughtag and bam_get_aux(b))	{
+	    // 	unsigned char *pq = bam_get_aux(b);
+	    // 	int pq_len = strlen((char*)pq);
+	    // 	read.passthrough = new unsigned char[pq_len + 1];
+	    // 	for (int p=0; p<pq_len; p++) {
+	    // 		read.passthrough[p] = pq[p];
+	    // 	}
+	    // 	read.passthrough[pq_len] = '\0';
+			
+	    // }				
+	    read.length = b->core.l_qseq;			
+	    read.seq = new char[read.length];
+	    read.name = string(bam_get_qname(b));
+	    read.flags = b->core.flag;
+	    uint8_t *q = bam_get_seq(b);
+	    for (int i=0; i < read.length; i++) {read.seq[i]=seq_nt16_str[bam_seqi(q,i)];	}
+	    char* qual=(char*) bam_get_qual(b);
+	    if (qual[0] == char(0xff)) {
+	      read.qual = new char[2];
+	      read.qual[1] = '\0';
+	      read.qual[0] = '*';
+	    }
+	    else {
+	      read.qual=new char[read.length+1];
+	      for (int q=0; q < read.length; q++) {
+		read.qual[q] = qual[q]+33;
+	      }
+	      read.qual[read.length]='\0';
+	    }
+			
+	    // 
+	    // Eventually this will store the passthrough data
+	    //
+	    readOne=true;
+	    if (opt.passthroughtag) {
+	      int ksLen;
+	      kstring_t fullKs;
+	      int fullLen;
+	      fullKs = { 0, 0, NULL };
+	      fullLen = sam_format1(samHeader, b, &fullKs);
+	      int t=0;
+	      int numTab=0;							
+	      while (t < fullKs.l and numTab < 11) 
+		{
+		  if (fullKs.s[t] == '\t') 
+		    {
+		      numTab++;
+		    }
+		  t+=1;									
+		}
+	      if (t < fullKs.l) 
+		{
+		  int lenPassthrough=fullKs.l-t;									
+		  if (lenPassthrough > 0) {											
+		    read.passthrough=new char[lenPassthrough+1];
+		    read.passthrough[lenPassthrough]='\0';
+		    memcpy(read.passthrough, fullKs.s + t, lenPassthrough);
+		  }
+		  else
+		    {
+		      read.passthrough=NULL;
+		    }
+		}
+	      free(fullKs.s);								
+	    }
+	    nReads++;
+	    bam_destroy1(b);
+	    b=NULL;
+	    //bam1_t *b = bam_init1();
+	  }
+	  else {
+	    bam_destroy1(b);
+	    b = bam_init1();
+	    res= sam_read1(htsfp, samHeader, b);
+	  }
+	}
+      }
+      if (res < 0) {	
+	if (b != NULL) {
+	  bam_destroy1(b);
+	  readOne = false;
+	}
+      }
+    }
+		
+    if (readOne == false and top == true ) {
+      ++curFile;
+      doInit=true;
+      readOne=GetNext(read, opt, overrideSemaphore, false);
+    }
+    basesRead += read.length;
+    totalRead += read.length;
 	
-	bool Initialize(vector<string> &_allReads) {
-		//
-		// Check to see if the input is fasta
-		//
-		allReads = _allReads;
-		if (allReads.size() == 0) {
-			exit(0);
-		}
+	
+    if (overrideSemaphore== false and top == true) {
+      pthread_mutex_unlock(&semaphore);
+    }
+    return readOne;
+  }
+  
+  bool BufferedRead(vector<Read> &reads, int maxBufferSize, Options &opt) {
+    int totalSize=0;
 
+    pthread_mutex_lock(&semaphore);
+    Read read;
 
-		pthread_mutex_init(&semaphore, NULL);
+    while(totalSize < maxBufferSize and GetNext(read, opt, true, true)) {
+      reads.resize(reads.size()+1);
+      reads[reads.size()-1]=read;
+      totalSize += read.length;
+      read.Clear();
+    }
 
+    pthread_mutex_unlock(&semaphore);
 
-		if (Initialize(allReads[curFile]) == false) {
-			return 0;
-		}
-		timestamp = clock();
-		doInit = false;
-		return true;
-	}
-
-	bool GetNext(Read &read, Options &opt, bool overrideSemaphore=false, bool top=true) {
-		read.Clear();
-
-		if (overrideSemaphore == false and top == true) {
-			pthread_mutex_lock(&semaphore);
-		}
-		++nReads;
-		if (doInit) {
-			assert(top == false);
-			doInit = false;
-
-			if (curFile >= allReads.size() or 
-					 Initialize(allReads[curFile]) == false) {
-				//
-				// Do not continue to read.
-				done=true;
-				return false;
-			}
-			doInit = false;
-		}
-
-		bool readOne = false;
-		int ret;
-		if (done == false) {
-			if (inputType == 0) {
-				if ((ret = kseq_read(ks)) >= 0) { // each kseq_read() call reads one query sequence
-					read.seq = new char[ks->seq.l];
-					read.length=ks->seq.l;
-					memcpy(read.seq, ks->seq.s,read.length);
-					for (int i=0;i<ks->seq.l;i++) { read.seq[i] = toupper(ks->seq.s[i]);}
-					read.name=string(ks->name.s);
-					if (ks->qual.s != NULL) {
-						read.qual = new char[ks->seq.l+1];
-						memcpy(read.qual, ks->qual.s, ks->seq.l);
-						read.qual[ks->seq.l] = '\0';
-					}
-					else {
-						read.qual = new char[2];
-						read.qual[0] = '*';
-						read.qual[1] = '\0';
-					}					
-					read.passthrough=NULL;
-					readOne=true;
-				}
-				if (ret < -1) {
-					fprintf(stderr, "[WARNING]\033[failed to parse the first FASTA/FASTQ record. Continue anyway.\033[0m\n");
-				}
-			}
-			else if (inputType == 1) { // sam input
-				int res;
-				bam1_t *b = bam_init1();
-				res= sam_read1(htsfp, samHeader, b);
-				while (res > 0 and readOne == false) {
-					if (res > 0) {	
-					if ((b->core.flag & flagRemove) == 0) {		
-							// // get auxilary tags
-							// if (opt.passthroughtag and bam_get_aux(b))	{
-							// 	unsigned char *pq = bam_get_aux(b);
-							// 	int pq_len = strlen((char*)pq);
-							// 	read.passthrough = new unsigned char[pq_len + 1];
-							// 	for (int p=0; p<pq_len; p++) {
-							// 		read.passthrough[p] = pq[p];
-							// 	}
-							// 	read.passthrough[pq_len] = '\0';
-
-							// }				
-							read.length = b->core.l_qseq;			
-							read.seq = new char[read.length];
-							read.name = string(bam_get_qname(b));
-							read.flags = b->core.flag;
-							uint8_t *q = bam_get_seq(b);
-							for (int i=0; i < read.length; i++) {read.seq[i]=seq_nt16_str[bam_seqi(q,i)];	}
-							char* qual=(char*) bam_get_qual(b);
-							if (qual[0] == char(0xff)) {
-								read.qual = new char[2];
-								read.qual[1] = '\0';
-								read.qual[0] = '*';
-							}
-							else {
-								read.qual=new char[read.length+1];
-								for (int q=0; q < read.length; q++) {
-									read.qual[q] = qual[q]+33;
-								}
-								read.qual[read.length]='\0';
-							}
-				
-							// 
-							// Eventually this will store the passthrough data
-							//
-							readOne=true;
-							if (opt.passthroughtag) {
-								int ksLen;
-								kstring_t fullKs;
-								int fullLen;
-								fullKs = { 0, 0, NULL };
-								fullLen = sam_format1(samHeader, b, &fullKs);
-								int t=0;
-								int numTab=0;							
-								while (t < fullKs.l and numTab < 11) 
-									{
-										if (fullKs.s[t] == '\t') 
-											{
-												numTab++;
-											}
-										t+=1;									
-									}
-								if (t < fullKs.l) 
-									{
-										int lenPassthrough=fullKs.l-t;									
-										if (lenPassthrough > 0) 
-											{											
-												read.passthrough=new char[lenPassthrough+1];
-												read.passthrough[lenPassthrough]='\0';
-												memcpy(read.passthrough, fullKs.s + t, lenPassthrough);											
-											}
-										else
-											{
-												read.passthrough=NULL;
-											}
-									}
-								free(fullKs.s);								
-							}
-							bam_destroy1(b);
-							//bam1_t *b = bam_init1();
-						}
-						else {
-							bam_destroy1(b);
-							b = bam_init1();
-							res= sam_read1(htsfp, samHeader, b);
-						}
-					}
-				}
-				if (res == 0) {	
-					if (b != NULL) {
-						bam_destroy1(b);
-						readOne = false;
-					}
-				}
-			}
-
-			if (readOne == false and top == true ) {
-				++curFile;
-				doInit=true;
-				readOne=GetNext(read, opt, overrideSemaphore, false);
-			}
-			basesRead += read.length;
-			totalRead += read.length;
-		}
-
-		if (overrideSemaphore== false and top == true) {
-			pthread_mutex_unlock(&semaphore);
-		}
-		return readOne;
-	}
-	bool BufferedRead(vector<Read> &reads, int maxBufferSize, Options &opt) {
-		int totalSize=0;
-
-		pthread_mutex_lock(&semaphore);
-		Read read;
-
-		while(totalSize < maxBufferSize and GetNext(read, opt, true, true)) {
-			reads.resize(reads.size()+1);
-			reads[reads.size()-1]=read;
-			totalSize += read.length;
-			read.Clear();
-		}
-
-		pthread_mutex_unlock(&semaphore);
-
-		return reads.size();
-	}
+    return reads.size();
+  }
 
 
 };
