@@ -278,8 +278,9 @@ SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitC
 			// cerr << ExtendClusters[prev]->OverlaprateOnGenome(ExtendClusters[cur]) << "  " <<  ExtendClusters[cur]->OverlaprateOnGenome(ExtendClusters[prev])  << endl;
 			rep_map = 1;
 		}
-		if (ExtendClusters[cur]->tStart > ExtendClusters[prev]->tEnd + opts.splitdist // too far
-			or ExtendClusters[cur]->tEnd + opts.splitdist < ExtendClusters[prev]->tStart) {
+		if ( (ExtendClusters[cur]->tStart > ExtendClusters[prev]->tEnd + opts.splitdist) // too far
+			or (ExtendClusters[cur]->tEnd + opts.splitdist < ExtendClusters[prev]->tStart)
+			or (ExtendClusters[cur]->chromIndex != ExtendClusters[prev]->chromIndex) ) {
 			splitchains.push_back(SplitChain(onec, lk));
 			onec.clear();
 			lk.clear();
@@ -346,47 +347,6 @@ SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitC
 	vector<bool> splitchains_link;
 	MergeSplitchainINS(splitchains, splitchains_link, opts);
 }
-
-// //
-// // This function splits the chain if Clusters on the chain are mapped to different chromosomes or different locations (quite far, default: 100000) on the same chromosome;
-// // Also split the chain when two forward/reverse clusters are chained in reverse/forward direction.
-// void
-// SPLITChain(Read &read, UltimateChain &chain, vector<SplitChain> &splitchains, vector<bool> &splitchains_link, 
-// 				vector<pair<GenomePos, GenomePos>> &splitchains_qpos, const Options &opts) {
-// 	int im = 0;
-// 	vector<int> onec; 
-// 	vector<bool> lk;
-// 	onec.push_back(im);
-// 	int cur = 0, prev = 0;
-
-// 	while (im < chain.size() - 1) {
-// 		cur = im + 1; prev = im;
-// 		if (chain.tStart(cur) > chain.tEnd(prev) + opts.splitdist // too far
-// 			or chain.tEnd(cur) + opts.splitdist < chain.tStart(prev)
-// 			or (chain.link[im] == 1 and chain.strand(cur) == 0 and chain.strand(prev) == 0) // repetitive mapping and DUP
-// 			or (chain.link[im] == 0 and chain.strand(cur)== 1 and chain.strand(prev) == 1) // repetitive mapping and DUP
-// 			or (chain.strand(cur) == 0 and chain.strand(prev) == 1) // inversion
-// 			or (chain.strand(cur) == 1 and chain.strand(prev) == 0)) { //inversion
-
-// 			splitchains.push_back(SplitChain(onec, lk));
-// 			splitchains_qpos.push_back(make_pair(chain.qStart(onec.back()), chain.qEnd(onec[0])));
-// 			if ((chain.strand(cur) == 0 and chain.strand(prev) == 1) or (chain.strand(cur) == 1 and chain.strand(prev) == 0)) {splitchains_link.push_back(1);}
-// 			else {splitchains_link.push_back(0);}
-// 			onec.clear();
-// 			lk.clear();
-// 			onec.push_back(cur);
-// 		}	
-// 		else {
-// 			onec.push_back(cur);
-// 			lk.push_back(chain.link[im]);
-// 		}	
-// 		im++;
-// 	}
-// 	if (!onec.empty()) {
-// 		splitchains.push_back(SplitChain(onec, lk));
-// 		splitchains_qpos.push_back(make_pair(chain.qStart(onec.back()), chain.qStart(onec[0])));
-// 	}
-// }
 
 bool push_new(Genome &genome, vector<int> &onec, vector<bool> &lk, vector<SplitChain> &splitchains, UltimateChain &chain, int cur) {
 

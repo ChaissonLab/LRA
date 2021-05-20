@@ -452,6 +452,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 			GenomePos chromOffset = genome.header.pos[clusters[s].chromIndex];
 			for (int m = 0; m < clusters[s].matches.size(); m++) {
 				clusters[s].matches[m].second.pos -= chromOffset;
+				assert(clusters[s].matches[m].second.pos + opts.globalK <= genome.lengths[clusters[s].chromIndex] );
 			}
 			clusters[s].tStart -= chromOffset;
 			clusters[s].tEnd -= chromOffset;
@@ -579,7 +580,13 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	// 	   << "  read.name:"<< read.name <<  endl;
 	// cerr << "LinearExtend efficiency: " << (float)SizeExtendClusters/(float)SizeRefinedClusters << endl;
 	// cerr << "overlapped anchors: " << overlap << " total:" << SizeExtendClusters <<endl;
-	
+	if (opts.debug) {
+		for (int ep = 0; ep < extend_clusters.size(); ep++) {
+			for (int eh = 0; eh < extend_clusters[ep].matches.size(); eh++) {
+				assert(extend_clusters[ep].matches[eh].second.pos + extend_clusters[ep].matchesLengths[eh] <= genome.lengths[extend_clusters[ep].chromIndex]);
+			}
+		}		
+	}
 	if (opts.dotPlot and !opts.readname.empty() and read.name == opts.readname) {
 		ofstream clust("ExtendClusters.tab", ofstream::app);
 		for (int ep = 0; ep < extend_clusters.size(); ep++) {
@@ -642,6 +649,14 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 		}
 		Mclust.close();
 	}	
+
+	if (opts.debug) {
+		for (int ep = 0; ep < samediag_clusters.size(); ep++) {
+			for (int eh = 0; eh < samediag_clusters[ep].start.size(); eh++) {
+				assert(samediag_clusters[ep].GettEnd(eh) <= genome.lengths[extend_clusters[ep].chromIndex]);
+			}
+		}		
+	}
 
 	vector<SegAlignmentGroup> alignments;
 	AlignmentsOrder alignmentsOrder(&alignments);
