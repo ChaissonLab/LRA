@@ -740,7 +740,7 @@ class Alignment {
 					SEQlen = readLen;						
 				}	
 			}
-			if (qual[0] == '*') {
+			if (qual == NULL or qual[0] == '*') {
 				qualStr = "*";
 			}
 			else {
