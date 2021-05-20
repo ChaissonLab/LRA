@@ -48,7 +48,7 @@ void RemoveSpuriousSplitChain(vector<SplitChain> &chains, vector<bool> &spchain_
 			remove[i] = 1;
 		}
 		if (i > 0 and spchain_link[i - 1] == 1 and chains[i].size() < min(filter_suspiciousDUPINV, 4)) { // for DUP and INV, requires more anchors
-			remove[i] == 1;
+			remove[i] = 1;
 		} 
 	}
 	int c = 0;
@@ -619,7 +619,7 @@ int MapRead_lowacc(GenomePairs &forMatches, GenomePairs &revMatches, const vecto
 	//
 	// Done with one read. Clean memory.
 	//
-	delete[] readRC;
+	// delete[] readRC;
 	for (int a = 0; a < alignments.size(); a++) {
 		for (int s = 0; s < alignments[a].SegAlignment.size(); s++) {
 			delete alignments[a].SegAlignment[s];
