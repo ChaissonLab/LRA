@@ -23,7 +23,7 @@ class Header {
 			return 0;
 		}
 		else {
-			vector<uint64_t>::iterator it = lower_bound(pos.begin(), pos.end(), query); // used to use lower_bound, but not quite right
+			vector<uint64_t>::iterator it = lower_bound(pos.begin(), pos.end(), query); 
 			int i = it - pos.begin();
 			assert(i > 0);
 			if (query == *it) return i;
