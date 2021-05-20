@@ -723,17 +723,21 @@ class Alignment {
 			samStrm << tEnd - tStart << "\t"; // calling assembly script depends on tEnd-tStart
 			string qualStr;
 			string readStr;	
+			int SEQlen = 0;
 			if (Supplymentary == 0) assert(flag == 0 or flag == 16 or flag == 256 or flag == 272);
 			if (!Supplymentary) { // primary alignment
-				samStrm.write(read,readLen);				
+				samStrm.write(read,readLen);
+				SEQlen = readLen;				
 			}
 			else { // supplementary alignment
 				if (opts.hardClip) {
 					samStrm.write(&read[qStart],qEnd-qStart);
 					samStrm << readStr;	
+					SEQlen = qEnd-qStart;
 				}
 				else{
-					samStrm.write(read,readLen);					
+					samStrm.write(read,readLen);
+					SEQlen = readLen;						
 				}	
 			}
 			if (qual[0] == '*') {
@@ -749,6 +753,9 @@ class Alignment {
 			}
 			else {
 				samStrm << qualStr;
+			}
+			if (qualStr != "*") {
+				assert(SEQlen == qualStr.length());
 			}
 			samStrm << "\t";
 			samStrm << "MM:i:" << nmm + ndel + nins << "\t";

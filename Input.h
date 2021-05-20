@@ -190,68 +190,68 @@ public:
     string qual;
     if (inputType == FASTA or inputType == FASTQ) {
       if (strmPtr->eof()) {
-	return 0;
+	     return 0;
       }
       if (inputType == FASTA) {
-	string header;
-	char c;
-	getline(*strmPtr, header);
-	stringstream nameStrm(header);
-	nameStrm >> c >> read.name;
-	c=strmPtr->peek();
+      	string header;
+      	char c;
+      	getline(*strmPtr, header);
+      	stringstream nameStrm(header);
+      	nameStrm >> c >> read.name;
+      	c=strmPtr->peek();
 
-	while (c != EOF and c != '>') {
-	  string line;
-	  getline(*strmPtr, line);
-	  int i=0,j=0;
-	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = line[i]; j++;} }
-	  line.resize(j);		      
-	  seq+=line;
-	  c=strmPtr->peek();
-	}
-	if (c == EOF) {
-	  strmPtr->get();
-	}
+      	while (c != EOF and c != '>') {
+      	  string line;
+      	  getline(*strmPtr, line);
+      	  int i=0,j=0;
+      	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = line[i]; j++;} }
+      	  line.resize(j);		      
+      	  seq+=line;
+      	  c=strmPtr->peek();
+      	}
+      	if (c == EOF) {
+      	  strmPtr->get();
+      	}
       }
 
       else if (inputType == FASTQ) {
-	string header;
-	char c;
-	getline(*strmPtr, header);
-	stringstream nameStrm(header);
-	nameStrm >> c >> read.name;
-	c=strmPtr->peek();
+      	string header;
+      	char c;
+      	getline(*strmPtr, header);
+      	stringstream nameStrm(header);
+      	nameStrm >> c >> read.name;
+      	c=strmPtr->peek();
 
-	string line;		  
-	while (c != EOF and c != '+') {
-	  getline(*strmPtr, line);
-	  int i=0,j=0;
-	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = line[i]; j++;} }
-	  line.resize(j);		      
-	  seq+=line;
-	  c=strmPtr->peek();
-	}
-	getline(*strmPtr, line);
-	c=strmPtr->peek();
-	while (c != EOF and c != '@'){
-	  getline(*strmPtr, line);
-	  int i=0,j=0;
-	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = line[i]; j++;} }
-	  line.resize(j);
-	  qual+=line;
-	  c=strmPtr->peek();
-	}		  
-	if (c == EOF) {
-	  strmPtr->get();
-	}
+      	string line;		  
+      	while (c != EOF and c != '+') {
+      	  getline(*strmPtr, line);
+      	  int i=0,j=0;
+      	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = line[i]; j++;} }
+      	  line.resize(j);		      
+      	  seq+=line;
+      	  c=strmPtr->peek();
+      	}
+      	getline(*strmPtr, line);
+      	c=strmPtr->peek();
+      	while (c != EOF and c != '@'){
+      	  getline(*strmPtr, line);
+      	  int i=0,j=0;
+      	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = line[i]; j++;} }
+      	  line.resize(j);
+      	  qual+=line;
+      	  c=strmPtr->peek();
+      	}		  
+      	if (c == EOF) {
+      	  strmPtr->get();
+      	}
       }
       read.seq = new char[seq.size()];
       memcpy(read.seq, seq.c_str(), seq.size());
       read.length=seq.size();
       if (qual.size() > 0) {
-	assert(qual.size() == seq.size());
-	read.qual = new char[qual.size()];
-	memcpy(read.qual, qual.c_str(), qual.size());
+      	assert(qual.size() == seq.size());
+      	read.qual = new char[qual.size()];
+      	memcpy(read.qual, qual.c_str(), qual.size());
       }
       read.passthrough=NULL;
       readOne=true;
@@ -263,91 +263,91 @@ public:
       res= sam_read1(htsfp, samHeader, b);
 
       while (res >= 0 and readOne == false) {
-	if (res >= 0) {	
-	  if ((b->core.flag & flagRemove) == 0) {		
-	    // // get auxilary tags
-	    // if (opt.passthroughtag and bam_get_aux(b))	{
-	    // 	unsigned char *pq = bam_get_aux(b);
-	    // 	int pq_len = strlen((char*)pq);
-	    // 	read.passthrough = new unsigned char[pq_len + 1];
-	    // 	for (int p=0; p<pq_len; p++) {
-	    // 		read.passthrough[p] = pq[p];
-	    // 	}
-	    // 	read.passthrough[pq_len] = '\0';
-			
-	    // }				
-	    read.length = b->core.l_qseq;			
-	    read.seq = new char[read.length];
-	    read.name = string(bam_get_qname(b));
-	    read.flags = b->core.flag;
-	    uint8_t *q = bam_get_seq(b);
-	    for (int i=0; i < read.length; i++) {read.seq[i]=seq_nt16_str[bam_seqi(q,i)];	}
-	    char* qual=(char*) bam_get_qual(b);
-	    if (qual[0] == char(0xff)) {
-	      read.qual = new char[2];
-	      read.qual[1] = '\0';
-	      read.qual[0] = '*';
-	    }
-	    else {
-	      read.qual=new char[read.length+1];
-	      for (int q=0; q < read.length; q++) {
-		read.qual[q] = qual[q]+33;
-	      }
-	      read.qual[read.length]='\0';
-	    }
-			
-	    // 
-	    // Eventually this will store the passthrough data
-	    //
-	    readOne=true;
-	    if (opt.passthroughtag) {
-	      int ksLen;
-	      kstring_t fullKs;
-	      int fullLen;
-	      fullKs = { 0, 0, NULL };
-	      fullLen = sam_format1(samHeader, b, &fullKs);
-	      int t=0;
-	      int numTab=0;							
-	      while (t < fullKs.l and numTab < 11) 
-		{
-		  if (fullKs.s[t] == '\t') 
-		    {
-		      numTab++;
-		    }
-		  t+=1;									
-		}
-	      if (t < fullKs.l) 
-		{
-		  int lenPassthrough=fullKs.l-t;									
-		  if (lenPassthrough > 0) {											
-		    read.passthrough=new char[lenPassthrough+1];
-		    read.passthrough[lenPassthrough]='\0';
-		    memcpy(read.passthrough, fullKs.s + t, lenPassthrough);
-		  }
-		  else
-		    {
-		      read.passthrough=NULL;
-		    }
-		}
-	      free(fullKs.s);								
-	    }
-	    nReads++;
-	    bam_destroy1(b);
-	    b=NULL;
-	    //bam1_t *b = bam_init1();
-	  }
-	  else {
-	    bam_destroy1(b);
-	    b = bam_init1();
-	    res= sam_read1(htsfp, samHeader, b);
-	  }
-	}
+      	 if (res >= 0) {	
+      	  if ((b->core.flag & flagRemove) == 0) {		
+      	    // // get auxilary tags
+      	    // if (opt.passthroughtag and bam_get_aux(b))	{
+      	    // 	unsigned char *pq = bam_get_aux(b);
+      	    // 	int pq_len = strlen((char*)pq);
+      	    // 	read.passthrough = new unsigned char[pq_len + 1];
+      	    // 	for (int p=0; p<pq_len; p++) {
+      	    // 		read.passthrough[p] = pq[p];
+      	    // 	}
+      	    // 	read.passthrough[pq_len] = '\0';
+      			
+      	    // }				
+      	    read.length = b->core.l_qseq;			
+      	    read.seq = new char[read.length];
+      	    read.name = string(bam_get_qname(b));
+      	    read.flags = b->core.flag;
+      	    uint8_t *q = bam_get_seq(b);
+      	    for (int i=0; i < read.length; i++) {read.seq[i]=seq_nt16_str[bam_seqi(q,i)];	}
+      	    char* qual=(char*) bam_get_qual(b);
+      	    if (qual[0] == char(0xff)) {
+      	      read.qual = new char[2];
+      	      read.qual[1] = '\0';
+      	      read.qual[0] = '*';
+      	    }
+      	    else {
+      	      read.qual=new char[read.length+1];
+      	      for (int q=0; q < read.length; q++) {
+      		read.qual[q] = qual[q]+33;
+      	      }
+      	      read.qual[read.length]='\0';
+      	    }
+      			
+      	    // 
+      	    // Eventually this will store the passthrough data
+      	    //
+      	    readOne=true;
+      	    if (opt.passthroughtag) {
+      	      int ksLen;
+      	      kstring_t fullKs;
+      	      int fullLen;
+      	      fullKs = { 0, 0, NULL };
+      	      fullLen = sam_format1(samHeader, b, &fullKs);
+      	      int t=0;
+      	      int numTab=0;							
+      	      while (t < fullKs.l and numTab < 11) 
+      		{
+      		  if (fullKs.s[t] == '\t') 
+      		    {
+      		      numTab++;
+      		    }
+      		  t+=1;									
+      		}
+      	      if (t < fullKs.l) 
+      		{
+      		  int lenPassthrough=fullKs.l-t;									
+      		  if (lenPassthrough > 0) {											
+      		    read.passthrough=new char[lenPassthrough+1];
+      		    read.passthrough[lenPassthrough]='\0';
+      		    memcpy(read.passthrough, fullKs.s + t, lenPassthrough);
+      		  }
+      		  else
+      		    {
+      		      read.passthrough=NULL;
+      		    }
+      		}
+      	      free(fullKs.s);								
+      	    }
+      	    nReads++;
+      	    bam_destroy1(b);
+      	    b=NULL;
+      	    //bam1_t *b = bam_init1();
+      	  }
+      	  else {
+      	    bam_destroy1(b);
+      	    b = bam_init1();
+      	    res= sam_read1(htsfp, samHeader, b);
+      	  }
+      	}
       }
       if (res < 0) {	
-	if (b != NULL) {
-	  bam_destroy1(b);
-	  readOne = false;
-	}
+      	if (b != NULL) {
+      	  bam_destroy1(b);
+      	  readOne = false;
+      	}
       }
     }
 		

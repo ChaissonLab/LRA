@@ -470,7 +470,7 @@ Refine_splitchain(vector<SplitChain> &splitchains, UltimateChain &chain, vector<
 			  matchEnd++;
 			}
 			if (matchStart >= splitchains[ph].size()) { continue;}
-
+			if (matchEnd == matchStart) {continue;} // no matches in the current genomeLocalIndex window
 
 			GenomePos prev_readEnd = 0;
 			GenomePos prev_readStart = read.length;
