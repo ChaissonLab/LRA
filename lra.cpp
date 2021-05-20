@@ -112,9 +112,10 @@ void MapReads(MapInfo *mapInfo) {
 		}
 		else {
 			for (int i = 0; i< reads.size(); i++) {
+				// assert(reads[i].name.length() <= 256);
 				*mapInfo->numAligned+=MapRead(*mapInfo->LookUpTable, reads[i], *mapInfo->genome, *mapInfo->genomemm,
-																			*mapInfo->glIndex, *mapInfo->opts, &strm, &svsigstrm, mapInfo->timing, indelRefineBuffers, 
-																			mapInfo->semaphore);
+												*mapInfo->glIndex, *mapInfo->opts, &strm, &svsigstrm, mapInfo->timing, indelRefineBuffers, 
+												mapInfo->semaphore);
 				reads[i].Clear();
 			}
 			reads.clear();
@@ -715,7 +716,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		IndelRefineBuffers indelRefineBuffers;
 		while (reader.GetNext(read, opts)) {
 			int rstmm = 0;			
-
+			// assert(read.name.length() <= 256);
 			MapRead(LookUpTable, read, genome, genomemm, glIndex, opts, outPtr, outSVsig, timing, indelRefineBuffers);
 			if (opts.timing != "") {
 				timing.Summarize(opts.timing);

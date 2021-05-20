@@ -78,6 +78,8 @@ class Input {
 		}
 		return false;
 	}
+
+
 	bool Initialize(string &filename) {
 		nReads=0;
 		istream *strmPtr;
@@ -110,11 +112,9 @@ class Input {
 			//
 			// possibly sam 
 			//
-
 			if (htsfp != NULL) {
 				hts_close(htsfp);
 				bam_hdr_destroy(samHeader);
-
 			}	
 			htsfp = hts_open(filename.c_str(),"r");
 			const htsFormat *fmt = hts_get_format(htsfp);
@@ -173,10 +173,11 @@ class Input {
 			doInit = false;
 		}
 
-		bool readOne=false;
+		bool readOne = false;
+		int ret;
 		if (done == false) {
 			if (inputType == 0) {
-				if (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
+				if ((ret = kseq_read(ks)) >= 0) { // each kseq_read() call reads one query sequence
 					read.seq = new char[ks->seq.l];
 					read.length=ks->seq.l;
 					memcpy(read.seq, ks->seq.s,read.length);
@@ -194,6 +195,9 @@ class Input {
 					}					
 					read.passthrough=NULL;
 					readOne=true;
+				}
+				if (ret < -1) {
+					fprintf(stderr, "[WARNING]\033[failed to parse the first FASTA/FASTQ record. Continue anyway.\033[0m\n");
 				}
 			}
 			else if (inputType == 1) { // sam input
