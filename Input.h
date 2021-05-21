@@ -216,34 +216,26 @@ public:
 
       else if (inputType == FASTQ) {
       	string header;
+	string sep;
       	char c;
       	getline(*strmPtr, header);
-      	stringstream nameStrm(header);
-      	nameStrm >> c >> read.name;
-      	c=strmPtr->peek();
+	getline(*strmPtr, seq);
+	getline(*strmPtr, sep);
+	getline(*strmPtr, qual);
+	if (header.size() ==0 or seq.size() == 0 or sep.size() == 0 or qual.size() == 0) {
+	  readOne=false;
+	  return 0;
+	}
+	else {
+	  stringstream nameStrm(header);
+	  nameStrm >> c >> read.name;
+	  int i,j;
+	  for (i=0,j=0; i < seq.size(); i++) { if (seq[i] != ' ') { seq[j] = seq[i]; j++;} }
+	  seq.resize(j);
 
-      	string line;		  
-      	while (c != EOF and c != '+') {
-      	  getline(*strmPtr, line);
-      	  int i=0,j=0;
-      	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = line[i]; j++;} }
-      	  line.resize(j);		      
-      	  seq+=line;
-      	  c=strmPtr->peek();
-      	}
-      	getline(*strmPtr, line);
-      	c=strmPtr->peek();
-      	while (c != EOF and c != '@'){
-      	  getline(*strmPtr, line);
-      	  int i=0,j=0;
-      	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = line[i]; j++;} }
-      	  line.resize(j);
-      	  qual+=line;
-      	  c=strmPtr->peek();
-      	}		  
-      	if (c == EOF) {
-      	  strmPtr->get();
-      	}
+	  for (i=0,j=0; i < qual.size(); i++) { if (qual[i] != ' ') { qual[j] = qual[i]; j++;} }
+	  qual.resize(j);
+	}
       }
       read.seq = new char[seq.size()+1];
       memcpy(read.seq, seq.c_str(), seq.size());
