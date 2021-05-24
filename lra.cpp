@@ -32,7 +32,7 @@
 using namespace std;
 
 int IO_BUFFER_SIZE=10000000;
-const char* lraVersion="V1.2";
+const char* lraVersion="V1.3.0";
 
 bool ArgIs(const char* a, const char* b) {
 	return strcmp(a,b) == 0;
