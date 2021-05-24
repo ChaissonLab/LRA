@@ -471,6 +471,7 @@ int SparseDP_ForwardOnly (const GenomePairs &FragInput, const vector<int> &Match
 	// SubC1.Clear(eeC1);
 	SubR1.clear();
 	SubC1.clear();
+	Value.clear();
 	Row.clear();
 	Col.clear();
 	H1.clear();
