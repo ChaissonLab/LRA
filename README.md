@@ -21,8 +21,8 @@ lra align -CCS/CLR/ONT/CONTIG ref.fa read.fa -t 16 -p s > output.sam
   - [Output format](#output)
 
 ## <a name="intro"></a>Introduction
-<img align="left" width="278" src="image/runtime.png"/>
-<img align="right" width="278" src="image/truvari_plot.pdf"/>
+<img align="left" width="600" src="image/runtime.png"/>
+<img align="right" width="600" src="image/truvari_plot.png"/>
 
 lra is a sequence alignment program that aligns long reads from single-molecule sequencing (SMS) instruments, or megabase-scale contigs from SMS assemblies. lra implements seed chaining sparse dynamic programming with a concave gap function to read and assembly alignment, which is also extended to allow for inversion cases. lra alignment approach increases sensitivity and specificity for SV discovery, particularly for variants above 1kb and when discovering variation from ONT reads, while having runtime that arecomparable (1.05-3.76×) to current methods. When applied to calling variation from \textit{de novo} assembly contigs, there is a 3.2% increase in Truvari F1 score compared to minimap2+htsbox.
 
