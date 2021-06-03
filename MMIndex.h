@@ -352,7 +352,7 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		n = ne;
 	}
 	assert(removed + unremoved == Remove.size());
-	cerr << unremoved << " minimizers with multiplicity samller than " << opts.globalMaxFreq << endl;
+	cerr << unremoved << " minimizers with multiplicity smaller than " << opts.globalMaxFreq << endl;
 	//
 	// Sort unremoved minimizers by frequency 
 	// Use count sort
