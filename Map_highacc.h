@@ -493,6 +493,16 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 		output_unaligned(read, opts, *output);
 		return 0;
 	}	
+
+	if (opts.debug) {
+		for (int p = 0; p < RefinedClusters.size(); p++) {
+			for (int h = 0; h < RefinedClusters[p]->matches.size(); h++) {
+				assert(RefinedClusters[p]->matches[h].first.pos + K <= read.length);
+				assert(RefinedClusters[p]->matches[h].second.pos + K <= genome.lengths[RefinedClusters[p]->chromIndex]);
+			}
+		}		
+	}
+
 	//
 	// For each chain, check the two ends and spaces between adjacent clusters. If the spaces are too wide, go to find anchors in the banded region.
 	// For each chain, we have vector<Cluster> btwnClusters to store anchors;
@@ -534,22 +544,30 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 		}
 		clust.close();
 	}	
-	//
-	// Add back RevBtwnCluster; Edit Primary_chains based on tracerev;
-	//
-	for (int p = 0; p < tracerev.size() ; p++) {
-		int h = get<0>(tracerev[p]); 
-		int I = get<1>(tracerev[p]); 
-		Primary_chains[0].chains[h].ch.insert(Primary_chains[0].chains[h].ch.begin() + I, get<2>(tracerev[p]) + RefinedClusters.size());
-		Primary_chains[0].chains[h].link.insert(Primary_chains[0].chains[h].link.begin() + (I - 1), 1);
-		Primary_chains[0].chains[h].link[I] = 1;
-	}
-	int a = RefinedClusters.size();
-	RefinedClusters.resize(a + RevBtwnCluster.size());
-	for (int p = 0; p < RevBtwnCluster.size(); p++) {
-		RefinedClusters[a + p] = &RevBtwnCluster[p];
-	}
+	// //
+	// // Add back RevBtwnCluster; Edit Primary_chains based on tracerev;
+	// //
+	// for (int p = 0; p < tracerev.size() ; p++) {
+	// 	int h = get<0>(tracerev[p]); 
+	// 	int I = get<1>(tracerev[p]); 
+	// 	Primary_chains[0].chains[h].ch.insert(Primary_chains[0].chains[h].ch.begin() + I, get<2>(tracerev[p]) + RefinedClusters.size());
+	// 	Primary_chains[0].chains[h].link.insert(Primary_chains[0].chains[h].link.begin() + (I - 1), 1);
+	// 	Primary_chains[0].chains[h].link[I] = 1;
+	// }
+	// int a = RefinedClusters.size();
+	// RefinedClusters.resize(a + RevBtwnCluster.size());
+	// for (int p = 0; p < RevBtwnCluster.size(); p++) {
+	// 	RefinedClusters[a + p] = &RevBtwnCluster[p];
+	// }
 
+	if (opts.debug) {
+		for (int p = 0; p < RefinedClusters.size(); p++) {
+			for (int h = 0; h < RefinedClusters[p]->matches.size(); h++) {
+				assert(RefinedClusters[p]->matches[h].first.pos + K <= read.length);
+				assert(RefinedClusters[p]->matches[h].second.pos + K <=  genome.lengths[RefinedClusters[p]->chromIndex]);
+			}
+		}		
+	}
 	timing.Tick("Refine_btwnclusters");
 
 	vector<Cluster> extend_clusters;
@@ -618,7 +636,7 @@ int MapRead_highacc(GenomePairs &forMatches, GenomePairs &revMatches, const vect
 	clusters.clear();
 	refinedclusters.clear();
 	RefinedClusters.clear();
-	RevBtwnCluster.size();
+	RevBtwnCluster.clear();
 
 	vector<Cluster_SameDiag> samediag_clusters;
 	MergeMatchesSameDiag(extend_clusters, samediag_clusters, opts); // There are a lot matches on the same diagonal, especially for contig;
