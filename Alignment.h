@@ -635,13 +635,13 @@ class Alignment {
 			strandChar = '-';
 		}
 
-		out << readName << "\t" << "readLen: " << readLen << "\t";
-		if (strand == 0) out << "qStart:" << qStart << "\t" << "qEnd:" << qEnd << "\t";
-		else out << "qStart:" << readLen - qEnd << "\t" << "qEnd:" << readLen - qStart << "\t";
+		out << readName << "\t" << readLen << "\t";
+		if (strand == 0) out << qStart << "\t" << qEnd << "\t";
+		else out << readLen - qEnd << "\t" << readLen - qStart << "\t";
 		out << strandChar << "\t" << chrom << "\t" << genomeLen << "\t" 
-			<< "wholegenomeLen:" << wholegenomeLen <<  "\t" // (Revision) delete wholegenomeLen
-			<< "tStart:" << tStart << "\t" << "tEnd:" << tEnd 
-			<< "\t" << "Number of residue matches:" << nm << "\t" << "mapqv: " << (int)mapqv << "\t" << "AO:i:" << order;
+			<< wholegenomeLen <<  "\t" // (Revision) delete wholegenomeLen
+			<< tStart << "\t" << tEnd 
+			<< "\t" << nm << "\t" << (int)mapqv << "\t" << order;
 		out << "\tNM:i:" << nmm + ndel + nins << "\t";
 		out << "NX:i:" << nmm << "\t";
 		out << "ND:i:" << ndel << "\t";
