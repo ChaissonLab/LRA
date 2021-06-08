@@ -487,8 +487,8 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 			twoblocks = 1;
 			if (RefinedClusters[cur]->tEnd <= RefinedClusters[prev]->tStart) {
 				if (st1 == 0) {
-					ts1 = RefinedClusters[cur]->tEnd; te1 = ts1 + qe - qs;
-					ts2 = RefinedClusters[prev]->tEnd; te2 = ts2 + qe - qs;
+				  ts1 = RefinedClusters[cur]->tEnd; te1 = min((GenomePos) genome.lengths[RefinedClusters[cur]->chromIndex], ts1 + qe - qs);
+				  ts2 = RefinedClusters[prev]->tEnd; te2 = min((GenomePos) genome.lengths[RefinedClusters[cur]->chromIndex], ts2 + qe - qs);
 				}
 				else {
 					te1 = RefinedClusters[cur]->tStart; ts1 = (te1 > (qe - qs)? te1 - (qe - qs) : 0);
@@ -497,7 +497,7 @@ RefineBtwnClusters_chain(int K, int W, vector<Primary_chain> &Primary_chains, ve
 			}
 			else if (RefinedClusters[cur]->tStart > RefinedClusters[prev]->tEnd) {
 				if (st1 == 0) {
-					ts1 = RefinedClusters[cur]->tEnd; te1 = ts1 + qe - qs;
+				  ts1 = RefinedClusters[cur]->tEnd; te1 = min((GenomePos) genome.lengths[RefinedClusters[cur]->chromIndex], ts1 + qe - qs);
 					te2 = RefinedClusters[cur]->tStart; ts2 = (te2 > (qe - qs)? te2 - (qe - qs) : 0); 
 				}
 				else {
