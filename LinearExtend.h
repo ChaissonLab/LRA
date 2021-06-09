@@ -64,14 +64,15 @@ void Checkbp(GenomePair &cur, GenomePair &next, Genome &genome, Read &read, int 
 	}
 
 	if (strand == 0) { //curT - genome.header.pos[ChromIndex]
-		while (nextQ > curQ and nextT > curT and genome.seqs[ChromIndex][curT] == read.seq[curQ] ) {
+	  while (curQ < read.length and curT < genome.seqs[ChromIndex][curT] and
+		 nextQ > curQ and nextT > curT and  genome.seqs[ChromIndex][curT] == read.seq[curQ] ) {
 			mat++;
 			curQ++;
 			curT++;
 		}
 	}
 	else {
-		while (nextQ > curQ and nextT < curT and genome.seqs[ChromIndex][curT] == read.seq[curQ] ) {
+		while (curQ < read.length and curT >= 0 and nextQ > curQ and nextT < curT and genome.seqs[ChromIndex][curT] == read.seq[curQ] ) {
 			mat++;
 			curQ++;
 			curT--;
