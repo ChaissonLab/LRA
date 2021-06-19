@@ -204,7 +204,7 @@ public:
       	  string line;
       	  getline(*strmPtr, line);
       	  int i=0,j=0;
-      	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = line[i]; j++;} }
+      	  for (i=0; i < line.size(); i++) { if (line[i] != ' ') { line[j] = toupper(line[i]); j++;} }
       	  line.resize(j);		      
       	  seq+=line;
       	  c=strmPtr->peek();
@@ -230,7 +230,7 @@ public:
 	  stringstream nameStrm(header);
 	  nameStrm >> c >> read.name;
 	  int i,j;
-	  for (i=0,j=0; i < seq.size(); i++) { if (seq[i] != ' ') { seq[j] = seq[i]; j++;} }
+	  for (i=0,j=0; i < seq.size(); i++) { if (seq[i] != ' ') { seq[j] = toupper(seq[i]); j++;} }
 	  seq.resize(j);
 
 	  for (i=0,j=0; i < qual.size(); i++) { if (qual[i] != ' ') { qual[j] = qual[i]; j++;} }
