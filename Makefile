@@ -1,23 +1,34 @@
-all:  lra 
+PROG=   lra
+PROG_EXTRA= alchemy2 qti
+LIBS=   -lz -lpthread -lhts
 PROF=/home/cmb-16/mjc/shared/lib/
-CCOPTS_BASE=
 DEBUG?=""
 OPT?=""
-ifneq ($(DEBUG), "")
-CCOPTS=$(CCOPTS_BASE) $(DEBUG)
-else
-CCOPTS=-O2 $(CCOPTS_BASE)  -DNDEBUG 
-endif
 STATIC=
-ifneq ($(OPT), "")
-CCOPTS=-O -g $(CCOPTS_BASE) -lprofiler
-#STATIC=
-STATIC=-g -L $(PROF) -lprofiler
-#CCOPTS=-g -fsanitize=undefined
+CXX=g++ -std=c++14 
+CFLAGS=
+asan?=""
+tsan?=""
+
+ifneq ($(DEBUG), "")
+CFLAGS=-g
+else
+CFLAGS=-O2 -DNDEBUG 
 endif
 
-#-D _TESTING_ -lprofiler 
-#  -L$(PROF) 
+ifneq ($(asan), "")
+  CFLAGS+=-fsanitize=address
+  LIBS+=-fsanitize=address
+endif
+
+ifneq ($(tsan), "")
+  CFLAGS+=-fsanitize=thread
+  LIBS+=-fsanitize=thread
+endif
+
+ifneq ($(OPT), "")
+STATIC=-L $(PROF) -lprofiler
+endif
 
 HEADERS=MinCount.h \
   SeqUtils.h \
@@ -63,7 +74,7 @@ HEADERS=MinCount.h \
   SplitClusters.h \
   RefineBreakpoint.h
 
-CXX=g++ -std=c++14 
+all:$(PROG) 
 
 # tag: TestAffineOneGapAlign.cpp AffineOneGapAlign.h
 # 	$(CXX) -g TestAffineOneGapAlign.cpp -o tag 
@@ -76,38 +87,21 @@ CXX=g++ -std=c++14
 # 	$(CXX) -g TestIndelRefine.cpp  -I $(CONDA_PREFIX)/include -L $(CONDA_PREFIX)/lib  -lhts -o tir -lbz2 -lz
 
 lra: lra.o
-	$(CXX) $(STATIC) $(CCOPTS) $^ -I  -L/usr/lib64  -L $(CONDA_PREFIX)/lib -lhts -o $@ -lz -lpthread
+	$(CXX) $(CFLAGS) $(STATIC) $^ -I  -L/usr/lib64  -L $(CONDA_PREFIX)/lib $(LIBS) -o $@ -Wl,-rpath-link=$(CONDA_PREFIX)/lib 
 
-# alchemy2: Alchemy2.o
-# 	$(CXX) $(STATIC) $(CCOPTS) $^  -L $(CONDA_PREFIX)/lib  -lhts -lz -lpthread -o $@  -Wl,-rpath,$(PWD)/htslib/lib
+alchemy2: Alchemy2.o
+	$(CXX) $(CFLAGS) $(STATIC)  $^  -L $(CONDA_PREFIX)/lib  $(LIBS) -o $@  -Wl,-rpath,$(CONDA_PREFIX)/lib
 
-# qti: QueryTime.o
-# 	$(CXX) $(STATIC) $(CCOPTS) $^  -L $(CONDA_PREFIX)/lib -lhts -lz -lpthread -o $@
+qti: QueryTime.o
+	$(CXX) $(CFLAGS) $(STATIC) $^  -L $(CONDA_PREFIX)/lib $(LIBS) -o $@
 
 lra.o: lra.cpp $(HEADERS) 
-	$(CXX) $(CCOPTS) -c  -I $(CONDA_PREFIX)/include  lra.cpp 
-#  $(CXX) $(CCOPTS) -c  -I htslib/include  lra.cpp 
+	$(CXX) $(CFLAGS) -c  -I $(CONDA_PREFIX)/include  lra.cpp 
 
-# Alchemy2.o: Alchemy2.cpp Genome.h htslib/lib/libhts.a
 Alchemy2.o: Alchemy2.cpp Genome.h
-	$(CXX) $(CCOPTS) -c  -I $(CONDA_PREFIX)/include Alchemy2.cpp
+	$(CXX) $(CFLAGS) -c  -I $(CONDA_PREFIX)/include Alchemy2.cpp
 
-# QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
-QueryTime.o: QueryTime.cpp $(HEADERS) htslib/lib/libhts.a
-	$(CXX) $(CCOPTS) -c  -I $(CONDA_PREFIX)/include QueryTime.cpp
-
-writeblock: WriteBlock.cpp
-	$(CXX) $(CCOPTS) WriteBlock.cpp -o writeblock
-
-IndexInformativeKmers.o: IndexInformativeKmers.cpp 
-	$(CXX) $(CCOPTS) $^ -c -I $(CONDA_PREFIX)/include/htslib -I bwa
-
-# bwa/bwa.o:
-# 	cd bwa && make
-
-# iik: IndexInformativeKmers.o bwa/bwa.o bwa/kstring.o bwa/utils.o bwa/kthread.o bwa/kstring.o bwa/ksw.o bwa/bwt.o bwa/bntseq.o bwa/bwamem.o bwa/bwamem_pair.o bwa/bwamem_extra.o bwa/malloc_wrap.o	bwa/QSufSort.o bwa/bwt_gen.o bwa/rope.o bwa/rle.o bwa/is.o bwa/bwtindex.o
-# 	$(CXX) $(CCOPTS) $^ -o iik -L $(CONDA_PREFIX)/lib/libhts.a -lz -lpthread -I $(CONDA_PREFIX)/include
-
+QueryTime.o: QueryTime.cpp $(HEADERS) $(CONDA_PREFIX)/lib/libhts.a
+	$(CXX) $(CFLAGS) -c  -I $(CONDA_PREFIX)/include QueryTime.cpp
 clean:
-	rm -f lra lra.o 
-#   rm -f lra lra.o iik IndexInformativeKmers.o alchemy2 Alchemy2.o
+	rm -f $(PROG) $(PROG_EXTRA) *.o 

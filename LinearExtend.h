@@ -52,26 +52,30 @@ void Checkbp(GenomePair &cur, GenomePair &next, Genome &genome, Read &read, int 
 	GenomePos curQ, curT, nextQ, nextT;
 	if (strand == 0) {
 		curQ = cur.first.pos + K;
-		curT = cur.second.pos + K;
+		curT = min((GenomePos) genome.lengths[ChromIndex], cur.second.pos + K);
 		nextQ = next.first.pos;
-		nextT = next.second.pos;		
+		nextT = min((GenomePos) genome.lengths[ChromIndex], next.second.pos);
 	}
 	else {
 		curQ = cur.first.pos + K;
-		curT = cur.second.pos - 1;
+		curT = min((GenomePos) genome.lengths[ChromIndex]-1, cur.second.pos - 1);
 		nextQ = next.first.pos;
-		nextT = next.second.pos + K - 1;		
+		nextT = min((GenomePos) genome.lengths[ChromIndex]-1, next.second.pos + K - 1);
 	}
 
 	if (strand == 0) { //curT - genome.header.pos[ChromIndex]
-		while (nextQ > curQ and nextT > curT and genome.seqs[ChromIndex][curT] == read.seq[curQ] ) {
+	  while (curQ < read.length and curT < genome.lengths[ChromIndex] and
+		 nextQ > curQ and nextT > curT and  genome.seqs[ChromIndex][curT] == read.seq[curQ] ) {
 			mat++;
 			curQ++;
 			curT++;
 		}
 	}
 	else {
-		while (nextQ > curQ and nextT < curT and genome.seqs[ChromIndex][curT] == read.seq[curQ] ) {
+	  if (curT >= genome.lengths[ChromIndex]) {
+	    assert(0);
+	  }
+	  while (curQ < read.length and curT >= 0 and nextQ > curQ and nextT < curT and genome.seqs[ChromIndex][curT] == read.seq[curQ] ) {
 			mat++;
 			curQ++;
 			curT--;
@@ -80,7 +84,7 @@ void Checkbp(GenomePair &cur, GenomePair &next, Genome &genome, Read &read, int 
 	qe = curQ; te = curT;
 }
 
-
+ 
 int
 CheckOverlap(GenomePair & match, const Options & opts, vector<pair<GenomePos, bool>> & Set, bool & Ovp, int K) {
 
