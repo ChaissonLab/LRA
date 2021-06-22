@@ -611,7 +611,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		exit(1);
 	}
 	if (indexFile == "") {
-		indexFile = genomeFile + ".mmi";
+		indexFile = genomeFile + ".mms";
 	}
 	Header header;
 	vector<GenomeTuple> genomemm;
@@ -971,7 +971,7 @@ void RunStoreGlobal(int argc, const char* argv[], vector<GenomeTuple> &minimizer
 		exit(1);
 	}
 	if (indexFile == "") {
-		indexFile = genome + ".mmi";
+		indexFile = genome + ".mms";
 	}
 
 	if (printIndex and ReadIndex(indexFile, minimizers, header, opts)) {
