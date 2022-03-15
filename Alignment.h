@@ -440,6 +440,7 @@ class Alignment {
 			  if (i > p) {
 			    cigarstrm << i-p << "M";
 			    nmm += runmm;
+			    nm += i-p - nmm;
 			    value += i-p - nmm;
 			  }
 			}
