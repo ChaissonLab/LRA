@@ -639,32 +639,32 @@ class Alignment {
 		if (strand == 0) out << qStart << "\t" << qEnd << "\t";
 		else out << readLen - qEnd << "\t" << readLen - qStart << "\t";
 		out << strandChar << "\t" << chrom << "\t" << genomeLen << "\t" 
-			<< wholegenomeLen <<  "\t" // (Revision) delete wholegenomeLen
 			<< tStart << "\t" << tEnd 
-			<< "\t" << nm << "\t" << (int)mapqv << "\t" << order;
-		out << "\tNM:i:" << nmm + ndel + nins << "\t";
-		out << "NX:i:" << nmm << "\t";
-		out << "ND:i:" << ndel << "\t";
-		out << "TD:i:" << tdel << "\t";
-		out << "NI:i:" << nins << "\t";
-		out << "TI:i:" << tins << "\t";
-		out << "SD:i:" << nSmallDel << "\t"
-		    << "ME:i:" << nMedDel << "\t"
-		    << "LD:i:" << nLargeDel << "\t"
-		    << "SI:i:" << nSmallIns << "\t"
-		    << "MI:i:" << nMedIns << "\t"
-		    << "LI:i:" << nLargeIns << "\t";
-		out << "N0:i:" << NumOfAnchors0 << "\t";		
-		out << "NV:f:" << value << "\t";
-		out << "AS:i:" << (int) value << "\t";
+		    << "\t" << nm << "\t" << nm+nmm+ndel+nins  << "\t" << (int)mapqv;
+		out << "\tOR:i:" << order;
+		out << "\tNM:i:" << nmm + ndel + nins;
+		out << "\tNX:i:" << nmm;
+		out << "\tND:i:" << ndel;
+		out << "\tTD:i:" << tdel;
+		out << "\tNI:i:" << nins;
+		out << "\tTI:i:" << tins;
+		out << "\tSD:i:" << nSmallDel
+		    << "\tME:i:" << nMedDel
+		    << "\tLD:i:" << nLargeDel
+		    << "\tSI:i:" << nSmallIns
+		    << "\tMI:i:" << nMedIns
+		    << "\tLI:i:" << nLargeIns;
+		out << "\tN0:i:" << NumOfAnchors0;
+		out << "\tNV:f:" << value;
+		out << "\tAS:i:" << (int) value;
 		if (typeofaln == 0) {
-			out << "TP:A:" << "P\t";
+			out << "\tTP:A:" << "P";
 		}
 		else if (typeofaln == 1) {
-			out << "TP:A:" << "S\t";
+			out << "\tTP:A:" << "S"; 
 		}
 		else {
-			out << "TP:A:" << "I\t";
+			out << "\tTP:A:" << "I";
 		}
 		if (NumOfAnchors1 > 0) {
 			out << "\tNA:i:" << NumOfAnchors1;

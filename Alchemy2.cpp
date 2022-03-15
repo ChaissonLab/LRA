@@ -418,6 +418,7 @@ int main(int argc, char* argv[]) {
 	int fixedLength=5000;
 	int minReadLength=1000;
 	long foldCoverage=0;
+	int curReadIndex=0;
 	if (argc == 1) {
 		HelpAlchemy2();
 		exit(1);
@@ -482,7 +483,6 @@ int main(int argc, char* argv[]) {
 			 }
 	 }
 
-	 cerr << "fixedLength: " << fixedLength << "  usefixedLength: " << usefixedLength << endl; 
 	if (bamFile != "") {
 
 		cerr << "Storing model" << endl;
@@ -501,7 +501,7 @@ int main(int argc, char* argv[]) {
 			cout << "Cannot determine format of input reads." << endl;
 			exit(1);
 		}
-
+		
 
 		bam_hdr_t *samHeader;			
 		samHeader = sam_hdr_read(htsfp);
@@ -555,7 +555,7 @@ int main(int argc, char* argv[]) {
 		//
 		// Running simulation, not storing model.
 		//
-		if (modelFile=="" or genomeFile == "") {
+	  if (modelFile=="" or (genomeFile == "" and readsFile == "")) {
 			HelpAlchemy2();
 			cout << "Error. A model file (-m file) and genome file (-g genome) must be specified for simulations."<< endl;
 			exit(1);
@@ -564,17 +564,24 @@ int main(int argc, char* argv[]) {
 		Model model;
 		model.ReadModel(modelFile);
 		Genome genome;
-		genome.Read(genomeFile);
-		long genomeSize=0;
-		for (int i=0; i < genome.lengths.size(); i++ ) {
-			genomeSize+=genome.lengths[i];
+		long genomeSize;
+		if (genomeFile != "") {
+		  genome.Read(genomeFile);
+		  genomeSize=0;
+		  for (int i=0; i < genome.lengths.size(); i++ ) {
+		    genomeSize+=genome.lengths[i];
+		  }
+		}
+		else if (readsFile != "" ) {
+		  genome.Read(readsFile);
 		}
 		vector<long> cumRegionLength;
 		vector<string> chroms;
 		vector<long> start, end;
 		long c=0;
 		long maxPos=0;
-		if (bedFile == "") {
+
+		if (bedFile == "" and genomeFile != "") {
 			for (int i=0; i < genome.lengths.size(); i++) {
 				cumRegionLength.push_back(maxPos);
 				maxPos += genome.lengths[i];
@@ -583,7 +590,7 @@ int main(int argc, char* argv[]) {
 				end.push_back(genome.lengths[i]);
 			}
 		}
-		else {
+		else if (bedFile != "") {
 			ifstream bed(bedFile.c_str());
 			string line;
 			while (getline(bed, line)) {
@@ -600,7 +607,7 @@ int main(int argc, char* argv[]) {
 			}
 		}
 
-		ofstream readsFile(outFile.c_str());
+		ofstream readsFileOut(outFile.c_str());
 		
 		long nSimulatedBases=0;
 		if (avgReadLen == 0) {
@@ -615,49 +622,85 @@ int main(int argc, char* argv[]) {
 		int readIndex=0;
 		
 		if (foldCoverage != 0) {
-			numBases = foldCoverage*genomeSize;
+		  numBases = foldCoverage*genomeSize;
 		}
 		
-		while (nSimulatedBases < numBases) {
-			long i=RandInt(maxPos);
-			int idx=max(0,(int)(lower_bound(cumRegionLength.begin(), cumRegionLength.end(), i)-cumRegionLength.begin() - 1));
-			int offset=i-cumRegionLength[idx];
-
-			int refIdx = idx;
+		while (true) {
+		  stringstream nameStrm;		  
+		  long i;
+		  int idx;
+		  int offset;
+		  int refIdx;
+		  string chrom;
+		  int readLen;
+		  int maxLen=0;
+		  if (bedFile != "" and readsFile != "" ) {
+		    if (useEmpiricalReadLengths) {
+		      readLen = model.readLengths[RandInt(model.readLengths.size())];
+		    }
+		    else if (usefixedLength) {
+		      readLen = fixedLength;
+		    }
+		    else {
+		      readLen = distribution(generator);
+		    }
+		  }
+		  
+		  if (genomeFile != "") {
+		    if (nSimulatedBases >= numBases ) {
+		      break;
+		    }
+		    idx=max(0,(int)(lower_bound(cumRegionLength.begin(), cumRegionLength.end(), i)-cumRegionLength.begin() - 1));
+		    offset=i-cumRegionLength[idx];
+		    
+		    refIdx = idx;
 			// Find offset into region
-			string chrom=chroms[idx];
-			if (bedFile != "") {
-				// If simulating from regions, 
-				offset+=start[idx];
-				refIdx=genome.nameMap[chrom];
-			}
+		    chrom=chroms[idx];
 
-			int maxLen=end[idx]-offset;
+		    nameStrm << chrom << "_" << offset << "-" << offset+readLen << "/" << readIndex;
+		    maxLen=end[idx]-offset;
+		    readLen = min(maxLen, readLen);
+		    nSimulatedBases += readLen;
+		    readIndex++;		    
+		    if (readLen < minReadLength) {
+		      continue;
+		    }
+		    
+		  }
+		  else if (bedFile != "") {
+		    // If simulating from regions,
+		    if (readIndex + 1 >= end.size()) {
+		      break;
+		    }
+		    offset+=start[idx];
+		    refIdx=genome.nameMap[chrom];
+		    nameStrm << chrom << ":" << start[readIndex] << "-" << end[readIndex]  - start[readIndex] << "/" << readIndex;
+		    maxLen=end[idx]-offset;
+		    readLen = min(maxLen, readLen);
+		    nSimulatedBases += readLen;
+		    readIndex++;		    
+		    if (readLen < minReadLength ) {
+		      continue;
+		    }
 
-			int readLen;
-			
-			if (useEmpiricalReadLengths) {
-				readLen = model.readLengths[RandInt(model.readLengths.size())];
-			}
-			else if (usefixedLength) {
-				readLen = fixedLength;
-			}
-			else {
-				readLen = distribution(generator);
-			}
-			readLen = min(maxLen, readLen);
-			nSimulatedBases += readLen;
-			if (readLen < minReadLength) {
-				continue;
-			}
-			//			cout << nSimulatedBases << "\t" << chroms[idx] << "\t" << offset << "\t" << readLen << endl; 
-			if (readLen < model.k) {
-				continue;
-			}
-			char *ref=&genome.seqs[refIdx][offset];
-			string sim="";
-			string kmer;
-
+		    
+		  }
+		  char *ref;
+		  if (genomeFile != "") {
+		    ref=&genome.seqs[refIdx][offset];
+		  }
+		  else if (readsFile != "") {
+		    if (curReadIndex + 1 >= genome.seqs.size()) {
+		      break;
+		    }
+		    ref=genome.seqs[curReadIndex];
+		    readLen=genome.lengths[curReadIndex];
+		    nameStrm << genome.header.names[curReadIndex] <<  "/sim";
+		    curReadIndex+=1;
+		  }
+		  string sim="";
+		  string kmer;
+		  
 			kmer.resize(model.k);
 			for (int i=model.k/2; i < readLen-model.k/2; i++) {
 				string simOut="";
@@ -681,10 +724,8 @@ int main(int argc, char* argv[]) {
 
 			stringstream title;
 
-			title << ">" << chrom << ":" << offset << "-" << offset+readLen << "/" << readIndex;
-			readsFile << title.str() << endl;
-			readsFile << sim << endl;			
-
+			readsFileOut << ">" << nameStrm.str() << endl;
+			readsFileOut << sim << endl;
 			readIndex++;
 			if (readIndex % 1000 == 0) {
 				cerr << "Alchemy2: simulated " << nSimulatedBases /1000000 << "M bases. " 

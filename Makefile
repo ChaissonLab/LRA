@@ -6,7 +6,7 @@ DEBUG?=""
 OPT?=""
 STATIC=
 CXX=g++ -std=c++14 
-CFLAGS=
+CFLAGS=-g
 asan?=""
 tsan?=""
 
