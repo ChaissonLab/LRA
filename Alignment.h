@@ -757,33 +757,33 @@ class Alignment {
 			if (qualStr != "*") {
 				assert(SEQlen == qualStr.length());
 			}
-			samStrm << "\t";
-			samStrm << "MM:i:" << nmm + ndel + nins << "\t";
-			samStrm << "NX:i:" << nmm << "\t";
-			samStrm << "ND:i:" << ndel << "\t";
-			samStrm << "TD:i:" << tdel << "\t";
-			samStrm << "NI:i:" << nins << "\t";
-			samStrm << "TI:i:" << tins << "\t";
-			samStrm << "NV:f:" << value << "\t";
-			samStrm << "AS:i:" << (int) value << "\t";
-			samStrm << "AO:i:" << order << "\t";
-			samStrm << "N0:i:" << NumOfAnchors0 << "\t";
-			samStrm << "RT:i:" << runtime << "\t";			
+			samStrm << "\tNM:i:" << nmm + ndel + nins;			
+			samStrm << "\tMM:i:" << nmm + ndel + nins;
+			samStrm << "\tNX:i:" << nmm;
+			samStrm << "\tND:i:" << ndel;
+			samStrm << "\tTD:i:" << tdel;
+			samStrm << "\tNI:i:" << nins;
+			samStrm << "\tTI:i:" << tins;
+			samStrm << "\tNV:f:" << value;
+			samStrm << "\tAS:i:" << (int) value;
+			samStrm << "\tAO:i:" << order;
+			samStrm << "\tN0:i:" << NumOfAnchors0;
+			samStrm << "\tRT:i:" << runtime;
 			if (typeofaln == 0) {
-			  samStrm << "TP:A:" << "P\t";
+			  samStrm << "\tTP:A:" << "P";
 			}
 			else if (typeofaln == 1) {
-			  samStrm << "TP:A:" << "S\t";
+			  samStrm << "\tTP:A:" << "S";
 			}
 			else {
-			  samStrm << "TP:A:" << "I\t";
+			  samStrm << "\tTP:A:" << "I";
 			}
-			samStrm << "SD:i:" << nSmallDel << "\t"
-				<< "ME:i:" << nMedDel << "\t"
-				<< "LD:i:" << nLargeDel << "\t"
-				<< "SI:i:" << nSmallIns << "\t"
-				<< "MI:i:" << nMedIns << "\t"
-				<< "LI:i:" << nLargeIns;
+			samStrm << "\tSD:i:" << nSmallDel
+				<< "\tME:i:" << nMedDel
+				<< "\tLD:i:" << nLargeDel
+				<< "\tSI:i:" << nSmallIns
+				<< "\tMI:i:" << nMedIns
+				<< "\tLI:i:" << nLargeIns;
 			if (opts.printMD) {
 			  string mdString;
 			  AlignmentStringsToMD(queryString, refString, mdString);
@@ -900,18 +900,17 @@ class Alignment {
 			else {
 				samStrm << qualStr;
 			}
-			samStrm << "\t";
 			samStrm << "\tRT:i:" << runtime;			
-			samStrm << "NM:i:" << nmm + ndel + nins << "\t";
-			samStrm << "NX:i:" << nmm << "\t";
-			samStrm << "ND:i:" << ndel << "\t";
-			samStrm << "TD:i:" << tdel << "\t";
-			samStrm << "NI:i:" << nins << "\t";
-			samStrm << "TI:i:" << tins << "\t";
-			samStrm << "N0:i:" << NumOfAnchors0 << "\t";
-			samStrm << "NV:f:" << value << "\t";
-			samStrm << "AS:i:" << (int) value << "\t";			
-			samStrm << "AO:i:" << order;
+			samStrm << "\tNM:i:" << nmm + ndel + nins;
+			samStrm << "\tNX:i:" << nmm;
+			samStrm << "\tND:i:" << ndel;
+			samStrm << "\tTD:i:" << tdel;
+			samStrm << "\tNI:i:" << nins;
+			samStrm << "\tTI:i:" << tins;
+			samStrm << "\tN0:i:" << NumOfAnchors0;
+			samStrm << "\tNV:f:" << value;
+			samStrm << "\tAS:i:" << (int) value;
+			samStrm << "\tAO:i:" << order;
 		}
 		out << samStrm.str();
 		if (opts.passthroughtag and passthrough != NULL ) {
