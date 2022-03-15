@@ -78,17 +78,17 @@ lra uses a set of customized tags in SAM and PAF output.
 
 |Tag|Type  |Description                                  						|
 |:--|:----:|:-------------------------------------------------------------------|
-|NM |i |Number of matches in the alignment                                      |
-|NX |i |Number of mismatches in the alignment                                   |
-|ND |i |Number of bases of deletions in the alignment                           |
-|TD |i |Number of deletions in the alignment                                    |
-|NI |i |Number of bases of insertions in the alignment                          |
-|TI |i |Number of insertions in the alignment                                   | 
-|NV |f |The alignment score                                                     |
-|TP |A |Type of aln, P/primary, S/secondary, I/inversion                        |
-|RT |i |runtime   									                            |
-|CG |z |CIGAR string        						                            |	 
-|AO |i |This number shows the order of the aligned segment when a read is split |
+|NM |i |Number of mismatches + insertions + deletions in the alignment.         |
+|NX |i |Number of mismatches in the alignment.                                  |
+|ND |i |Number of bases of deletions in the alignment.                          |
+|TD |i |Number of deletions in the alignment.                                   |
+|NI |i |Number of bases of insertions in the alignment.                         |
+|TI |i |Number of insertions in the alignment.                                  | 
+|NV |f |The alignment score.                                                    |
+|TP |A |Type of aln, P/primary, S/secondary, I/inversion.                       |
+|RT |i |runtime.  									                            |
+|CG |z |CIGAR string.      						                            |	 
+|AO |i |This number shows the order of the aligned segment when a read is split.|
 
 
 [zlib]: http://zlib.net/
