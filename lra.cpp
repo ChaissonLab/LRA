@@ -65,7 +65,7 @@ void HelpMap() {
 			 // << "   --start  (int) Start aligning at this read." << endl
 			 << "   --stride (int) Read stride (for multi-job alignment of the same file)." << endl
 	         << "   -d 	(flag)     Enable dotPlot (debugging)" << endl
-			 << "   -PAl (int)     Print out at most number of alignments for one read. (Use this option if want to print out secondary alignments)" << endl
+			 << "   -PrintNumAln (int)     Print out at most number of alignments for one read. (Use this option if want to print out secondary alignments)" << endl
 			 << "   -Al (int)      Compute at most number of alignments for one read." << endl
              << "   --printMD      Write the MD tag in sam and paf output." << endl
              << "   --noMismatch   Use M instead of =/X in SAM/PAF output." << endl	  
@@ -230,15 +230,7 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
 		else if (ArgIs(argv[argi], "--start")) {
 			opts.readStart = atoi(GetArgv(argv, argc, argi));
 			++argi;
-		}
-		else if (ArgIs(argv[argi], "--PrintNumAln")) {
-			opts.PrintNumAln = atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}
-		else if (ArgIs(argv[argi], "--Al")) {
-			opts.NumAln = atoi(GetArgv(argv, argc, argi));
-			++argi;
-		}		
+		}	
 		else if (ArgIs(argv[argi], "-S")) {
 			opts.SparseDP = true;
 		}
@@ -436,6 +428,14 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
       		opts.alnthres=0.65f;
       		opts.ExtractDiagonalFromClean=true;
 		}
+		else if (ArgIs(argv[argi], "--PrintNumAln")) {
+			opts.PrintNumAln = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}
+		else if (ArgIs(argv[argi], "--Al")) {
+			opts.NumAln = atoi(GetArgv(argv, argc, argi));
+			++argi;
+		}	
 		else if (ArgIs(argv[argi], "--gapopen")) {
 			opts.gapopen = atof(GetArgv(argv,argc,argi));
 			++argi;
