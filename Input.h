@@ -188,6 +188,22 @@ public:
     string name;
     string seq;
     string qual;
+	  //----------------------------------------------
+             if (inputType == FASTA and strmPtr->eof())  // Any more FASTA files?
+             {
+                   strm.close(); // at eof so close before checking if another file is in input list
+                   ++curFile;
+
+                   if (curFile >= allReads.size()) // any more input file in list
+                   { // no more read files?
+                         return 0;
+                   }
+                   if (Initialize(allReads[curFile]) == false) // does next input file initialise?
+                   {
+                         return 0;
+                   }
+             }	  
+	  //----------------------------------------------
     if (inputType == FASTA or inputType == FASTQ) {
       if (strmPtr->eof()) {
 	     return 0;
@@ -223,9 +239,34 @@ public:
 	getline(*strmPtr, sep);
 	getline(*strmPtr, qual);
 	if (header.size() ==0 or seq.size() == 0 or sep.size() == 0 or qual.size() == 0) {
-	  readOne=false;
-	  return 0;
-	}
+		// -------------------------------------------
+                  strm.close();
+                  ++curFile;
+                  if (curFile >= allReads.size())    // Exit if no more input files.
+                  { // no more read files?
+                        readOne = false;
+                        return 0;
+                  }
+                  if (Initialize(allReads[curFile]) == false)
+                  {
+                       readOne = false;
+                       return 0;
+                  }
+                  // opened next input file - is it fastq? (set in Initialize())
+                  if (inputType == FASTQ)
+                  {
+                       getline(*strmPtr, header);
+                       getline(*strmPtr, seq);
+                       getline(*strmPtr, sep);
+                       getline(*strmPtr, qual);
+                  }
+        }		
+        if (header.size() == 0 or seq.size() == 0 or sep.size() == 0 or qual.size() == 0)
+        {
+            readOne = false;
+            return 0;
+        }		
+		// -------------------------------------------
 	else {
 	  stringstream nameStrm(header);
 	  nameStrm >> c >> read.name;
