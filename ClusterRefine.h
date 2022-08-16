@@ -300,7 +300,6 @@ float RefineSpace(int K, int W, int refineSpaceDiag, bool consider_str,
 		vector<float> LookUpTable;
 		CreateLookUpTable(LookUpTable);
 		aln.CalculateStatistics(opts, NULL, LookUpTable);
-	//		aln.SimpleAlignStringsToCigar(querySeq, refSeq, cigar);
 		cout << "qs qe " << qs << "\t" << qe << endl;
 		aln.PrintPairwise(cout);
 		*/

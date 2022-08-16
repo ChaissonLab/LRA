@@ -32,7 +32,7 @@
 using namespace std;
 
 int IO_BUFFER_SIZE=10000000;
-const char* lraVersion="V1.3.2";
+const char* lraVersion="v1.3.4";
 
 bool ArgIs(const char* a, const char* b) {
 	return strcmp(a,b) == 0;
@@ -130,7 +130,7 @@ void MapReads(MapInfo *mapInfo) {
 				if (mapInfo->reader->basesRead > 100000000) {
 					
 					clock_t cur = clock();		
-					cerr << "lra aligned " << *mapInfo->numAligned << " from " << mapInfo->reader->nReads << ", " 
+					cerr << "lra finished aligning " << *mapInfo->numAligned << " of " << mapInfo->reader->nReads << ", " 
 						 << mapInfo->reader->totalRead /1000000<< "M bases (" << std::setprecision(4) <<  
 						 ((float)(cur - mapInfo->reader->timestamp))/CLOCKS_PER_SEC  << "s)." << endl;
 					mapInfo->reader->timestamp=cur;
