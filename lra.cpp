@@ -65,8 +65,8 @@ void HelpMap() {
 			 // << "   --start  (int) Start aligning at this read." << endl
 			 << "   --stride (int) Read stride (for multi-job alignment of the same file)." << endl
 	         << "   -d 	(flag)     Enable dotPlot (debugging)" << endl
-			 << "   -PrintNumAln (int)     Print out at most number of alignments for one read. (Use this option if want to print out secondary alignments)" << endl
-			 << "   -Al (int)      Compute at most number of alignments for one read." << endl
+			 << "   --PrintNumAln (int)     Print out at most number of alignments for one read. (Use this option if want to print out secondary alignments)" << endl
+			 << "   --Al (int)      Compute at most number of alignments for one read." << endl
              << "   --printMD      Write the MD tag in sam and paf output." << endl
              << "   --noMismatch   Use M instead of =/X in SAM/PAF output." << endl	  
 			 << "   --passthrough  Pass auxilary tags from the input unaligned bam to the output." << endl
