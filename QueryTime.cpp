@@ -155,7 +155,7 @@ class MapInfo {
  		exit(1);
  	}
  	if (indexFile == "") {
- 		indexFile = genomeFile + ".mmi";
+ 		indexFile = genomeFile + ".mms";
  	}
 	Header header;
 	vector<GenomeTuple> genomemm;
@@ -417,7 +417,7 @@ void RunStoreGlobal(int argc, const char* argv[],
 		exit(1);
 	}
 	if (indexFile == "") {
-		indexFile = genome + ".mmi";
+		indexFile = genome + ".mms";
 	}
 
 	if (printIndex and ReadIndex(indexFile, minimizers, header, opts)) {
