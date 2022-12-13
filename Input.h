@@ -222,6 +222,7 @@ public:
 	getline(*strmPtr, seq);
 	getline(*strmPtr, sep);
 	getline(*strmPtr, qual);
+
 	if (header.size() ==0 or seq.size() == 0 or sep.size() == 0 or qual.size() == 0) {
 	  readOne=false;
 	  return 0;

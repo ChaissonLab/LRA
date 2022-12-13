@@ -667,7 +667,15 @@ class Alignment {
 			order=0;
 			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t";
 			samStrm.write(read,readLen);
-			samStrm << "\t*";
+			samStrm << "\t";
+			if (qual == NULL) {
+			  samStrm << "*";
+			}
+			else {
+			  string qualStr;
+			  qualStr.assign(qual, readLen);
+			  samStrm << qualStr;
+			}
 		}
 		else {
 			int last = blocks.size();
@@ -811,7 +819,15 @@ class Alignment {
 			order=0;
 			samStrm << "4\t*\t0\t0\t*\t*\t0\t0\t";
 			samStrm.write(read,readLen);
-			samStrm << "\t*";
+			samStrm << "\t";
+			if (qual == NULL) {
+			  samStrm << "*";
+			}
+			else {
+			  string qualStr;
+			  qualStr.assign(qual, readLen);
+			  samStrm << qualStr;
+			}			
 		}
 		else {
 			int last = blocks.size();
