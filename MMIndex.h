@@ -288,7 +288,6 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 		cerr << "ERROR, local k must be at most 10." << endl;
 		exit(1);
 	}
-
 	ifstream testGenome(genome.c_str());
 	if (testGenome.good() == false or testGenome.eof()) {
 		cerr << "Cannot open target " << genome << endl;
@@ -301,7 +300,6 @@ void StoreIndex(string &genome, vector<GenomeTuple> &minimizers, Header &header,
 
 	while (kseq_read(ks) >= 0) { // each kseq_read() call reads one query sequence
 		int prevMinCount = minimizers.size();
-		//cerr << "Storing for "<< ks->name.s << " " << prevMinCount << " " << offset << endl;
 		StoreMinimizers<GenomeTuple, Tuple>(ks->seq.s, ks->seq.l, opts.globalK, opts.globalW, minimizers, true);
 		
 		for (GenomePos i = prevMinCount; i < minimizers.size(); i++) {

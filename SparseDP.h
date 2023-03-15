@@ -1806,7 +1806,7 @@ int SparseDP (SplitChain &inputChain, vector<Cluster_SameDiag *> &FragInput, Fin
 			}
 		}
 	}
-	if (totalanchors >= 100000) cerr << "totalanchors: " << totalanchors << " read.name: " << read.name << endl;
+
 
 	sort(H1.begin(), H1.end(), SortByRowOp<Point>()); // with same q and t coordinates, end point < start point
 	vector<unsigned int> H2(H1.size());

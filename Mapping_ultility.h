@@ -192,6 +192,7 @@ void MergeSplitchainINS (vector<SplitChain> & splitchains, vector<bool> &splitch
 			long tdist = (splitchains[c].TStart > splitchains[n].TEnd) ? ((long) splitchains[c].TStart - (long) splitchains[n].TEnd) : ((long) splitchains[n].TEnd - (long) splitchains[c].TStart);
 			if (tdist > 1500) {n++; continue;}
 			if (splitchains[c].Strand != splitchains[n].Strand) {n++; continue;}
+			if (splitchains[c].chromIndex != splitchains[n].chromIndex) { n++; continue;}
 
 			change = 1;
 			//
@@ -282,6 +283,7 @@ SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitC
 			or (ExtendClusters[cur]->tEnd + opts.splitdist < ExtendClusters[prev]->tStart)
 			or (ExtendClusters[cur]->chromIndex != ExtendClusters[prev]->chromIndex) ) {
 			splitchains.push_back(SplitChain(onec, lk));
+			splitchains[splitchains.size()-1].chromIndex=ExtendClusters[cur]->chromIndex;
 			onec.clear();
 			lk.clear();
 			onec.push_back(cur);
@@ -290,6 +292,7 @@ SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitC
 		}
 		else if (rep_map) {
 			splitchains.push_back(SplitChain(onec, lk));
+			splitchains[splitchains.size()-1].chromIndex=ExtendClusters[cur]->chromIndex;			
 			onec.clear();
 			lk.clear();
 			onec.push_back(cur);
@@ -299,6 +302,7 @@ SPLITChain(Read &read, vector<Cluster_SameDiag *> &ExtendClusters, vector<SplitC
 		else if ((ExtendClusters[cur]->strand == 0 and ExtendClusters[prev]->strand == 1) // inversion
 			or (ExtendClusters[cur]->strand == 1 and ExtendClusters[prev]->strand == 0)) {
 			splitchains.push_back(SplitChain(onec, lk));
+			splitchains[splitchains.size()-1].chromIndex=ExtendClusters[cur]->chromIndex;			
 			onec.clear();
 			lk.clear();
 			onec.push_back(cur);
@@ -452,7 +456,6 @@ SPLITChain(Genome &genome, Read &read, UltimateChain &chain, vector<SplitChain> 
 
 void 
 output_unaligned(Read &read, const Options &opts, ostream &output) {
-	// cerr << "unmapped: " << read.name << endl;
 	if (opts.printFormat == "s") {
 		Alignment unaligned = Alignment(read.seq, read.length, read.name, read.qual);
 		unaligned.SimplePrintSAM(output, opts, read.passthrough);
@@ -608,7 +611,7 @@ void RemoveOverlappingClusters(vector<Cluster> &clusters, vector<int> &clusterOr
 		long diag=(long)clusters[orderIndex].tStart - (long)clusters[orderIndex].qStart;
 		bool foundDiag=false;
 		long clusterDiag, clusterEndDiag;
-		//		cerr << "processing cluster on query " << clusters[orderIndex].qStart << "\t" << clusters[orderIndex].qEnd << "\t" << diag << "\t" << orderIndex << "\t" << clusters[orderIndex].tStart << "\t" << clusters[orderIndex].tEnd << endl;
+
 		if (clusters[orderIndex].strand == 0) {
 			diagPtr = &forDiagonals;
 		}

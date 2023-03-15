@@ -13,7 +13,7 @@ tsan?=""
 ifneq ($(DEBUG), "")
 CFLAGS=-g
 else
-CFLAGS=-O2 -DNDEBUG 
+CFLAGS=-O2  -DNDEBUG 
 endif
 
 ifneq ($(asan), "")
@@ -27,7 +27,7 @@ ifneq ($(tsan), "")
 endif
 
 ifneq ($(OPT), "")
-STATIC=-L $(PROF) -lprofiler
+#STATIC=-L $(PROF) -lprofiler
 endif
 
 HEADERS=MinCount.h \

@@ -1457,6 +1457,7 @@ void StoreDiagonalClusters(Genome &genome, vector<float> &matches_freq, vector<p
 			qEnd   = max(qEnd, matches[ce].first.pos + opts.globalK);
 			tStart = min(tStart, matches[ce].second.pos);
 			tEnd   = max(tEnd, matches[ce].second.pos + opts.globalK);
+			assert(genome.header.Find(matches[ce].second.pos) == genome.header.Find(matches[s].second.pos));
 			totalfreq += matches_freq[ce];
 			ce++;
 		}	

@@ -269,8 +269,8 @@ class Alignment {
 		}
 
 		for (int b = 0; b < blocks.size(); b++) {
-
 			for (int bl = 0; bl < blocks[b].length; bl++) {
+
 				assert(t < genomeLen);
 				assert(q < readLen);
 				queryStr.push_back(query[q]);
@@ -301,7 +301,8 @@ class Alignment {
 				}
 				textGapLen -= commonGapLen;
 				queryGapLen -= commonGapLen;
-
+				assert(textGapLen >= 0);
+				assert(queryGapLen >= 0);
 				for (g = 0; g < queryGapLen; g++, q++){
 					assert(t < genomeLen);
 					textStr.push_back(gapChar);
@@ -322,6 +323,7 @@ class Alignment {
 					else alignStr.push_back(matchChar);
 
 					queryStr.push_back(query[q]);
+					assert(queryStr.size() < 100000);
 					t++;
 					q++;
 				}

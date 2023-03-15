@@ -31,8 +31,9 @@
 
 using namespace std;
 
-int IO_BUFFER_SIZE=10000000;
-const char* lraVersion="v1.3.6";
+//int IO_BUFFER_SIZE=10000000;
+int  IO_BUFFER_SIZE=1000000;
+const char* lraVersion="v1.3.7";
 
 bool ArgIs(const char* a, const char* b) {
 	return strcmp(a,b) == 0;
@@ -304,8 +305,8 @@ void RunAlign(int argc, const char* argv[], Options &opts ) {
      		opts.ExtractDiagonalFromClean=true;	
 		}
 		else if (ArgIs(argv[argi], "-CCS")) {
-			opts.globalK = 17;
-			opts.globalW = 10;
+			opts.globalK = 25;
+			opts.globalW = 20;
 			opts.globalMaxFreq = 150; //200
 			opts.globalWinsize = 15;
 			opts.NumOfminimizersPerWindow = 1;	
