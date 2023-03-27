@@ -66,6 +66,7 @@ void HelpMap() {
 			 << "   --stride (int) Read stride (for multi-job alignment of the same file)." << endl
     	                 << "   -d 	(flag)     Enable dotPlot (debugging)" << endl
 			 << "   --PrintNumAln (int)   Print out at most number of alignments for one read. (Use this option if want to print out secondary alignments) (DEFAULT: 1)" << endl
+	     << "   --alnthres (float) Retain secondary alignments that have score at least this fraction to the primary alignment (DEFAULT: 0.7)" << endl
 			 << "   --Al (int)      Compute at most number of alignments for one read. (DEFAULT: 3)" << endl
                          << "   --printMD      Write the MD tag in sam and paf output." << endl
                          << "   --noMismatch   Use M instead of =/X in SAM/PAF output." << endl	  
