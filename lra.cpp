@@ -62,14 +62,13 @@ void HelpMap() {
 			 << "   -t  n(int)     Use n threads (1)." << endl
 			 << "   -a  (flag)     Query all positions in a read, not just minimizers. " << endl
 			 // << "   -SV  (int <path>) Print sv signatures for each alignment with length above the given threshold (DEFAULT:25). And the path of output svsig file" << endl
-			 << "   -at  (float (0,1) Threshold to decide secondary alignments based on chaining value (DEFAULT:0.7)." << endl
 			 // << "   --start  (int) Start aligning at this read." << endl
 			 << "   --stride (int) Read stride (for multi-job alignment of the same file)." << endl
-	         << "   -d 	(flag)     Enable dotPlot (debugging)" << endl
+    	                 << "   -d 	(flag)     Enable dotPlot (debugging)" << endl
 			 << "   --PrintNumAln (int)   Print out at most number of alignments for one read. (Use this option if want to print out secondary alignments) (DEFAULT: 1)" << endl
 			 << "   --Al (int)      Compute at most number of alignments for one read. (DEFAULT: 3)" << endl
-             << "   --printMD      Write the MD tag in sam and paf output." << endl
-             << "   --noMismatch   Use M instead of =/X in SAM/PAF output." << endl	  
+                         << "   --printMD      Write the MD tag in sam and paf output." << endl
+                         << "   --noMismatch   Use M instead of =/X in SAM/PAF output." << endl	  
 			 << "   --passthrough  Pass auxilary tags from the input unaligned bam to the output." << endl
 			 << "   --refineBreakpoints  Refine alignments of query sequence up to 500 bases near a breakpoint." << endl;
 
